@@ -1,0 +1,21 @@
+
+
+### THIS REPO: MIRROR (LIKE REPLAYS
+- Copy https://github.com/DavoDC/SSF2Replays)
+- Python!
+- Readme = allowing sharing of music folder struture and contents
+- Iterate over all folder, create kind of text file to match audio file 
+- Save metadata into files? XML
+- Sanitize filenames to make C++ program simpler!!
+
+
+
+### NEXT REPO: Analyzer (LIKE REPLAYSAnalyzer)
+- Copy https://github.com/DavoDC/ReplaysAnalyser
+- C++ project!
+- Add to readme of mirror! 
+- Iterate over mirror
+- Could use XML parser
+-    doc.FirstChildElement( "PLAY" )->FirstChildElement( "TITLE" )->GetText(); - https://leethomason.github.io/tinyxml2/
+- Calculate percentage/count breakdowns for Artist, Genre 
+- Check that every artist with at least 3 songs has an artist folder
