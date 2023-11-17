@@ -1,9 +1,20 @@
 
+### NEW PLAN: 
+- DO ALL IN ONE PROJECT AND REPO 
+- Do all in C# !!!
+- has inbuilt XML capabilities!!
+- use XML track wrapper 
+- mirror and analySer folder IN SOLUTION!!
+- REPORTS folder!! copy SSF2Replays
+- convert python to c# 
+- look at previous c# project 
+- high level = create mirror object, create analyser object 
+
 
 ### THIS REPO: MIRROR (LIKE REPLAYS
 - Copy https://github.com/DavoDC/SSF2Replays
 - Readme = Allowing sharing of music folder structure and contents
-- Save metadata into files. Use XML?
+- Save metadata into files. Use XML
 
 
 
@@ -12,6 +23,6 @@
 - C++ project!
 - Add to readme of mirror! 
 - Iterate over mirror
-- Uuse 
 - Calculate percentage/count breakdowns for Artist, Genre 
 - Check that every artist with at least 3 songs has an artist folder
+
