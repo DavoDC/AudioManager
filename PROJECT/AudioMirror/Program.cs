@@ -10,7 +10,7 @@ namespace AudioMirror
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("\nHello!\n");
+            AudioMirror am = new AudioMirror();
         }
     }
 }
