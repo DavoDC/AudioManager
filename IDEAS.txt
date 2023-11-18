@@ -1,19 +1,14 @@
 
-### NEW PLAN: 
-- C# has inbuilt XML capabilities!!
-- use XML track wrapper 
-- mirror and analySer folder IN SOLUTION!!
-
-
-### MIRROR (LIKE REPLAYS
-- Copy https://github.com/DavoDC/SSF2Replays
-- Readme = Allowing sharing of music folder structure and contents
-- Save metadata into files. Use XML
 
 ### Analyzer (LIKE REPLAYSAnalyzer)
-- Copy https://github.com/DavoDC/ReplaysAnalyser
-- Add to readme of mirror! 
-- Iterate over mirror
+- When parsing, get a list of TAG objects
+- Iterate over tag objects
 - Calculate percentage/count breakdowns for Artist, Genre 
 - Check that every artist with at least 3 songs has an artist folder
+- Copy https://github.com/DavoDC/ReplaysAnalyser
 
+
+## Readme
+- Look at replays and ReplaysAnalyser for inspo 
+- Features 
+- External library
