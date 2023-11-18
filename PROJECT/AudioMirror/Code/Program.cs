@@ -24,7 +24,7 @@ namespace AudioMirror
             string mirrorPath = Path.GetFullPath(Path.Combine(programDir, relMirrorPath));
 
             // 1) Create mirror of audio folder
-            //new Mirror(mirrorPath);
+            new Mirror(mirrorPath);
 
             // 2) Parse metadata into XML files
             new Parser(mirrorPath);
