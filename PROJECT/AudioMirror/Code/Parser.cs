@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using AudioMirror.Code.Modules;
+using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Xml;
 
 namespace AudioMirror
 {
@@ -34,15 +32,24 @@ namespace AudioMirror
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
             foreach (var mirrorFilePath in mirrorFiles)
             {
-                // Extract path of real file
+                // If non-XML file found, notify
+                if (Path.GetExtension(mirrorFilePath) != ".xml")
+                {
+                    throw new ArgumentException($"Non-XML file found in mirror folder: {mirrorFilePath}");
+                }
+
+                // Try to extract real file path from file contents
                 string[] fileContents = File.ReadAllLines(mirrorFilePath);
                 string realFilePath = fileContents[0];
 
+                // If real path is invalid, set to null
+                if(!File.Exists(realFilePath)) 
+                {
+                    realFilePath = null;
+                }
 
-
-                // TEST
-                Console.WriteLine("realfilepath: " + realFilePath);
-                break;
+                // Parse audio track into XML file
+                new TrackXML(mirrorFilePath, realFilePath);
             }
 
             // Calculate execution time
