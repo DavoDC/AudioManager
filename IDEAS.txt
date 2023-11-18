@@ -3,8 +3,6 @@
 - C# has inbuilt XML capabilities!!
 - use XML track wrapper 
 - mirror and analySer folder IN SOLUTION!!
-- REPORTS folder!! copy SSF2Replays
-- Maybe do analyzer in separate repo??
 
 
 ### MIRROR (LIKE REPLAYS
@@ -18,3 +16,53 @@
 - Iterate over mirror
 - Calculate percentage/count breakdowns for Artist, Genre 
 - Check that every artist with at least 3 songs has an artist folder
+
+
+To achieve this task in C#, you can use the TagLib# library to read metadata from an MP3 file. First, you need to install the TagLib# NuGet package. You can do this using the following command in the Package Manager Console:
+
+```bash
+Install-Package taglib
+```
+
+Once you have TagLib# installed, you can create a function to read metadata from an MP3 file. Here's an example function that takes a path to an MP3 file and prints out the title, artist, and genre:
+
+```csharp
+using System;
+using TagLib;
+
+class Program
+{
+    static void Main()
+    {
+        string filePath = "path/to/your/file.mp3";
+        PrintMp3Metadata(filePath);
+    }
+
+    static void PrintMp3Metadata(string filePath)
+    {
+        try
+        {
+            // Load the file
+            var file = TagLib.File.Create(filePath);
+
+            // Print metadata
+            Console.WriteLine($"Title: {file.Tag.Title}");
+            Console.WriteLine($"Artist: {file.Tag.FirstPerformer}");
+            Console.WriteLine($"Genre: {file.Tag.FirstGenre}");
+
+            // Add more properties as needed
+
+            // Dispose the file
+            file.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
+```
+
+Make sure to replace `"path/to/your/file.mp3"` with the actual path to your MP3 file. This example assumes that the MP3 file has the necessary metadata tags. The `TagLib#` library provides various properties that you can use to retrieve different pieces of metadata.
+
+Note: Always handle exceptions appropriately, especially when working with external resources like files. The example above includes basic error handling to catch and display any exceptions that may occur during the metadata retrieval process.

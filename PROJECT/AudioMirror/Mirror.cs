@@ -20,12 +20,11 @@ namespace AudioMirror
         char[] invalidChars = Path.GetInvalidFileNameChars();
 
         //// VARIABLES
-        // Variables
         string mirrorPath;
 
 
         /// <summary>
-        /// Constructor
+        /// Construct an audio mirror
         /// </summary>
         /// <param name="mirrorPath">The audio mirror folder path</param>
         public Mirror(string mirrorPath)
