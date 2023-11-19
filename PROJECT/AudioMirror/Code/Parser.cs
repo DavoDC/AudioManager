@@ -1,5 +1,6 @@
 ﻿using AudioMirror.Code.Modules;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
@@ -10,11 +11,8 @@ namespace AudioMirror
     /// </summary>
     internal class Parser
     {
-        //// VARIABLES
-        private string mirrorPath;
-
         /// <summary>
-        /// Parse audio files
+        /// Construct a parser
         /// </summary>
         /// <param name="mirrorPath">The audio mirror folder path</param>
         public Parser(string mirrorPath)
@@ -22,11 +20,11 @@ namespace AudioMirror
             // Save start time
             var startTime = DateTime.Now;
 
-            // Save mirror path
-            this.mirrorPath = mirrorPath;
-
             // Notify
             Console.WriteLine("\nParsing audio metadata...");
+
+            // List of audio tags
+            List<TrackTag> audioTags = new List<TrackTag>();
 
             // For every mirrored file
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
@@ -38,25 +36,27 @@ namespace AudioMirror
                     throw new ArgumentException($"Non-XML file found in mirror folder: {mirrorFilePath}");
                 }
 
-                // Try to extract real file path from file contents
-                string[] fileContents = File.ReadAllLines(mirrorFilePath);
-                string realFilePath = fileContents[0];
+                // Get audio file tag
+                TrackTag tag = new TrackTag(mirrorFilePath);
 
-                // If real path is invalid, set to null
-                if(!File.Exists(realFilePath)) 
+                // If audio tag is valid
+                if (tag != null)
                 {
-                    realFilePath = null;
-                }
+                    // Save into XML mirror file
+                    TrackXML xmlFile = new TrackXML(mirrorFilePath, tag);
 
-                // Parse audio track into XML file
-                new TrackXML(mirrorFilePath, realFilePath);
+                    // Add tag to list
+                    audioTags.Add(tag);
+                }
             }
 
-            // Calculate execution time
-            var executionTime = DateTime.Now - startTime;
+            //// Print statistics
+            // Print tag count
+            Console.WriteLine($" - Tags parsed: {audioTags.Count}");
 
             // Print time taken
-            Console.WriteLine($"\nTime taken: {Math.Round(executionTime.TotalSeconds, 3)} seconds");
+            var executionTime = DateTime.Now - startTime;
+            Console.WriteLine($" - Time taken: {Math.Round(executionTime.TotalSeconds, 3)} seconds");
         }
     }
 }

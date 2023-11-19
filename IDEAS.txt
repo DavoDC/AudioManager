@@ -1,5 +1,4 @@
 
-
 ### Analyzer (LIKE REPLAYSAnalyzer)
 - When parsing, get a list of TAG objects
 - Iterate over tag objects
