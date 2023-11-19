@@ -1,5 +1,10 @@
 
-### Analyzer
+### Use OOP 
+- track classes inherit from common track , make track folder 
+- make doer folder and doer interface, interherit, print stats contract
+
+
+### Refine Analyzer
 - add function to track tag = GetArtistsList - separate by semicolon or comma, so can be processed properly !
 - total used for percentage WONT be number of songs  - fix !
 
