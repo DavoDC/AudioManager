@@ -23,12 +23,29 @@ namespace AudioMirror.Code.Modules
             // Get file contents of mirror file
             string[] fileContents = File.ReadAllLines(mirrorFilePath);
 
-            // If mirror file has no valid path, stop
+            // If mirror file has no valid path
             if (fileContents.Length != 1 || !File.Exists(fileContents[0]))
             {
+                // Then the mirror file already has XML content
+                // Load metadata from XML instead
+                
+                // Read in XML data
+                TrackXML xmlFileIn = new TrackXML(mirrorFilePath);
+
+                // Set tag properties using XML file data
+                Title = xmlFileIn.Title;
+                Artists = xmlFileIn.Artists;
+                Album = xmlFileIn.Album;
+                Year = xmlFileIn.Year;
+                Track = xmlFileIn.Track;
+                Genre = xmlFileIn.Genre;
+                Length = xmlFileIn.Length;
+
+                // Stop
                 return;
             }
 
+            // Otherwise, if mirror file only has valid path
             // Load metadata from file
             var audioMetadata = TagLib.File.Create(fileContents[0]);
 
@@ -43,6 +60,9 @@ namespace AudioMirror.Code.Modules
             Year = tag.Year.ToString();
             Track = tag.Track.ToString();
             Genre = tag.FirstGenre;
+
+            // Overwrite mirror file contents with XML data
+            TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
         }
     }
 }

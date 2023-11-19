@@ -15,7 +15,7 @@ namespace AudioMirror
         static string relMirrorPath = "..\\..\\..\\..\\AUDIO_MIRROR";
 
         // Whether to regenerate mirror folder each time
-        static bool recreateMirror = true;
+        static bool recreateMirror = false;
 
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace AudioMirror
             Parser p = new Parser(mirrorPath);
 
             // 3) Analyse metadata
-            // Analyser
+            Analyser a = new Analyser(p.audioTags);
 
             // Finish message
             Console.WriteLine("\nFinished!\n");

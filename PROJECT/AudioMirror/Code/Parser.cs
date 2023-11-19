@@ -11,6 +11,9 @@ namespace AudioMirror
     /// </summary>
     internal class Parser
     {
+        // Properties
+        public List<TrackTag> audioTags { get; }
+
         /// <summary>
         /// Construct a parser
         /// </summary>
@@ -23,8 +26,8 @@ namespace AudioMirror
             // Notify
             Console.WriteLine("\nParsing audio metadata...");
 
-            // List of audio tags
-            List<TrackTag> audioTags = new List<TrackTag>();
+            // Initialize tag list
+            audioTags = new List<TrackTag>();
 
             // For every mirrored file
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
@@ -36,18 +39,8 @@ namespace AudioMirror
                     throw new ArgumentException($"Non-XML file found in mirror folder: {mirrorFilePath}");
                 }
 
-                // Get audio file tag
-                TrackTag tag = new TrackTag(mirrorFilePath);
-
-                // If audio tag is valid
-                if (tag != null)
-                {
-                    // Save into XML mirror file
-                    TrackXML xmlFile = new TrackXML(mirrorFilePath, tag);
-
-                    // Add tag to list
-                    audioTags.Add(tag);
-                }
+                // Get audio file tag and add to list 
+                audioTags.Add(new TrackTag(mirrorFilePath));
             }
 
             //// Print statistics
