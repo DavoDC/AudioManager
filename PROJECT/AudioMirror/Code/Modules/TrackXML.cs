@@ -13,17 +13,12 @@ namespace AudioMirror.Code.Modules
         /// <summary>
         /// Construct an XML file for an audio track
         /// </summary>
-        public TrackXML(string mirrorFilePath, string realFilePath)
+        /// <param name="mirrorFilePath">The mirror file path</param>
+        /// <param name="tag">The audio metadata</param>
+        public TrackXML(string mirrorFilePath, TrackTag tag)
         {
             try
             {
-                // If no real file path found
-                if (realFilePath == null)
-                {
-                    // Stop, XML file is likely already done
-                    return;
-                }
-
                 // Initialize XML document
                 xmlDoc = new XmlDocument();
 
@@ -31,29 +26,21 @@ namespace AudioMirror.Code.Modules
                 rootElement = xmlDoc.CreateElement("Track");
                 xmlDoc.AppendChild(rootElement);
 
-                // Load audio file metadata
-                var audioFile = TagLib.File.Create(realFilePath);
-                var audioTag = audioFile.Tag;
-
-                // Set XML elements to metadata values
-                SetElement("Title", audioTag.Title);
-                SetElement("Artists", string.Join(", ", audioTag.Performers));
-                SetElement("Album", audioTag.Album);
-                SetElement("Year", audioTag.Year.ToString());
-                SetElement("Track", audioTag.Track.ToString());
-                SetElement("Genre", audioTag.FirstGenre);
-                SetElement("Length", audioFile.Properties.Duration.ToString());
+                // Set XML elements to metadata values;
+                SetElement("Title", tag.Title);
+                SetElement("Artists", tag.Artists);
+                SetElement("Album", tag.Album);
+                SetElement("Year", tag.Year);
+                SetElement("Track", tag.Track);
+                SetElement("Genre", tag.Genre);
+                SetElement("Length", tag.Length);
 
                 // Save file
                 xmlDoc.Save(mirrorFilePath);
-
-                // Dispose audio metadata
-                audioFile.Dispose();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"\nError occurred while parsing!");
-                Console.WriteLine($"\nAudio File: {realFilePath}");
                 Console.WriteLine($"\nMirror File: {mirrorFilePath}");
                 Console.WriteLine($"\nError: {ex.Message}");
                 Console.WriteLine($"\nStack Trace: \n{ex.StackTrace}");
