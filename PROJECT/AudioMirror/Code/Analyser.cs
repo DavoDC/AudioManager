@@ -40,11 +40,8 @@ namespace AudioMirror
             // Heading
             Console.WriteLine($"\n# {statName} Statistics");
 
-            // The unique items
-            var itemVariants = new HashSet<T>();
-
-            // All the items
-            var itemsList = new List<T>();
+            // Maps each unique item to how many there are
+            var itemVariants = new Dictionary<T, int>();
 
             // For each tag
             foreach (var tag in audioTags)
@@ -52,47 +49,49 @@ namespace AudioMirror
                 // Extract specified property
                 var property = func(tag);
 
-                // Add to collections
-                if (property is string)
+                if (property != null)
                 {
-                    itemVariants.Add(property);
-                    itemsList.Add(property);
+                    // For each sub property
+                    //foreach (var property in properties)
+                    {
+                        // If in dictionary
+                        if (itemVariants.ContainsKey(property))
+                        {
+                            // Increment
+                            itemVariants[property]++;
+                        }
+                        else
+                        {
+                            // Otherwise add to dictionary
+                            itemVariants[property] = 1;
+                        }
+                    }
                 }
             }
 
-            //// Get frequency value pairs
-            // Count the occurrences of each item variant in the itemsList
-            var itemVariantCounts = itemVariants.Select(itemVariant => new
-                {
-                    ItemVariant = itemVariant,
-                    Count = itemsList.Count(item => EqualityComparer<T>.Default.Equals(item, itemVariant))
-                });
-
-            // Create key-value pairs with item variant and its count
-            var frequencyValuePairs = itemVariantCounts
-                .Select(itemCount => new KeyValuePair<int, T>(itemCount.Count, itemCount.ItemVariant));
-
-            // Sort the pairs in descending order based on the count
-            var sortedPairs = frequencyValuePairs.OrderByDescending(pair => pair.Key);
-
-            // Convert the sorted pairs to a list
-            var fvPairs = sortedPairs.ToList();
+            // Sort the dictionary by count in descending order
+            var sortedItems = itemVariants.OrderByDescending(pair => pair.Value);
 
             // Print columns
             PrintColumns("%", statName, "Occurrences");
 
-            // For each pair
-            foreach (var curPair in fvPairs)
+            // Calculate total tags
+            int totalTags = audioTags.Count;
+
+            // For each item
+            foreach (var item in sortedItems)
             {
                 // Extract info
-                var itemValue = curPair.Value.ToString();
-                var count = curPair.Key;
-                var percentage = ((double) count / audioTags.Count) * 100;
+                var itemValue = item.Key.ToString();
+
+                var count = item.Value;
+                var percentage = ((double) count / totalTags) * 100;
 
                 // Print statistics line
                 PrintStatsLine(percentage, itemValue, count);
             }
         }
+
 
         /// <summary>
         /// Print columns for statistics lines
@@ -104,6 +103,7 @@ namespace AudioMirror
         {
             Console.WriteLine($"{c1,-10} {c2,-40} {c3}");
         }
+
 
         /// <summary>
         /// Print statistics line
