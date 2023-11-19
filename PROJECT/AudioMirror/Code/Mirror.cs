@@ -21,19 +21,22 @@ namespace AudioMirror
 
         //// VARIABLES
         string mirrorPath;
+        bool recreateMirror;
 
 
         /// <summary>
         /// Construct an audio mirror
         /// </summary>
         /// <param name="mirrorPath">The audio mirror folder path</param>
-        public Mirror(string mirrorPath)
+        /// <param name="recreateMirror">Whether to recreate the mirror each time</param>
+        public Mirror(string mirrorPath, bool recreateMirror)
         {
             // Save start time
             var startTime = DateTime.Now;
 
-            // Save mirror path
+            // Save parameters
             this.mirrorPath = mirrorPath;
+            this.recreateMirror = recreateMirror;
 
             // Notify
             Console.WriteLine($"\nCreating mirror of '{audioFolderPath}'...");
@@ -58,17 +61,21 @@ namespace AudioMirror
         public void CreateFolders()
         {
             // If mirror path is outside of repo
-            if(!mirrorPath.Contains("C:\\Users\\David\\GitHubRepos\\AudioMirror"))
+            if (!mirrorPath.Contains("C:\\Users\\David\\GitHubRepos\\AudioMirror"))
             {
                 // Throw exception and notify
                 string msg = $"\nMirror path was incorrect, outside the repo:\n{mirrorPath}\n";
                 throw new ArgumentException(msg);
             }
 
-            // Remove the mirror path if it exists, to recreate it
-            if (Directory.Exists(mirrorPath))
+            // If recreation wanted
+            if (recreateMirror)
             {
-                Directory.Delete(mirrorPath, true);
+                // Remove the mirror path if it exists, to recreate it
+                if (Directory.Exists(mirrorPath))
+                {
+                    Directory.Delete(mirrorPath, true);
+                }
             }
 
             // For every actual folder
@@ -194,6 +201,9 @@ namespace AudioMirror
 
             // Print sanitization count
             Console.WriteLine($" - MP3 filenames sanitized: {sanitizedFileNames}");
+
+            // Print recreation setting
+            Console.WriteLine($" - Recreated: {recreateMirror}");
 
             // Print time taken
             Console.WriteLine($" - Time taken: {Math.Round(executionTime.TotalSeconds, 3)} seconds");

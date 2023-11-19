@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\Mirror.cs" />
+    <Compile Include="Code\Modules\TrackTag.cs" />
     <Compile Include="Code\Modules\TrackXML.cs" />
     <Compile Include="Code\Parser.cs" />
     <Compile Include="Code\Program.cs" />

@@ -9,6 +9,15 @@ namespace AudioMirror
 {
     internal class Program
     {
+        //// CONSTANTS/SETTINGS
+
+        // The path to the mirror folder relative to program executable
+        static string relMirrorPath = "..\\..\\..\\..\\AUDIO_MIRROR";
+
+        // Whether to regenerate mirror folder each time
+        static bool recreateMirror = true;
+
+
         /// <summary>
         /// Main function
         /// </summary>
@@ -20,14 +29,13 @@ namespace AudioMirror
 
             // Set mirror path relative to program executable
             string programDir = AppDomain.CurrentDomain.BaseDirectory;
-            string relMirrorPath = "..\\..\\..\\..\\AUDIO_MIRROR";
             string mirrorPath = Path.GetFullPath(Path.Combine(programDir, relMirrorPath));
 
             // 1) Create mirror of audio folder
-            new Mirror(mirrorPath);
+            Mirror m = new Mirror(mirrorPath, recreateMirror);
 
             // 2) Parse metadata into XML files
-            new Parser(mirrorPath);
+            Parser p = new Parser(mirrorPath);
 
             // 3) Analyse metadata
             // Analyser
