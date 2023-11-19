@@ -1,10 +1,7 @@
 
-### Analyzer (LIKE REPLAYSAnalyzer)
-- When parsing, get a list of TAG objects
-- Iterate over tag objects
-- Calculate percentage/count breakdowns for Artist, Genre 
-- Check that every artist with at least 3 songs has an artist folder
-- Copy https://github.com/DavoDC/ReplaysAnalyser
+### Analyzer
+- add function to track tag = GetArtistsList - separate by semicolon or comma, so can be processed properly !
+- total used for percentage WONT be number of songs  - fix !
 
 
 ## Readme
