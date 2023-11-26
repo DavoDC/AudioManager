@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AudioMirror
 {
@@ -16,6 +12,7 @@ namespace AudioMirror
 
         // Whether to regenerate mirror folder each time
         static bool recreateMirror = false;
+        //static bool recreateMirror = true;
 
 
         /// <summary>
@@ -38,7 +35,7 @@ namespace AudioMirror
             Parser p = new Parser(mirrorPath);
 
             // 3) Analyse metadata
-            Analyser a = new Analyser(p.audioTags);
+            //Analyser a = new Analyser(p.audioTags);
 
             // Finish message
             Console.WriteLine("\nFinished!\n");
