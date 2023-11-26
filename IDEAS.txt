@@ -1,5 +1,0 @@
-
-## Write Readme
-- Look at replays and ReplaysAnalyser for inspo 
-- Features 
-- External library
