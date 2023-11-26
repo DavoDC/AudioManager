@@ -29,13 +29,13 @@ namespace AudioMirror
             string mirrorPath = Path.GetFullPath(Path.Combine(programDir, relMirrorPath));
 
             // 1) Create mirror of audio folder
-            //Mirror m = new Mirror(mirrorPath, recreateMirror);
+            new Mirror(mirrorPath, recreateMirror);
 
             // 2) Parse metadata into XML files
             Parser p = new Parser(mirrorPath);
 
             // 3) Analyse metadata
-            Analyser a = new Analyser(p.audioTags);
+            new Analyser(p.audioTags);
 
             // Finish message
             Console.WriteLine("\nFinished!\n");
