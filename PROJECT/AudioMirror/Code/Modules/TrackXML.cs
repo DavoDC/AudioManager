@@ -36,7 +36,7 @@ namespace AudioMirror.Code.Modules
                     SetElementValue("Album", tag.Album);
                     SetElementValue("Year", tag.Year);
                     SetElementValue("TrackNumber", tag.TrackNumber);
-                    SetElementValue("Genre", tag.Genre);
+                    SetElementValue("Genres", tag.Genres);
                     SetElementValue("Length", tag.Length);
 
                     // Save file
@@ -54,7 +54,7 @@ namespace AudioMirror.Code.Modules
                     Album = GetElementValue("Album");
                     Year = GetElementValue("Year");
                     TrackNumber = GetElementValue("TrackNumber");
-                    Genre = GetElementValue("Genre");
+                    Genres = GetElementValue("Genres");
                     Length = GetElementValue("Length");
                 }
             }
