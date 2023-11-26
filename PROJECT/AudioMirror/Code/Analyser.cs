@@ -10,6 +10,7 @@ namespace AudioMirror
         // Variables
         private List<TrackTag> audioTags;
 
+
         /// <summary>
         /// Construct an audio tag analyser
         /// </summary>
@@ -55,41 +56,37 @@ namespace AudioMirror
 
 
         /// <summary>
-        /// Print frequency statistics
+        /// Print frequency statistics for a given track property
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="statName"></param>
-        /// <param name="func"></param>
-        private void PrintFreqStats<T>(string statName, Func<TrackTag, T> func)
+        /// <param name="statName">The name of the property</param>
+        /// <param name="func">Function that returns the property</param>
+        private void PrintFreqStats(string statName, Func<TrackTag, string[]> func)
         {
             // Heading
             Console.WriteLine($"\n# {statName} Statistics");
 
             // Maps each unique item to how many there are
-            var itemVariants = new Dictionary<T, int>();
+            var itemVariants = new Dictionary<string, int>();
 
             // For each tag
             foreach (var tag in audioTags)
             {
-                // Extract specified property
-                var property = func(tag);
+                // Extract properties using the given function
+                string[] properties = func(tag);
 
-                if (property != null)
+                // For each sub-property
+                foreach (string subProperty in properties)
                 {
-                    // For each sub property
-                    //foreach (var property in properties)
+                    // If in dictionary
+                    if (itemVariants.ContainsKey(subProperty))
                     {
-                        // If in dictionary
-                        if (itemVariants.ContainsKey(property))
-                        {
-                            // Increment
-                            itemVariants[property]++;
-                        }
-                        else
-                        {
-                            // Otherwise add to dictionary
-                            itemVariants[property] = 1;
-                        }
+                        // Increment value
+                        itemVariants[subProperty]++;
+                    }
+                    else
+                    {
+                        // Otherwise add to dictionary
+                        itemVariants[subProperty] = 1;
                     }
                 }
             }
@@ -100,17 +97,16 @@ namespace AudioMirror
             // Print columns
             PrintColumns("%", statName, "Occurrences");
 
-            // Calculate total tags
-            int totalTags = audioTags.Count;
+            // Get total number of items
+            int totalItems = itemVariants.Values.Sum();
 
             // For each item
             foreach (var item in sortedItems)
             {
                 // Extract info
                 var itemValue = item.Key.ToString();
-
                 var count = item.Value;
-                var percentage = ((double) count / totalTags) * 100;
+                var percentage = ((double)count / totalItems) * 100;
 
                 // Print statistics line
                 PrintStatsLine(percentage, itemValue, count);
@@ -142,7 +138,7 @@ namespace AudioMirror
             string percentS = percentage.ToString("F2") + "%";
 
             // If percentage exceeds cutoff
-            if (0.03 < percentage &&  0.05 > percentage)
+            if (0.25 < percentage)
             {
                 Console.WriteLine($"{percentS,-10} {itemValue,-40} {freqS}");
             }

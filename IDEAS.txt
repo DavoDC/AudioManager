@@ -1,8 +1,6 @@
 
 ### Refine Analyzer
-- add function to track tag = GetArtistsList - separate by semicolon or comma, so can be processed properly !
-- total used for percentage WONT be number of songs  - fix !
-- add genre 
+- add genre and year
 
 
 ## Readme
