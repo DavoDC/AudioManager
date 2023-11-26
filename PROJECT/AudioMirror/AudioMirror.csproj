@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="Code\Analyser.cs" />
     <Compile Include="Code\Mirror.cs" />
+    <Compile Include="Code\Modules\Track.cs" />
     <Compile Include="Code\Modules\TrackTag.cs" />
     <Compile Include="Code\Modules\TrackXML.cs" />
     <Compile Include="Code\Parser.cs" />

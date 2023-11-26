@@ -3,17 +3,8 @@ using File = System.IO.File;
 
 namespace AudioMirror.Code.Modules
 {
-    internal class TrackTag
+    internal class TrackTag : Track
     {
-        // Properties
-        public string Title { get; }
-        public string Artists { get; }
-        public string Album { get; }
-        public string Year { get; }
-        public string Track { get; }
-        public string Genre { get; }
-        public string Length { get; }
-
         /// <summary>
         /// Represents the MP3 tag of a track
         /// </summary>
@@ -37,7 +28,7 @@ namespace AudioMirror.Code.Modules
                 Artists = xmlFileIn.Artists;
                 Album = xmlFileIn.Album;
                 Year = xmlFileIn.Year;
-                Track = xmlFileIn.Track;
+                TrackNumber = xmlFileIn.TrackNumber;
                 Genre = xmlFileIn.Genre;
                 Length = xmlFileIn.Length;
 
@@ -58,7 +49,7 @@ namespace AudioMirror.Code.Modules
             Artists = string.Join(", ", tag.Performers);
             Album = tag.Album;
             Year = tag.Year.ToString();
-            Track = tag.Track.ToString();
+            TrackNumber = tag.Track.ToString();
             Genre = tag.FirstGenre;
 
             // Overwrite mirror file contents with XML data
