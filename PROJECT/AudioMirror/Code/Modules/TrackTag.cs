@@ -29,7 +29,7 @@ namespace AudioMirror.Code.Modules
                 Album = xmlFileIn.Album;
                 Year = xmlFileIn.Year;
                 TrackNumber = xmlFileIn.TrackNumber;
-                Genre = xmlFileIn.Genre;
+                Genres = xmlFileIn.Genres;
                 Length = xmlFileIn.Length;
 
                 // Stop
@@ -43,14 +43,16 @@ namespace AudioMirror.Code.Modules
             // Extract and save length
             Length = audioMetadata.Properties.Duration.ToString();
 
-            // Extract and save tag info
+            // Get tag
             Tag tag = audioMetadata.Tag;
+
+            // Extract info
             Title = tag.Title;
-            Artists = string.Join(", ", tag.Performers);
+            Artists = tag.JoinedPerformers;
             Album = tag.Album;
-            Year = tag.Year.ToString();
+            Year = (tag.Year == 0) ? "Missing" : (Year = tag.Year.ToString());
             TrackNumber = tag.Track.ToString();
-            Genre = tag.FirstGenre;
+            Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
 
             // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);

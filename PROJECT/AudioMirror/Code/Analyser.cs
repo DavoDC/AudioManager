@@ -27,34 +27,10 @@ namespace AudioMirror
             PrintFreqStats("Artists", tag => tag.Artists);
 
             // Print genre stats
-            PrintFreqStats("Genre", tag => tag.Genre);
+            PrintFreqStats("Genre", tag => tag.Genres);
 
             // Print year stats
             PrintFreqStats("Year", tag => tag.Year);
-        }
-
-
-        /// <summary>
-        /// Splits a string of possibly concatenated values into an array.
-        /// </summary>
-        /// <param name="full">The full string, possibly concatenated with separators.</param>
-        /// <returns>An array extracted from the input string.</returns>
-        private string[] ProcessProperty(string full)
-        {
-            char[] separators = { ',', ';' };
-
-            // If doesn't contain any separators, return as is
-            if (!separators.Any(full.Contains))
-            {
-                return new[] { full };
-            }
-
-            // Split string using first separator found
-            char selectedSeparator = separators.First(s => full.Contains(s));
-            string[] artistArr = full.Split(selectedSeparator);
-
-            // Return array without whitespace in strings
-            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
 
@@ -114,6 +90,30 @@ namespace AudioMirror
                 // Print statistics line
                 PrintStatsLine(percentage, itemValue, count);
             }
+        }
+
+
+        /// <summary>
+        /// Splits a string of possibly concatenated values into an array.
+        /// </summary>
+        /// <param name="full">The full string, possibly concatenated with separators.</param>
+        /// <returns>An array extracted from the input string.</returns>
+        private string[] ProcessProperty(string full)
+        {
+            char[] separators = { ',', ';' };
+
+            // If doesn't contain any separators, return as is
+            if (!separators.Any(full.Contains))
+            {
+                return new[] { full };
+            }
+
+            // Split string using first separator found
+            char selectedSeparator = separators.First(s => full.Contains(s));
+            string[] artistArr = full.Split(selectedSeparator);
+
+            // Return array without whitespace in strings
+            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
 

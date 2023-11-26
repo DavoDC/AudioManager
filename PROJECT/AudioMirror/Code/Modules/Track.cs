@@ -11,7 +11,7 @@
         }
 
 
-        // The track's artists (comma separated)
+        // The track's artists (concatenated)
         private string artists;
         public string Artists 
         { 
@@ -47,12 +47,12 @@
         }
 
 
-        // The track's genre
-        private string genre;
-        public string Genre 
+        // The track's genres (concatenated)
+        private string genres;
+        public string Genres 
         { 
-            get => genre; set => 
-            genre = value; 
+            get => genres; set => 
+            genres = value; 
         }
 
 
