@@ -52,7 +52,7 @@ namespace AudioMirror.Code.Modules
             TrackNumber = tag.Track.ToString();
             Genre = tag.FirstGenre;
 
-            // Overwrite mirror file contents with XML data
+            // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
         }
     }

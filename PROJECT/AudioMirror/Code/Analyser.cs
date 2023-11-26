@@ -23,11 +23,53 @@ namespace AudioMirror
             Console.WriteLine("\nAnalysing tags...");
 
             // Print artist stats
-            PrintFreqStats("Artists", tag => tag.Artists);
+            PrintFreqStats("Artists", tag => GetArtistArr(tag.Artists));
 
             // Print genre stats
             //PrintFreqStats("Genre", tag => tag.Genre);
         }
+
+        /// <summary>
+        /// Return an array of artists from a possibly concatenated string of artists
+        /// </summary>
+        /// <param name="rawArtists"></param>
+        /// <returns></returns>
+        private string[] GetArtistArr(string rawArtists)
+        {
+            // Separators to try
+            char[] separators = {',', ';'};
+
+            // If full string doesn't have any of the separators, return as is
+            if (!separators.Any(rawArtists.Contains))
+            {
+                return new string[] {rawArtists};
+            }
+
+            // Holder
+            string[] artistArr = null;
+
+            // For every separator
+            foreach (char curSep in separators)
+            {
+                // If string has separator
+                if (rawArtists.Contains(curSep))
+                {
+                    // Split by it and stop
+                    artistArr = rawArtists.Split(curSep);
+                    break;
+                }
+            }
+
+            // Trim whitespace from every artist string
+            for(int i = 0; i < artistArr.Length; i++)
+            {
+                artistArr[i] = artistArr[i].Trim();
+            }
+
+            // Return artist array
+            return artistArr;
+        }
+
 
         /// <summary>
         /// Print frequency statistics
@@ -117,7 +159,7 @@ namespace AudioMirror
             string percentS = percentage.ToString("F2") + "%";
 
             // If percentage exceeds cutoff
-            if (0 < percentage)
+            if (0.03 < percentage &&  0.05 > percentage)
             {
                 Console.WriteLine($"{percentS,-10} {itemValue,-40} {freqS}");
             }
