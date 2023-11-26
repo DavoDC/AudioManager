@@ -1,9 +1,9 @@
 <Track>
   <Title>Famous</Title>
-  <Artists>Lil Wayne, Reginae Carter</Artists>
+  <Artists>Lil Wayne; Reginae Carter</Artists>
   <Album>Tha Carter V</Album>
   <Year>2018</Year>
   <TrackNumber>11</TrackNumber>
-  <Genre>Rap</Genre>
+  <Genres>Rap; Hip Hop</Genres>
   <Length>00:04:02.6210000</Length>
 </Track>

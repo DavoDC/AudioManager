@@ -1,9 +1,9 @@
 <Track>
   <Title>The Rain</Title>
-  <Artists>Will Smith, Jill Scott</Artists>
+  <Artists>Will Smith; Jill Scott</Artists>
   <Album>Willennium</Album>
   <Year>2000</Year>
   <TrackNumber>15</TrackNumber>
-  <Genre>Rap</Genre>
+  <Genres>Rap</Genres>
   <Length>00:04:50.3240000</Length>
 </Track>

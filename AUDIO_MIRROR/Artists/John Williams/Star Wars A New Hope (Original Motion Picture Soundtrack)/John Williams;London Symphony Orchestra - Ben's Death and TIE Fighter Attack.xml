@@ -4,6 +4,6 @@
   <Album>Star Wars: A New Hope</Album>
   <Year>1977</Year>
   <TrackNumber>5</TrackNumber>
-  <Genre>Films</Genre>
+  <Genres>Films; Games</Genres>
   <Length>00:03:54.3330000</Length>
 </Track>
