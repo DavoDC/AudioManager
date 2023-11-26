@@ -1,9 +1,5 @@
 
-### Refine Analyzer
-- Fix no year/genre handling
-
-
-## Readme
+## Write Readme
 - Look at replays and ReplaysAnalyser for inspo 
 - Features 
 - External library

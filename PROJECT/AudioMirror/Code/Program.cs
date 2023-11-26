@@ -29,7 +29,7 @@ namespace AudioMirror
             string mirrorPath = Path.GetFullPath(Path.Combine(programDir, relMirrorPath));
 
             // 1) Create mirror of audio folder
-            new Mirror(mirrorPath, recreateMirror);
+            new Reflector(mirrorPath, recreateMirror);
 
             // 2) Parse metadata into XML files
             Parser p = new Parser(mirrorPath);
@@ -37,8 +37,11 @@ namespace AudioMirror
             // 3) Analyse metadata
             new Analyser(p.audioTags);
 
+            // Print total time
+            // TODO
+
             // Finish message
-            Console.WriteLine("\nFinished!\n");
+            Console.WriteLine("\n\nFinished!\n");
         }
     }
 }
