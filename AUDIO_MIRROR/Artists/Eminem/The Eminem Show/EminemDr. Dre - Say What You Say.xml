@@ -1,9 +1,9 @@
 <Track>
   <Title>Say What You Say</Title>
-  <Artists>Eminem, Dr. Dre</Artists>
+  <Artists>Eminem; Dr. Dre</Artists>
   <Album>The Eminem Show</Album>
   <Year>2002</Year>
   <TrackNumber>17</TrackNumber>
-  <Genre>Rap</Genre>
+  <Genres>Rap</Genres>
   <Length>00:05:10.4900000</Length>
 </Track>
