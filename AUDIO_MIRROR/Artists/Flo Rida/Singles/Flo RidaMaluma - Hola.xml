@@ -1,9 +1,9 @@
 <Track>
   <Title>Hola</Title>
-  <Artists>Flo Rida, Maluma</Artists>
+  <Artists>Flo Rida; Maluma</Artists>
   <Album>Hola</Album>
   <Year>2017</Year>
   <TrackNumber>1</TrackNumber>
-  <Genre>Rap</Genre>
+  <Genres>Rap; Hip Hop</Genres>
   <Length>00:03:12.9080000</Length>
 </Track>

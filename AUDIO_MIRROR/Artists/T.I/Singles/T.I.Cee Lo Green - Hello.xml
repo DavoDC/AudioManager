@@ -1,9 +1,9 @@
 <Track>
   <Title>Hello</Title>
-  <Artists>T.I., Cee Lo Green</Artists>
+  <Artists>T.I.; Cee Lo Green</Artists>
   <Album>Trouble Man: Heavy is the Head</Album>
   <Year>2012</Year>
   <TrackNumber>13</TrackNumber>
-  <Genre>Rap</Genre>
+  <Genres>Rap; Hip Hop</Genres>
   <Length>00:04:07.7550000</Length>
 </Track>

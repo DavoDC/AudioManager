@@ -1,9 +1,9 @@
 <Track>
   <Title>My Band</Title>
-  <Artists>D12, Eminem</Artists>
+  <Artists>D12; Eminem</Artists>
   <Album>D-12 World</Album>
   <Year>2004</Year>
   <TrackNumber>6</TrackNumber>
-  <Genre>Rap</Genre>
+  <Genres>Rap; Hip Hop</Genres>
   <Length>00:04:59.3590000</Length>
 </Track>
