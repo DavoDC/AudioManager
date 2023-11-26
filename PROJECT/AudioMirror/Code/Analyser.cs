@@ -29,45 +29,28 @@ namespace AudioMirror
             //PrintFreqStats("Genre", tag => tag.Genre);
         }
 
+
         /// <summary>
-        /// Return an array of artists from a possibly concatenated string of artists
+        /// Splits a string of possibly concatenated artists into an array.
         /// </summary>
-        /// <param name="rawArtists"></param>
-        /// <returns></returns>
+        /// <param name="rawArtists">The full artist string, possibly concatenated with separators.</param>
+        /// <returns>An array of artists extracted from the input string.</returns>
         private string[] GetArtistArr(string rawArtists)
         {
-            // Separators to try
-            char[] separators = {',', ';'};
+            char[] separators = { ',', ';' };
 
-            // If full string doesn't have any of the separators, return as is
+            // If doesn't contain any separators, return as is
             if (!separators.Any(rawArtists.Contains))
             {
-                return new string[] {rawArtists};
+                return new[] { rawArtists };
             }
 
-            // Holder
-            string[] artistArr = null;
+            // Split string using first separator found
+            char selectedSeparator = separators.First(s => rawArtists.Contains(s));
+            string[] artistArr = rawArtists.Split(selectedSeparator);
 
-            // For every separator
-            foreach (char curSep in separators)
-            {
-                // If string has separator
-                if (rawArtists.Contains(curSep))
-                {
-                    // Split by it and stop
-                    artistArr = rawArtists.Split(curSep);
-                    break;
-                }
-            }
-
-            // Trim whitespace from every artist string
-            for(int i = 0; i < artistArr.Length; i++)
-            {
-                artistArr[i] = artistArr[i].Trim();
-            }
-
-            // Return artist array
-            return artistArr;
+            // Return array without whitespace in strings
+            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
 
