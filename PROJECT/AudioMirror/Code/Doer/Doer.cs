@@ -13,6 +13,16 @@ namespace AudioMirror
         protected DateTime startTime;
 
         /// <summary>
+        /// The execution time of the action
+        /// </summary>
+        private TimeSpan executionTime;
+        public TimeSpan ExecutionTime
+        {
+            get => executionTime;
+        }
+
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Doer"/> class.
         /// </summary>
         protected Doer()
@@ -25,8 +35,16 @@ namespace AudioMirror
         /// </summary>
         protected void PrintTimeTaken()
         {
-            var executionTime = DateTime.Now - startTime;
-            Console.WriteLine($" - Time taken: {Math.Round(executionTime.TotalSeconds, 3)} seconds");
+            executionTime = DateTime.Now - startTime;
+            Console.WriteLine(" - Time taken: " + ConvertTimeSpanToString(executionTime));
+        }
+
+        /// <summary>
+        /// Formats a TimeSpan into a string
+        /// </summary>
+        public static string ConvertTimeSpanToString(TimeSpan timeSpan)
+        {
+            return ($"{Math.Round(timeSpan.TotalSeconds, 3)} seconds");
         }
     }
 }
