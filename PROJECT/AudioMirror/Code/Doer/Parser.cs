@@ -8,7 +8,7 @@ namespace AudioMirror
     /// <summary>
     /// Parses audio track metadata into XML files
     /// </summary>
-    internal class Parser
+    internal class Parser : Doer
     {
         // Properties
         public List<TrackTag> audioTags { get; }
@@ -19,11 +19,8 @@ namespace AudioMirror
         /// <param name="mirrorPath">The audio mirror folder path</param>
         public Parser(string mirrorPath)
         {
-            // Save start time
-            var startTime = DateTime.Now;
-
             // Notify
-            Console.WriteLine("\nParsing audio metadata...");
+            Console.WriteLine("\n\nParsing audio metadata...");
 
             // Initialize tag list
             audioTags = new List<TrackTag>();
@@ -42,13 +39,9 @@ namespace AudioMirror
                 audioTags.Add(new TrackTag(mirrorFilePath));
             }
 
-            //// Print statistics
-            // Print tag count
+            // Print statistics
             Console.WriteLine($" - Tags parsed: {audioTags.Count}");
-
-            // Print time taken
-            var executionTime = DateTime.Now - startTime;
-            Console.WriteLine($" - Time taken: {Math.Round(executionTime.TotalSeconds, 3)} seconds");
+            PrintTimeTaken();
         }
     }
 }

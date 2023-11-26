@@ -10,7 +10,7 @@ namespace AudioMirror
     /// <summary>
     /// Creates a lightweight 'mirror' of an Audio track folder
     /// </summary>
-    internal class Mirror
+    internal class Reflector : Doer
     {
         //// CONSTANTS
         // Actual Audio folder path
@@ -29,17 +29,14 @@ namespace AudioMirror
         /// </summary>
         /// <param name="mirrorPath">The audio mirror folder path</param>
         /// <param name="recreateMirror">Whether to recreate the mirror each time</param>
-        public Mirror(string mirrorPath, bool recreateMirror)
+        public Reflector(string mirrorPath, bool recreateMirror)
         {
-            // Save start time
-            var startTime = DateTime.Now;
-
             // Save parameters
             this.mirrorPath = mirrorPath;
             this.recreateMirror = recreateMirror;
 
             // Notify
-            Console.WriteLine($"\nCreating mirror of '{audioFolderPath}'...");
+            Console.WriteLine($"\n\nCreating mirror of '{audioFolderPath}'...");
 
             // Setup folder structure
             CreateFolders();
@@ -47,11 +44,8 @@ namespace AudioMirror
             // Populate with files
             var statisticsInfo = CreateFiles();
 
-            // Calculate execution time
-            var executionTime = DateTime.Now - startTime;
-
             // Print statistics
-            PrintStats(statisticsInfo, executionTime);
+            PrintStats(statisticsInfo);
         }
 
 
@@ -178,8 +172,7 @@ namespace AudioMirror
         /// Print info about completed mirroring process 
         /// </summary>
         /// <param name="statisticsInfo"></param>
-        /// <param name="executionTime"></param>
-        private void PrintStats(Tuple<int, int, List<string>> statisticsInfo, TimeSpan executionTime)
+        private void PrintStats(Tuple<int, int, List<string>> statisticsInfo)
         {
             // Extract info items
             int mp3FileCount = statisticsInfo.Item1;
@@ -206,7 +199,7 @@ namespace AudioMirror
             Console.WriteLine($" - Recreated: {recreateMirror}");
 
             // Print time taken
-            Console.WriteLine($" - Time taken: {Math.Round(executionTime.TotalSeconds, 3)} seconds");
+            PrintTimeTaken();
         }
 
 

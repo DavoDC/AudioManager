@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace AudioMirror
 {
-    internal class Analyser
+    internal class Analyser : Doer
     {
         // Variables
         private List<TrackTag> audioTags;
@@ -17,11 +17,11 @@ namespace AudioMirror
         /// <param name="audioTags"></param>
         public Analyser(List<TrackTag> audioTags)
         {
+            // Notify
+            Console.WriteLine("\n\nAnalysing tags...");
+
             // Save parameter
             this.audioTags = audioTags;
-
-            // Notify
-            Console.WriteLine("\nAnalysing tags...");
 
             // Print artist stats
             PrintFreqStats("Artists", tag => tag.Artists);
@@ -31,6 +31,10 @@ namespace AudioMirror
 
             // Print year stats
             PrintFreqStats("Year", tag => tag.Year);
+
+            // Print time taken
+            Console.WriteLine("");
+            PrintTimeTaken();
         }
 
 
