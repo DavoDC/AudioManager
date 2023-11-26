@@ -24,31 +24,34 @@ namespace AudioMirror
             Console.WriteLine("\nAnalysing tags...");
 
             // Print artist stats
-            PrintFreqStats("Artists", tag => GetArtistArr(tag.Artists));
+            PrintFreqStats("Artists", tag => tag.Artists);
 
             // Print genre stats
-            //PrintFreqStats("Genre", tag => tag.Genre);
+            PrintFreqStats("Genre", tag => tag.Genre);
+
+            // Print year stats
+            PrintFreqStats("Year", tag => tag.Year);
         }
 
 
         /// <summary>
-        /// Splits a string of possibly concatenated artists into an array.
+        /// Splits a string of possibly concatenated values into an array.
         /// </summary>
-        /// <param name="rawArtists">The full artist string, possibly concatenated with separators.</param>
-        /// <returns>An array of artists extracted from the input string.</returns>
-        private string[] GetArtistArr(string rawArtists)
+        /// <param name="full">The full string, possibly concatenated with separators.</param>
+        /// <returns>An array extracted from the input string.</returns>
+        private string[] ProcessProperty(string full)
         {
             char[] separators = { ',', ';' };
 
             // If doesn't contain any separators, return as is
-            if (!separators.Any(rawArtists.Contains))
+            if (!separators.Any(full.Contains))
             {
-                return new[] { rawArtists };
+                return new[] { full };
             }
 
             // Split string using first separator found
-            char selectedSeparator = separators.First(s => rawArtists.Contains(s));
-            string[] artistArr = rawArtists.Split(selectedSeparator);
+            char selectedSeparator = separators.First(s => full.Contains(s));
+            string[] artistArr = full.Split(selectedSeparator);
 
             // Return array without whitespace in strings
             return artistArr.Select(a => a.Trim()).ToArray();
@@ -60,7 +63,7 @@ namespace AudioMirror
         /// </summary>
         /// <param name="statName">The name of the property</param>
         /// <param name="func">Function that returns the property</param>
-        private void PrintFreqStats(string statName, Func<TrackTag, string[]> func)
+        private void PrintFreqStats(string statName, Func<TrackTag, string> func)
         {
             // Heading
             Console.WriteLine($"\n# {statName} Statistics");
@@ -72,7 +75,7 @@ namespace AudioMirror
             foreach (var tag in audioTags)
             {
                 // Extract properties using the given function
-                string[] properties = func(tag);
+                string[] properties = ProcessProperty(func(tag));
 
                 // For each sub-property
                 foreach (string subProperty in properties)
