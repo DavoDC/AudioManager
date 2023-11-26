@@ -1,6 +1,6 @@
 
 ### Refine Analyzer
-- add genre and year
+- Fix no year/genre handling
 
 
 ## Readme
