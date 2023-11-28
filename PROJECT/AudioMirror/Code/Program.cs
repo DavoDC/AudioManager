@@ -23,6 +23,7 @@ namespace AudioMirror
         {
             // Start message
             Console.WriteLine("\n###### Audio Mirror ######");
+            Console.WriteLine("\nDateTime.Now: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
             // Set mirror path relative to program executable
             string programDir = AppDomain.CurrentDomain.BaseDirectory;
