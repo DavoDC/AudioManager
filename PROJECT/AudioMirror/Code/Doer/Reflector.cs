@@ -36,7 +36,7 @@ namespace AudioMirror
             this.recreateMirror = recreateMirror;
 
             // Notify
-            Console.WriteLine($"\n\nCreating mirror of '{audioFolderPath}'...");
+            Console.WriteLine($"\nCreating mirror of '{audioFolderPath}'...");
 
             // Setup folder structure
             CreateFolders();
