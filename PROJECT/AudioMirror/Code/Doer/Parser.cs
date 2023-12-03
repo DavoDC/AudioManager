@@ -20,7 +20,7 @@ namespace AudioMirror
         public Parser(string mirrorPath)
         {
             // Notify
-            Console.WriteLine("\n\nParsing audio metadata...");
+            Console.WriteLine("\nParsing audio metadata...");
 
             // Initialize tag list
             audioTags = new List<TrackTag>();

@@ -10,7 +10,6 @@ namespace AudioMirror
         // Variables
         private List<TrackTag> audioTags;
 
-
         /// <summary>
         /// Construct an audio tag analyser
         /// </summary>
@@ -18,7 +17,7 @@ namespace AudioMirror
         public Analyser(List<TrackTag> audioTags)
         {
             // Notify
-            Console.WriteLine("\n\nAnalysing tags...");
+            Console.WriteLine("\nAnalysing tags...");
 
             // Save parameter
             this.audioTags = audioTags;
