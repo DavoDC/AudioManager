@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\Doer\Analyser.cs" />
+    <Compile Include="Code\Doer\AgeChecker.cs" />
     <Compile Include="Code\Doer\Doer.cs" />
     <Compile Include="Code\Doer\Reflector.cs" />
     <Compile Include="Code\Track\Track.cs" />
