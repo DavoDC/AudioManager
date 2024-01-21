@@ -13,7 +13,7 @@
 
         // The track's artists (concatenated)
         private string artists;
-        public string Artists 
+        public string Artists
         { 
             get => artists;
             set => artists = value;
@@ -22,46 +22,46 @@
 
         // The track's album
         private string album;
-        public string Album 
+        public string Album
         { 
-            get => album; 
-            set => album = value; 
+            get => album;
+            set => album = value;
         }
 
 
         // The track's year
         private string year;
-        public string Year 
+        public string Year
         { 
-            get => year; 
-            set => year = value; 
+            get => year;
+            set => year = value;
         }
 
 
         // The track's number (disc order)
         private string trackNumber;
-        public string TrackNumber 
+        public string TrackNumber
         { 
-            get => trackNumber; 
-            set => trackNumber = value; 
+            get => trackNumber;
+            set => trackNumber = value;
         }
 
 
         // The track's genres (concatenated)
         private string genres;
-        public string Genres 
-        { 
-            get => genres; set => 
-            genres = value; 
+        public string Genres
+        {
+            get => genres;
+            set => genres = value;
         }
 
 
         // The track's duration
         private string length;
-        public string Length 
+        public string Length
         { 
-            get => length; 
-            set => length = value; 
+            get => length;
+            set => length = value;
         }
     }
 }
