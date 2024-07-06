@@ -41,7 +41,7 @@ namespace AudioMirror
             Analyser a = new Analyser(p.audioTags);
 
             // Print total time
-            TimeSpan totalTime = r.ExecutionTime + p.ExecutionTime + a.ExecutionTime;
+            TimeSpan totalTime = ac.ExecutionTime + r.ExecutionTime + p.ExecutionTime + a.ExecutionTime;
             Console.WriteLine("\n\nTotal time taken: " + Doer.ConvertTimeSpanToString(totalTime));
 
             // Finish message

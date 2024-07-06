@@ -3,7 +3,7 @@
 namespace AudioMirror
 {
     /// <summary>
-    /// Represents a base class for performing some action with timing information.
+    /// Performs some action and records how long it took.
     /// </summary>
     internal class Doer
     {

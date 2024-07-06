@@ -6,7 +6,7 @@ using System.IO;
 namespace AudioMirror
 {
     /// <summary>
-    /// Parses audio track metadata into XML files
+    /// Parses audio track metadata into XML files.
     /// </summary>
     internal class Parser : Doer
     {

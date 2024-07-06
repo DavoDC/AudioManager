@@ -8,7 +8,7 @@ using System.Text;
 namespace AudioMirror
 {
     /// <summary>
-    /// Creates a lightweight 'mirror' of an Audio track folder
+    /// Creates a lightweight 'mirror' of an Audio track folder.
     /// </summary>
     internal class Reflector : Doer
     {
