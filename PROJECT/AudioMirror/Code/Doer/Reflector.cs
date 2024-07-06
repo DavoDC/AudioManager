@@ -207,44 +207,18 @@ namespace AudioMirror
         /// <returns></returns>
         private string ProcessNonMP3(List<string> nonMP3Files)
         {
-            // Extract non-MP3 file count
-            int fileCount = nonMP3Files.Count;
+            // Extract list of extensions
+            var extList = nonMP3Files.Select(fileName => "." + fileName.Split('.')[1]).ToList();
 
-            // Info string
-            string infoStr = fileCount.ToString();
+            // Convert extensions list to string
+            string extStr = string.Join(",", extList);
 
-            // Expected flag
-            bool expected = true;
-
-            // For each filename
-            infoStr += " (";
-            for (int i = 0; i < fileCount; i++)
-            {
-                // Get filename
-                string fileName = nonMP3Files[i];
-
-                // Extract extension and add
-                string fileExt = "." + fileName.Split('.')[1].Trim();
-                infoStr += fileExt;
-
-                // Add comma if not last
-                if(i != fileCount - 1)
-                {
-                    infoStr += ",";
-                }
-
-                // If extension is not an expected one
-                if (fileExt != ".ini" && fileExt != ".txt" && fileExt != ".lnk" && fileExt != ".ffs_db")
-                {
-                    expected = false;
-                }
-            }
-            infoStr += ")";
-
-            // Add note regarding expected flag
-            infoStr += expected ? " (expected)" : " (UNEXPECTED!!!)";
-
-            return infoStr;
+            // Check if extensions are expected
+            var expectedExt = new HashSet<string> { ".ini", ".txt", ".lnk", ".ffs_db" };
+            bool expected = extList.TrueForAll(ext => expectedExt.Contains(ext));
+            
+            // Combine info as a string
+            return $"{extList.Count}  ({extStr})  ({(expected ? "expected" : "UNEXPECTED!!!")})";
         }
 
 
