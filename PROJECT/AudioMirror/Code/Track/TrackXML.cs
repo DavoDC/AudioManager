@@ -13,7 +13,7 @@ namespace AudioMirror.Code.Modules
         private XmlElement rootElement;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TrackXML"/> class.
+        /// Initialises a new instance of the <see cref="TrackXML"/> class.
         /// </summary>
         /// <param name="mirrorFilePath">The path to the mirror file.</param>
         /// <param name="tag">The audio metadata. Null if not given</param>
@@ -21,7 +21,7 @@ namespace AudioMirror.Code.Modules
         {
             try
             {
-                // Initialize XML document
+                // Initialise XML document
                 xmlDoc = new XmlDocument();
                 rootElement = xmlDoc.CreateElement("Track");
                 xmlDoc.AppendChild(rootElement);
