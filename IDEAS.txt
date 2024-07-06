@@ -17,7 +17,6 @@ For all dict entries
 
 
 Check music org doc for other checks
-- Show extensions of non-MP3 files!
 - •	Remove from all fields:
 o	"(feat. X)"
 o	"Edit”

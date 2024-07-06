@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 
 namespace AudioMirror
@@ -94,7 +96,7 @@ namespace AudioMirror
         {
             // Holders
             int mp3FileCount = 0;
-            int sanitizationCount = 0;
+            int sanitisationCount = 0;
             List<string> nonMP3Files = new List<string>();
 
             // For every actual file
@@ -112,16 +114,16 @@ namespace AudioMirror
                 }
 
                 // Otherwise, process MP3 file
-                if(CreateFile(realFilePath, relativePath))
+                if (CreateFile(realFilePath, relativePath))
                 {
-                    sanitizationCount++;
+                    sanitisationCount++;
                 }
 
                 mp3FileCount++;
             }
 
             // Return holders
-            return Tuple.Create(mp3FileCount, sanitizationCount, nonMP3Files);
+            return Tuple.Create(mp3FileCount, sanitisationCount, nonMP3Files);
         }
 
 
@@ -130,24 +132,24 @@ namespace AudioMirror
         /// </summary>
         /// <param name="filePath">The actual file path</param>
         /// <param name="relativePath">The relative file path</param>
-        /// <returns>True if the filename was sanitized</returns>
+        /// <returns>True if the filename was sanitised</returns>
         private bool CreateFile(string realFilePath, string relativePath)
         {
-            // Sanitization flag
-            bool sanitized = false;
+            // Sanitisation flag
+            bool sanitised = false;
 
-            // Get file name and sanitize it
+            // Get file name and sanitise it
             string fileName = Path.GetFileName(realFilePath);
-            string sanitizedFilename = SanitizeFilename(fileName);
+            string sanitisedFilename = SanitiseFilename(fileName);
 
-            // If file name was sanitized
-            if (fileName != sanitizedFilename)
+            // If file name was sanitised
+            if (fileName != sanitisedFilename)
             {
-                // Replace filename in path with sanitized version
-                relativePath = relativePath.Replace(fileName, sanitizedFilename);
+                // Replace filename in path with sanitised version
+                relativePath = relativePath.Replace(fileName, sanitisedFilename);
 
                 // Set flag
-                sanitized = true;
+                sanitised = true;
             }
 
             // Generate the full mirror path
@@ -163,8 +165,8 @@ namespace AudioMirror
                 File.WriteAllText(fullMirrorPath, realFilePath);
             }
 
-            // Return sanitized flag
-            return sanitized;
+            // Return sanitised flag
+            return sanitised;
         }
 
 
@@ -176,7 +178,7 @@ namespace AudioMirror
         {
             // Extract info items
             int mp3FileCount = statisticsInfo.Item1;
-            int sanitizedFileNames = statisticsInfo.Item2;
+            int sanitisedFileNames = statisticsInfo.Item2;
             List<string> nonMP3Files = statisticsInfo.Item3;
 
             // Print mirror path
@@ -186,14 +188,10 @@ namespace AudioMirror
             Console.WriteLine($" - MP3 file count: {mp3FileCount}");
 
             // Print non-MP3 file info
-            Console.WriteLine($" - Non-MP3 files found: {nonMP3Files.Count}");
-            //foreach (var file in nonMP3Files)
-            //{
-            //    Console.WriteLine("   " + file);
-            //}
+            Console.WriteLine($" - Non-MP3 files found: {ProcessNonMP3(nonMP3Files)}");
 
-            // Print sanitization count
-            Console.WriteLine($" - MP3 filenames sanitized: {sanitizedFileNames}");
+            // Print sanitisation count
+            Console.WriteLine($" - MP3 filenames sanitised: {sanitisedFileNames}");
 
             // Print recreation setting
             Console.WriteLine($" - Recreated: {recreateMirror}");
@@ -202,30 +200,77 @@ namespace AudioMirror
             PrintTimeTaken();
         }
 
+        /// <summary>
+        /// Generate an info string from a list of non-MP3 filenames
+        /// </summary>
+        /// <param name="nonMP3Files"></param>
+        /// <returns></returns>
+        private string ProcessNonMP3(List<string> nonMP3Files)
+        {
+            // Extract non-MP3 file count
+            int fileCount = nonMP3Files.Count;
+
+            // Info string
+            string infoStr = fileCount.ToString();
+
+            // Expected flag
+            bool expected = true;
+
+            // For each filename
+            infoStr += " (";
+            for (int i = 0; i < fileCount; i++)
+            {
+                // Get filename
+                string fileName = nonMP3Files[i];
+
+                // Extract extension and add
+                string fileExt = "." + fileName.Split('.')[1].Trim();
+                infoStr += fileExt;
+
+                // Add comma if not last
+                if(i != fileCount - 1)
+                {
+                    infoStr += ",";
+                }
+
+                // If extension is not an expected one
+                if (fileExt != ".ini" && fileExt != ".txt" && fileExt != ".lnk" && fileExt != ".ffs_db")
+                {
+                    expected = false;
+                }
+            }
+            infoStr += ")";
+
+            // Add note regarding expected flag
+            infoStr += expected ? " (expected)" : " (UNEXPECTED!!!)";
+
+            return infoStr;
+        }
+
 
         /// <summary>
-        /// Sanitize a given filename of special characters
+        /// Sanitise a given filename of special characters
         /// </summary>
         /// <param name="filename">Original filename.</param>
-        /// <returns>Sanitized filename.</returns>
-        private string SanitizeFilename(string filename)
+        /// <returns>Sanitised filename.</returns>
+        private string SanitiseFilename(string filename)
         {
             // Remove any non-ASCII characters and replace wide characters with their closest equivalent
-            string sanitizedFilename = new string(filename
+            string sanitisedFilename = new string(filename
                 .Where(c => Char.GetUnicodeCategory(c) != UnicodeCategory.Control &&
                             Char.GetUnicodeCategory(c) != UnicodeCategory.ModifierSymbol &&
                             Char.GetUnicodeCategory(c) != UnicodeCategory.OtherSymbol)
                 .ToArray());
-            sanitizedFilename = Encoding.ASCII.GetString(Encoding.GetEncoding("Cyrillic").GetBytes(sanitizedFilename));
+            sanitisedFilename = Encoding.ASCII.GetString(Encoding.GetEncoding("Cyrillic").GetBytes(sanitisedFilename));
 
             // Replace invalid characters with an underscore if found
-            if (sanitizedFilename.Any(c => invalidChars.Contains(c)))
+            if (sanitisedFilename.Any(c => invalidChars.Contains(c)))
             {
-                sanitizedFilename = new string(sanitizedFilename.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
+                sanitisedFilename = new string(sanitisedFilename.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
             }
 
             // Return new file name
-            return sanitizedFilename;
+            return sanitisedFilename;
         }
 
 

@@ -23,7 +23,7 @@ namespace AudioMirror
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Doer"/> class.
+        /// Initialises a new instance of the <see cref="Doer"/> class.
         /// </summary>
         protected Doer()
         {
