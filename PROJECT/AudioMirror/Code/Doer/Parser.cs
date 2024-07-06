@@ -22,7 +22,7 @@ namespace AudioMirror
             // Notify
             Console.WriteLine("\nParsing audio metadata...");
 
-            // Initialize tag list
+            // Initialise tag list
             audioTags = new List<TrackTag>();
 
             // For every mirrored file
