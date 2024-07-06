@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace AudioMirror
 {
+    /// <summary>
+    /// Analyses audio track metadata to produce statistics.
+    /// </summary>
     internal class Analyser : Doer
     {
         // Variables

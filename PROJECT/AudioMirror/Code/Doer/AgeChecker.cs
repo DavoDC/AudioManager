@@ -6,7 +6,7 @@ namespace AudioMirror
     /// <summary>
     /// Check if the mirror was generated over a week ago. If so, schedule a regeneration.
     /// </summary>
-    internal class AgeChecker
+    internal class AgeChecker : Doer
     {
         /// <summary>
         /// True if the mirror should be regenerated
@@ -82,6 +82,9 @@ namespace AudioMirror
                 // Else if not, notify
                 Console.WriteLine(msgStart + "was created recently, no regeneration needed!");
             }
+
+            // Print time taken
+            PrintTimeTaken();
         }
 
 

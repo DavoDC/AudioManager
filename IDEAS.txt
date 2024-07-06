@@ -4,6 +4,7 @@
 Add saving of Folder path to track objects
 
 After Analyser, add checker
+Make checker class
 
 
 For all tracks in Misc folder 
@@ -13,3 +14,14 @@ For all tracks in Misc folder
 For all dict entries
     If any counts are higher than 3 
         Print message 
+
+
+Check music org doc for other checks
+- Show extensions of non-MP3 files!
+- •	Remove from all fields:
+o	"(feat. X)"
+o	"Edit”
+o	“Version”
+o	“Original"
+o	“Soundtrack”
+- •	Set all tracks as compilations = check compilations tick
