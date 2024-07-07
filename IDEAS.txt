@@ -1,22 +1,14 @@
 
+
+### UNWANTED STRINGS CHECKER ###
+Check albums, artists? for the same issues!
+
+
 ### MISC FOLDER CHECKER ###
-
+Add new LibChecker function
 Add saving of Folder path to track objects?
-
 For all tracks in Misc folder 
     Add to dictionary with primary artist name and count of instances 
-
-
 For all dict entries
     If any counts are higher than 3 
-        Print message 
-
-
-Check music org doc for other checks
-- • Check for these:  
-o	"(feat. X)"   ft. 
-o	"Edit”
-o	“Version”
-o	“Original"
-o	“Soundtrack”
-- •	Set all tracks as compilations = check compilations tick
+        Print message
