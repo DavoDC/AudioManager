@@ -70,7 +70,7 @@ namespace AudioMirror
                     }
                     else
                     {
-                        // Otherwise add to dictionary
+                        // Otherwise if not in dictionary, add it (REQUIRED)
                         itemVariants[subProperty] = 1;
                     }
                 }

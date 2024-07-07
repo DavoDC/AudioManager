@@ -3,6 +3,9 @@ using File = System.IO.File;
 
 namespace AudioMirror.Code.Modules
 {
+    /// <summary>
+    /// An audio track as an MP3 tag
+    /// </summary>
     internal class TrackTag : Track
     {
         /// <summary>

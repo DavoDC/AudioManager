@@ -1,11 +1,7 @@
 
 ### MISC FOLDER CHECKER ###
 
-Add saving of Folder path to track objects
-
-After Analyser, add checker
-Make checker class
-
+Add saving of Folder path to track objects?
 
 For all tracks in Misc folder 
     Add to dictionary with primary artist name and count of instances 

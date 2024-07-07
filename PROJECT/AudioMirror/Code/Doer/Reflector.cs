@@ -128,7 +128,7 @@ namespace AudioMirror
 
 
         /// <summary>
-        /// Create a mirrored file
+        /// Create a mirrored file (the file contents are just the real path at this stage)
         /// </summary>
         /// <param name="filePath">The actual file path</param>
         /// <param name="relativePath">The relative file path</param>
