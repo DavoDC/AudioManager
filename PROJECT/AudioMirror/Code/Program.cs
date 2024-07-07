@@ -12,8 +12,12 @@ namespace AudioMirror
         private static string projectPath = "..\\..\\..\\";
         public static string ProjectPath { get => projectPath; }
 
+        // The mirror folder name
+        private static string mirrorFolder = "AUDIO_MIRROR";
+        public static string MirrorFolder { get => mirrorFolder; }
+
         // The path to the mirror folder relative to program executable
-        static string relMirrorPath = projectPath + "..\\AUDIO_MIRROR";
+        private static readonly string relMirrorPath = projectPath + "..\\" + mirrorFolder;
 
         /// <summary>
         /// Main function

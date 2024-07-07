@@ -28,6 +28,9 @@ namespace AudioMirror
             // Check for unwanted strings
             CheckForUnwanted();
 
+            // Check Miscellaneous folder for trios of songs by the same artist
+            CheckMiscForTrios();
+
             // Print time taken
             Console.WriteLine("");
             PrintTimeTaken();
@@ -111,5 +114,65 @@ namespace AudioMirror
             
             return false;
         }
+
+        /// <summary>
+        /// Check Miscellaneous folder for trios of songs by the same artist
+        /// </summary>
+        private void CheckMiscForTrios()
+        {
+            string miscFolder = "Miscellaneous Songs";
+            Console.WriteLine($" - Checking {miscFolder} for trios...");
+
+            // 1) Map artists to number of occurrences
+            var artistFreq = new Dictionary<string, int>();
+
+            // For all tracks in Misc folder
+            foreach (TrackTag tag in audioTags)
+            {
+                if (tag.RelPath.Split('\\')[1].Equals(miscFolder))
+                {
+                    // Extract artist
+                    string curArtist = tag.Artists;
+
+                    // If in dictionary
+                    if (artistFreq.ContainsKey(curArtist))
+                    {
+                        // Increment value
+                        artistFreq[curArtist]++;
+                    }
+                    else
+                    {
+                        // Otherwise if not in dictionary, add it (REQUIRED)
+                        artistFreq[curArtist] = 1;
+                    }
+                }
+            }
+
+            // 2) Sort the dictionary by count in descending order
+            var sortedArtistFreq = artistFreq.OrderByDescending(pair => pair.Value);
+
+            // 3) Check the amounts of each artist
+            int totalHits = 0;
+            foreach (var item in sortedArtistFreq)
+            {
+                // If trio (or more) detected
+                if(item.Value >= 3)
+                {
+                    string miscMsg = $"  - There are {item.Value} songs by '{item.Key.ToString()}'";
+                    miscMsg += $" in the {miscFolder} folder!";
+                    Console.WriteLine(miscMsg);
+                    totalHits++;
+                }
+
+                // Don't search beyond groups of 2
+                if(item.Value == 2)
+                {
+                    break;
+                }
+            }
+
+            Console.WriteLine($"  - Total hits: {totalHits}");
+        }
     }
-}
+}         
+
