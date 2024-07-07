@@ -25,8 +25,8 @@ namespace AudioMirror
             // Save parameter
             this.audioTags = audioTags;
 
-            // Check titles
-            CheckTitles();
+            // Check for unwanted strings
+            CheckForUnwanted();
 
             // Print time taken
             Console.WriteLine("");
@@ -34,11 +34,13 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Check for unwanted info in titles
+        /// Check for unwanted strings in metadata
         /// </summary>
-        public void CheckTitles()
+        private void CheckForUnwanted()
         {
-            Console.WriteLine(" - Checking titles...");
+            Console.WriteLine(" - Checking for unwanted strings...");
+
+            // Unwanted strings
             var unwantedInfo = new[] { "feat.", "ft.", "edit", 
                 "version", "original", "soundtrack" };
 
@@ -47,34 +49,67 @@ namespace AudioMirror
             {
                 foreach (var curUnwanted in unwantedInfo)
                 {
-                    totalHits += CheckTitle(tag, curUnwanted);
+                    totalHits += CheckProperty(tag, t => t.Artists, "artists", curUnwanted);
+                    totalHits += CheckProperty(tag, t => t.Title, "title", curUnwanted);
+                    totalHits += CheckProperty(tag, t => t.Album, "album", curUnwanted);
                 }
             }
 
-            Console.WriteLine($" - Total hits: {totalHits}");
+            Console.WriteLine($"  - Total hits: {totalHits}");
         }
 
         /// <summary>
-        /// Print a message if a given title contains an unwanted substring
+        /// Print a message if a given track property contains an unwanted substring
         /// </summary>
         /// <param name="tag">The track's TrackTag object</param>
-        /// <param name="unwanted">The unwanted parts</param>
+        /// <param name="propExt">A delegate that extracts the property</param>
+        /// <param name="propertyName">The name of the property being checked</param>
+        /// <param name="unwanted">The unwanted part</param>
         /// <returns>One if unwanted part was found, zero otherwise</returns>
-        public int CheckTitle(TrackTag tag, params string[] unwanted)
+        private int CheckProperty(TrackTag tag, Func<TrackTag, string> propExt, 
+            string propertyName, string unwanted)
         {
-            // If tag.Title contains any unwanted element
-            if (unwanted.Any(unwantedS => tag.Title.ToLower().Contains(unwantedS.ToLower())))
+            // If an exception, skip
+            if (isException(tag, unwanted))  { return 0; }
+
+            // If property's value contains unwanted string, print message
+            if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
             {
-                // Generate short description of unwanted parts
-                string unwantedDesc = string.Join("/", unwanted);
-
-                // Print message with description and track
-                Console.WriteLine($"  - Found '{unwantedDesc}' in title of '{tag.ToString()}'");
-
+                Console.WriteLine($"  - Found '{unwanted}' in {propertyName} of '{tag.ToString()}'");
                 return 1;
             }
 
             return 0;
+        }
+
+        /// <returns>True if metadata combination is whitelisted, false otherwise</returns>
+        private bool isException(TrackTag tag, string unwanted)
+        {
+            if (unwanted.Equals("original") &&
+                (tag.Album.Equals("Original Rappers") || tag.Artists.Contains("KRS-One")))
+            {
+                return true;
+            }
+
+            if (unwanted.Equals("edit"))
+            {
+                if (tag.Title.Contains("Going To Be Alright") || tag.Title.Contains("Medicine Man"))
+                {
+                    return true;
+                }
+
+                if(tag.Album.Contains("Edition"))
+                {
+                    return true;
+                }
+            }
+
+            if (unwanted.Equals("soundtrack") && tag.Title.Equals("Soundtrack 2 My Life"))
+            {
+                return true;
+            }
+            
+            return false;
         }
     }
 }
