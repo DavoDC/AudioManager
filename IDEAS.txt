@@ -1,9 +1,4 @@
 
-
-### UNWANTED STRINGS CHECKER ###
-Check albums, artists? for the same issues!
-
-
 ### MISC FOLDER CHECKER ###
 Add new LibChecker function
 Add saving of Folder path to track objects?
