@@ -5,6 +5,14 @@
     /// </summary>
     internal class Track
     {
+        // The track's relative path within the music library folder
+        private string relPath;
+        public string RelPath
+        {
+            get => relPath;
+            set => relPath = value;
+        }
+
         // The track's title
         private string title;
         public string Title

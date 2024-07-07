@@ -14,6 +14,10 @@ namespace AudioMirror.Code.Modules
         /// <param name="mirrorFilePath">The mirror file path</param>
         public TrackTag(string mirrorFilePath)
         {
+            // Extract and save relative path
+            int relStartPos = mirrorFilePath.LastIndexOf(Program.MirrorFolder);
+            RelPath = mirrorFilePath.Remove(0, relStartPos + Program.MirrorFolder.Length);
+
             // Get file contents of mirror file
             string[] fileContents = File.ReadAllLines(mirrorFilePath);
 
