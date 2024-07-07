@@ -210,15 +210,12 @@ namespace AudioMirror
             // Extract list of extensions
             var extList = nonMP3Files.Select(fileName => "." + fileName.Split('.')[1]).ToList();
 
-            // Convert extensions list to string
-            string extStr = string.Join(",", extList);
-
-            // Check if extensions are expected
+            // Check against amount limit and types
             var expectedExt = new HashSet<string> { ".ini", ".txt", ".lnk", ".ffs_db" };
-            bool expected = extList.TrueForAll(ext => expectedExt.Contains(ext));
-            
+            bool expected = extList.Count < 6 && extList.TrueForAll(ext => expectedExt.Contains(ext));
+
             // Combine info as a string
-            return $"{extList.Count}  ({extStr})  ({(expected ? "expected" : "UNEXPECTED!!!")})";
+            return $"{extList.Count} ({(expected ? "all expected" : "UNEXPECTED!!! Investigate!")})";
         }
 
 
