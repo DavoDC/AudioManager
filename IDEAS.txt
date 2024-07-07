@@ -17,8 +17,8 @@ For all dict entries
 
 
 Check music org doc for other checks
-- •	Remove from all fields:
-o	"(feat. X)"
+- • Check for these:  
+o	"(feat. X)"   ft. 
 o	"Edit”
 o	“Version”
 o	“Original"
