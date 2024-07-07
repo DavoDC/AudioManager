@@ -60,5 +60,11 @@ namespace AudioMirror.Code.Modules
             // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
         }
+
+        /// <returns>A string representation of this track</returns>
+        public override string ToString() 
+        {
+            return $"{Artists} - {Title}";
+        }
     }
 }
