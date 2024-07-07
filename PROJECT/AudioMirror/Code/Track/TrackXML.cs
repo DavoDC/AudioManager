@@ -4,7 +4,7 @@ using System.Xml;
 namespace AudioMirror.Code.Modules
 {
     /// <summary>
-    /// Represents a track stored using XML
+    /// An audio track's metadata stored as an XML file
     /// </summary>
     internal class TrackXML : Track
     {

@@ -1,5 +1,8 @@
 ﻿namespace AudioMirror.Code.Modules
 {
+    /// <summary>
+    /// An audio track's metadata
+    /// </summary>
     internal class Track
     {
         // The track's title
