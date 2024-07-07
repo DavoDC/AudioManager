@@ -32,16 +32,22 @@ namespace AudioMirror
             AgeChecker ac = new AgeChecker();
 
             // 1) Create mirror of audio folder
+            // Note: Files created at this stage just contain paths to the actual file, not metadata info.
             Reflector r = new Reflector(mirrorPath, ac.recreateMirror);
 
             // 2) Parse metadata into XML files and tag list
+            // Note: The file contents get overwritten with actual XML content in this stage.
             Parser p = new Parser(mirrorPath);
 
             // 3) Analyse metadata and print statistics
             Analyser a = new Analyser(p.audioTags);
 
+            // 4) Audio library organisational/metadata checks
+            LibChecker lc = new LibChecker(p.audioTags);
+
             // Print total time
-            TimeSpan totalTime = ac.ExecutionTime + r.ExecutionTime + p.ExecutionTime + a.ExecutionTime;
+            TimeSpan totalTime = ac.ExecutionTime + r.ExecutionTime + p.ExecutionTime;
+            totalTime += a.ExecutionTime + lc.ExecutionTime;
             Console.WriteLine("\n\nTotal time taken: " + Doer.ConvertTimeSpanToString(totalTime));
 
             // Finish message
