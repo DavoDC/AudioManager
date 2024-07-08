@@ -1,9 +1,7 @@
 
 ### MISC FOLDER CHECKS
-Factor out duplicated code
 Add primary artist field
-get list of misc folder tags, then do misc folder only operations 
-Misc folder doesnt contain any songs that have an artist folder
+check that Misc folder doesnt contain any songs that have an artist folder
 
 
 ### OTHER CHECKS 
