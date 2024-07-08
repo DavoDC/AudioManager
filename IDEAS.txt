@@ -1,11 +1,20 @@
 
 ### MISC FOLDER CHECKS
-check that Misc folder doesnt contain any songs that have an artist folder
+Factor out folder filter function
+Fix issues found by program!
+Fix 24kgoldn inconsistency
 
 
-### OTHER CHECKS 
-Genre checks by folder - e.g. musivation 
-
+### Artist folder checks
 Artists folders only contain songs by that artist 
+Check primaryartist against folder it is in
+artists folders dont contain loose files 
+
+
+### Musivation check 
+Check all songs in Musivation folder have musivation genre
+
+
+
 
 
