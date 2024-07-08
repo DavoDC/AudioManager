@@ -123,35 +123,13 @@ namespace AudioMirror
             string miscFolder = "Miscellaneous Songs";
             Console.WriteLine($" - Checking {miscFolder} for trios...");
 
-            // 1) Map artists to number of occurrences
-            var artistFreq = new Dictionary<string, int>();
+            // Get audio tags from Miscellaneous Songs folder only
+            var miscAudioTags = audioTags.Where(tag => tag.RelPath.Split('\\')[1] == miscFolder).ToList();
 
-            // For all tracks in Misc folder
-            foreach (TrackTag tag in audioTags)
-            {
-                if (tag.RelPath.Split('\\')[1].Equals(miscFolder))
-                {
-                    // Extract artist
-                    string curArtist = tag.Artists;
+            // Get artist frequency dist. of the misc tags
+            var sortedArtistFreq = Analyser.getSortedFreqDist(miscAudioTags, t => t.Artists);
 
-                    // If in dictionary
-                    if (artistFreq.ContainsKey(curArtist))
-                    {
-                        // Increment value
-                        artistFreq[curArtist]++;
-                    }
-                    else
-                    {
-                        // Otherwise if not in dictionary, add it (REQUIRED)
-                        artistFreq[curArtist] = 1;
-                    }
-                }
-            }
-
-            // 2) Sort the dictionary by count in descending order
-            var sortedArtistFreq = artistFreq.OrderByDescending(pair => pair.Value);
-
-            // 3) Check the amounts of each artist
+            // Check the amounts of each artist
             int totalHits = 0;
             foreach (var item in sortedArtistFreq)
             {
