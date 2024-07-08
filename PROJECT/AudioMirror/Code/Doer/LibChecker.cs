@@ -28,8 +28,8 @@ namespace AudioMirror
             // Check for unwanted strings
             CheckForUnwanted();
 
-            // Check Miscellaneous folder for trios of songs by the same artist
-            CheckMiscForTrios();
+            // Check Miscellaneous Songs folder
+            CheckMiscFolder();
 
             // Print time taken
             Console.WriteLine("");
@@ -116,36 +116,53 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Check Miscellaneous folder for trios of songs by the same artist
+        /// Do various checks on the Miscellaneous folder
         /// </summary>
-        private void CheckMiscForTrios()
+        private void CheckMiscFolder()
         {
-            string miscFolder = "Miscellaneous Songs";
-            Console.WriteLine($" - Checking {miscFolder} for trios...");
+            // Constant strings
+            string miscDir = "Miscellaneous Songs";
+            string artistsDir = "Artists";
+            string miscMsg = $" in the {miscDir} folder!";
 
+            // Notify
+            Console.WriteLine($" - Checking {miscDir}...");
+
+            // # Get artistsWithAudioFolder
+            // Filter audio tags down to Artist Songs folder only
+            var artistAudioTags = audioTags.Where(tag => tag.RelPath.Split('\\')[1] == artistsDir).ToList();
+
+            // Get list of artists with an audio folder
+            var artistsWithAudioFolder = artistAudioTags.Select(tag => tag.PrimaryArtist).ToList();
+
+            // Remove duplicates
+            artistsWithAudioFolder = artistAudioTags.Select(tag => tag.PrimaryArtist).Distinct().ToList();
+
+            // # Do checks
             // Filter audio tags down to Miscellaneous Songs folder only
-            var miscAudioTags = audioTags.Where(tag => tag.RelPath.Split('\\')[1] == miscFolder).ToList();
+            var miscAudioTags = audioTags.Where(tag => tag.RelPath.Split('\\')[1] == miscDir).ToList();
 
             // Generate primary artist frequency dist. of the misc tags
-            var sortedArtistFreq = Analyser.getSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
+            var sortedMiscArtistFreq = Analyser.getSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
 
-            // Check the amounts of each artist
+            // For each artist
             int totalHits = 0;
-            foreach (var item in sortedArtistFreq)
+            foreach (var curArtist in sortedMiscArtistFreq)
             {
                 // If trio (or more) detected
-                if(item.Value >= 3)
+                if (curArtist.Value >= 3)
                 {
-                    string miscMsg = $"  - There are {item.Value} songs by '{item.Key.ToString()}'";
-                    miscMsg += $" in the {miscFolder} folder!";
-                    Console.WriteLine(miscMsg);
+                    string trioMsg = $"  - There are {curArtist.Value} songs by '{curArtist.Key}'";
+                    Console.WriteLine(trioMsg + miscMsg);
                     totalHits++;
                 }
 
-                // Don't search beyond groups of 2
-                if(item.Value == 2)
+                // If song with an Artists folder is found in the Misc folder
+                if (artistsWithAudioFolder.Contains(curArtist.Key))
                 {
-                    break;
+                    string artistMsg = $"  - '{curArtist.Key}' has an {artistsDir} folder but has a song";
+                    Console.WriteLine(artistMsg + miscMsg);
+                    totalHits++;
                 }
             }
 
