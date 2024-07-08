@@ -1,6 +1,5 @@
 
 ### MISC FOLDER CHECKS
-Add primary artist field
 check that Misc folder doesnt contain any songs that have an artist folder
 
 

@@ -118,7 +118,7 @@ namespace AudioMirror
         /// </summary>
         /// <param name="full">The full string, possibly concatenated with separators.</param>
         /// <returns>An array extracted from the input string.</returns>
-        private static string[] ProcessProperty(string full)
+        public static string[] ProcessProperty(string full)
         {
             char[] separators = { ',', ';' };
 
