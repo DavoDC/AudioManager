@@ -13,6 +13,7 @@
             set => relPath = value;
         }
 
+
         // The track's title
         private string title;
         public string Title
@@ -25,9 +26,17 @@
         // The track's artists (concatenated)
         private string artists;
         public string Artists
-        { 
+        {
             get => artists;
             set => artists = value;
+        }
+
+
+        // The track's primary artist
+        private string primaryArtist;
+        public string PrimaryArtist
+        { 
+            get => Analyser.ProcessProperty(Artists)[0];
         }
 
 

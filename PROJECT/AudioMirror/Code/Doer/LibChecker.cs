@@ -123,11 +123,11 @@ namespace AudioMirror
             string miscFolder = "Miscellaneous Songs";
             Console.WriteLine($" - Checking {miscFolder} for trios...");
 
-            // Get audio tags from Miscellaneous Songs folder only
+            // Filter audio tags down to Miscellaneous Songs folder only
             var miscAudioTags = audioTags.Where(tag => tag.RelPath.Split('\\')[1] == miscFolder).ToList();
 
-            // Get artist frequency dist. of the misc tags
-            var sortedArtistFreq = Analyser.getSortedFreqDist(miscAudioTags, t => t.Artists);
+            // Generate primary artist frequency dist. of the misc tags
+            var sortedArtistFreq = Analyser.getSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
 
             // Check the amounts of each artist
             int totalHits = 0;
