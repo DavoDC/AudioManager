@@ -1,8 +1,4 @@
 
 
 ### Artist folder checks
-Artists folders dont contain loose files 
-
-
-### Musivation check 
-Check all songs in Musivation folder have musivation genre
+Artists folders dont contain loose files
