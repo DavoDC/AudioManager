@@ -120,7 +120,7 @@ namespace AudioMirror
         /// <returns>An array extracted from the input string.</returns>
         public static string[] ProcessProperty(string full)
         {
-            char[] separators = { ',', ';' };
+            char[] separators = { ';', ',' };
 
             // If doesn't contain any separators, return as is
             if (!separators.Any(full.Contains))
