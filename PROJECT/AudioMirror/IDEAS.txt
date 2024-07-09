@@ -1,9 +1,5 @@
 
 
-### MISC FOLDER CHECKS
-Fix issues found by program! re-gen mirror!
-
-
 ### Artist folder checks
 Artists folders only contain songs by that artist , folder name and all songs are consistent
 compare list of folders to list of artists, should be equal!
@@ -13,4 +9,3 @@ artists folders dont contain loose files
 
 ### Musivation check 
 Check all songs in Musivation folder have musivation genre
-
