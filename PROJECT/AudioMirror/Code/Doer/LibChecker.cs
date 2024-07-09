@@ -73,7 +73,7 @@ namespace AudioMirror
                 }
             }
 
-            Console.WriteLine($"  - Total hits: {totalHits}");
+            printTotalHits(totalHits);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace AudioMirror
         /// </summary>
         private List<String> CheckArtistFolder()
         {
-            Console.WriteLine($" - Checking {artistsDir}...");
+            Console.WriteLine($" - Checking {artistsDir} folder...");
 
             // Filter audio tags down to Artist Songs folder only
             var artistAudioTags = filterTagsByMainFolder(artistsDir);
@@ -167,7 +167,7 @@ namespace AudioMirror
                 }
             }
 
-            Console.WriteLine($"  - Total hits: {totalHits}");
+            printTotalHits(totalHits);
 
             // Get list of artists with an audio folder (without duplicates) and return
             var artistsWithAudioFolder = artistAudioTags.Select(tag => tag.PrimaryArtist).Distinct().ToList();
@@ -179,7 +179,7 @@ namespace AudioMirror
         /// </summary>
         private void CheckMiscFolder(List<String> artistsWithAudioFolder)
         {
-            Console.WriteLine($" - Checking {miscDir}...");
+            Console.WriteLine($" - Checking {miscDir} folder...");
 
             // Filter audio tags down to Miscellaneous Songs folder only
             var miscAudioTags = filterTagsByMainFolder(miscDir);
@@ -214,7 +214,7 @@ namespace AudioMirror
                 }
             }
 
-            Console.WriteLine($"  - Total hits: {totalHits}");
+            printTotalHits(totalHits);
         }
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace AudioMirror
         /// </summary>
         private void CheckMusivationFolder()
         {
-            Console.WriteLine($" - Checking {musivDir}...");
+            Console.WriteLine($" - Checking {musivDir} folder...");
 
             // Filter audio tags down to Musivation folder only
             var musivAudioTags = filterTagsByMainFolder(musivDir);
@@ -238,7 +238,7 @@ namespace AudioMirror
                 }
             }
 
-            Console.WriteLine($"  - Total hits: {totalHits}");
+            printTotalHits(totalHits);
         }
 
         /// <param name="mainFolderName">The name of the folder within the Audio folder</param>
@@ -254,6 +254,17 @@ namespace AudioMirror
         private string getRelPathPart(TrackTag tag, int pos)
         {
             return tag.RelPath.Split('\\')[pos];
+        }
+
+        /// <summary>
+        /// Print message displaying the total hits, if there were any
+        /// </summary>
+        private void printTotalHits(int totalHits)
+        {
+            if(totalHits != 0)
+            {
+                Console.WriteLine($"  - Total hits: {totalHits}");
+            }
         }
     }
 }         
