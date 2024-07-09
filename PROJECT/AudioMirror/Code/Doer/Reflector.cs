@@ -188,7 +188,12 @@ namespace AudioMirror
             Console.WriteLine($" - MP3 file count: {mp3FileCount}");
 
             // Print non-MP3 file info
-            Console.WriteLine($" - Non-MP3 files found: {ProcessNonMP3(nonMP3Files)}");
+            var nonMP3info = ProcessNonMP3(nonMP3Files);
+            Console.WriteLine($" - Non-MP3 files found: {nonMP3info.Item1}");
+            if (nonMP3info.Item2 != null)
+            {
+                Console.WriteLine($"  - Extension list: {nonMP3info.Item2}");
+            }
 
             // Print sanitisation count
             Console.WriteLine($" - MP3 filenames sanitised: {sanitisedFileNames}");
@@ -205,7 +210,7 @@ namespace AudioMirror
         /// </summary>
         /// <param name="nonMP3Files"></param>
         /// <returns></returns>
-        private string ProcessNonMP3(List<string> nonMP3Files)
+        private Tuple<string, string> ProcessNonMP3(List<string> nonMP3Files)
         {
             // Extract list of extensions
             var extList = nonMP3Files.Select(fileName => "." + fileName.Split('.')[1]).ToList();
@@ -214,8 +219,14 @@ namespace AudioMirror
             var expectedExt = new HashSet<string> { ".ini", ".txt", ".lnk", ".ffs_db" };
             bool expected = extList.Count < 6 && extList.TrueForAll(ext => expectedExt.Contains(ext));
 
-            // Combine info as a string
-            return $"{extList.Count} ({(expected ? "all expected" : "UNEXPECTED!!! Investigate!")})";
+            // Combine and format info
+            string nonMP3infoStr = $"{extList.Count} ({(expected ? "all expected" : "UNEXPECTED!")})";
+
+            // If extensions was unexpected, include in info
+            string extListInfo = expected ? null : string.Join(",", extList);
+
+            // Return info and extensions list
+            return Tuple.Create(nonMP3infoStr, extListInfo);
         }
 
 
