@@ -147,6 +147,13 @@ namespace AudioMirror
                 // Extract primary artist
                 string primaryArtist = tag.PrimaryArtist;
 
+                // If primary artist has full stop at the end OR has a quote character
+                if (primaryArtist.LastOrDefault().Equals('.') || primaryArtist.Contains("\""))
+                {
+                    // Skip because Windows doesn't allow folders with these properties
+                    continue;
+                }
+
                 // If primary artist doesn't match artist folder name, notify
                 if (!primaryArtist.Equals(artistFolderName))
                 {
