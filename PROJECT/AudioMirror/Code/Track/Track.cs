@@ -33,7 +33,6 @@
 
 
         // The track's primary artist
-        private string primaryArtist;
         public string PrimaryArtist
         { 
             get => Analyser.ProcessProperty(Artists)[0];

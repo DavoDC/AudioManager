@@ -1,14 +1,13 @@
 
 
 ### MISC FOLDER CHECKS
-Factor out folder filter function
-Fix issues found by program!
+Fix issues found by program! re-gen mirror!
 
 
 ### Artist folder checks
-Make new function
 Artists folders only contain songs by that artist , folder name and all songs are consistent
-Check primaryartist against folder it is in
+compare list of folders to list of artists, should be equal!
+
 artists folders dont contain loose files 
 
 
