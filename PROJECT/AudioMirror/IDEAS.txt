@@ -1,20 +1,17 @@
 
+
 ### MISC FOLDER CHECKS
 Factor out folder filter function
 Fix issues found by program!
-Fix 24kgoldn inconsistency
 
 
 ### Artist folder checks
-Artists folders only contain songs by that artist 
+Make new function
+Artists folders only contain songs by that artist , folder name and all songs are consistent
 Check primaryartist against folder it is in
 artists folders dont contain loose files 
 
 
 ### Musivation check 
 Check all songs in Musivation folder have musivation genre
-
-
-
-
 
