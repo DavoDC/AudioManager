@@ -137,12 +137,30 @@ namespace AudioMirror
             // Filter audio tags down to Artist Songs folder only
             var artistAudioTags = filterTagsByMainFolder(artistsDir);
 
-            // Get list of artists with an audio folder (without duplicates)
+            // For all tags in the Artists folder
+            int totalHits = 0;
+            foreach (TrackTag tag in artistAudioTags)
+            {
+                // Extract folder name from relative path
+                string artistFolderName = getRelPathPart(tag, 2);
+
+                // Extract primary artist
+                string primaryArtist = tag.PrimaryArtist;
+
+                // If primary artist doesn't match artist folder name, notify
+                if (!primaryArtist.Equals(artistFolderName))
+                {
+                    string primArtPart = $"  - A song by '{primaryArtist}'";
+                    string foldPart = $" is in the '{artistFolderName}' folder!";
+                    Console.WriteLine(primArtPart + foldPart);
+                    totalHits++;
+                }
+            }
+
+            Console.WriteLine($"  - Total hits: {totalHits}");
+
+            // Get list of artists with an audio folder (without duplicates) and return
             var artistsWithAudioFolder = artistAudioTags.Select(tag => tag.PrimaryArtist).Distinct().ToList();
-
-            // TODO
-
-            // Return artist list
             return artistsWithAudioFolder;
         }
 
@@ -193,7 +211,15 @@ namespace AudioMirror
         /// <returns>A list of the audio tags for the tracks in that folder only</returns>
         private List<TrackTag> filterTagsByMainFolder(string mainFolderName)
         {
-            return audioTags.Where(tag => tag.RelPath.Split('\\')[1] == mainFolderName).ToList();
+            return audioTags.Where(tag => getRelPathPart(tag, 1) == mainFolderName).ToList();
+        }
+
+        /// <param name="tag">The audio tag</param>
+        /// <param name="pos">The index of the desired path part</param>
+        /// <returns>The desired relative path part</returns>
+        private string getRelPathPart(TrackTag tag, int pos)
+        {
+            return tag.RelPath.Split('\\')[pos];
         }
     }
 }         
