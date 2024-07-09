@@ -14,7 +14,7 @@ namespace AudioMirror
         private readonly static string miscDir = "Miscellaneous Songs";
         private readonly static string inMiscMsg = $" in the {miscDir} folder!";
         private readonly static string artistsDir = "Artists";
-        //private readonly static string musivDir = "Musivation";
+        private readonly static string musivDir = "Musivation";
 
         // Variables
         private List<TrackTag> audioTags;
@@ -39,6 +39,9 @@ namespace AudioMirror
 
             // Check Miscellaneous Songs folder
             CheckMiscFolder(artistsWithAudioFolder);
+
+            // Check Musivation folder
+            CheckMusivationFolder();
 
             // Print time taken
             Console.WriteLine("");
@@ -208,6 +211,30 @@ namespace AudioMirror
                     string artistMsg = $"  - '{curMiscArtist}' has an {artistsDir} folder but has a song";
                     Console.WriteLine(artistMsg + inMiscMsg);
                     totalHits++;
+                }
+            }
+
+            Console.WriteLine($"  - Total hits: {totalHits}");
+        }
+
+        /// <summary>
+        /// Do various checks on the Musivation folder
+        /// </summary>
+        private void CheckMusivationFolder()
+        {
+            Console.WriteLine($" - Checking {musivDir}...");
+
+            // Filter audio tags down to Musivation folder only
+            var musivAudioTags = filterTagsByMainFolder(musivDir);
+
+            // For each Musivation track
+            int totalHits = 0;
+            foreach (TrackTag tag in musivAudioTags)
+            {
+                // If it doesn't have the Musivation genre, notify
+                if(!tag.Genres.Contains("Musivation"))
+                {
+                    Console.WriteLine($"  - {tag.ToString()} does not have the Musivation genre!");
                 }
             }
 
