@@ -9,6 +9,8 @@ A C# console program which:
 
 - Analyses its metadata statistically.
 
+- Audits my music library against criteria related to file format, metadata, and organizational structure.
+
 
 
 ### Mirror Details
