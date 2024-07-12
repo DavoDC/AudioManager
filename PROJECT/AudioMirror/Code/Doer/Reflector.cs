@@ -16,10 +16,10 @@ namespace AudioMirror
     {
         //// CONSTANTS
         // Actual Audio folder path
-        string audioFolderPath = @"C:\Users\David\Audio\";
+        private static readonly string audioFolderPath = @"C:\Users\David\Audio\";
 
         // Invalid file name characters
-        char[] invalidChars = Path.GetInvalidFileNameChars();
+        private static readonly char[] invalidChars = Path.GetInvalidFileNameChars();
 
         //// VARIABLES
         string mirrorPath;
@@ -235,7 +235,7 @@ namespace AudioMirror
         /// </summary>
         /// <param name="filename">Original filename.</param>
         /// <returns>Sanitised filename.</returns>
-        private string SanitiseFilename(string filename)
+        public static string SanitiseFilename(string filename)
         {
             // Remove any non-ASCII characters and replace wide characters with their closest equivalent
             string sanitisedFilename = new string(filename
