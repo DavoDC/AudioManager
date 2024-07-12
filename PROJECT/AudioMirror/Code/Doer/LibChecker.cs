@@ -15,6 +15,8 @@ namespace AudioMirror
         private readonly static string inMiscMsg = $" in the {miscDir} folder!";
         private readonly static string artistsDir = "Artists";
         private readonly static string musivDir = "Musivation";
+        private readonly static string[] unwantedInfo = { "feat.", "ft.", "edit", "version", "original", "soundtrack" };
+
 
         // Variables
         private List<TrackTag> audioTags;
@@ -31,8 +33,18 @@ namespace AudioMirror
             // Save parameter
             this.audioTags = audioTags;
 
-            // Check for unwanted strings in metadata
-            CheckForUnwanted();
+            // Check all tags
+            int totalTagHits = 0;
+            Console.WriteLine(" - Checking all tags against filenames and unwanted strings...");
+            foreach (TrackTag tag in audioTags)
+            {
+                // Check filename against tag
+                totalTagHits += CheckFilename(tag);
+
+                // Check for unwanted strings in tag
+                totalTagHits += CheckForUnwanted(tag);
+            }
+            printTotalHits(totalTagHits);
 
             // Check Artists folder
             var artistsWithAudioFolder = CheckArtistFolder();
@@ -49,31 +61,70 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Check for unwanted strings in the artists, title and album fields
+        /// Checks a given audio tag against it's track's filename
         /// </summary>
-        private void CheckForUnwanted()
+        /// <param name="tag">The audio tag to check</param>
+        /// <returns>The number of issues found</returns>
+        private int CheckFilename(TrackTag tag)
         {
-            Console.WriteLine(" - Checking for unwanted strings...");
-
-            // Unwanted strings
-            var unwantedInfo = new[] { "feat.", "ft.", "edit", 
-                "version", "original", "soundtrack" };
-
-            // For every tag
             int totalHits = 0;
-            foreach (TrackTag tag in audioTags)
+
+            // Get standardised filename
+            string filenameS = standardiseStr(getFileName(tag));
+
+            // Check filename contains all artists
+            string[] artistsArr = tag.Artists.Split(';');
+            foreach (string artist in artistsArr)
             {
-                // For every unwanted string
-                foreach (var curUnwanted in unwantedInfo)
-                {
-                    // Check fields for unwanted substrings
-                    totalHits += CheckProperty(tag, t => t.Artists, "artists", curUnwanted);
-                    totalHits += CheckProperty(tag, t => t.Title, "title", curUnwanted);
-                    totalHits += CheckProperty(tag, t => t.Album, "album", curUnwanted);
-                }
+                totalHits += CheckFilenameForStr(filenameS, artist);
             }
 
-            printTotalHits(totalHits);
+            // Check filename contains separator
+            totalHits += CheckFilenameForStr(filenameS, " - ");
+
+            // Check filename contains title
+            totalHits += CheckFilenameForStr(filenameS, tag.Title);
+
+            return totalHits;
+        }
+
+        /// <param name="filename">The track's filename</param>
+        /// <param name="subStr">A given substring</param>
+        /// <returns>1 if the filename didn't contain the substring, 0 otherwise</returns>
+        private int CheckFilenameForStr(string filename, string subStr)
+        {
+            // Standardise inputs
+            filename = standardiseStr(filename);
+            subStr = standardiseStr(subStr);
+
+            // If the filename doesn't contain substring, notify
+            if (!filename.Contains(subStr))
+            {
+                Console.WriteLine($"  - '{filename}' should include '{subStr}'");
+                return 1;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Check for unwanted strings in the artists, title and album fields
+        /// </summary>
+        /// <param name="tag">The audio tag to check</param>
+        /// <returns>The number of issues found</returns>
+        private int CheckForUnwanted(TrackTag tag)
+        {
+            int totalHits = 0;
+
+            // For every unwanted string
+            foreach (var curUnwanted in unwantedInfo)
+            {
+                // Check fields for unwanted substrings
+                totalHits += CheckProperty(tag, t => t.Artists, "artists", curUnwanted);
+                totalHits += CheckProperty(tag, t => t.Title, "title", curUnwanted);
+                totalHits += CheckProperty(tag, t => t.Album, "album", curUnwanted);
+            }
+
+            return totalHits;
         }
 
         /// <summary>
@@ -84,11 +135,11 @@ namespace AudioMirror
         /// <param name="propertyName">The name of the property being checked</param>
         /// <param name="unwanted">The unwanted part</param>
         /// <returns>One if unwanted part was found, zero otherwise</returns>
-        private int CheckProperty(TrackTag tag, Func<TrackTag, string> propExt, 
+        private int CheckProperty(TrackTag tag, Func<TrackTag, string> propExt,
             string propertyName, string unwanted)
         {
             // If an exception, skip
-            if (isException(tag, unwanted))  { return 0; }
+            if (isException(tag, unwanted)) { return 0; }
 
             // If property's value contains unwanted string, print message
             if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
@@ -241,6 +292,23 @@ namespace AudioMirror
             printTotalHits(totalHits);
         }
 
+        /// <summary>
+        /// Print message displaying the total hits, if there were any
+        /// </summary>
+        private void printTotalHits(int totalHits)
+        {
+            if (totalHits != 0)
+            {
+                Console.WriteLine($"  - Total hits: {totalHits}");
+            }
+        }
+
+        /// <returns>The given string sanitised and trimmed, with special chars removed</returns>
+        private string standardiseStr(string s)
+        {
+            return Reflector.SanitiseFilename(s).Replace("_", "").Trim();
+        }
+
         /// <param name="mainFolderName">The name of the folder within the Audio folder</param>
         /// <returns>A list of the audio tags for the tracks in that folder only</returns>
         private List<TrackTag> filterTagsByMainFolder(string mainFolderName)
@@ -249,22 +317,26 @@ namespace AudioMirror
         }
 
         /// <param name="tag">The audio tag</param>
+        /// <returns>The track's filename, santised</returns>
+        private string getFileName(TrackTag tag)
+        {
+            string[] pathParts = getPathParts(tag);
+            return pathParts[pathParts.Length - 1];
+        }
+
+        /// <param name="tag">The audio tag</param>
         /// <param name="pos">The index of the desired path part</param>
         /// <returns>The desired relative path part</returns>
         private string getRelPathPart(TrackTag tag, int pos)
         {
-            return tag.RelPath.Split('\\')[pos];
+            return getPathParts(tag)[pos];
         }
 
-        /// <summary>
-        /// Print message displaying the total hits, if there were any
-        /// </summary>
-        private void printTotalHits(int totalHits)
+        /// <param name="tag">The audio tag</param>
+        /// <returns>The parts of the track's relative path</returns>
+        private string[] getPathParts(TrackTag tag)
         {
-            if(totalHits != 0)
-            {
-                Console.WriteLine($"  - Total hits: {totalHits}");
-            }
+            return tag.RelPath.Split('\\');
         }
     }
 }         
