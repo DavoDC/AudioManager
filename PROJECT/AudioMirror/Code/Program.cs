@@ -9,11 +9,11 @@ namespace AudioMirror
         //// CONSTANTS/SETTINGS
 
         // The path back to the project folder
-        private static string projectPath = "..\\..\\..\\";
+        private static readonly string projectPath = "..\\..\\..\\";
         public static string ProjectPath { get => projectPath; }
 
         // The mirror folder name
-        private static string mirrorFolder = "AUDIO_MIRROR";
+        private static readonly string mirrorFolder = "AUDIO_MIRROR";
         public static string MirrorFolder { get => mirrorFolder; }
 
         // The path to the mirror folder relative to program executable
