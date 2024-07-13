@@ -201,19 +201,28 @@ namespace AudioMirror
                 // Extract primary artist
                 string primaryArtist = tag.PrimaryArtist;
 
-                // If primary artist has full stop at the end OR has a quote character
-                if (primaryArtist.LastOrDefault().Equals('.') || primaryArtist.Contains("\""))
-                {
-                    // Skip because Windows doesn't allow folders with these properties
-                    continue;
-                }
+                // Warning message
+                string artistMsg = $"  - A song by '{primaryArtist}'";
+                artistMsg += $" is in the '{artistFolderName}' folder!";
 
                 // If primary artist doesn't match artist folder name, notify
                 if (!primaryArtist.Equals(artistFolderName))
                 {
-                    string primArtPart = $"  - A song by '{primaryArtist}'";
-                    string foldPart = $" is in the '{artistFolderName}' folder!";
-                    Console.WriteLine(primArtPart + foldPart);
+                    // If primary artist has full stop at the end OR has a quote character
+                    if (primaryArtist.LastOrDefault().Equals('.') || primaryArtist.Contains("\""))
+                    {
+                        // Skip because Windows doesn't allow folders with these properties
+                        continue;
+                    }
+
+                    Console.WriteLine(artistMsg + " (mismatch)");
+                    totalHits++;
+                }
+
+                // If direct parent folder matches artist folder name, notify
+                if(getDirectParentFolder(tag).Equals(artistFolderName))
+                {
+                    Console.WriteLine(artistMsg + " (loose/directly)");
                     totalHits++;
                 }
             }
@@ -317,11 +326,19 @@ namespace AudioMirror
         }
 
         /// <param name="tag">The audio tag</param>
-        /// <returns>The track's filename, santised</returns>
+        /// <returns>The track's filename</returns>
         private string getFileName(TrackTag tag)
         {
             string[] pathParts = getPathParts(tag);
             return pathParts[pathParts.Length - 1];
+        }
+
+        /// <param name="tag">The audio tag</param>
+        /// <returns>The track's direct parent folder</returns>
+        private string getDirectParentFolder(TrackTag tag)
+        {
+            string[] pathParts = getPathParts(tag);
+            return pathParts[pathParts.Length - 2];
         }
 
         /// <param name="tag">The audio tag</param>

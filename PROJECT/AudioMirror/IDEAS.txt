@@ -1,4 +1,0 @@
-
-
-### Artist folder checks
-Artists folders dont contain loose files
