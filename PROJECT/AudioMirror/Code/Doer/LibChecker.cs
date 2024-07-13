@@ -222,6 +222,12 @@ namespace AudioMirror
                 // If direct parent folder matches artist folder name, notify
                 if(getDirectParentFolder(tag).Equals(artistFolderName))
                 {
+                    // If this is an album folder that matches the artist name, skip
+                    if(tag.Album.Equals(tag.PrimaryArtist))
+                    {
+                        continue;
+                    }
+
                     Console.WriteLine(artistMsg + " (loose/directly)");
                     totalHits++;
                 }
