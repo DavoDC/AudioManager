@@ -301,6 +301,7 @@ namespace AudioMirror
                 if(!tag.Genres.Contains("Musivation"))
                 {
                     Console.WriteLine($"  - {tag.ToString()} does not have the Musivation genre!");
+                    totalHits++;
                 }
             }
 
