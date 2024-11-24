@@ -2,11 +2,11 @@
 ###### Audio Mirror ######
 
 Checking age of mirror...
- - DateTime.Now               2024-11-24 13:08:07
+ - DateTime.Now               2024-11-24 13:11:32
  - DateTime.MirrorCreation    2024-11-24 11:47:48
- - DateTime.MirrorAge         0d, 1h, 20m, 19s
+ - DateTime.MirrorAge         0d, 1h, 23m, 44s
  - Mirror was created recently, no regeneration needed!
- - Time taken: 0.005 seconds
+ - Time taken: 0.016 seconds
 
 Creating mirror of 'C:\Users\David\Audio\'...
  - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
@@ -14,11 +14,11 @@ Creating mirror of 'C:\Users\David\Audio\'...
  - Non-MP3 files found: 14 (all expected)
  - MP3 filenames sanitised: 69
  - Recreated: False
- - Time taken: 1.12 seconds
+ - Time taken: 3.544 seconds
 
 Parsing audio metadata...
  - Tags parsed: 4702
- - Time taken: 1.303 seconds
+ - Time taken: 4.945 seconds
 
 Analysing tags...
 
@@ -171,7 +171,7 @@ Analysing tags...
 0.23%      1960s                                    11
 0.09%      1930s                                    4
 
- - Time taken: 0.017 seconds
+ - Time taken: 0.095 seconds
 
 Checking library...
  - Checking all tags against filenames and for unwanted/missing info...
@@ -179,13 +179,13 @@ Checking library...
  - Checking Miscellaneous Songs folder...
  - Checking Musivation folder...
 
- - Time taken: 0.16 seconds
+ - Time taken: 0.31 seconds
 
 
-Total time taken: 2.605 seconds
+Total time taken: 8.909 seconds
 
 Finished!
 
 
-C:\Users\David\GitHubRepos\AudioMirror\PROJECT\AudioMirror\bin\Release\AudioMirror.exe (process 24076) exited with code 0 (0x0).
+C:\Users\David\GitHubRepos\AudioMirror\PROJECT\AudioMirror\bin\Release\AudioMirror.exe (process 20804) exited with code 0 (0x0).
 Press any key to close this window . . .
