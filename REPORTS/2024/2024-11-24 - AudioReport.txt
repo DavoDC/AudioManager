@@ -2,11 +2,11 @@
 ###### Audio Mirror ######
 
 Checking age of mirror...
- - DateTime.Now               2024-11-24 12:58:22
+ - DateTime.Now               2024-11-24 13:08:07
  - DateTime.MirrorCreation    2024-11-24 11:47:48
- - DateTime.MirrorAge         0d, 1h, 10m, 34s
+ - DateTime.MirrorAge         0d, 1h, 20m, 19s
  - Mirror was created recently, no regeneration needed!
- - Time taken: 0.01 seconds
+ - Time taken: 0.005 seconds
 
 Creating mirror of 'C:\Users\David\Audio\'...
  - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
@@ -14,11 +14,11 @@ Creating mirror of 'C:\Users\David\Audio\'...
  - Non-MP3 files found: 14 (all expected)
  - MP3 filenames sanitised: 69
  - Recreated: False
- - Time taken: 1.068 seconds
+ - Time taken: 1.12 seconds
 
 Parsing audio metadata...
  - Tags parsed: 4702
- - Time taken: 1.31 seconds
+ - Time taken: 1.303 seconds
 
 Analysing tags...
 
@@ -160,18 +160,18 @@ Analysing tags...
 
 # Decade Statistics
 %          Decade                                   Occurrences
-44.41%     2010s                                    1616
-31.27%     2020s                                    1138
-19.13%     2000s                                    696
-3.02%      1990s                                    110
-0.99%      1980s                                    36
-0.36%      1940s                                    13
-0.33%      1950s                                    12
-0.25%      1970s                                    9
-0.16%      1960s                                    6
-0.08%      1930s                                    3
+41.73%     2010s                                    1962
+34.69%     2020s                                    1631
+17.74%     2000s                                    834
+3.32%      1990s                                    156
+1.15%      1980s                                    54
+0.38%      1940s                                    18
+0.36%      1970s                                    17
+0.32%      1950s                                    15
+0.23%      1960s                                    11
+0.09%      1930s                                    4
 
- - Time taken: 0.023 seconds
+ - Time taken: 0.017 seconds
 
 Checking library...
  - Checking all tags against filenames and for unwanted/missing info...
@@ -179,13 +179,13 @@ Checking library...
  - Checking Miscellaneous Songs folder...
  - Checking Musivation folder...
 
- - Time taken: 0.168 seconds
+ - Time taken: 0.16 seconds
 
 
-Total time taken: 2.578 seconds
+Total time taken: 2.605 seconds
 
 Finished!
 
 
-C:\Users\David\GitHubRepos\AudioMirror\PROJECT\AudioMirror\bin\Release\AudioMirror.exe (process 15592) exited with code 0 (0x0).
+C:\Users\David\GitHubRepos\AudioMirror\PROJECT\AudioMirror\bin\Release\AudioMirror.exe (process 24076) exited with code 0 (0x0).
 Press any key to close this window . . .

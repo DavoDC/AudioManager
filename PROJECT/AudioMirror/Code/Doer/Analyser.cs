@@ -176,7 +176,7 @@ namespace AudioMirror
                 {
                     // Otherwise if not in dictionary, add it
                     // NOTE: REQUIRED to prevent 'KeyNotFoundException' errors
-                    decadeDict[decade] = 1;
+                    decadeDict[decade] = count;
                 }
             }
 
