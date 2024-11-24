@@ -57,7 +57,7 @@ namespace AudioMirror.Code.Modules
             Title = tag.Title;
             Artists = tag.JoinedPerformers;
             Album = tag.Album;
-            Year = (tag.Year == 0) ? "Missing" : (Year = tag.Year.ToString());
+            Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
             TrackNumber = tag.Track.ToString();
             Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
 
