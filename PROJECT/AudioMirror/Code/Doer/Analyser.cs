@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using StringIntFreqDist = System.Linq.IOrderedEnumerable<System.Collections.Generic.KeyValuePair<string, int>>;
 
 namespace AudioMirror
 {
@@ -32,26 +33,28 @@ namespace AudioMirror
             PrintFreqStats("Genre", tag => tag.Genres);
 
             // Print year stats
-            PrintFreqStats("Year", tag => tag.Year);
+            StringIntFreqDist yearFreqDist = PrintFreqStats("Year", tag => tag.Year);
+
+            // Print decade/time period stats 
+            PrintDecadeStats("Decade", yearFreqDist);
 
             // Print time taken
             Console.WriteLine("");
             PrintTimeTaken();
         }
 
-
         /// <summary>
         /// Print frequency statistics for a given track property
         /// </summary>
         /// <param name="statName">The name of the property</param>
         /// <param name="func">Function that returns the property</param>
-        private void PrintFreqStats(string statName, Func<TrackTag, string> func)
+        private StringIntFreqDist PrintFreqStats(string statName, Func<TrackTag, string> func)
         {
-            // Heading
-            Console.WriteLine($"\n# {statName} Statistics");
+            // Print heading
+            PrintHeading(statName);
 
             // Get sorted frequency distribution
-            var sortedFreqDist = getSortedFreqDist(audioTags, func);
+            StringIntFreqDist sortedFreqDist = getSortedFreqDist(audioTags, func);
 
             // Print columns
             PrintColumns("%", statName, "Occurrences");
@@ -70,6 +73,9 @@ namespace AudioMirror
                 // Print statistics line
                 PrintStatsLine(percentage, itemValue, count);
             }
+
+            // Return frequency distribution
+            return sortedFreqDist;
         }
 
         /// <summary>
@@ -78,8 +84,7 @@ namespace AudioMirror
         /// <param name="audioTags">The list of audio tags</param>
         /// <param name="func">A function that extracts a property from a given audio tag.</param>
         /// <returns>List of key-value pairs (property-frequency_count pairs), sorted in descending order by count.</returns>
-        public static IOrderedEnumerable<KeyValuePair<string, int>> getSortedFreqDist
-            (List<TrackTag> audioTags, Func<TrackTag, string> func)
+        public static StringIntFreqDist getSortedFreqDist(List<TrackTag> audioTags, Func<TrackTag, string> func)
         {
             // A dictionary that maps each unique item to how many there are
             var itemVariants = new Dictionary<string, int>();
@@ -136,6 +141,80 @@ namespace AudioMirror
             return artistArr.Select(a => a.Trim()).ToArray();
         }
 
+        /// <summary>
+        /// Print statistics on how many tracks are in each time/decade period
+        /// </summary>
+        /// <param name="yearFreqDist"></param>
+        private void PrintDecadeStats(string statName, StringIntFreqDist yearFreqDist)
+        {
+            // Print heading
+            PrintHeading(statName);
+
+            // Print columns
+            PrintColumns("%", statName, "Occurrences");
+
+            // A dictionary that maps each period to how many tracks there are in it
+            var decadeDict = new Dictionary<int, int>();
+
+            // For each year pair
+            foreach (var yearPair in yearFreqDist)
+            {
+                // Extract info from pair
+                var yearNum = int.Parse(yearPair.Key.ToString());
+                var count = yearPair.Value;
+
+                // Calculate decade 
+                int decade = (yearNum / 10) * 10;
+
+                // If in dictionary
+                if (decadeDict.ContainsKey(decade))
+                {
+                    // Increment value by count 
+                    decadeDict[decade] += count;
+                }
+                else
+                {
+                    // Otherwise if not in dictionary, add it
+                    // NOTE: REQUIRED to prevent 'KeyNotFoundException' errors
+                    decadeDict[decade] = 1;
+                }
+            }
+
+            // Sort decade dictionary
+            var decadeFreqDist = decadeDict.OrderByDescending(pair => pair.Value);
+
+            // Get total number of items (i.e. sum of occurrences)
+            int totalItems = decadeFreqDist.Sum(pair => pair.Value);
+
+            // For each decade pair
+            foreach (var decadePair in decadeFreqDist)
+            {
+                // Extract info
+                var decade = decadePair.Key.ToString() + "s";
+                var count = decadePair.Value;
+                var percentage = ((double)count / totalItems) * 100;
+
+                // Print statistics line
+                PrintStatsLine(percentage, decade, count, 0);
+            }
+        }
+
+        /// <summary>
+        /// Print statistics line
+        /// </summary>
+        /// <param name="percentage">Percentage</param>
+        /// <param name="itemValue">The actual item/instance value</param>
+        /// <param name="freq">Frequency </param>
+        private void PrintStatsLine(double percentage, string itemValue, int freq, double cutoff = 0.25)
+        {
+            string freqS = freq.ToString();
+            string percentS = percentage.ToString("F2") + "%";
+
+            if (cutoff < percentage)
+            {
+                Console.WriteLine($"{percentS,-10} {itemValue,-40} {freqS}");
+            }
+        }
 
         /// <summary>
         /// Print columns for statistics lines
@@ -148,23 +227,13 @@ namespace AudioMirror
             Console.WriteLine($"{c1,-10} {c2,-40} {c3}");
         }
 
-
         /// <summary>
-        /// Print statistics line
+        /// Print a statistics category heading
         /// </summary>
-        /// <param name="percentage">Percentage</param>
-        /// <param name="itemValue">The actual item/instance value</param>
-        /// <param name="freq">Frequency </param>
-        private void PrintStatsLine(double percentage, string itemValue, int freq)
+        /// <param name="title"></param>
+        private void PrintHeading(string title)
         {
-            string freqS = freq.ToString();
-            string percentS = percentage.ToString("F2") + "%";
-
-            // If percentage exceeds cutoff
-            if (0.25 < percentage)
-            {
-                Console.WriteLine($"{percentS,-10} {itemValue,-40} {freqS}");
-            }
+            Console.WriteLine($"\n# {title} Statistics");
         }
     }
 }
