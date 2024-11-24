@@ -147,55 +147,26 @@ namespace AudioMirror
         /// <param name="yearFreqDist"></param>
         private void PrintDecadeStats(string statName, StringIntFreqDist yearFreqDist)
         {
-            // Print heading
+            // Print heading and columns
             PrintHeading(statName);
-
-            // Print columns
             PrintColumns("%", statName, "Occurrences");
 
-            // A dictionary that maps each period to how many tracks there are in it
-            var decadeDict = new Dictionary<int, int>();
+            // Group counts by decade
+            var decadeDict = yearFreqDist
+                .GroupBy(yearPair => (int.Parse(yearPair.Key.ToString()) / 10) * 10)
+                .ToDictionary(group => group.Key, group => group.Sum(pair => pair.Value));
 
-            // For each year pair
-            foreach (var yearPair in yearFreqDist)
+            // Sort decades and calculate total occurrences
+            var sortedDecades = decadeDict.OrderByDescending(pair => pair.Value);
+            int totalItems = sortedDecades.Sum(pair => pair.Value);
+
+            // Print stats for each decade
+            foreach (var decadePair in sortedDecades)
             {
-                // Extract info from pair
-                var yearNum = int.Parse(yearPair.Key.ToString());
-                var count = yearPair.Value;
-
-                // Calculate decade 
-                int decade = (yearNum / 10) * 10;
-
-                // If in dictionary
-                if (decadeDict.ContainsKey(decade))
-                {
-                    // Increment value by count 
-                    decadeDict[decade] += count;
-                }
-                else
-                {
-                    // Otherwise if not in dictionary, add it
-                    // NOTE: REQUIRED to prevent 'KeyNotFoundException' errors
-                    decadeDict[decade] = count;
-                }
-            }
-
-            // Sort decade dictionary
-            var decadeFreqDist = decadeDict.OrderByDescending(pair => pair.Value);
-
-            // Get total number of items (i.e. sum of occurrences)
-            int totalItems = decadeFreqDist.Sum(pair => pair.Value);
-
-            // For each decade pair
-            foreach (var decadePair in decadeFreqDist)
-            {
-                // Extract info
-                var decade = decadePair.Key.ToString() + "s";
+                var decade = decadePair.Key;
                 var count = decadePair.Value;
-                var percentage = ((double)count / totalItems) * 100;
-
-                // Print statistics line
-                PrintStatsLine(percentage, decade, count, 0);
+                double percentage = (double)count / totalItems * 100;
+                PrintStatsLine(percentage, $"{decade}s", count, 0);
             }
         }
 
