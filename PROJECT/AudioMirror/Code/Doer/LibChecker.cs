@@ -35,7 +35,7 @@ namespace AudioMirror
 
             // Check all tags
             int totalTagHits = 0;
-            Console.WriteLine(" - Checking all tags against filenames and unwanted strings...");
+            Console.WriteLine(" - Checking all tags against filenames and for unwanted/missing info...");
             foreach (TrackTag tag in audioTags)
             {
                 // Check filename against tag
@@ -43,6 +43,13 @@ namespace AudioMirror
 
                 // Check for unwanted strings in tag
                 totalTagHits += CheckForUnwanted(tag);
+
+                // Check for missing year info
+                if(tag.Year.Equals("Missing"))
+                {
+                    Console.WriteLine($"  - '{tag.Title}' has no Year set!");
+                    totalTagHits++;
+                }
             }
             printTotalHits(totalTagHits);
 

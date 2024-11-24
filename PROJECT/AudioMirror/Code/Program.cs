@@ -46,7 +46,7 @@ namespace AudioMirror
             // 3) Analyse metadata and print statistics
             Analyser a = new Analyser(p.audioTags);
 
-            // 4) Audio library organisational/metadata checks
+            // 4) Do audio library organisational/metadata checks
             LibChecker lc = new LibChecker(p.audioTags);
 
             // Print total time
