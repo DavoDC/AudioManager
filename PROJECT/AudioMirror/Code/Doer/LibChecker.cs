@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace AudioMirror
 {
@@ -46,11 +47,14 @@ namespace AudioMirror
 
                 // Check for missing properties
                 totalTagHits += CheckForMissing(tag);
+
+                // Check album cover counts
+                totalTagHits += CheckAlbumCoverCount(tag);
             }
             printTotalHits(totalTagHits);
 
             // Check Artists folder
-            var artistsWithAudioFolder = CheckArtistFolder();
+            List<string> artistsWithAudioFolder = CheckArtistFolder();
 
             // Check Miscellaneous Songs folder
             CheckMiscFolder(artistsWithAudioFolder);
@@ -162,6 +166,35 @@ namespace AudioMirror
         }
 
         /// <summary>
+        /// Checks the number of album covers in a track tag and prints warnings for unusual counts.
+        /// </summary>
+        /// <param name="tag">The track tag.</param>
+        /// <returns>1 if the album cover count is invalid (none or more than one); otherwise, 0.</returns>
+        private int CheckAlbumCoverCount(TrackTag tag)
+        {
+            try
+            {
+                int albumCoverNum = int.Parse(tag.AlbumCoverCount);
+                if (albumCoverNum == 0)
+                {
+                    Console.WriteLine($"  - '{tag.RelPath}' has no album cover!");
+                    return 1;
+                }
+                else if (albumCoverNum != 1)
+                {
+                    Console.WriteLine($"  - '{tag.RelPath}' has {albumCoverNum} album covers!");
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleLibCheckerException(ex, tag);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
         /// Print a message if a given track property contains an unwanted substring
         /// </summary>
         /// <param name="tag">The track's TrackTag object</param>
@@ -186,10 +219,7 @@ namespace AudioMirror
             }
             catch (Exception ex)
             {
-                Console.WriteLine("\n Exception occurred in CheckProperty(): " + ex.Message);
-                Console.WriteLine("\n Tag: " + tag.ToString());
-                tag.PrintAllProperties();
-                Environment.Exit(0);
+                HandleLibCheckerException(ex, tag);
             }
 
             return 0;
@@ -350,6 +380,29 @@ namespace AudioMirror
             }
 
             printTotalHits(totalHits);
+        }
+
+        /// <summary>
+        /// Handles exceptions occurring in library checker methods: prints info and exits.
+        /// </summary>
+        /// <param name="ex">The exception that was thrown.</param>
+        /// <param name="tag">The track tag associated with the exception.</param>
+        /// <param name="methodName">The name of the calling method (auto-filled).</param>
+        private void HandleLibCheckerException(Exception ex, TrackTag tag, [CallerMemberName] string methodName = "")
+        {
+            Console.WriteLine($"\nException occurred in {methodName}(): {ex.Message}");
+
+            if (tag != null)
+            {
+                Console.WriteLine("\nTag details: " + tag.ToString());
+                tag.PrintAllProperties();
+            }
+            else
+            {
+                Console.WriteLine("\nTag details are not available (null).");
+            }
+
+            Environment.Exit(1);
         }
 
         /// <summary>
