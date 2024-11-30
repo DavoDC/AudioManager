@@ -1,0 +1,191 @@
+
+###### Audio Mirror ######
+
+Checking age of mirror...
+ - DateTime.Now               2024-11-30 12:15:03
+ - DateTime.MirrorCreation    2024-11-30 12:11:25
+ - DateTime.MirrorAge         0d, 0h, 3m, 38s
+ - Mirror was created recently, no regeneration needed!
+ - Time taken: 0.007 seconds
+
+Creating mirror of 'C:\Users\David\Audio\'...
+ - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
+ - MP3 file count: 4718
+ - Non-MP3 files found: 14 (all expected)
+ - MP3 filenames sanitised: 69
+ - Recreated: False
+ - Time taken: 1.112 seconds
+
+Parsing audio metadata...
+ - Tags parsed: 4718
+ - Time taken: 1.276 seconds
+
+Analysing tags...
+
+# Artists Statistics
+%          Artists                                  Occurrences
+5.29%      Akira The Don                            361
+2.23%      Eminem                                   152
+1.65%      Kodak Black                              113
+1.54%      Eric Thomas                              105
+1.39%      Jordan B. Peterson                       95
+1.17%      2Pac                                     80
+1.05%      Loot Bryon Smith                         72
+0.97%      Kevin Gates                              66
+0.94%      KRS-One                                  64
+0.89%      Dual Core                                61
+0.86%      Foster Ebayy                             59
+0.82%      Epic Rap Battles of History              56
+0.81%      Lil Tecca                                55
+0.79%      Juice WRLD                               54
+0.76%      Kanye West                               52
+0.72%      Ice Cube                                 49
+0.70%      Naval Ravikant                           48
+0.69%      Chris Brown                              47
+0.67%      Dr. Dre                                  46
+0.66%      Snoop Dogg                               45
+0.66%      Russ                                     45
+0.62%      Lil Wayne                                42
+0.62%      Wiz Khalifa                              42
+0.60%      DaBaby                                   41
+0.59%      Jocko Willink                            40
+0.57%      50 Cent                                  39
+0.56%      YoungBoy Never Broke Again               38
+0.54%      Nicki Minaj                              37
+0.54%      Jack Harlow                              37
+0.54%      Hopsin                                   37
+0.53%      David Goggins                            36
+0.53%      Jim Rohn                                 36
+0.51%      Lil Mosey                                35
+0.50%      Rod Wave                                 34
+0.48%      Kyle                                     33
+0.48%      Macklemore                               33
+0.45%      DC The Don                               31
+0.45%      PlentaKill                               31
+0.44%      Drake                                    30
+0.44%      Dizzy Wright                             30
+0.44%      Post Malone                              30
+0.42%      Kid Cudi                                 29
+0.41%      Lil Uzi Vert                             28
+0.41%      Bowling for Soup                         28
+0.41%      Lana Del Rey                             28
+0.40%      Justin Bieber                            27
+0.40%      Ty Dolla $ign                            27
+0.40%      NLE Choppa                               27
+0.38%      E-40                                     26
+0.38%      Dax                                      26
+0.38%      Will Smith                               26
+0.37%      Rihanna                                  25
+0.35%      The Notorious B.I.G.                     24
+0.35%      Boney M                                  24
+0.35%      Fetty Wap                                24
+0.35%      Frank Sinatra                            24
+0.35%      Internet Money                           24
+0.35%      Rhino!                                   24
+0.35%      Riff Raff                                24
+0.34%      Flo Rida                                 23
+0.34%      Lil Yachty                               23
+0.32%      Akon                                     22
+0.32%      Rexx Life Raj                            22
+0.32%      POLO G                                   22
+0.32%      Les Brown                                22
+0.31%      24kGoldn                                 21
+0.31%      John Williamson                          21
+0.29%      Calvin Harris                            20
+0.29%      Fr33sol                                  20
+0.28%      Metro Boomin                             19
+0.28%      G-Eazy                                   19
+0.28%      Foreigner                                19
+0.28%      Jason Derulo                             19
+0.28%      Yung Bleu                                19
+0.28%      Terence McKenna                          19
+0.26%      Future                                   18
+0.26%      B.o.B                                    18
+0.26%      Too Short                                18
+0.26%      Gunna                                    18
+0.26%      J. Cole                                  18
+0.26%      Katy Perry                               18
+0.26%      The Black Eyed Peas                      18
+
+# Genre Statistics
+%          Genre                                    Occurrences
+31.71%     Hip Hop                                  2248
+31.50%     Rap                                      2233
+9.80%      Pop                                      695
+9.42%      Musivation                               668
+4.57%      Missing                                  324
+2.48%      Rock                                     176
+1.89%      R&B                                      134
+1.81%      Alternative                              128
+1.14%      Dance                                    81
+1.06%      Films                                    75
+1.06%      Games                                    75
+0.75%      Electro                                  53
+0.45%      Disco                                    32
+0.42%      Asian Music                              30
+0.34%      Easy Listening                           24
+0.28%      Reggae                                   20
+
+# Year Statistics
+%          Year                                     Occurrences
+10.47%     2022                                     494
+7.55%      2021                                     356
+7.35%      2019                                     347
+6.72%      2020                                     317
+5.83%      2012                                     275
+5.38%      2023                                     254
+5.15%      2013                                     243
+4.85%      2018                                     229
+4.75%      2024                                     224
+4.07%      2015                                     192
+3.88%      2017                                     183
+3.31%      2014                                     156
+2.95%      2009                                     139
+2.63%      2007                                     124
+2.63%      2010                                     124
+2.54%      2008                                     120
+2.33%      2016                                     110
+2.18%      2011                                     103
+1.78%      2006                                     84
+1.74%      2003                                     82
+1.63%      2005                                     77
+1.31%      2004                                     62
+1.31%      2002                                     62
+1.17%      2001                                     55
+1.00%      1995                                     47
+0.85%      1999                                     40
+0.70%      1997                                     33
+0.64%      2000                                     30
+0.40%      1983                                     19
+
+# Decade Statistics
+%          Decade                                   Occurrences
+41.59%     2010s                                    1962
+34.87%     2020s                                    1645
+17.70%     2000s                                    835
+3.31%      1990s                                    156
+1.14%      1980s                                    54
+0.38%      1970s                                    18
+0.38%      1940s                                    18
+0.32%      1950s                                    15
+0.23%      1960s                                    11
+0.08%      1930s                                    4
+
+ - Time taken: 0.027 seconds
+
+Checking library...
+ - Checking all tags against filenames and for unwanted/missing info...
+ - Checking Artists folder...
+ - Checking Miscellaneous Songs folder...
+ - Checking Musivation folder...
+
+ - Time taken: 0.164 seconds
+
+
+Total time taken: 2.587 seconds
+
+Finished!
+
+
+C:\Users\David\GitHubRepos\AudioMirror\PROJECT\AudioMirror\bin\Release\AudioMirror.exe (process 7176) exited with code 0 (0x0).
+Press any key to close this window . . .
