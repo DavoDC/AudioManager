@@ -44,12 +44,8 @@ namespace AudioMirror
                 // Check for unwanted strings in tag
                 totalTagHits += CheckForUnwanted(tag);
 
-                // Check for missing year info
-                if(tag.Year.Equals("Missing"))
-                {
-                    Console.WriteLine($"  - '{tag.Title}' has no Year set!");
-                    totalTagHits++;
-                }
+                // Check for missing properties
+                totalTagHits += CheckForMissing(tag);
             }
             printTotalHits(totalTagHits);
 
@@ -132,6 +128,37 @@ namespace AudioMirror
             }
 
             return totalHits;
+        }
+
+        /// <summary>
+        /// Check for missing info in the artists, title, album and year fields
+        /// </summary>
+        /// <param name="tag">The audio tag to check</param>
+        /// <returns>The number of issues found</returns>
+        private int CheckForMissing(TrackTag tag)
+        {
+            int totalHits = CheckFieldMissing(tag.Title, "Title", tag.RelPath);
+            totalHits += CheckFieldMissing(tag.Artists, "Artists", tag.RelPath);
+            totalHits += CheckFieldMissing(tag.Album, "Album", tag.RelPath);
+            totalHits += CheckFieldMissing(tag.Year, "Year", tag.RelPath);
+            return totalHits;
+        }
+
+        /// <summary>
+        /// Checks if a specific field value is "Missing" and prints a message if so.
+        /// </summary>
+        /// <param name="fieldValue">The value of the field to check.</param>
+        /// <param name="fieldName">The name of the field being checked (e.g., "Title").</param>
+        /// <param name="filePath">The relative file path of the audio file.</param>
+        /// <returns>1 if the field was missing, 0 otherwise.</returns>
+        private int CheckFieldMissing(string fieldValue, string fieldName, string filePath)
+        {
+            if (fieldValue.Equals("Missing"))
+            {
+                Console.WriteLine($"  - '{filePath}' has no {fieldName} set!");
+                return 1;
+            }
+            return 0;
         }
 
         /// <summary>
