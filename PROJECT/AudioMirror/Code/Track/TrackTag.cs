@@ -1,4 +1,5 @@
-﻿using TagLib;
+﻿using System;
+using TagLib;
 using File = System.IO.File;
 
 namespace AudioMirror.Code.Modules
@@ -14,18 +15,18 @@ namespace AudioMirror.Code.Modules
         /// <param name="mirrorFilePath">The mirror file path</param>
         public TrackTag(string mirrorFilePath)
         {
-            // Extract and save relative path
+            // Always initialise relative path
             int relStartPos = mirrorFilePath.LastIndexOf(Program.MirrorFolder);
             RelPath = mirrorFilePath.Remove(0, relStartPos + Program.MirrorFolder.Length);
 
-            // Get file contents of mirror file
+            // Get file contents of mirror file (should be a file path)
             string[] fileContents = File.ReadAllLines(mirrorFilePath);
 
-            // If mirror file has no valid path
+            // If mirror file does not contain a single, valid file path
             if (fileContents.Length != 1 || !File.Exists(fileContents[0]))
             {
                 // Then the mirror file already has XML content
-                // Load metadata from XML instead
+                // So load metadata from XML instead
                 
                 // Read in XML data
                 TrackXML xmlFileIn = new TrackXML(mirrorFilePath);
@@ -38,28 +39,29 @@ namespace AudioMirror.Code.Modules
                 TrackNumber = xmlFileIn.TrackNumber;
                 Genres = xmlFileIn.Genres;
                 Length = xmlFileIn.Length;
+                AlbumCoverCount = xmlFileIn.AlbumCoverCount;
 
                 // Stop
                 return;
             }
 
-            // Otherwise, if mirror file only has valid path
+            // # Otherwise, if mirror file contains a valid path, initialise fields
+
             // Load metadata from file
             var audioMetadata = TagLib.File.Create(fileContents[0]);
 
-            // Extract and save length
-            Length = audioMetadata.Properties.Duration.ToString();
-
-            // Get tag
+            // Extract info from tag
             Tag tag = audioMetadata.Tag;
-
-            // Extract info
             Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
             Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
             Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
             Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
             TrackNumber = tag.Track.ToString();
             Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
+
+            // Extract info from properties
+            Length = audioMetadata.Properties.Duration.ToString();
+            AlbumCoverCount = (audioMetadata.Tag.Pictures?.Length ?? 0).ToString();
 
             // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
