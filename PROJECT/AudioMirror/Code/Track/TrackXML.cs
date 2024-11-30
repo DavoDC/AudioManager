@@ -38,6 +38,7 @@ namespace AudioMirror.Code.Modules
                     SetElementValue("TrackNumber", tag.TrackNumber);
                     SetElementValue("Genres", tag.Genres);
                     SetElementValue("Length", tag.Length);
+                    SetElementValue("AlbumCoverCount", tag.AlbumCoverCount);
 
                     // Save file
                     xmlDoc.Save(mirrorFilePath);
@@ -56,6 +57,7 @@ namespace AudioMirror.Code.Modules
                     TrackNumber = GetElementValue("TrackNumber");
                     Genres = GetElementValue("Genres");
                     Length = GetElementValue("Length");
+                    AlbumCoverCount = GetElementValue("AlbumCoverCount");
                 }
             }
             catch (Exception ex)

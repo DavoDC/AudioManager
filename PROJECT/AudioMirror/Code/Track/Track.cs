@@ -15,7 +15,6 @@ namespace AudioMirror.Code.Modules
             set => relPath = value;
         }
 
-
         // The track's title
         private string title;
         public string Title
@@ -23,7 +22,6 @@ namespace AudioMirror.Code.Modules
             get => title;
             set => title = value;
         }
-
 
         // The track's artists (concatenated)
         private string artists;
@@ -33,13 +31,11 @@ namespace AudioMirror.Code.Modules
             set => artists = value;
         }
 
-
         // The track's primary artist
         public string PrimaryArtist
         { 
             get => Analyser.ProcessProperty(Artists)[0];
         }
-
 
         // The track's album
         private string album;
@@ -49,7 +45,6 @@ namespace AudioMirror.Code.Modules
             set => album = value;
         }
 
-
         // The track's year
         private string year;
         public string Year
@@ -57,7 +52,6 @@ namespace AudioMirror.Code.Modules
             get => year;
             set => year = value;
         }
-
 
         // The track's number (disc order)
         private string trackNumber;
@@ -67,7 +61,6 @@ namespace AudioMirror.Code.Modules
             set => trackNumber = value;
         }
 
-
         // The track's genres (concatenated)
         private string genres;
         public string Genres
@@ -76,13 +69,20 @@ namespace AudioMirror.Code.Modules
             set => genres = value;
         }
 
-
         // The track's duration
         private string length;
         public string Length
         { 
             get => length;
             set => length = value;
+        }
+
+        // The track's album cover count
+        private string albumCoverCount;
+        public string AlbumCoverCount
+        {
+            get => albumCoverCount;
+            set => albumCoverCount = value;
         }
 
         /// <returns>A string representation of this track</returns>
@@ -103,6 +103,7 @@ namespace AudioMirror.Code.Modules
             Console.WriteLine($"TrackNumber: {TrackNumber ?? "NULL"}");
             Console.WriteLine($"Genres: {Genres ?? "NULL"}");
             Console.WriteLine($"Length: {Length ?? "NULL"}");
+            Console.WriteLine($"AlbumCoverCount: {AlbumCoverCount ?? "NULL"}");
         }
     }
 }

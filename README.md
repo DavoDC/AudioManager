@@ -27,9 +27,10 @@ A C# console program which:
 - Number of tracks 
 
 - Percentage and count breakdown of:
-  - Artist
-  - Genre
-  - Year
+  - Artists
+  - Genres
+  - Years
+  - Decades
 
 For my listening statistics, visit my [LastFM](https://www.last.fm/user/david369music).
 
