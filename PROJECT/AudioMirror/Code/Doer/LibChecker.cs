@@ -145,14 +145,24 @@ namespace AudioMirror
         private int CheckProperty(TrackTag tag, Func<TrackTag, string> propExt,
             string propertyName, string unwanted)
         {
-            // If an exception, skip
-            if (isException(tag, unwanted)) { return 0; }
-
-            // If property's value contains unwanted string, print message
-            if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
+            try
             {
-                Console.WriteLine($"  - Found '{unwanted}' in {propertyName} of '{tag.ToString()}'");
-                return 1;
+                // If an exception, skip
+                if (isException(tag, unwanted)) { return 0; }
+
+                // If property's value contains unwanted string, print message
+                if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
+                {
+                    Console.WriteLine($"  - Found '{unwanted}' in {propertyName} of '{tag.ToString()}'");
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n Exception occurred in CheckProperty(): " + ex.Message);
+                Console.WriteLine("\n Tag: " + tag.ToString());
+                tag.PrintAllProperties();
+                Environment.Exit(0);
             }
 
             return 0;
