@@ -1,4 +1,6 @@
-﻿namespace AudioMirror.Code.Modules
+﻿using System;
+
+namespace AudioMirror.Code.Modules
 {
     /// <summary>
     /// An audio track's metadata
@@ -81,6 +83,26 @@
         { 
             get => length;
             set => length = value;
+        }
+
+        /// <returns>A string representation of this track</returns>
+        public override string ToString()
+        {
+            return $"{Artists} - {Title}";
+        }
+
+        /// <returns>Print out all properties of this track</returns>
+        public void PrintAllProperties()
+        {
+            Console.WriteLine($"RelPath: {RelPath ?? "NULL"}");
+            Console.WriteLine($"Title: {Title ?? "NULL"}");
+            Console.WriteLine($"Artists: {Artists ?? "NULL"}");
+            Console.WriteLine($"PrimaryArtist: {PrimaryArtist ?? "NULL"}");
+            Console.WriteLine($"Album: {Album ?? "NULL"}");
+            Console.WriteLine($"Year: {Year ?? "NULL"}");
+            Console.WriteLine($"TrackNumber: {TrackNumber ?? "NULL"}");
+            Console.WriteLine($"Genres: {Genres ?? "NULL"}");
+            Console.WriteLine($"Length: {Length ?? "NULL"}");
         }
     }
 }
