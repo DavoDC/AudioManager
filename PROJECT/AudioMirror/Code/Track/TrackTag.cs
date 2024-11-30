@@ -54,21 +54,15 @@ namespace AudioMirror.Code.Modules
             Tag tag = audioMetadata.Tag;
 
             // Extract info
-            Title = tag.Title;
-            Artists = tag.JoinedPerformers;
-            Album = tag.Album;
+            Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
+            Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
+            Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
             Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
             TrackNumber = tag.Track.ToString();
             Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
 
             // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
-        }
-
-        /// <returns>A string representation of this track</returns>
-        public override string ToString() 
-        {
-            return $"{Artists} - {Title}";
         }
     }
 }
