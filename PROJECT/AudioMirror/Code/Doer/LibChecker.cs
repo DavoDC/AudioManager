@@ -251,6 +251,11 @@ namespace AudioMirror
             {
                 return true;
             }
+
+            if(tag.Artists.Contains("Agatha All Along"))
+            {
+                return true;
+            }
             
             return false;
         }
