@@ -50,6 +50,13 @@ namespace AudioMirror
 
                 // Check album cover counts
                 totalTagHits += CheckAlbumCoverCount(tag);
+
+                // Check compilation status
+                if(!bool.Parse(tag.Compilation))
+                {
+                    Console.WriteLine($"  - '{tag.RelPath}' is not set as a compilation!");
+                    totalTagHits++;
+                }
             }
             printTotalHits(totalTagHits);
 
