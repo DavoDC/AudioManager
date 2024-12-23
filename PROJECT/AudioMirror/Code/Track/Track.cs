@@ -85,6 +85,14 @@ namespace AudioMirror.Code.Modules
             set => albumCoverCount = value;
         }
 
+        // The track's compilation status (i.e. whether its album is a compilation of songs by various artists)
+        private string compilation;
+        public string Compilation
+        {
+            get => compilation;
+            set => compilation = value;
+        }
+
         /// <returns>A string representation of this track</returns>
         public override string ToString()
         {
@@ -104,6 +112,7 @@ namespace AudioMirror.Code.Modules
             Console.WriteLine($"Genres: {Genres ?? "NULL"}");
             Console.WriteLine($"Length: {Length ?? "NULL"}");
             Console.WriteLine($"AlbumCoverCount: {AlbumCoverCount ?? "NULL"}");
+            Console.WriteLine($"Compilation: {Compilation ?? "NULL"}");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using TagLib;
 using File = System.IO.File;
+using ID3Tag = TagLib.Id3v2.Tag;
 
 namespace AudioMirror.Code.Modules
 {
@@ -40,6 +41,7 @@ namespace AudioMirror.Code.Modules
                 Genres = xmlFileIn.Genres;
                 Length = xmlFileIn.Length;
                 AlbumCoverCount = xmlFileIn.AlbumCoverCount;
+                Compilation = xmlFileIn.Compilation;
 
                 // Stop
                 return;
@@ -47,21 +49,25 @@ namespace AudioMirror.Code.Modules
 
             // # Otherwise, if mirror file contains a valid path, initialise fields
 
-            // Load metadata from file
-            var audioMetadata = TagLib.File.Create(fileContents[0]);
+            // Load metadata object from file
+            TagLib.File tagFile = TagLib.File.Create(fileContents[0]);
 
-            // Extract info from tag
-            Tag tag = audioMetadata.Tag;
+            // Extract duration info from properties
+            Length = tagFile.Properties.Duration.ToString();
+
+            // Extract info from generic tag
+            Tag tag = tagFile.Tag;
             Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
             Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
             Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
             Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
             TrackNumber = tag.Track.ToString();
             Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
+            AlbumCoverCount = (tag.Pictures?.Length ?? 0).ToString();
 
-            // Extract info from properties
-            Length = audioMetadata.Properties.Duration.ToString();
-            AlbumCoverCount = (audioMetadata.Tag.Pictures?.Length ?? 0).ToString();
+            // Extract compilation info from ID3 tag (see https://id3.org/iTunes%20Compilation%20Flag)
+            ID3Tag id3tag = (ID3Tag) tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
+            Compilation = id3tag.IsCompilation.ToString();
 
             // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
