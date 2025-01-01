@@ -1,5 +1,4 @@
-﻿using System;
-using TagLib;
+﻿using TagLib;
 using File = System.IO.File;
 using ID3Tag = TagLib.Id3v2.Tag;
 
