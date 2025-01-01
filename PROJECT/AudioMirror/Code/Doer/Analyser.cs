@@ -27,13 +27,13 @@ namespace AudioMirror
             this.audioTags = audioTags;
 
             // Print artist stats
-            PrintFreqStats("Artists", tag => tag.Artists);
+            PrintFreqStats("Artists", tag => tag.Artists, 0.5);
 
             // Print genre stats
             PrintFreqStats("Genre", tag => tag.Genres);
 
             // Print year stats
-            StringIntFreqDist yearFreqDist = PrintFreqStats("Year", tag => tag.Year);
+            StringIntFreqDist yearFreqDist = PrintFreqStats("Year", tag => tag.Year, 2.0);
 
             // Print decade/time period stats 
             PrintDecadeStats("Decade", yearFreqDist);
@@ -48,7 +48,7 @@ namespace AudioMirror
         /// </summary>
         /// <param name="statName">The name of the property</param>
         /// <param name="func">Function that returns the property</param>
-        private StringIntFreqDist PrintFreqStats(string statName, Func<TrackTag, string> func)
+        private StringIntFreqDist PrintFreqStats(string statName, Func<TrackTag, string> func, double cutoff = 0.25)
         {
             // Print heading
             PrintHeading(statName);
@@ -71,7 +71,7 @@ namespace AudioMirror
                 var percentage = ((double)count / totalItems) * 100;
 
                 // Print statistics line
-                PrintStatsLine(percentage, itemValue, count);
+                PrintStatsLine(percentage, itemValue, count, cutoff);
             }
 
             // Return frequency distribution
@@ -153,7 +153,7 @@ namespace AudioMirror
 
             // Group counts by decade
             var decadeDict = yearFreqDist
-                .GroupBy(yearPair => (int.Parse(yearPair.Key.ToString()) / 10) * 10)
+                .GroupBy(yearPair => GetDecade(yearPair.Key.ToString()))
                 .ToDictionary(group => group.Key, group => group.Sum(pair => pair.Value));
 
             // Sort decades and calculate total occurrences
@@ -171,12 +171,31 @@ namespace AudioMirror
         }
 
         /// <summary>
+        /// Calculates the starting year of the decade for a given year.
+        /// </summary>
+        /// <param name="year">The year as a string, or "Missing" if the track didn't have it.</param>
+        /// <returns>The starting year of the decade (e.g., 1990 for 1995).</returns>
+        private int GetDecade(string year)
+        {
+            int yearNum = 0;
+            if (int.TryParse(year, out yearNum))
+            {
+                return (yearNum / 10) * 10;
+            }
+            else
+            {
+                string errMsg = $"\nERROR: Cannot parse year string: '{year}'";
+                throw new ArgumentException(errMsg);
+            }
+        }
+
+        /// <summary>
         /// Print statistics line
         /// </summary>
         /// <param name="percentage">Percentage</param>
         /// <param name="itemValue">The actual item/instance value</param>
         /// <param name="freq">Frequency </param>
-        private void PrintStatsLine(double percentage, string itemValue, int freq, double cutoff = 0.25)
+        private void PrintStatsLine(double percentage, string itemValue, int freq, double cutoff)
         {
             string freqS = freq.ToString();
             string percentS = percentage.ToString("F2") + "%";
