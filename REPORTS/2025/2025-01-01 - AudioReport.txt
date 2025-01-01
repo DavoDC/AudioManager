@@ -1,0 +1,127 @@
+
+###### Audio Mirror ######
+
+Checking age of mirror...
+ - DateTime.Now               2025-01-01 12:38:09
+
+Creating mirror of 'C:\Users\David\Audio\'...
+ - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
+ - MP3 file count: 4744
+ - Non-MP3 files found: 14 (all expected)
+ - MP3 filenames sanitised: 70
+ - Recreated: True
+ - Time taken: 4.51 seconds
+
+Parsing audio metadata...
+ - Tags parsed: 4744
+ - Time taken: 12.572 seconds
+
+Analysing tags...
+
+# Artists Statistics
+%          Artists                                  Occurrences
+5.26%      Akira The Don                            362
+2.24%      Eminem                                   154
+1.64%      Kodak Black                              113
+1.53%      Eric Thomas                              105
+1.38%      Jordan B. Peterson                       95
+1.16%      2Pac                                     80
+1.05%      Loot Bryon Smith                         72
+0.96%      Kevin Gates                              66
+0.93%      KRS-One                                  64
+0.89%      Dual Core                                61
+0.87%      Juice WRLD                               60
+0.86%      Foster Ebayy                             59
+0.81%      Epic Rap Battles of History              56
+0.80%      Lil Tecca                                55
+0.76%      Kanye West                               52
+0.73%      Dr. Dre                                  50
+0.73%      Snoop Dogg                               50
+0.71%      Ice Cube                                 49
+0.70%      Naval Ravikant                           48
+0.68%      Chris Brown                              47
+0.67%      Russ                                     46
+0.63%      Wiz Khalifa                              43
+0.61%      Lil Wayne                                42
+0.60%      DaBaby                                   41
+0.58%      50 Cent                                  40
+0.58%      Jocko Willink                            40
+0.55%      Nicki Minaj                              38
+0.55%      YoungBoy Never Broke Again               38
+0.54%      Jack Harlow                              37
+0.54%      Hopsin                                   37
+0.52%      David Goggins                            36
+0.52%      Jim Rohn                                 36
+0.51%      Lil Mosey                                35
+
+# Genre Statistics
+%          Genre                                    Occurrences
+31.82%     Hip Hop                                  2273
+31.61%     Rap                                      2258
+9.71%      Pop                                      694
+9.36%      Musivation                               669
+4.51%      Missing                                  322
+2.48%      Rock                                     177
+1.88%      R&B                                      134
+1.79%      Alternative                              128
+1.13%      Dance                                    81
+1.08%      Films                                    77
+1.08%      Games                                    77
+0.74%      Electro                                  53
+0.45%      Disco                                    32
+0.43%      Asian Music                              31
+0.34%      Easy Listening                           24
+0.28%      Reggae                                   20
+
+# Year Statistics
+%          Year                                     Occurrences
+10.41%     2022                                     494
+7.63%      2021                                     362
+7.34%      2019                                     348
+6.68%      2020                                     317
+5.80%      2012                                     275
+5.38%      2023                                     255
+5.12%      2013                                     243
+5.08%      2024                                     241
+4.83%      2018                                     229
+4.05%      2015                                     192
+3.86%      2017                                     183
+3.29%      2014                                     156
+2.93%      2009                                     139
+2.61%      2007                                     124
+2.61%      2010                                     124
+2.53%      2008                                     120
+2.32%      2016                                     110
+2.19%      2011                                     104
+
+# Decade Statistics
+%          Decade                                   Occurrences
+41.40%     2010s                                    1964
+35.18%     2020s                                    1669
+17.60%     2000s                                    835
+3.29%      1990s                                    156
+1.14%      1980s                                    54
+0.38%      1970s                                    18
+0.38%      1940s                                    18
+0.32%      1950s                                    15
+0.23%      1960s                                    11
+0.08%      1930s                                    4
+
+ - Time taken: 0.032 seconds
+
+Checking library...
+ - Checking all tags against filenames and for unwanted/missing info...
+ - Checking Artists folder...
+ - Checking Miscellaneous Songs folder...
+ - Checking Musivation folder...
+
+ - Time taken: 0.156 seconds
+
+
+Total time taken: 17.27 seconds
+
+Finished!
+
+
+C:\Users\David\GitHubRepos\AudioMirror\PROJECT\AudioMirror\bin\Release\AudioMirror.exe (process 86976) exited with code 0 (0x0).
+Press any key to close this window . . .
