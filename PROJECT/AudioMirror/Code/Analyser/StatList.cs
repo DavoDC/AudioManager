@@ -13,6 +13,13 @@ namespace AudioMirror.Code.Modules
         // Name of these statistics
         private string name;
 
+        // The sorted frequency distribution used to calculate these statistics
+        private StringIntFreqDist sortedFreqDist;
+        public StringIntFreqDist SortedFreqDist
+        {
+            get => sortedFreqDist;
+        }
+
         // Underlying data structure - a list of statistics objects
         private List<Statistic> statList;
 
@@ -28,8 +35,34 @@ namespace AudioMirror.Code.Modules
             this.name = name;
 
             // Calculate sorted frequency distribution
-            StringIntFreqDist sortedFreqDist = GetSortedFreqDist(audioTagsIn, func);
+            sortedFreqDist = GetSortedFreqDist(audioTagsIn, func);
 
+            // Initialise underlying statistics list
+            InitStatList();
+        }
+
+        /// <summary>
+        /// Create a StatList object from a sorted frequency distribution
+        /// </summary>
+        /// <param name="name">The name of the statistics category</param>
+        /// <param name="sortedFreqDistIn">The sorted freq dist inputted</param>
+        public StatList(string name, StringIntFreqDist sortedFreqDistIn)
+        {
+            // Save name
+            this.name = name;
+
+            // Save sorted frequency distribution
+            sortedFreqDist = sortedFreqDistIn;
+
+            // Initialise underlying statistics list
+            InitStatList();
+        }
+
+        /// <summary>
+        /// Initialise statistics list using sorted freq dist
+        /// </summary>
+        private void InitStatList()
+        {
             // Sum up total number of items (i.e. sum of occurrences)
             int totalItems = sortedFreqDist.Sum(pair => pair.Value);
 
@@ -118,6 +151,46 @@ namespace AudioMirror.Code.Modules
             for (int i = 0; i < statList.Count; i++)
             {
                 statList[i].Print(i + 1, cutoff);
+            }
+        }
+
+        /// <summary>
+        /// Get statistics on how many tracks are in each time/decade period
+        /// </summary>
+        /// <param name="yearStats">The normal year statistics</param>
+        /// <returns></returns>
+        public static StringIntFreqDist GetDecadeFreqDist(StatList yearStats)
+        {
+            // Extract year frequency distribution
+            var yearFreqDist = yearStats.SortedFreqDist;
+
+            // Process year frequency data into sorted decade groups with transformed keys
+            return yearFreqDist
+                .GroupBy(yearPair => GetDecade(yearPair.Key.ToString())) // Group by string decades
+                .Select(group => new KeyValuePair<string, int>(
+                    group.Key,  // Use pre-formatted decade key
+                    group.Sum(pair => pair.Value))) // Calculate sum
+                .OrderByDescending(pair => pair.Value); // Sort by value
+        }
+
+        /// <summary>
+        /// Calculates the starting year of the decade for a given year.
+        /// </summary>
+        /// <param name="year">The year as a string, or "Missing" if the track didn't have it.</param>
+        /// <returns>The starting year of the decade as a string with an 's' (e.g., "1990s" for 1995).</returns>
+        private static string GetDecade(string year)
+        {
+            // If year parsing successful
+            if (int.TryParse(year, out int yearNum))
+            {
+                // Return decade with "s" on the end
+                return $"{(yearNum / 10) * 10}s";
+            }
+            else
+            {
+                // If couldn't parse, log error and return dummy value
+                Console.WriteLine($"######### ERROR: Cannot parse year string: '{year}'");
+                return "0000s";
             }
         }
     }
