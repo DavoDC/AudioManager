@@ -45,45 +45,32 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Print frequency statistics for a given track property
+        /// Splits a string of possibly concatenated values into an array.
+        /// PUBLIC FUNCTION - CHANGE WITH CAUTION
         /// </summary>
-        /// <param name="statName">The name of the property</param>
-        /// <param name="audioTagsIn">The list of audio tags inputted</param>
-        /// <param name="func">Function that returns the property</param>
-        /// <param name="cutoff">Percentage cutoff for statistics</param>
-        private StringIntFreqDist PrintFreqStats(string statName, List<TrackTag> audioTagsIn,
-            Func<TrackTag, string> func, double cutoff = 0.25)
+        /// <param name="full">The full string, possibly concatenated with separators.</param>
+        /// <returns>An array extracted from the input string.</returns>
+        public static string[] ProcessProperty(string full)
         {
-            // Print heading
-            PrintHeading(statName);
+            char[] separators = { ';', ',' };
 
-            // Get sorted frequency distribution
-            StringIntFreqDist sortedFreqDist = getSortedFreqDist(audioTagsIn, func);
-
-            // Print columns
-            PrintColumns("%", statName, "Occurrences");
-
-            // Get total number of items (i.e. sum of occurrences)
-            int totalItems = sortedFreqDist.Sum(pair => pair.Value);
-
-            // For each item
-            foreach (var item in sortedFreqDist)
+            // If doesn't contain any separators, return as is
+            if (!separators.Any(full.Contains))
             {
-                // Extract info
-                var itemValue = item.Key.ToString();
-                var count = item.Value;
-                var percentage = ((double)count / totalItems) * 100;
-
-                // Print statistics line
-                PrintStatsLine(percentage, itemValue, count, cutoff);
+                return new[] { full };
             }
 
-            // Return frequency distribution
-            return sortedFreqDist;
+            // Split string using first separator found
+            char selectedSeparator = separators.First(s => full.Contains(s));
+            string[] artistArr = full.Split(selectedSeparator);
+
+            // Return array without whitespace in strings
+            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
         /// <summary>
         /// Generates a frequency distribution of sub-properties extracted from a list of audio tags.
+        /// PUBLIC FUNCTION - CHANGE WITH CAUTION
         /// </summary>
         /// <param name="audioTagsIn">The list of audio tags inputted</param>
         /// <param name="func">A function that extracts a property from a given audio tag.</param>
@@ -120,6 +107,44 @@ namespace AudioMirror
             // Sort the dictionary by count in descending order,
             // and return as an IOrderedEnumerable of KeyValuePairs
             return itemVariants.OrderByDescending(pair => pair.Value);
+        }
+
+        /// <summary>
+        /// Print frequency statistics for a given track property
+        /// </summary>
+        /// <param name="statName">The name of the property</param>
+        /// <param name="audioTagsIn">The list of audio tags inputted</param>
+        /// <param name="func">Function that returns the property</param>
+        /// <param name="cutoff">Percentage cutoff for statistics</param>
+        private StringIntFreqDist PrintFreqStats(string statName, List<TrackTag> audioTagsIn,
+            Func<TrackTag, string> func, double cutoff = 0.25)
+        {
+            // Print heading
+            PrintHeading(statName);
+
+            // Print columns
+            PrintColumns("%", statName, "Occurrences");
+
+            // Get sorted frequency distribution
+            StringIntFreqDist sortedFreqDist = getSortedFreqDist(audioTagsIn, func);
+
+            // Get total number of items (i.e. sum of occurrences)
+            int totalItems = sortedFreqDist.Sum(pair => pair.Value);
+
+            // For each item
+            foreach (var item in sortedFreqDist)
+            {
+                // Extract info
+                var itemValue = item.Key.ToString();
+                var count = item.Value;
+                var percentage = ((double)count / totalItems) * 100;
+
+                // Print statistics line
+                PrintStatsLine(percentage, itemValue, count, cutoff);
+            }
+
+            // Return frequency distribution
+            return sortedFreqDist;
         }
 
         /// <summary>
@@ -199,29 +224,6 @@ namespace AudioMirror
                 Console.WriteLine(errMsg);
                 return 0;
             }
-        }
-
-        /// <summary>
-        /// Splits a string of possibly concatenated values into an array.
-        /// </summary>
-        /// <param name="full">The full string, possibly concatenated with separators.</param>
-        /// <returns>An array extracted from the input string.</returns>
-        public static string[] ProcessProperty(string full)
-        {
-            char[] separators = { ';', ',' };
-
-            // If doesn't contain any separators, return as is
-            if (!separators.Any(full.Contains))
-            {
-                return new[] { full };
-            }
-
-            // Split string using first separator found
-            char selectedSeparator = separators.First(s => full.Contains(s));
-            string[] artistArr = full.Split(selectedSeparator);
-
-            // Return array without whitespace in strings
-            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
         /// <summary>
