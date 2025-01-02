@@ -34,7 +34,7 @@ namespace AudioMirror.Code.Modules
         // The track's primary artist
         public string PrimaryArtist
         { 
-            get => Analyser.ProcessProperty(Artists)[0];
+            get => StatList.ProcessProperty(Artists)[0];
         }
 
         // The track's album
