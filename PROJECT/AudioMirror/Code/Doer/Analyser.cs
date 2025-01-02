@@ -24,20 +24,23 @@ namespace AudioMirror
             // Notify
             Console.WriteLine("\nAnalysing tags...");
 
-            // Print artist stats
-            StringIntFreqDist artistFreqDist = PrintFreqStats("Artists", audioTags, tag => tag.Artists, artistStatsCutoff);
+            // Calculate stats
+            List<Statistic> artistStats = CalculateFreqStats(audioTags, tag => tag.Artists);
+            List<Statistic> genreStats = CalculateFreqStats(audioTags, tag => tag.Genres);
+            List<Statistic> yearStats = CalculateFreqStats(audioTags, tag => tag.Year);
 
-            // Print artist stats excluding Musivation artists
-            PrintArtistStatsExcludingMusivation("Artists (Musivation Filtered Out)", audioTags, artistFreqDist, artistStatsCutoff);
+            // Print stats
+            PrintFreqStats("Artists", artistStats, artistStatsCutoff);
+            PrintFreqStats("Genre", genreStats);
+            PrintFreqStats("Year", yearStats, yearStatsCutoff);
 
-            // Print genre stats
-            PrintFreqStats("Genre", audioTags, tag => tag.Genres);
 
-            // Print year stats
-            StringIntFreqDist yearFreqDist = PrintFreqStats("Year", audioTags, tag => tag.Year, yearStatsCutoff);
+            /// SPECIAL STATS - TODO
+            //// Print artist stats excluding Musivation artists
+            //PrintArtistStatsExcludingMusivation("Artists (Musivation Filtered Out)", audioTags, artistFreqDist, artistStatsCutoff);
 
-            // Print decade/time period stats
-            PrintDecadeStats("Decade", yearFreqDist);
+            //// Print decade/time period stats
+            //PrintDecadeStats("Decade", yearFreqDist);
 
             // Print time taken
             Console.WriteLine("");
@@ -110,138 +113,127 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Print frequency statistics for a given track property
+        /// Calculate frequency statistics for a given track property
         /// </summary>
-        /// <param name="statName">The name of the property</param>
         /// <param name="audioTagsIn">The list of audio tags inputted</param>
         /// <param name="func">Function that returns the property</param>
-        /// <param name="cutoff">Percentage cutoff for statistics</param>
-        private StringIntFreqDist PrintFreqStats(string statName, List<TrackTag> audioTagsIn,
-            Func<TrackTag, string> func, double cutoff = 0.25)
+        /// <returns>A list of statistics objects</returns>
+        private List<Statistic> CalculateFreqStats(List<TrackTag> audioTagsIn, Func<TrackTag, string> func)
         {
-            // Print heading
-            PrintHeading(statName);
-
-            // Print columns
-            PrintColumns("%", statName, "Occurrences");
-
             // Get sorted frequency distribution
             StringIntFreqDist sortedFreqDist = getSortedFreqDist(audioTagsIn, func);
 
             // Get total number of items (i.e. sum of occurrences)
             int totalItems = sortedFreqDist.Sum(pair => pair.Value);
 
-            // For each item
-            foreach (var item in sortedFreqDist)
-            {
-                // Extract info
-                var itemValue = item.Key.ToString();
-                var count = item.Value;
-                var percentage = ((double)count / totalItems) * 100;
+            // Convert each frequency pair to a Statistic and return list
+            List<Statistic> statList = new List<Statistic>();
 
-                // Print statistics line
-                PrintStatsLine(percentage, itemValue, count, cutoff);
+            foreach (var freqPair in sortedFreqDist)
+            {
+                statList.Add(new Statistic(freqPair.Key, freqPair.Value, totalItems));
             }
 
-            // Return frequency distribution
-            return sortedFreqDist;
+            return statList;
         }
 
         /// <summary>
-        /// Print artists statistics but exclude Musivation tracks
+        /// Print a statistics list
         /// </summary>
-        private void PrintArtistStatsExcludingMusivation(string statName, List<TrackTag> audioTags, 
-            StringIntFreqDist artistFreqDist, double artistStatsCutoff)
+        /// <param name="statName">The name of the property</param>
+        /// <param name="statListIn">The list of statistics</param>
+        /// <param name="cutoff">Percentage cutoff for statistics</param>
+        private void PrintFreqStats(string statName, List<Statistic> statListIn, double cutoff = 0.25)
         {
             // Print heading and columns
             PrintHeading(statName);
             PrintColumns("%", statName, "Occurrences");
 
-            // Filter freq dist down to artists who don't have musivation tracks
-            var filteredArtistFreqDist = artistFreqDist
-                .Where(pair => 
-                !audioTags.Any(tag => tag.Artists.Contains(pair.Key) && tag.Genres.Contains("Musivation")));
-
-            // Get total number of items (i.e. sum of occurrences)
-            int totalItems = filteredArtistFreqDist.Sum(pair => pair.Value);
-
-            // For each item
-            foreach (var item in filteredArtistFreqDist)
+            // Print out every statistics object
+            foreach (Statistic curStat in statListIn)
             {
-                // Extract info
-                var itemValue = item.Key.ToString();
-                var count = item.Value;
-                var percentage = ((double)count / totalItems) * 100;
-
-                // Print statistics line
-                PrintStatsLine(percentage, itemValue, count, artistStatsCutoff);
+                curStat.Print(cutoff);
             }
         }
 
-        /// <summary>
-        /// Print statistics on how many tracks are in each time/decade period
-        /// </summary>
-        private void PrintDecadeStats(string statName, StringIntFreqDist yearFreqDist)
-        {
-            // Print heading and columns
-            PrintHeading(statName);
-            PrintColumns("%", statName, "Occurrences");
+        ///// <summary>
+        ///// Print artists statistics but exclude Musivation tracks
+        ///// </summary>
+        //private void PrintArtistStatsExcludingMusivation(string statName, List<TrackTag> audioTags, 
+        //    StringIntFreqDist artistFreqDist, double artistStatsCutoff)
+        //{
+        //    // Print heading and columns
+        //    PrintHeading(statName);
+        //    PrintColumns("%", statName, "Occurrences");
 
-            // Group counts by decade
-            var decadeDict = yearFreqDist
-                .GroupBy(yearPair => GetDecade(yearPair.Key.ToString()))
-                .ToDictionary(group => group.Key, group => group.Sum(pair => pair.Value));
+        //    // Filter freq dist down to artists who don't have musivation tracks
+        //    var filteredArtistFreqDist = artistFreqDist
+        //        .Where(pair => 
+        //        !audioTags.Any(tag => tag.Artists.Contains(pair.Key) && tag.Genres.Contains("Musivation")));
 
-            // Sort decades and calculate total occurrences
-            var sortedDecades = decadeDict.OrderByDescending(pair => pair.Value);
-            int totalItems = sortedDecades.Sum(pair => pair.Value);
+        //    // Get total number of items (i.e. sum of occurrences)
+        //    int totalItems = filteredArtistFreqDist.Sum(pair => pair.Value);
 
-            // Print stats for each decade
-            foreach (var decadePair in sortedDecades)
-            {
-                var decade = decadePair.Key;
-                var count = decadePair.Value;
-                double percentage = (double)count / totalItems * 100;
-                PrintStatsLine(percentage, $"{decade}s", count, 0);
-            }
-        }
+        //    // For each item
+        //    foreach (var item in filteredArtistFreqDist)
+        //    {
+        //        // Extract info
+        //        var itemValue = item.Key.ToString();
+        //        var count = item.Value;
+        //        var percentage = ((double)count / totalItems) * 100;
 
-        /// <summary>
-        /// Calculates the starting year of the decade for a given year.
-        /// </summary>
-        /// <param name="year">The year as a string, or "Missing" if the track didn't have it.</param>
-        /// <returns>The starting year of the decade (e.g., 1990 for 1995).</returns>
-        private int GetDecade(string year)
-        {
-            int yearNum = 0;
-            if (int.TryParse(year, out yearNum))
-            {
-                return (yearNum / 10) * 10;
-            }
-            else
-            {
-                string errMsg = $"######### ERROR: Cannot parse year string: '{year}'";
-                Console.WriteLine(errMsg);
-                return 0;
-            }
-        }
+        //        // Print statistics line
+        //        PrintStatsLine(percentage, itemValue, count, artistStatsCutoff);
+        //    }
+        //}
 
-        /// <summary>
-        /// Print statistics line
-        /// </summary>
-        /// <param name="percentage">Percentage</param>
-        /// <param name="itemValue">The actual item/instance value</param>
-        /// <param name="freq">Frequency </param>
-        private void PrintStatsLine(double percentage, string itemValue, int freq, double cutoff = 0.25)
-        {
-            string freqS = freq.ToString();
-            string percentS = percentage.ToString("F2") + "%";
+        ///// <summary>
+        ///// Print statistics on how many tracks are in each time/decade period
+        ///// </summary>
+        //private void PrintDecadeStats(string statName, StringIntFreqDist yearFreqDist)
+        //{
+        //    // Print heading and columns
+        //    PrintHeading(statName);
+        //    PrintColumns("%", statName, "Occurrences");
 
-            if (cutoff < percentage)
-            {
-                Console.WriteLine($"{percentS,-10} {itemValue,-40} {freqS}");
-            }
-        }
+        //    // Group counts by decade
+        //    var decadeDict = yearFreqDist
+        //        .GroupBy(yearPair => GetDecade(yearPair.Key.ToString()))
+        //        .ToDictionary(group => group.Key, group => group.Sum(pair => pair.Value));
+
+        //    // Sort decades and calculate total occurrences
+        //    var sortedDecades = decadeDict.OrderByDescending(pair => pair.Value);
+        //    int totalItems = sortedDecades.Sum(pair => pair.Value);
+
+        //    // Print stats for each decade
+        //    foreach (var decadePair in sortedDecades)
+        //    {
+        //        var decade = decadePair.Key;
+        //        var count = decadePair.Value;
+        //        double percentage = (double)count / totalItems * 100;
+        //        PrintStatsLine(percentage, $"{decade}s", count, 0);
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Calculates the starting year of the decade for a given year.
+        ///// </summary>
+        ///// <param name="year">The year as a string, or "Missing" if the track didn't have it.</param>
+        ///// <returns>The starting year of the decade (e.g., 1990 for 1995).</returns>
+        //private int GetDecade(string year)
+        //{
+        //    int yearNum = 0;
+        //    if (int.TryParse(year, out yearNum))
+        //    {
+        //        return (yearNum / 10) * 10;
+        //    }
+        //    else
+        //    {
+        //        string errMsg = $"######### ERROR: Cannot parse year string: '{year}'";
+        //        Console.WriteLine(errMsg);
+        //        return 0;
+        //    }
+        //}
 
         /// <summary>
         /// Print columns for statistics lines

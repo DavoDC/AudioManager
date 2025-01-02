@@ -10,7 +10,7 @@ namespace AudioMirror.Code.Modules
     internal class TrackTag : Track
     {
         /// <summary>
-        /// Represents the MP3 tag of a track
+        /// Construct a track tag
         /// </summary>
         /// <param name="mirrorFilePath">The mirror file path</param>
         public TrackTag(string mirrorFilePath)
