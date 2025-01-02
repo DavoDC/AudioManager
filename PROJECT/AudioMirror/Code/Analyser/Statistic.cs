@@ -32,17 +32,28 @@ namespace AudioMirror.Code.Modules
         /// <summary>
         /// Print line representing this statistics object
         /// </summary>
-        public void Print(double cutoff = 0.25)
+        public void Print(int pos, double cutoff = 0.25)
         {
-            // Convert count and percentage to strings
-            string countS = count.ToString();
-            string percentageS = percentage.ToString("F2") + "%";
-
-            // If percentage is greater than cutoff, print out formatted info
+            // If percentage is greater than cutoff
             if (cutoff < percentage)
             {
-                Console.WriteLine($"{percentageS,-10} {property,-40} {countS}");
+                // Format percentage
+                string percentageS = percentage.ToString("F2") + "%";
+
+                // Print out info in columns
+                PrintColumns(pos.ToString(), percentageS, property, count.ToString());
             }
+        }
+
+        /// <summary>
+        /// Print out three strings in spaced out columns
+        /// </summary>
+        /// <param name="c1"></param>
+        /// <param name="c2"></param>
+        /// <param name="c3"></param>
+        public static void PrintColumns(string c1, string c2, string c3, string c4)
+        {
+            Console.WriteLine($"{c1,-5} {c2,-10} {c3, -35} {c4}");
         }
     }
 }
