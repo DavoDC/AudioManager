@@ -13,6 +13,7 @@ namespace AudioMirror
         // Variables
         double artistStatsCutoff = 0.6;
         double yearStatsCutoff = 2.0;
+        double decadeStatsCutoff = 0.0;
 
         /// <summary>
         /// Construct an audio tag analyser
@@ -33,6 +34,9 @@ namespace AudioMirror
             TagList tagsExclMusivation = audioTags.Where(tag => !tag.Genres.Contains("Musivation")).ToList();
             StatList artistStatsExclMusivation = new StatList("Artists", tagsExclMusivation, tag => tag.Artists);
 
+            // Calculate decade stats 
+            StatList decadeStats = new StatList("Decade", StatList.GetDecadeFreqDist(yearStats));
+
             // ### PRINT STATS
             // Print artist stats
             artistStatsExclMusivation.Print(artistStatsCutoff, "(Excluding Musivation)");
@@ -43,59 +47,11 @@ namespace AudioMirror
 
             // Print year and decade stats
             yearStats.Print(yearStatsCutoff);
-            //PrintDecadeStats("Decade", yearFreqDist);
+            decadeStats.Print(decadeStatsCutoff);
 
             // Print time taken
             Console.WriteLine("");
             PrintTimeTaken();
         }
-
-        ///// <summary>
-        ///// Print statistics on how many tracks are in each time/decade period
-        ///// </summary>
-        //private void PrintDecadeStats(string statName, StringIntFreqDist yearFreqDist)
-        //{
-        //    // Print heading and columns
-        //    PrintHeading(statName);
-        //    PrintColumns("%", statName, "Occurrences");
-
-        //    // Group counts by decade
-        //    var decadeDict = yearFreqDist
-        //        .GroupBy(yearPair => GetDecade(yearPair.Key.ToString()))
-        //        .ToDictionary(group => group.Key, group => group.Sum(pair => pair.Value));
-
-        //    // Sort decades and calculate total occurrences
-        //    var sortedDecades = decadeDict.OrderByDescending(pair => pair.Value);
-        //    int totalItems = sortedDecades.Sum(pair => pair.Value);
-
-        //    // Print stats for each decade
-        //    foreach (var decadePair in sortedDecades)
-        //    {
-        //        var decade = decadePair.Key;
-        //        var count = decadePair.Value;
-        //        double percentage = (double)count / totalItems * 100;
-        //        PrintStatsLine(percentage, $"{decade}s", count, 0);
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Calculates the starting year of the decade for a given year.
-        ///// </summary>
-        ///// <param name="year">The year as a string, or "Missing" if the track didn't have it.</param>
-        ///// <returns>The starting year of the decade (e.g., 1990 for 1995).</returns>
-        //private int GetDecade(string year)
-        //{
-        //    int yearNum = 0;
-        //    if (int.TryParse(year, out yearNum))
-        //    {
-        //        return (yearNum / 10) * 10;
-        //    }
-        //    else
-        //    {
-        //        string errMsg = $"######### ERROR: Cannot parse year string: '{year}'";
-        //        Console.WriteLine(errMsg);
-        //        return 0;
-        //    }
-        //}
     }
 }
