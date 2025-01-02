@@ -1,6 +1,7 @@
 ﻿using AudioMirror.Code.Modules;
 using System;
-using System.Collections.Generic;
+using System.Linq;
+using TagList = System.Collections.Generic.List<AudioMirror.Code.Modules.TrackTag>;
 
 namespace AudioMirror
 {
@@ -10,70 +11,44 @@ namespace AudioMirror
     internal class Analyser : Doer
     {
         // Variables
-        double artistStatsCutoff = 0.5;
+        double artistStatsCutoff = 0.6;
         double yearStatsCutoff = 2.0;
 
         /// <summary>
         /// Construct an audio tag analyser
         /// </summary>
-        /// <param name="audioTags"></param>
-        public Analyser(List<TrackTag> audioTags)
+        /// <param name="audioTags">The list of audio track tags</param>
+        public Analyser(TagList audioTags)
         {
             // Notify
             Console.WriteLine("\nAnalysing tags...");
 
-            // Calculate stats
+            // ### CALCULATE STATS
+            // Calculate basic stats
             StatList artistStats = new StatList("Artists", audioTags, tag => tag.Artists);
             StatList genreStats = new StatList("Genre", audioTags, tag => tag.Genres);
             StatList yearStats = new StatList("Year", audioTags, tag => tag.Year);
 
-            // Print stats
-            artistStats.Print(artistStatsCutoff);
+            // Calculate artist stats excluding Musivation tracks
+            TagList tagsExclMusivation = audioTags.Where(tag => !tag.Genres.Contains("Musivation")).ToList();
+            StatList artistStatsExclMusivation = new StatList("Artists", tagsExclMusivation, tag => tag.Artists);
+
+            // ### PRINT STATS
+            // Print artist stats
+            artistStatsExclMusivation.Print(artistStatsCutoff, "(Excluding Musivation)");
+            artistStats.Print(artistStatsCutoff, "(All)");
+
+            // Print genre stats
             genreStats.Print();
+
+            // Print year and decade stats
             yearStats.Print(yearStatsCutoff);
-
-            /// SPECIAL STATS - TODO
-            //// Print artist stats excluding Musivation artists
-            //PrintArtistStatsExcludingMusivation("Artists (Musivation Filtered Out)", audioTags, artistFreqDist, artistStatsCutoff);
-
-            //// Print decade/time period stats
             //PrintDecadeStats("Decade", yearFreqDist);
 
             // Print time taken
             Console.WriteLine("");
             PrintTimeTaken();
         }
-
-        ///// <summary>
-        ///// Print artists statistics but exclude Musivation tracks
-        ///// </summary>
-        //private void PrintArtistStatsExcludingMusivation(string statName, List<TrackTag> audioTags, 
-        //    StringIntFreqDist artistFreqDist, double artistStatsCutoff)
-        //{
-        //    // Print heading and columns
-        //    PrintHeading(statName);
-        //    PrintColumns("%", statName, "Occurrences");
-
-        //    // Filter freq dist down to artists who don't have musivation tracks
-        //    var filteredArtistFreqDist = artistFreqDist
-        //        .Where(pair => 
-        //        !audioTags.Any(tag => tag.Artists.Contains(pair.Key) && tag.Genres.Contains("Musivation")));
-
-        //    // Get total number of items (i.e. sum of occurrences)
-        //    int totalItems = filteredArtistFreqDist.Sum(pair => pair.Value);
-
-        //    // For each item
-        //    foreach (var item in filteredArtistFreqDist)
-        //    {
-        //        // Extract info
-        //        var itemValue = item.Key.ToString();
-        //        var count = item.Value;
-        //        var percentage = ((double)count / totalItems) * 100;
-
-        //        // Print statistics line
-        //        PrintStatsLine(percentage, itemValue, count, artistStatsCutoff);
-        //    }
-        //}
 
         ///// <summary>
         ///// Print statistics on how many tracks are in each time/decade period

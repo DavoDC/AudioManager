@@ -58,7 +58,7 @@ namespace AudioMirror
                     totalTagHits++;
                 }
             }
-            printTotalHits(totalTagHits);
+            PrintTotalHits(totalTagHits);
 
             // Check Artists folder
             List<string> artistsWithAudioFolder = CheckArtistFolder();
@@ -84,7 +84,7 @@ namespace AudioMirror
             int totalHits = 0;
 
             // Get standardised filename
-            string filenameS = standardiseStr(getFileName(tag));
+            string filenameS = StandardiseStr(GetFileName(tag));
 
             // Check filename contains all artists
             string[] artistsArr = tag.Artists.Split(';');
@@ -108,8 +108,8 @@ namespace AudioMirror
         private int CheckFilenameForStr(string filename, string subStr)
         {
             // Standardise inputs
-            filename = standardiseStr(filename);
-            subStr = standardiseStr(subStr);
+            filename = StandardiseStr(filename);
+            subStr = StandardiseStr(subStr);
 
             // If the expected value is "Missing" (null), then skip this check.
             if(subStr.Equals("Missing"))
@@ -222,7 +222,7 @@ namespace AudioMirror
             try
             {
                 // If an exception, skip
-                if (isException(tag, unwanted)) { return 0; }
+                if (IsException(tag, unwanted)) { return 0; }
 
                 // If property's value contains unwanted string, print message
                 if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
@@ -240,7 +240,7 @@ namespace AudioMirror
         }
 
         /// <returns>True if metadata combination is whitelisted, false otherwise</returns>
-        private bool isException(TrackTag tag, string unwanted)
+        private bool IsException(TrackTag tag, string unwanted)
         {
             if (unwanted.Equals("original") &&
                 (tag.Album.Equals("Original Rappers") || tag.Artists.Contains("KRS-One")))
@@ -282,14 +282,14 @@ namespace AudioMirror
             Console.WriteLine($" - Checking {artistsDir} folder...");
 
             // Filter audio tags down to Artist Songs folder only
-            var artistAudioTags = filterTagsByMainFolder(artistsDir);
+            var artistAudioTags = FilterTagsByMainFolder(artistsDir);
 
             // For all tags in the Artists folder
             int totalHits = 0;
             foreach (TrackTag tag in artistAudioTags)
             {
                 // Extract folder name from relative path
-                string artistFolderName = getRelPathPart(tag, 2);
+                string artistFolderName = GetRelPathPart(tag, 2);
 
                 // Extract primary artist
                 string primaryArtist = tag.PrimaryArtist;
@@ -313,7 +313,7 @@ namespace AudioMirror
                 }
 
                 // If direct parent folder matches artist folder name, notify
-                if(getDirectParentFolder(tag).Equals(artistFolderName))
+                if(GetDirectParentFolder(tag).Equals(artistFolderName))
                 {
                     // If this is an album folder that matches the artist name, skip
                     if(tag.Album.Equals(tag.PrimaryArtist))
@@ -326,7 +326,7 @@ namespace AudioMirror
                 }
             }
 
-            printTotalHits(totalHits);
+            PrintTotalHits(totalHits);
 
             // Get list of artists with an audio folder (without duplicates) and return
             var artistsWithAudioFolder = artistAudioTags.Select(tag => tag.PrimaryArtist).Distinct().ToList();
@@ -341,10 +341,10 @@ namespace AudioMirror
             Console.WriteLine($" - Checking {miscDir} folder...");
 
             // Filter audio tags down to Miscellaneous Songs folder only
-            var miscAudioTags = filterTagsByMainFolder(miscDir);
+            var miscAudioTags = FilterTagsByMainFolder(miscDir);
 
             // Generate primary artist frequency distribution of the Misc tags
-            var sortedMiscArtistFreq = StatList.getSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
+            var sortedMiscArtistFreq = StatList.GetSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
 
             // For each artist-frequency pair in the Misc folder
             int totalHits = 0;
@@ -373,7 +373,7 @@ namespace AudioMirror
                 }
             }
 
-            printTotalHits(totalHits);
+            PrintTotalHits(totalHits);
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ namespace AudioMirror
             Console.WriteLine($" - Checking {musivDir} folder...");
 
             // Filter audio tags down to Musivation folder only
-            var musivAudioTags = filterTagsByMainFolder(musivDir);
+            var musivAudioTags = FilterTagsByMainFolder(musivDir);
 
             // For each Musivation track
             int totalHits = 0;
@@ -398,7 +398,7 @@ namespace AudioMirror
                 }
             }
 
-            printTotalHits(totalHits);
+            PrintTotalHits(totalHits);
         }
 
         /// <summary>
@@ -427,7 +427,7 @@ namespace AudioMirror
         /// <summary>
         /// Print message displaying the total hits, if there were any
         /// </summary>
-        private void printTotalHits(int totalHits)
+        private void PrintTotalHits(int totalHits)
         {
             if (totalHits != 0)
             {
@@ -436,45 +436,45 @@ namespace AudioMirror
         }
 
         /// <returns>The given string sanitised and trimmed, with special chars removed</returns>
-        private string standardiseStr(string s)
+        private string StandardiseStr(string s)
         {
             return Reflector.SanitiseFilename(s).Replace("_", "").Trim();
         }
 
         /// <param name="mainFolderName">The name of the folder within the Audio folder</param>
         /// <returns>A list of the audio tags for the tracks in that folder only</returns>
-        private List<TrackTag> filterTagsByMainFolder(string mainFolderName)
+        private List<TrackTag> FilterTagsByMainFolder(string mainFolderName)
         {
-            return audioTags.Where(tag => getRelPathPart(tag, 1) == mainFolderName).ToList();
+            return audioTags.Where(tag => GetRelPathPart(tag, 1) == mainFolderName).ToList();
         }
 
         /// <param name="tag">The audio tag</param>
         /// <returns>The track's filename</returns>
-        private string getFileName(TrackTag tag)
+        private string GetFileName(TrackTag tag)
         {
-            string[] pathParts = getPathParts(tag);
+            string[] pathParts = GetPathParts(tag);
             return pathParts[pathParts.Length - 1];
         }
 
         /// <param name="tag">The audio tag</param>
         /// <returns>The track's direct parent folder</returns>
-        private string getDirectParentFolder(TrackTag tag)
+        private string GetDirectParentFolder(TrackTag tag)
         {
-            string[] pathParts = getPathParts(tag);
+            string[] pathParts = GetPathParts(tag);
             return pathParts[pathParts.Length - 2];
         }
 
         /// <param name="tag">The audio tag</param>
         /// <param name="pos">The index of the desired path part</param>
         /// <returns>The desired relative path part</returns>
-        private string getRelPathPart(TrackTag tag, int pos)
+        private string GetRelPathPart(TrackTag tag, int pos)
         {
-            return getPathParts(tag)[pos];
+            return GetPathParts(tag)[pos];
         }
 
         /// <param name="tag">The audio tag</param>
         /// <returns>The parts of the track's relative path</returns>
-        private string[] getPathParts(TrackTag tag)
+        private string[] GetPathParts(TrackTag tag)
         {
             return tag.RelPath.Split('\\');
         }
