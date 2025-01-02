@@ -12,7 +12,8 @@ namespace AudioMirror
     internal class Analyser : Doer
     {
         // Variables
-        private List<TrackTag> audioTags;
+        double artistStatsCutoff = 0.5;
+        double yearStatsCutoff = 2.0;
 
         /// <summary>
         /// Construct an audio tag analyser
@@ -23,19 +24,19 @@ namespace AudioMirror
             // Notify
             Console.WriteLine("\nAnalysing tags...");
 
-            // Save parameter
-            this.audioTags = audioTags;
-
             // Print artist stats
-            PrintFreqStats("Artists", tag => tag.Artists, 0.5);
+            StringIntFreqDist artistFreqDist = PrintFreqStats("Artists", audioTags, tag => tag.Artists, artistStatsCutoff);
+
+            // Print artist stats excluding Musivation artists
+            PrintArtistStatsExcludingMusivation("Artists (Musivation Filtered Out)", audioTags, artistFreqDist, artistStatsCutoff);
 
             // Print genre stats
-            PrintFreqStats("Genre", tag => tag.Genres);
+            PrintFreqStats("Genre", audioTags, tag => tag.Genres);
 
             // Print year stats
-            StringIntFreqDist yearFreqDist = PrintFreqStats("Year", tag => tag.Year, 2.0);
+            StringIntFreqDist yearFreqDist = PrintFreqStats("Year", audioTags, tag => tag.Year, yearStatsCutoff);
 
-            // Print decade/time period stats 
+            // Print decade/time period stats
             PrintDecadeStats("Decade", yearFreqDist);
 
             // Print time taken
@@ -47,14 +48,17 @@ namespace AudioMirror
         /// Print frequency statistics for a given track property
         /// </summary>
         /// <param name="statName">The name of the property</param>
+        /// <param name="audioTagsIn">The list of audio tags inputted</param>
         /// <param name="func">Function that returns the property</param>
-        private StringIntFreqDist PrintFreqStats(string statName, Func<TrackTag, string> func, double cutoff = 0.25)
+        /// <param name="cutoff">Percentage cutoff for statistics</param>
+        private StringIntFreqDist PrintFreqStats(string statName, List<TrackTag> audioTagsIn,
+            Func<TrackTag, string> func, double cutoff = 0.25)
         {
             // Print heading
             PrintHeading(statName);
 
             // Get sorted frequency distribution
-            StringIntFreqDist sortedFreqDist = getSortedFreqDist(audioTags, func);
+            StringIntFreqDist sortedFreqDist = getSortedFreqDist(audioTagsIn, func);
 
             // Print columns
             PrintColumns("%", statName, "Occurrences");
@@ -81,16 +85,16 @@ namespace AudioMirror
         /// <summary>
         /// Generates a frequency distribution of sub-properties extracted from a list of audio tags.
         /// </summary>
-        /// <param name="audioTags">The list of audio tags</param>
+        /// <param name="audioTagsIn">The list of audio tags inputted</param>
         /// <param name="func">A function that extracts a property from a given audio tag.</param>
         /// <returns>List of key-value pairs (property-frequency_count pairs), sorted in descending order by count.</returns>
-        public static StringIntFreqDist getSortedFreqDist(List<TrackTag> audioTags, Func<TrackTag, string> func)
+        public static StringIntFreqDist getSortedFreqDist(List<TrackTag> audioTagsIn, Func<TrackTag, string> func)
         {
             // A dictionary that maps each unique item to how many there are
             var itemVariants = new Dictionary<string, int>();
 
             // For each tag
-            foreach (var tag in audioTags)
+            foreach (var tag in audioTagsIn)
             {
                 // Extract properties using the given function
                 string[] properties = ProcessProperty(func(tag));
@@ -119,32 +123,39 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Splits a string of possibly concatenated values into an array.
+        /// Print artists statistics but exclude Musivation tracks
         /// </summary>
-        /// <param name="full">The full string, possibly concatenated with separators.</param>
-        /// <returns>An array extracted from the input string.</returns>
-        public static string[] ProcessProperty(string full)
+        private void PrintArtistStatsExcludingMusivation(string statName, List<TrackTag> audioTags, 
+            StringIntFreqDist artistFreqDist, double artistStatsCutoff)
         {
-            char[] separators = { ';', ',' };
+            // Print heading and columns
+            PrintHeading(statName);
+            PrintColumns("%", statName, "Occurrences");
 
-            // If doesn't contain any separators, return as is
-            if (!separators.Any(full.Contains))
+            // Filter freq dist down to artists who don't have musivation tracks
+            var filteredArtistFreqDist = artistFreqDist
+                .Where(pair => 
+                !audioTags.Any(tag => tag.Artists.Contains(pair.Key) && tag.Genres.Contains("Musivation")));
+
+            // Get total number of items (i.e. sum of occurrences)
+            int totalItems = filteredArtistFreqDist.Sum(pair => pair.Value);
+
+            // For each item
+            foreach (var item in filteredArtistFreqDist)
             {
-                return new[] { full };
+                // Extract info
+                var itemValue = item.Key.ToString();
+                var count = item.Value;
+                var percentage = ((double)count / totalItems) * 100;
+
+                // Print statistics line
+                PrintStatsLine(percentage, itemValue, count, artistStatsCutoff);
             }
-
-            // Split string using first separator found
-            char selectedSeparator = separators.First(s => full.Contains(s));
-            string[] artistArr = full.Split(selectedSeparator);
-
-            // Return array without whitespace in strings
-            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
         /// <summary>
         /// Print statistics on how many tracks are in each time/decade period
         /// </summary>
-        /// <param name="yearFreqDist"></param>
         private void PrintDecadeStats(string statName, StringIntFreqDist yearFreqDist)
         {
             // Print heading and columns
@@ -191,12 +202,35 @@ namespace AudioMirror
         }
 
         /// <summary>
+        /// Splits a string of possibly concatenated values into an array.
+        /// </summary>
+        /// <param name="full">The full string, possibly concatenated with separators.</param>
+        /// <returns>An array extracted from the input string.</returns>
+        public static string[] ProcessProperty(string full)
+        {
+            char[] separators = { ';', ',' };
+
+            // If doesn't contain any separators, return as is
+            if (!separators.Any(full.Contains))
+            {
+                return new[] { full };
+            }
+
+            // Split string using first separator found
+            char selectedSeparator = separators.First(s => full.Contains(s));
+            string[] artistArr = full.Split(selectedSeparator);
+
+            // Return array without whitespace in strings
+            return artistArr.Select(a => a.Trim()).ToArray();
+        }
+
+        /// <summary>
         /// Print statistics line
         /// </summary>
         /// <param name="percentage">Percentage</param>
         /// <param name="itemValue">The actual item/instance value</param>
         /// <param name="freq">Frequency </param>
-        private void PrintStatsLine(double percentage, string itemValue, int freq, double cutoff)
+        private void PrintStatsLine(double percentage, string itemValue, int freq, double cutoff = 0.25)
         {
             string freqS = freq.ToString();
             string percentS = percentage.ToString("F2") + "%";
