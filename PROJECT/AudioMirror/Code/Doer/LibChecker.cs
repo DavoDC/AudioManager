@@ -111,12 +111,19 @@ namespace AudioMirror
             filename = standardiseStr(filename);
             subStr = standardiseStr(subStr);
 
-            // If the filename doesn't contain substring, notify
+            // If the expected value is "Missing" (null), then skip this check.
+            if(subStr.Equals("Missing"))
+            {
+                return 0;
+            }
+
+            // If the filename doesn't contain expected substring, notify
             if (!filename.Contains(subStr))
             {
                 Console.WriteLine($"  - '{filename}' should include '{subStr}'");
                 return 1;
             }
+
             return 0;
         }
 
@@ -220,7 +227,7 @@ namespace AudioMirror
                 // If property's value contains unwanted string, print message
                 if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
                 {
-                    Console.WriteLine($"  - Found '{unwanted}' in {propertyName} of '{tag.ToString()}'");
+                    Console.WriteLine($"  - Found '{unwanted}' in {propertyName} of '{tag}'");
                     return 1;
                 }
             }
