@@ -344,7 +344,7 @@ namespace AudioMirror
             var miscAudioTags = filterTagsByMainFolder(miscDir);
 
             // Generate primary artist frequency distribution of the Misc tags
-            var sortedMiscArtistFreq = Analyser.getSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
+            var sortedMiscArtistFreq = StatList.getSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
 
             // For each artist-frequency pair in the Misc folder
             int totalHits = 0;
