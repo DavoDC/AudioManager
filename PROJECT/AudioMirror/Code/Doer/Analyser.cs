@@ -184,8 +184,9 @@ namespace AudioMirror
             }
             else
             {
-                string errMsg = $"\nERROR: Cannot parse year string: '{year}'";
-                throw new ArgumentException(errMsg);
+                string errMsg = $"######### ERROR: Cannot parse year string: '{year}'";
+                Console.WriteLine(errMsg);
+                return 0;
             }
         }
 
