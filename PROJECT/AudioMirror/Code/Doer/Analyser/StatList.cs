@@ -188,9 +188,8 @@ namespace AudioMirror.Code.Modules
             }
             else
             {
-                // If couldn't parse, log error and return dummy value
-                Console.WriteLine($"######### ERROR: Cannot parse year string: '{year}'");
-                return "0000s";
+                // Otherwise throw error with message
+                throw new FormatException($"Cannot parse year string: '{year}'");
             }
         }
     }
