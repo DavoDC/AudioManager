@@ -16,7 +16,7 @@ namespace AudioMirror
         private readonly static string inMiscMsg = $" in the {miscDir} folder!";
         private readonly static string artistsDir = "Artists";
         private readonly static string musivDir = "Musivation";
-        private readonly static string[] unwantedInfo = { "feat.", "ft.", "edit", "version", "original", "soundtrack" };
+        private readonly static string[] unwantedInfo = { "feat.", "ft.", "edit", "bonus", "version", "original", "soundtrack" };
 
 
         // Variables
@@ -221,8 +221,8 @@ namespace AudioMirror
         {
             try
             {
-                // If an exception, skip
-                if (IsException(tag, unwanted)) { return 0; }
+                // If an exception to rules, skip
+                if (IsExceptionToRules(tag, unwanted)) { return 0; }
 
                 // If property's value contains unwanted string, print message
                 if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
@@ -240,7 +240,7 @@ namespace AudioMirror
         }
 
         /// <returns>True if metadata combination is whitelisted, false otherwise</returns>
-        private bool IsException(TrackTag tag, string unwanted)
+        private bool IsExceptionToRules(TrackTag tag, string unwanted)
         {
             if (unwanted.Equals("original") &&
                 (tag.Album.Equals("Original Rappers") || tag.Artists.Contains("KRS-One")))
@@ -270,7 +270,12 @@ namespace AudioMirror
             {
                 return true;
             }
-            
+
+            if (tag.Artists.Contains("Eric Thomas") && tag.Title.Contains("BONUS INTERVIEW"))
+            {
+                return true;
+            }
+
             return false;
         }
 
