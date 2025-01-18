@@ -62,20 +62,13 @@ namespace AudioMirror.Code.Modules
                     Compilation = GetElementValue("Compilation");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Create error message
+                // Create error message and throw new exception with it
                 string errMsg = "Error occurred while ";
-                errMsg += (tag != null) ? "creating NEW" : "loading EXISTING";
-                errMsg += " XML file!";
-
-                // Print info
-                Console.WriteLine($"\n{errMsg}");
-                Console.WriteLine($"\nMirror File: {mirrorFilePath}");
-                Console.WriteLine($"\nError: {ex.Message}");
-                Console.WriteLine($"\nStack Trace: \n{ex.StackTrace}");
-                Console.WriteLine("\n");
-                Environment.Exit(1);
+                errMsg += $"{(tag != null ? "creating NEW" : "loading EXISTING")} XML file!";
+                errMsg += $"\n'mirrorFilePath' was: {mirrorFilePath}";
+                throw new Exception(errMsg);
             }
         }
 
