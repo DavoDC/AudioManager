@@ -23,7 +23,6 @@ namespace AudioMirror
         string mirrorPath;
         bool recreateMirror;
 
-
         /// <summary>
         /// Construct an audio mirror
         /// </summary>

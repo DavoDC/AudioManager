@@ -16,8 +16,9 @@ namespace AudioMirror
         private readonly static string inMiscMsg = $" in the {miscDir} folder!";
         private readonly static string artistsDir = "Artists";
         private readonly static string musivDir = "Musivation";
-        private readonly static string[] unwantedInfo = { "feat.", "ft.", "edit", "bonus", "version", "original", "soundtrack" };
-
+        private readonly static string[] unwantedInfo = { 
+            "feat.", "ft.", "edit", "bonus", "version", "original", "soundtrack" 
+        };
 
         // Variables
         private List<TrackTag> audioTags;
@@ -282,7 +283,7 @@ namespace AudioMirror
         /// <summary>
         /// Do various checks on the Artist folder
         /// </summary>
-        private List<String> CheckArtistFolder()
+        private List<string> CheckArtistFolder()
         {
             Console.WriteLine($" - Checking {artistsDir} folder...");
 
@@ -341,7 +342,7 @@ namespace AudioMirror
         /// <summary>
         /// Do various checks on the Miscellaneous folder
         /// </summary>
-        private void CheckMiscFolder(List<String> artistsWithAudioFolder)
+        private void CheckMiscFolder(List<string> artistsWithAudioFolder)
         {
             Console.WriteLine($" - Checking {miscDir} folder...");
 
@@ -407,26 +408,17 @@ namespace AudioMirror
         }
 
         /// <summary>
-        /// Handles exceptions occurring in library checker methods: prints info and exits.
+        /// Handles exceptions occurring in library checker methods.
         /// </summary>
         /// <param name="ex">The exception that was thrown.</param>
         /// <param name="tag">The track tag associated with the exception.</param>
         /// <param name="methodName">The name of the calling method (auto-filled).</param>
-        private void HandleLibCheckerException(Exception ex, TrackTag tag, [CallerMemberName] string methodName = "")
+        private void HandleLibCheckerException(Exception ex, TrackTag tag, 
+            [CallerMemberName] string methodName = "")
         {
-            Console.WriteLine($"\nException occurred in {methodName}(): {ex.Message}");
-
-            if (tag != null)
-            {
-                Console.WriteLine("\nTag details: " + tag.ToString());
-                tag.PrintAllProperties();
-            }
-            else
-            {
-                Console.WriteLine("\nTag details are not available (null).");
-            }
-
-            Environment.Exit(1);
+            string msg = $"\nException occurred in {methodName}(): \n{ex.Message}";
+            msg += $"\nTag details: {((tag == null) ? "NULL" : tag.ToAllPropertiesString())}";
+            throw new InvalidOperationException(msg);
         }
 
         /// <summary>

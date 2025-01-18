@@ -93,26 +93,34 @@ namespace AudioMirror.Code.Modules
             set => compilation = value;
         }
 
-        /// <returns>A string representation of this track</returns>
+        /// <returns>A concise string representation of this track</returns>
         public override string ToString()
         {
             return $"{Artists} - {Title}";
         }
 
-        /// <returns>Print out all properties of this track</returns>
+        /// <returns>A string representation of all track properties.</returns>
+        public string ToAllPropertiesString()
+        {
+            return $"RelPath: {RelPath ?? "NULL"}\n" +
+                   $"Title: {Title ?? "NULL"}\n" +
+                   $"Artists: {Artists ?? "NULL"}\n" +
+                   $"PrimaryArtist: {PrimaryArtist ?? "NULL"}\n" +
+                   $"Album: {Album ?? "NULL"}\n" +
+                   $"Year: {Year ?? "NULL"}\n" +
+                   $"TrackNumber: {TrackNumber ?? "NULL"}\n" +
+                   $"Genres: {Genres ?? "NULL"}\n" +
+                   $"Length: {Length ?? "NULL"}\n" +
+                   $"AlbumCoverCount: {AlbumCoverCount ?? "NULL"}\n" +
+                   $"Compilation: {Compilation ?? "NULL"}";
+        }
+
+        /// <summary>
+        /// Prints all properties of this track.
+        /// </summary>
         public void PrintAllProperties()
         {
-            Console.WriteLine($"RelPath: {RelPath ?? "NULL"}");
-            Console.WriteLine($"Title: {Title ?? "NULL"}");
-            Console.WriteLine($"Artists: {Artists ?? "NULL"}");
-            Console.WriteLine($"PrimaryArtist: {PrimaryArtist ?? "NULL"}");
-            Console.WriteLine($"Album: {Album ?? "NULL"}");
-            Console.WriteLine($"Year: {Year ?? "NULL"}");
-            Console.WriteLine($"TrackNumber: {TrackNumber ?? "NULL"}");
-            Console.WriteLine($"Genres: {Genres ?? "NULL"}");
-            Console.WriteLine($"Length: {Length ?? "NULL"}");
-            Console.WriteLine($"AlbumCoverCount: {AlbumCoverCount ?? "NULL"}");
-            Console.WriteLine($"Compilation: {Compilation ?? "NULL"}");
+            Console.WriteLine(ToAllPropertiesString());
         }
     }
 }

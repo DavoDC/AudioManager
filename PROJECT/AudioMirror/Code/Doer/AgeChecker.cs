@@ -116,7 +116,7 @@ namespace AudioMirror
             }
             else
             {
-                throw new ArgumentException("Unsupported type");
+                throw new ArgumentException("Unsupported type given to function");
             }
         }
     }

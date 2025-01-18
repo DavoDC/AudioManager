@@ -68,7 +68,7 @@ namespace AudioMirror.Code.Modules
                 string errMsg = "Error occurred while ";
                 errMsg += $"{(tag != null ? "creating NEW" : "loading EXISTING")} XML file!";
                 errMsg += $"\n'mirrorFilePath' was: {mirrorFilePath}";
-                throw new Exception(errMsg);
+                throw new XmlException(errMsg);
             }
         }
 
