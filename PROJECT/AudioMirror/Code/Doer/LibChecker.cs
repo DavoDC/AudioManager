@@ -17,7 +17,7 @@ namespace AudioMirror
         private readonly static string artistsDir = "Artists";
         private readonly static string musivDir = "Musivation";
         private readonly static string[] unwantedInfo = { 
-            "feat.", "ft.", "edit", "bonus", "version", "original", "soundtrack" 
+            "feat.", "ft.", "edit", "bonus", "original", "soundtrack" 
         };
 
         // Variables
