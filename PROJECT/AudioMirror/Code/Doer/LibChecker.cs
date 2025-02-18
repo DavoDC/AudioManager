@@ -37,7 +37,8 @@ namespace AudioMirror
 
             // Check all tags
             int totalTagHits = 0;
-            Console.WriteLine(" - Checking all tags against filenames and for unwanted/missing info...");
+            Console.WriteLine(" - Checking all tags against filenames..");
+            Console.WriteLine(" - Checking all tags for unwanted/missing info...");
             foreach (TrackTag tag in audioTags)
             {
                 // Check filename against tag
@@ -60,6 +61,9 @@ namespace AudioMirror
                 }
             }
             PrintTotalHits(totalTagHits);
+
+            // Check for duplicate tracks
+            CheckForDuplicates();
 
             // Check Artists folder
             List<string> artistsWithAudioFolder = CheckArtistFolder();
@@ -337,6 +341,29 @@ namespace AudioMirror
             // Get list of artists with an audio folder (without duplicates) and return
             var artistsWithAudioFolder = artistAudioTags.Select(tag => tag.PrimaryArtist).Distinct().ToList();
             return artistsWithAudioFolder;
+        }
+
+        /// <summary>
+        /// Check for duplicate tracks
+        /// </summary>
+        private void CheckForDuplicates()
+        {
+            Console.WriteLine($" - Checking all tags for duplicates...");
+
+            // Get duplicate tracks using LINQ
+            var duplicateTracks = audioTags
+                .GroupBy(t => new { t.Title, t.PrimaryArtist }) // Group the tracks by Title and Primary Artist
+                .Where(g => g.Count() > 1) // Filter to counts above 1
+                .SelectMany(g => g); // Get instances
+
+            // Print out info of each duplicate
+            int totalHits = 0;
+            foreach (var curDupe in duplicateTracks)
+            {
+                Console.WriteLine($"  - '{curDupe.RelPath}' duplicates another track!");
+                totalHits++;
+            }
+            PrintTotalHits(totalHits);
         }
 
         /// <summary>
