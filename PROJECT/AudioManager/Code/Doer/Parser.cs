@@ -29,8 +29,14 @@ namespace AudioManager
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
             foreach (var mirrorFilePath in mirrorFiles)
             {
-                // If non-XML file found, notify
-                if (Path.GetExtension(mirrorFilePath) != ".xml")
+                // Skip the README file
+                if (Path.GetFileName(mirrorFilePath).Equals("README.md"))
+                {
+                    continue;
+                }
+
+                // If non-XML file found (other than README), notify
+                if (Path.GetExtension(mirrorFilePath) != ".xml" )
                 {
                     throw new ArgumentException($"Non-XML file found in mirror folder: {mirrorFilePath}");
                 }

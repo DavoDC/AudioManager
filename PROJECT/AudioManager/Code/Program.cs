@@ -16,7 +16,7 @@ namespace AudioManager
         public static string MirrorFolder { get => mirrorFolder; }
 
         // The path to the mirror folder relative to program executable
-        private static readonly string relMirrorPath = projectPath + "..\\" + mirrorFolder;
+        private static readonly string relMirrorPath = projectPath + "..\\..\\AudioMirror\\" + mirrorFolder;
 
         /// <summary>
         /// Main function
@@ -27,7 +27,7 @@ namespace AudioManager
             try
             {
                 // Start message
-                Console.WriteLine("\n###### Audio Mirror ######\n");
+                Console.WriteLine("\n###### Audio Manager ######\n");
 
                 // Set mirror path relative to program executable
                 string programDir = AppDomain.CurrentDomain.BaseDirectory;
