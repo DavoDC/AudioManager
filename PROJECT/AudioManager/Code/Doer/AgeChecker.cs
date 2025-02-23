@@ -83,8 +83,8 @@ namespace AudioManager
                 Console.WriteLine(msgStart + "was created recently, no regeneration needed!");
             }
 
-            // Print time taken
-            PrintTimeTaken();
+            // Finish and print time taken
+            FinishAndPrintTimeTaken();
         }
 
 

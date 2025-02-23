@@ -49,9 +49,9 @@ namespace AudioManager
             yearStats.Print(yearStatsCutoff);
             decadeStats.Print(decadeStatsCutoff);
 
-            // Print time taken
+            // Finish and print time taken
             Console.WriteLine("");
-            PrintTimeTaken();
+            FinishAndPrintTimeTaken();
         }
     }
 }
