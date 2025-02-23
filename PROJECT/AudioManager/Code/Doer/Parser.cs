@@ -45,9 +45,11 @@ namespace AudioManager
                 audioTags.Add(new TrackTag(mirrorFilePath));
             }
 
-            // Print statistics
+            // Print number of tags parsed
             Console.WriteLine($" - Tags parsed: {audioTags.Count}");
-            PrintTimeTaken();
+
+            // Finish and print time taken
+            FinishAndPrintTimeTaken();
         }
     }
 }
