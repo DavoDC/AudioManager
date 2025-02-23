@@ -74,9 +74,9 @@ namespace AudioManager
             // Check Musivation folder
             CheckMusivationFolder();
 
-            // Print time taken
+            // Finish and print time taken
             Console.WriteLine("");
-            PrintTimeTaken();
+            FinishAndPrintTimeTaken();
         }
 
         /// <summary>

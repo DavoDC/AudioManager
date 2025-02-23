@@ -198,8 +198,8 @@ namespace AudioManager
             // Print recreation setting
             Console.WriteLine($" - Recreated: {recreateMirror}");
 
-            // Print time taken
-            PrintTimeTaken();
+            // Finish and print time taken
+            FinishAndPrintTimeTaken();
         }
 
         /// <summary>
