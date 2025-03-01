@@ -210,7 +210,7 @@ namespace AudioManager
         private Tuple<string, string> ProcessNonMP3(List<string> nonMP3Files)
         {
             // Extract list of extensions
-            var extList = nonMP3Files.Select(fileName => "." + fileName.Split('.')[1]).ToList();
+            var extList = nonMP3Files.Select(fileName => Path.GetExtension(fileName)).ToList();
 
             // Check against expected types
             var expectedExt = new HashSet<string> { ".ini", ".txt", ".lnk", ".ffs_db" };
