@@ -7,16 +7,21 @@ namespace AudioManager
     {
         //// CONSTANTS/SETTINGS
 
-        // The path back to the project folder
+        // The relative path from the executable back to the project folder
         private static readonly string projectPath = "..\\..\\..\\";
         public static string ProjectPath { get => projectPath; }
 
-        // The mirror folder name
-        private static readonly string mirrorFolder = "AUDIO_MIRROR";
-        public static string MirrorFolder { get => mirrorFolder; }
+        // The relative path to the mirror repo (assumed to be next to this repo)
+        private static readonly string mirrorRepoPath = ProjectPath + "..\\..\\AudioMirror\\";
+        public static string MirrorRepoPath { get => mirrorRepoPath; }
 
-        // The path to the mirror folder relative to program executable
-        private static readonly string relMirrorPath = projectPath + "..\\..\\AudioMirror\\" + mirrorFolder;
+        // The mirror folder name
+        private static readonly string mirrorFolderName = "AUDIO_MIRROR";
+        public static string MirrorFolderName { get => mirrorFolderName; }
+
+        // The relative path to the mirror folder
+        private static readonly string mirrorFolderPath = $"{MirrorRepoPath}\\{MirrorFolderName}";
+        public static string MirrorFolderPath { get => mirrorFolderPath; }
 
         /// <summary>
         /// Main function
@@ -29,9 +34,11 @@ namespace AudioManager
                 // Start message
                 Console.WriteLine("\n###### Audio Manager ######\n");
 
-                // Set mirror path relative to program executable
-                string programDir = AppDomain.CurrentDomain.BaseDirectory;
-                string mirrorPath = Path.GetFullPath(Path.Combine(programDir, relMirrorPath));
+                // Get the path of the executable
+                string progExecPath = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Set mirror path relative to the executable
+                string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, MirrorFolderPath));
 
                 // 0) Check the age of the mirror
                 AgeChecker ac = new AgeChecker();
