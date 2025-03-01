@@ -4,7 +4,7 @@ using System.IO;
 namespace AudioManager
 {
     /// <summary>
-    /// Check if the mirror was generated over a week ago. If so, schedule a regeneration.
+    /// Checks whether the mirror was generated too long ago.
     /// </summary>
     internal class AgeChecker : Doer
     {
@@ -14,8 +14,10 @@ namespace AudioManager
         public bool recreateMirror { get; set; }
 
         // The path to the last run info file
-        static string lastRunInfoFilePath = Program.ProjectPath + "LastRunInfo.txt";
+        private static readonly string lastRunInfoFilePath = Program.MirrorRepoPath + "LastRunInfo.txt";
 
+        // If the mirror is older than this amount of time, it is considered outdated
+        private static readonly TimeSpan ageThreshold = TimeSpan.FromDays(7);
 
         /// <summary>
         /// Construct an age checker
@@ -66,8 +68,8 @@ namespace AudioManager
             TimeSpan mirrorAge = curDate.Subtract(mirrorCreationDate);
             PrintDate("MirrorAge", mirrorAge);
 
-            // If the mirror was created over 7 days ago, regenerate it
-            recreateMirror = mirrorAge.Days > 7;
+            // If the mirror's age exceeds the threshold, regenerate it
+            recreateMirror = mirrorAge > ageThreshold;
 
             // If mirror will be regenerated
             string msgStart = " - Mirror ";
