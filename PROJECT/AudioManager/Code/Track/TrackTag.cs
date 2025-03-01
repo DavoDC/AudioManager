@@ -16,8 +16,8 @@ namespace AudioManager.Code.Modules
         public TrackTag(string mirrorFilePath)
         {
             // Always initialise relative path
-            int relStartPos = mirrorFilePath.LastIndexOf(Program.MirrorFolder);
-            RelPath = mirrorFilePath.Remove(0, relStartPos + Program.MirrorFolder.Length);
+            int relStartPos = mirrorFilePath.LastIndexOf(Program.MirrorFolderName);
+            RelPath = mirrorFilePath.Remove(0, relStartPos + Program.MirrorFolderName.Length);
 
             // Get file contents of mirror file (should be a file path)
             string[] fileContents = File.ReadAllLines(mirrorFilePath);
