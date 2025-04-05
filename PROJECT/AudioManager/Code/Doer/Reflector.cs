@@ -21,18 +21,15 @@ namespace AudioManager
 
         //// VARIABLES
         string mirrorPath;
-        bool recreateMirror;
 
         /// <summary>
         /// Construct an audio mirror
         /// </summary>
         /// <param name="mirrorPath">The audio mirror folder path</param>
-        /// <param name="recreateMirror">Whether to recreate the mirror each time</param>
-        public Reflector(string mirrorPath, bool recreateMirror)
+        public Reflector(string mirrorPath)
         {
             // Save parameters
             this.mirrorPath = mirrorPath;
-            this.recreateMirror = recreateMirror;
 
             // Notify
             Console.WriteLine($"\nCreating mirror of '{audioFolderPath}'...");
@@ -62,7 +59,7 @@ namespace AudioManager
             }
 
             // If recreation wanted
-            if (recreateMirror)
+            if (AgeChecker.RegenMirror)
             {
                 // Remove the mirror path if it exists, to recreate it
                 if (Directory.Exists(mirrorPath))
@@ -196,7 +193,7 @@ namespace AudioManager
             Console.WriteLine($" - MP3 filenames sanitised: {sanitisedFileNames}");
 
             // Print recreation setting
-            Console.WriteLine($" - Recreated: {recreateMirror}");
+            Console.WriteLine($" - Recreated: {AgeChecker.RegenMirror}");
 
             // Finish and print time taken
             FinishAndPrintTimeTaken();

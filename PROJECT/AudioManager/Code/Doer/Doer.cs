@@ -13,13 +13,14 @@ namespace AudioManager
         private DateTime startTime;
 
         /// <summary>
-        /// The execution time of the action
+        /// The time taken for the action to execute.
         /// </summary>
         private TimeSpan executionTime;
-        public TimeSpan ExecutionTime
-        {
-            get => executionTime;
-        }
+
+        /// <summary>
+        /// The total time taken by all Doers during this program's runtime.
+        /// </summary>
+        private static TimeSpan totalTime;
 
         /// <summary>
         /// Initialises a new instance of the <see cref="Doer"/> class.
@@ -30,12 +31,21 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Finish execution and calculate execution time
-        /// NB: ALL DOERS MUST CALL THIS (directly or indirectly)
+        /// Finish execution: Calculate execution time and add it to the running total.
+        /// NB: ALL DOERS MUST CALL THIS (directly or indirectly) when they finish.
         /// </summary>
         protected void Finished()
         {
             executionTime = DateTime.Now - startTime;
+            totalTime += executionTime;
+        }
+
+        /// <summary>
+        /// Print time taken for this Doer to execute.
+        /// </summary>
+        protected void PrintTimeTaken()
+        {
+            Console.WriteLine(" - Time taken: " + ConvertTimeSpanToString(executionTime));
         }
 
         /// <summary>
@@ -44,11 +54,19 @@ namespace AudioManager
         protected void FinishAndPrintTimeTaken()
         {
             Finished();
-            Console.WriteLine(" - Time taken: " + ConvertTimeSpanToString(executionTime));
+            PrintTimeTaken();
         }
 
         /// <summary>
-        /// Formats a TimeSpan into a string
+        /// Print the total time taken by all Doers during this program's runtime.
+        /// </summary>
+        public static void PrintTotalTimeTaken()
+        {
+            Console.WriteLine("\nTotal time taken: " + ConvertTimeSpanToString(totalTime));
+        }
+
+        /// <summary>
+        /// Formats a TimeSpan into a string.
         /// </summary>
         public static string ConvertTimeSpanToString(TimeSpan timeSpan)
         {

@@ -4,14 +4,14 @@ using System.IO;
 namespace AudioManager
 {
     /// <summary>
-    /// Checks whether the mirror was generated too long ago.
+    /// Checks how long ago the mirror was generated.
     /// </summary>
     internal class AgeChecker : Doer
     {
         /// <summary>
         /// True if the mirror should be regenerated
         /// </summary>
-        public bool recreateMirror { get; set; }
+        public static bool RegenMirror { get; set; }
 
         // The path to the last run info file
         private static readonly string lastRunInfoFilePath = Program.MirrorRepoPath + "LastRunInfo.txt";
@@ -20,12 +20,14 @@ namespace AudioManager
         private static readonly TimeSpan ageThreshold = TimeSpan.FromDays(7);
 
         /// <summary>
-        /// Construct an age checker
+        /// Create an age checker
         /// </summary>
-        public AgeChecker() 
+        /// <param name="forceMirrorRegen">Whether the mirror should be regenerated regardless of age</param>
+        /// <exception cref="FileLoadException">If parsing date in last run file fails</exception>
+        public AgeChecker(bool forceMirrorRegen)
         {
             // Notify
-            Console.WriteLine($"Checking age of mirror...");
+            Console.WriteLine($"\nChecking age of mirror...");
 
             // Get current date
             DateTime curDate = DateTime.Now;
@@ -37,30 +39,22 @@ namespace AudioManager
                 // Create with it the current date
                 File.WriteAllText(lastRunInfoFilePath, GetStrFromDate(curDate));
 
-                // Schedule recreation and stop
-                recreateMirror = true;
+                // Notify and regenerate
+                Console.WriteLine(" - Mirror age is unknown, will regenerate!");
+                RegenMirror = true;
                 return;
             }
 
-            //// Else if the file exists:
-            // Parse and process date
+            //// Else if the last run file exists:
+            // Try to parse date
             DateTime mirrorCreationDate;
-            if (DateTime.TryParse(File.ReadAllText(lastRunInfoFilePath), out mirrorCreationDate))
+            if (!DateTime.TryParse(File.ReadAllText(lastRunInfoFilePath), out mirrorCreationDate))
             {
-                ProcessDates(curDate, mirrorCreationDate);
-            }
-            else
-            {
+                // If date parsing fails, notify and throw error
                 string parseErr = "\nERROR: Cannot parse date in: " + lastRunInfoFilePath;
                 throw new FileLoadException(parseErr);
             }
-        }
 
-
-        /// <param name="curDate">The current date</param>
-        /// <param name="mirrorCreationDate">The date the mirror was last created</param>
-        private void ProcessDates(DateTime curDate, DateTime mirrorCreationDate)
-        {
             // Print mirror creation date
             PrintDate("MirrorCreation", mirrorCreationDate);
 
@@ -68,27 +62,45 @@ namespace AudioManager
             TimeSpan mirrorAge = curDate.Subtract(mirrorCreationDate);
             PrintDate("MirrorAge", mirrorAge);
 
-            // If the mirror's age exceeds the threshold, regenerate it
-            recreateMirror = mirrorAge > ageThreshold;
-
-            // If mirror will be regenerated
-            string msgStart = " - Mirror ";
-            if (recreateMirror)
+            // If mirror is outdated (i.e. mirror's age exceeds the threshold)
+            if (mirrorAge > ageThreshold)
             {
-                // Notify and update date in file
-                Console.WriteLine(msgStart + "is outdated, will regenerate!");
-                File.WriteAllText(lastRunInfoFilePath, GetStrFromDate(curDate));
+                // Always regenerate
+                Console.WriteLine(" - Mirror is outdated, will regenerate!");
+                RegenMirror = true;
             }
             else
             {
-                // Else if not, notify
-                Console.WriteLine(msgStart + "was created recently, no regeneration needed!");
+                // Else if mirror not outdated
+                string mirrMsg = " - Mirror was generated recently, ";
+
+                // If force regen is on
+                if (forceMirrorRegen)
+                {
+                    // Regenerate anyway
+                    mirrMsg += "but 'force regeneration' is active! Will regenerate!";
+                    RegenMirror = true;
+                }
+                else
+                {
+                    // Else do not regen
+                    mirrMsg += "no regeneration needed!";
+                    RegenMirror = false;
+                }
+
+                // Notify 
+                Console.WriteLine(mirrMsg);
+            }
+
+            // If regeneration will occur, update last run info
+            if (RegenMirror)
+            {
+                File.WriteAllText(lastRunInfoFilePath, GetStrFromDate(curDate));
             }
 
             // Finish and print time taken
             FinishAndPrintTimeTaken();
         }
-
 
         /// <param name="desc">A description of the date/time</param>
         /// <param name="date">The date/time object</param>
@@ -97,7 +109,6 @@ namespace AudioManager
             string paddedDesc = (" - DateTime." + desc).PadRight(27);
             Console.WriteLine($"{paddedDesc}   {GetStrFromDate(timeVal)}");
         }
-
 
         /// <summary>
         /// Format a DateTime or TimeSpan as a string.

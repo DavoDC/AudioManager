@@ -32,7 +32,7 @@ namespace AudioManager
             try
             {
                 // Start message
-                Console.WriteLine("\n###### Audio Manager ######\n");
+                Console.WriteLine("\n###### Audio Manager ######");
 
                 // Get the path of the executable
                 string progExecPath = AppDomain.CurrentDomain.BaseDirectory;
@@ -40,12 +40,16 @@ namespace AudioManager
                 // Set mirror path relative to the executable
                 string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, MirrorFolderPath));
 
+                // Toggle forcing mirror to be regenerated (e.g. during development)
+                bool forceMirrorRegen = false;
+                //bool forceMirrorRegen = true;
+
                 // 0) Check the age of the mirror
-                AgeChecker ac = new AgeChecker();
+                AgeChecker ac = new AgeChecker(forceMirrorRegen);
 
                 // 1) Create mirror of audio folder
                 // Note: Files created at this stage just contain paths to the actual file, not metadata info.
-                Reflector r = new Reflector(mirrorPath, ac.recreateMirror);
+                Reflector r = new Reflector(mirrorPath);
 
                 // 2) Parse metadata into XML files and tag list
                 // Note: The file contents get overwritten with actual XML content in this stage.
@@ -57,10 +61,8 @@ namespace AudioManager
                 // 4) Do audio library organisational/metadata checks
                 LibChecker lc = new LibChecker(p.audioTags);
 
-                // Print total time
-                TimeSpan totalTime = ac.ExecutionTime + r.ExecutionTime + p.ExecutionTime;
-                totalTime += a.ExecutionTime + lc.ExecutionTime;
-                Console.WriteLine("\n\nTotal time taken: " + Doer.ConvertTimeSpanToString(totalTime));
+                // Print total time taken
+                Doer.PrintTotalTimeTaken();
 
                 // Finish message
                 Console.WriteLine("\nFinished!\n");
