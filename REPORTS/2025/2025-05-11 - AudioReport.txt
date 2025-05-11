@@ -1,0 +1,151 @@
+
+###### Audio Manager ######
+
+Checking age of mirror...
+ - DateTime.Now               2025-05-11 13:03:17
+ - DateTime.MirrorCreation    2025-05-11 12:54:46
+ - DateTime.MirrorAge         0d, 0h, 8m, 31s
+ - Mirror was generated recently, but 'force regeneration' is active! Will regenerate!
+ - Time taken: 0.003 seconds
+
+Creating mirror of 'C:\Users\David\Audio\'...
+ - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
+ - MP3 file count: 4964
+ - Non-MP3 files found: 14 (all expected)
+ - MP3 filenames sanitised: 78
+ - Recreated: True
+ - Time taken: 2.543 seconds
+
+Parsing audio metadata...
+ - Tags parsed: 4964
+ - Time taken: 8.296 seconds
+
+Analysing tags...
+
+# Artists Statistics (Excluding Musivation)
+#     %          Artists                             Occurrences
+1     2.56%      Eminem                              154
+2     1.88%      Kodak Black                         113
+3     1.59%      Kevin Gates                         96
+4     1.33%      2Pac                                80
+5     1.08%      Russ                                65
+6     1.06%      KRS-One                             64
+7     1.01%      Dual Core                           61
+8     1.00%      Juice WRLD                          60
+9     0.98%      Foster Ebayy                        59
+10    0.93%      Epic Rap Battles of History         56
+11    0.91%      Lil Tecca                           55
+12    0.88%      Snoop Dogg                          53
+13    0.85%      Kanye West                          51
+14    0.83%      Dr. Dre                             50
+15    0.83%      Ice Cube                            50
+16    0.78%      Chris Brown                         47
+17    0.75%      Lil Wayne                           45
+18    0.75%      Wiz Khalifa                         45
+19    0.68%      DaBaby                              41
+20    0.65%      50 Cent                             39
+21    0.63%      Nicki Minaj                         38
+22    0.63%      Jack Harlow                         38
+23    0.63%      YoungBoy Never Broke Again          38
+24    0.61%      Hopsin                              37
+25    0.61%      Lil Mosey                           37
+
+# Artists Statistics (All)
+#     %          Artists                             Occurrences
+1     6.25%      Akira The Don                       452
+2     2.13%      Eminem                              154
+3     1.56%      Kodak Black                         113
+4     1.45%      Eric Thomas                         105
+5     1.33%      Kevin Gates                         96
+6     1.31%      Jordan B. Peterson                  95
+7     1.18%      Alan Watts                          85
+8     1.11%      2Pac                                80
+9     1.00%      Loot Bryon Smith                    72
+10    0.90%      Russ                                65
+11    0.88%      KRS-One                             64
+12    0.84%      Dual Core                           61
+13    0.83%      Juice WRLD                          60
+14    0.82%      Foster Ebayy                        59
+15    0.77%      Epic Rap Battles of History         56
+16    0.76%      Lil Tecca                           55
+17    0.73%      Snoop Dogg                          53
+18    0.72%      Kanye West                          52
+19    0.69%      Dr. Dre                             50
+20    0.69%      Ice Cube                            50
+21    0.66%      Naval Ravikant                      48
+22    0.65%      Chris Brown                         47
+23    0.62%      Lil Wayne                           45
+24    0.62%      Wiz Khalifa                         45
+
+# Genre Statistics
+#     %          Genre                               Occurrences
+1     31.77%     Hip Hop                             2371
+2     31.56%     Rap                                 2356
+3     10.17%     Musivation                          759
+4     9.54%      Pop                                 712
+5     4.31%      Missing                             322
+6     2.37%      Rock                                177
+7     1.86%      R&B                                 139
+8     1.77%      Alternative                         132
+9     1.10%      Dance                               82
+10    1.06%      Films                               79
+11    1.06%      Games                               79
+12    0.74%      Electro                             55
+13    0.43%      Disco                               32
+14    0.42%      Asian Music                         31
+15    0.32%      Easy Listening                      24
+16    0.27%      Reggae                              20
+
+# Year Statistics
+#     %          Year                                Occurrences
+1     10.01%     2022                                497
+2     7.98%      2020                                396
+3     7.63%      2021                                379
+4     7.51%      2019                                373
+5     5.54%      2012                                275
+6     5.20%      2023                                258
+7     5.08%      2018                                252
+8     4.98%      2013                                247
+9     4.65%      2024                                231
+10    3.87%      2015                                192
+11    3.73%      2017                                185
+12    3.32%      2014                                165
+13    2.92%      2009                                145
+14    2.58%      2007                                128
+15    2.50%      2010                                124
+16    2.42%      2008                                120
+17    2.26%      2016                                112
+18    2.10%      2011                                104
+
+# Decade Statistics
+#     %          Decade                              Occurrences
+1     40.87%     2010s                               2029
+2     36.32%     2020s                               1803
+3     17.16%     2000s                               852
+4     3.20%      1990s                               159
+5     1.11%      1980s                               55
+6     0.36%      1970s                               18
+7     0.36%      1940s                               18
+8     0.30%      1950s                               15
+9     0.22%      1960s                               11
+10    0.08%      1930s                               4
+
+ - Time taken: 0.04 seconds
+
+Checking library...
+ - Checking all tags against filenames..
+ - Checking all tags for unwanted/missing info...
+ - Checking all tags for duplicates...
+ - Checking Artists folder...
+ - Checking Miscellaneous Songs folder...
+ - Checking Musivation folder...
+
+ - Time taken: 0.133 seconds
+
+Total time taken: 11.015 seconds
+
+Finished!
+
+
+C:\Users\David\GitHubRepos\AudioManager\PROJECT\AudioManager\bin\Release\AudioManager.exe (process 26476) exited with code 0 (0x0).
+Press any key to close this window . . .
