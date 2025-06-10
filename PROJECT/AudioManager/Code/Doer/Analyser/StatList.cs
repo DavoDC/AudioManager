@@ -188,8 +188,9 @@ namespace AudioManager.Code.Modules
             }
             else
             {
-                // Otherwise throw error with message
-                throw new FormatException($"Cannot parse year string: '{year}'");
+                // Otherwise print message and return dummy string
+                Console.WriteLine($"ERROR: Cannot parse year string: '{year}'");
+                return "0000";
             }
         }
     }
