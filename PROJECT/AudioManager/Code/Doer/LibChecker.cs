@@ -16,6 +16,7 @@ namespace AudioManager
         private readonly static string inMiscMsg = $" in the {miscDir} folder!";
         private readonly static string artistsDir = "Artists";
         private readonly static string musivDir = "Musivation";
+        private readonly static string motivDir = "Motivation";
         private readonly static string[] unwantedInfo = { 
             "feat.", "ft.", "edit", "bonus", "original", "soundtrack" 
         };
@@ -71,8 +72,9 @@ namespace AudioManager
             // Check Miscellaneous Songs folder
             CheckMiscFolder(artistsWithAudioFolder);
 
-            // Check Musivation folder
-            CheckMusivationFolder();
+            // Check Musivation and Motivation folders
+            CheckMainFolderForGenre(musivDir, musivDir);
+            CheckMainFolderForGenre(motivDir, motivDir);
 
             // Finish and print time taken
             Console.WriteLine("");
@@ -410,27 +412,31 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Do various checks on the Musivation folder
+        /// Check a main folder's tracks for a particular genre
         /// </summary>
-        private void CheckMusivationFolder()
+        /// <param name="mainFolder"></param>
+        /// <param name="expectedGenre"></param>
+        private void CheckMainFolderForGenre(string mainFolder, string expectedGenre)
         {
-            Console.WriteLine($" - Checking {musivDir} folder...");
+            // Notify
+            Console.WriteLine($" - Checking {mainFolder} folder...");
 
-            // Filter audio tags down to Musivation folder only
-            var musivAudioTags = FilterTagsByMainFolder(musivDir);
+            // Filter audio tags down to main folder only
+            var filteredAudioTags = FilterTagsByMainFolder(mainFolder);
 
-            // For each Musivation track
+            // For each track in that folder
             int totalHits = 0;
-            foreach (TrackTag tag in musivAudioTags)
+            foreach (TrackTag tag in filteredAudioTags)
             {
-                // If it doesn't have the Musivation genre, notify
-                if(!tag.Genres.Contains("Musivation"))
+                // If it doesn't have the expected genre, notify
+                if (!tag.Genres.Contains(expectedGenre))
                 {
-                    Console.WriteLine($"  - {tag.ToString()} does not have the Musivation genre!");
+                    Console.WriteLine($"  - {tag.ToString()} does not have the {expectedGenre} genre!");
                     totalHits++;
                 }
             }
 
+            // Print hits
             PrintTotalHits(totalHits);
         }
 
