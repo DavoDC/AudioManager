@@ -84,7 +84,7 @@ namespace AudioManager
             TimeSpan median = TimeSpan.FromSeconds(medianSeconds);
             Console.WriteLine($" - Median (typical) song length: {(int)median.TotalMinutes}m{median.Seconds:D2}s");
 
-            long totalBytes = new DirectoryInfo(Program.AudioFolderPath).GetFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+            long totalBytes = new DirectoryInfo(Constants.AudioFolderPath).GetFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
             double totalGB = Math.Round(totalBytes / 1_073_741_824.0, 2);
             Console.WriteLine($" - Total library size: {totalGB} GB");
 
