@@ -7,9 +7,17 @@ namespace AudioManager
     {
         //// CONSTANTS/SETTINGS
 
+        // Common user base path
+        private static readonly string userBasePath = @"C:\Users\David\";
+        public static string UserBasePath { get => userBasePath; }
+
         // Actual Audio folder path
-        private static readonly string audioFolderPath = @"C:\Users\David\Audio\";
+        private static readonly string audioFolderPath = Path.Combine(userBasePath, "Audio");
         public static string AudioFolderPath { get => audioFolderPath; }
+
+        // Additional audio path (Downloads\NewMusic)
+        private static readonly string newMusicPath = Path.Combine(userBasePath, "Downloads", "NewMusic");
+        public static string NewMusicPath { get => newMusicPath; }
 
         // The relative path from the executable back to the project folder
         private static readonly string projectPath = "..\\..\\..\\";
