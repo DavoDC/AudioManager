@@ -53,6 +53,9 @@ namespace AudioManager
             yearStats.Print(yearStatsCutoff);
             decadeStats.Print(decadeStatsCutoff);
 
+            // Print age stats
+            PrintAgeStats(audioTags);
+
             // Finish and print time taken
             Console.WriteLine("");
             FinishAndPrintTimeTaken();
@@ -87,6 +90,33 @@ namespace AudioManager
 
             double avgFileMB = Math.Round((totalBytes / (double)audioTags.Count) / 1_048_576, 2);
             Console.WriteLine($" - Average file size: {avgFileMB} MB");
+        }
+
+        /// <summary>
+        /// Prints age statistics for the library, including average, median, min and max track age.
+        /// </summary>
+        /// <param name="audioTags">List of audio tags</param>
+        private static void PrintAgeStats(TagList audioTags)
+        {
+            Console.WriteLine($"\n# Age Statistics");
+            int currentYear = DateTime.Now.Year;
+            int[] ages = audioTags
+                .Where(t => int.TryParse(t.Year, out _))
+                .Select(t => currentYear - int.Parse(t.Year))
+                .OrderBy(a => a)
+                .ToArray();
+
+            double avg = Math.Round(ages.Average(), 1);
+            int min = ages.First();
+            int max = ages.Last();
+            double median = ages.Length % 2 == 1
+                ? ages[ages.Length / 2]
+                : (ages[ages.Length / 2 - 1] + ages[ages.Length / 2]) / 2.0;
+
+            Console.WriteLine($" - Average track age: {avg} years");
+            Console.WriteLine($" - Median track age:  {median} years");
+            Console.WriteLine($" - Newest track:      {min} years old ({currentYear - min})");
+            Console.WriteLine($" - Oldest track:      {max} years old ({currentYear - max})");
         }
     }
 }
