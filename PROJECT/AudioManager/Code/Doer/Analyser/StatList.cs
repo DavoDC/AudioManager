@@ -89,7 +89,7 @@ namespace AudioManager.Code.Modules
             foreach (var tag in audioTagsIn)
             {
                 // Extract properties using the given function
-                string[] properties = ProcessProperty(func(tag));
+                string[] properties = Track.ProcessProperty(func(tag));
 
                 // For each sub-property
                 foreach (string subProperty in properties)
@@ -112,29 +112,6 @@ namespace AudioManager.Code.Modules
             // Sort the dictionary by count in descending order,
             // and return as an IOrderedEnumerable of KeyValuePairs
             return itemVariants.OrderByDescending(pair => pair.Value);
-        }
-
-        /// <summary>
-        /// Splits a string of possibly concatenated values into an array.
-        /// </summary>
-        /// <param name="full">The full string, possibly concatenated with separators.</param>
-        /// <returns>An array extracted from the input string.</returns>
-        public static string[] ProcessProperty(string full)
-        {
-            char[] separators = { ';', ',' };
-
-            // If doesn't contain any separators, return as is
-            if (!separators.Any(full.Contains))
-            {
-                return new[] { full };
-            }
-
-            // Split string using first separator found
-            char selectedSeparator = separators.First(s => full.Contains(s));
-            string[] artistArr = full.Split(selectedSeparator);
-
-            // Return array without whitespace in strings
-            return artistArr.Select(a => a.Trim()).ToArray();
         }
 
         /// <summary>

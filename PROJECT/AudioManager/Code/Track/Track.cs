@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace AudioManager.Code.Modules
 {
@@ -34,7 +35,7 @@ namespace AudioManager.Code.Modules
         // The track's primary artist
         public string PrimaryArtist
         { 
-            get => StatList.ProcessProperty(Artists)[0];
+            get => Track.ProcessProperty(Artists)[0];
         }
 
         // The track's album
@@ -113,6 +114,22 @@ namespace AudioManager.Code.Modules
                    $"Length: {Length ?? "NULL"}\n" +
                    $"AlbumCoverCount: {AlbumCoverCount ?? "NULL"}\n" +
                    $"Compilation: {Compilation ?? "NULL"}";
+        }
+
+        /// <summary>
+        /// Splits a concatenated property string (e.g. artists) into individual values.
+        /// </summary>
+        /// <param name="full">The full string, possibly concatenated with separators.</param>
+        /// <returns>An array of trimmed values extracted from the input string.</returns>
+        public static string[] ProcessProperty(string full)
+        {
+            char[] separators = { ';', ',' };
+            if (!separators.Any(full.Contains))
+            {
+                return new[] { full };
+            }
+            char selectedSeparator = separators.First(s => full.Contains(s));
+            return full.Split(selectedSeparator).Select(a => a.Trim()).ToArray();
         }
 
         /// <summary>
