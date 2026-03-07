@@ -24,6 +24,12 @@ namespace AudioManager
             // Notify
             Console.WriteLine("\nAnalysing tags...");
 
+            // Calculate total playback hours
+            double totalDuration = audioTags.Sum(tag => TimeSpan.Parse(tag.Length).TotalSeconds);
+            double totalHours = Math.Round(totalDuration / 3600.0, 1);
+            double days = Math.Round(totalHours / 24.0, 1);
+            Console.WriteLine($"\nTotal playback hours: {totalHours} hours (≈{days} days non-stop)");
+
             // ### CALCULATE STATS
             // Calculate basic stats
             StatList artistStats = new StatList("Artists", audioTags, tag => tag.Artists);
