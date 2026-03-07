@@ -254,8 +254,16 @@ namespace AudioManager
         /// <returns>The relative path from the base path to the target path.</returns>
         private string GetRelativePath(string basePath, string targetPath)
         {
+            // Ensure basePath is treated as a directory (trailing separator) so Uri.MakeRelativeUri
+            // returns paths relative to the directory rather than including the directory name.
+            string basePathFixed = basePath;
+            if (!basePathFixed.EndsWith(Path.DirectorySeparatorChar.ToString()) && !basePathFixed.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
+            {
+                basePathFixed += Path.DirectorySeparatorChar;
+            }
+
             // Convert paths to URIs for accurate relative path calculation
-            Uri baseUri = new Uri(basePath);
+            Uri baseUri = new Uri(basePathFixed);
             Uri targetUri = new Uri(targetPath);
 
             // Calculate relative URI
