@@ -107,21 +107,8 @@ namespace AudioManager
         /// <returns>1 for Scan, 2 for Integrate</returns>
         private static int PromptMode()
         {
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("###### Audio Manager ######\n");
-                Console.WriteLine("Select mode:");
-                Console.WriteLine("  [1] Analysis");
-                Console.WriteLine("  [2] Integrate\n");
-                Console.WriteLine("Enter number:\n");
-
-                var key = Console.ReadKey(intercept: true);
-                if (key.KeyChar == '1') return 1;
-                if (key.KeyChar == '2') return 2;
-
-                // invalid input -> loop
-            }
+            int selected = PromptMenu("Select mode:", new[] { "Analysis", "Integrate" });
+            return selected + 1; // 1 = Analysis, 2 = Integrate
         }
 
         /// <summary>
@@ -130,14 +117,32 @@ namespace AudioManager
         /// <returns>true if user selects Y, false for N</returns>
         private static bool PromptForceMirrorRegen()
         {
+            int selected = PromptMenu("Force mirror regeneration?", new[] { "No", "Yes" });
+            return selected == 1;
+        }
+
+        /// <summary>
+        /// Displays an arrow-key navigable menu and returns the index of the selected option.
+        /// </summary>
+        /// <param name="title">The title shown above the options.</param>
+        /// <param name="options">The options to display.</param>
+        /// <returns>The zero-based index of the selected option.</returns>
+        private static int PromptMenu(string title, string[] options)
+        {
+            int selected = 0;
             while (true)
             {
-                Console.WriteLine(" - Force mirror regeneration?\n  [Y] Yes   [N] No\n");
-                var key = Console.ReadKey(intercept: true);
-                if (key.KeyChar == 'Y' || key.KeyChar == 'y') return true;
-                if (key.KeyChar == 'N' || key.KeyChar == 'n') return false;
-
-                // invalid input -> loop
+                Console.Clear();
+                Console.WriteLine("###### Audio Manager ######\n");
+                Console.WriteLine(title + "\n");
+                for (int i = 0; i < options.Length; i++)
+                {
+                    Console.WriteLine(i == selected ? $"  ▶ {options[i]}" : $"    {options[i]}");
+                }
+                var key = Console.ReadKey(intercept: true).Key;
+                if (key == ConsoleKey.UpArrow) selected = (selected == 0) ? options.Length - 1 : selected - 1;
+                if (key == ConsoleKey.DownArrow) selected = (selected == options.Length - 1) ? 0 : selected + 1;
+                if (key == ConsoleKey.Enter) return selected;
             }
         }
     }
