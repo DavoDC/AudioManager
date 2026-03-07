@@ -70,6 +70,8 @@
     <Compile Include="Code\Doer\Doer.cs" />
     <Compile Include="Code\Doer\MusicIntegrator.cs" />
     <Compile Include="Code\Doer\Reflector.cs" />
+    <Compile Include="Code\Doer\ReportWriter.cs" />
+    <Compile Include="Code\TeeWriter.cs" />
     <Compile Include="Code\Track\Track.cs" />
     <Compile Include="Code\Track\TrackTag.cs" />
     <Compile Include="Code\Track\TrackXML.cs" />
