@@ -30,6 +30,10 @@ namespace AudioManager
         // Relative path to mirror folder
         public static readonly string MirrorFolderPath = $"{MirrorRepoPath}\\{MirrorFolderName}";
 
+        // Path to the REPORTS folder in the repo root (e.g. C:\Users\David\GitHubRepos\AudioManager\REPORTS\)
+        public static readonly string ReportsPath = Path.GetFullPath(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "REPORTS"));
+
         /// <summary>
         /// Library folder names
         /// </summary>
