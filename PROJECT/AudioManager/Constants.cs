@@ -34,6 +34,15 @@ namespace AudioManager
         /// Library folder names
         /// </summary>
         
+        // Last run info file path
+        public static readonly string LastRunInfoFilePath = MirrorRepoPath + "LastRunInfo.txt";
+
+        // Age threshold for mirror regeneration
+        public static readonly TimeSpan AgeThreshold = TimeSpan.FromDays(7);
+
+        // Invalid file name characters
+        public static readonly char[] InvalidChars = Path.GetInvalidFileNameChars();
+
         public const string MiscDir    = "Miscellaneous Songs";
         public const string ArtistsDir = "Artists";
         public const string MusivDir   = "Musivation";

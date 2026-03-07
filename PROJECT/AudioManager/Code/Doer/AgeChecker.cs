@@ -13,12 +13,6 @@ namespace AudioManager
         /// </summary>
         public static bool RegenMirror { get; set; }
 
-        // The path to the last run info file
-        private static readonly string lastRunInfoFilePath = Program.MirrorRepoPath + "LastRunInfo.txt";
-
-        // If the mirror is older than this amount of time, it is considered outdated
-        private static readonly TimeSpan ageThreshold = TimeSpan.FromDays(7);
-
         /// <summary>
         /// Create an age checker
         /// </summary>
@@ -34,10 +28,10 @@ namespace AudioManager
             PrintDate("Now", curDate);
 
             // If the last run info file doesn't exist
-            if (!File.Exists(lastRunInfoFilePath))
+            if (!File.Exists(Constants.LastRunInfoFilePath))
             {
                 // Create with it the current date
-                File.WriteAllText(lastRunInfoFilePath, GetStrFromDate(curDate));
+                File.WriteAllText(Constants.LastRunInfoFilePath, GetStrFromDate(curDate));
 
                 // Notify and regenerate
                 Console.WriteLine(" - Mirror age is unknown, will regenerate!");
@@ -48,10 +42,10 @@ namespace AudioManager
             //// Else if the last run file exists:
             // Try to parse date
             DateTime mirrorCreationDate;
-            if (!DateTime.TryParse(File.ReadAllText(lastRunInfoFilePath), out mirrorCreationDate))
+            if (!DateTime.TryParse(File.ReadAllText(Constants.LastRunInfoFilePath), out mirrorCreationDate))
             {
                 // If date parsing fails, notify and throw error
-                string parseErr = "\nERROR: Cannot parse date in: " + lastRunInfoFilePath;
+                string parseErr = "\nERROR: Cannot parse date in: " + Constants.LastRunInfoFilePath;
                 throw new FileLoadException(parseErr);
             }
 
@@ -63,7 +57,7 @@ namespace AudioManager
             PrintDate("MirrorAge", mirrorAge);
 
             // If mirror is outdated (i.e. mirror's age exceeds the threshold)
-            if (mirrorAge > ageThreshold)
+            if (mirrorAge > Constants.AgeThreshold)
             {
                 // Always regenerate
                 Console.WriteLine(" - Mirror is outdated, will regenerate!");
@@ -95,7 +89,7 @@ namespace AudioManager
             // If regeneration will occur, update last run info
             if (RegenMirror)
             {
-                File.WriteAllText(lastRunInfoFilePath, GetStrFromDate(curDate));
+                File.WriteAllText(Constants.LastRunInfoFilePath, GetStrFromDate(curDate));
             }
 
             // Finish and print time taken

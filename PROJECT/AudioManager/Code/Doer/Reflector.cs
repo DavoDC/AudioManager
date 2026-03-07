@@ -12,9 +12,6 @@ namespace AudioManager
     /// </summary>
     internal class Reflector : Doer
     {
-        // Invalid file name characters
-        private static readonly char[] invalidChars = Path.GetInvalidFileNameChars();
-
         // Mirror path variable
         string mirrorPath;
 
@@ -236,9 +233,9 @@ namespace AudioManager
             sanitisedFilename = Encoding.ASCII.GetString(Encoding.GetEncoding("Cyrillic").GetBytes(sanitisedFilename));
 
             // Replace invalid characters with an underscore if found
-            if (sanitisedFilename.Any(c => invalidChars.Contains(c)))
+            if (sanitisedFilename.Any(c => Constants.InvalidChars.Contains(c)))
             {
-                sanitisedFilename = new string(sanitisedFilename.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
+                sanitisedFilename = new string(sanitisedFilename.Select(c => Constants.InvalidChars.Contains(c) ? '_' : c).ToArray());
             }
 
             // Return new file name
