@@ -26,22 +26,25 @@ namespace AudioManager
                 bool forceMirrorRegen = false;
                 //bool forceMirrorRegen = true;
 
-                // 0) Check the age of the mirror
-                AgeChecker ac = new AgeChecker(forceMirrorRegen);
+                // 0) Integrate any new music from NewMusic folder
+                MusicIntegrator mi = new MusicIntegrator();
 
-                // 1) Create mirror of audio folder
+                // 1) Check the age of the mirror
+                //AgeChecker ac = new AgeChecker(forceMirrorRegen);
+
+                // 2) Create mirror of audio folder
                 // Note: Files created at this stage just contain paths to the actual file, not metadata info.
-                Reflector r = new Reflector(mirrorPath);
+                //Reflector r = new Reflector(mirrorPath);
 
-                // 2) Parse metadata into XML files and tag list
+                // 3) Parse metadata into XML files and tag list
                 // Note: The file contents get overwritten with actual XML content in this stage.
-                Parser p = new Parser(mirrorPath);
+                //Parser p = new Parser(mirrorPath);
 
-                // 3) Analyse metadata and print statistics
-                Analyser a = new Analyser(p.audioTags);
+                // 4) Analyse metadata and print statistics
+                //Analyser a = new Analyser(p.audioTags);
 
-                // 4) Do audio library organisational/metadata checks
-                LibChecker lc = new LibChecker(p.audioTags);
+                // 5) Do audio library organisational/metadata checks
+                //LibChecker lc = new LibChecker(p.audioTags);
 
                 // Print total time taken
                 Doer.PrintTotalTimeTaken();
