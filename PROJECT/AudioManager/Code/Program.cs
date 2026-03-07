@@ -29,25 +29,48 @@ namespace AudioManager
                 {
                     // Scan mode
 
-                    // Ask whether to force mirror regeneration
-                    bool forceMirrorRegen = PromptForceMirrorRegen();
+                    // Capture console output for report
+                    StringWriter captureWriter = new StringWriter();
+                    TeeWriter teeWriter = new TeeWriter(Console.Out, captureWriter);
+                    Console.SetOut(teeWriter);
 
-                    // 1) Check the age of the mirror
-                    AgeChecker ac = new AgeChecker(forceMirrorRegen);
+                    try
+                    {
+                        // Ask whether to force mirror regeneration
+                        bool forceMirrorRegen = PromptForceMirrorRegen();
 
-                    // 2) Create mirror of audio folder
-                    // Note: Files created at this stage just contain paths to the actual file, not metadata info.
-                    Reflector r = new Reflector(mirrorPath);
+                        // 1) Check the age of the mirror
+                        AgeChecker ac = new AgeChecker(forceMirrorRegen);
 
-                    // 3) Parse metadata into XML files and tag list
-                    // Note: The file contents get overwritten with actual XML content in this stage.
-                    Parser p = new Parser(mirrorPath);
+                        // 2) Create mirror of audio folder
+                        // Note: Files created at this stage just contain paths to the actual file, not metadata info.
+                        Reflector r = new Reflector(mirrorPath);
 
-                    // 4) Analyse metadata and print statistics
-                    Analyser a = new Analyser(p.audioTags);
+                        // 3) Parse metadata into XML files and tag list
+                        // Note: The file contents get overwritten with actual XML content in this stage.
+                        Parser p = new Parser(mirrorPath);
 
-                    // 5) Do audio library organisational/metadata checks
-                    LibChecker lc = new LibChecker(p.audioTags);
+                        // 4) Analyse metadata and print statistics
+                        Analyser a = new Analyser(p.audioTags);
+
+                        // 5) Do audio library organisational/metadata checks
+                        LibChecker lc = new LibChecker(p.audioTags);
+                    }
+                    finally
+                    {
+                        // Restore console (do not save report yet)
+                        Console.SetOut(teeWriter.ConsoleWriter);
+                    }
+
+                    // Print total time taken and finish message, then save report
+                    Doer.PrintTotalTimeTaken();
+                    Console.WriteLine("\nFinished!\n");
+
+                    // Save report (overwrite today's report if exists)
+                    new ReportWriter(captureWriter.ToString());
+
+                    // Done for Scan mode — avoid duplicate final messages
+                    return;
                 }
                 else if (mode == 2)
                 {
@@ -55,10 +78,10 @@ namespace AudioManager
                     MusicIntegrator mi = new MusicIntegrator();
                 }
 
-                // Print total time taken
+                // Print total time taken (Integrate mode only)
                 Doer.PrintTotalTimeTaken();
 
-                // Finish message
+                // Finish message (Integrate mode only)
                 Console.WriteLine("\nFinished!\n");
             }
             catch (Exception ex)
