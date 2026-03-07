@@ -29,7 +29,7 @@ namespace AudioManager
             Directory.CreateDirectory(yearFolder);
             File.WriteAllText(fullPath, header + reportContent);
 
-            Console.WriteLine($"Report saved: REPORTS\\{year}\\{filename}");
+            Console.WriteLine($"\nReport saved: REPORTS\\{year}\\{filename}");
         }
 
         /// <summary>
