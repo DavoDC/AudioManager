@@ -35,7 +35,9 @@ namespace AudioManager
             Console.WriteLine($" - Average song length: {(int)avgLength.TotalMinutes}m{avgLength.Seconds:D2}s");
             long totalBytes = new DirectoryInfo(Program.AudioFolderPath).GetFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
             double totalGB = Math.Round(totalBytes / 1_073_741_824.0, 2);
-            Console.WriteLine($" - Library size: {totalGB} GB");
+            Console.WriteLine($" - Total library size: {totalGB} GB");
+            double avgFileMB = Math.Round((totalBytes / (double)audioTags.Count) / 1_048_576, 2);
+            Console.WriteLine($" - Average file size: {avgFileMB} MB");
 
             // ### CALCULATE STATS
             // Calculate basic stats
