@@ -27,18 +27,18 @@ namespace AudioManager
 
                 if (mode == 1)
                 {
-                    // Scan mode
+                    // Analysis mode
 
-                    // Capture console output for report
+                    // Ask whether to force mirror regeneration (before capture — not part of report)
+                    bool forceMirrorRegen = PromptForceMirrorRegen();
+
+                    // Start capturing console output for report
                     StringWriter captureWriter = new StringWriter();
                     TeeWriter teeWriter = new TeeWriter(Console.Out, captureWriter);
                     Console.SetOut(teeWriter);
 
                     try
                     {
-                        // Ask whether to force mirror regeneration
-                        bool forceMirrorRegen = PromptForceMirrorRegen();
-
                         // 1) Check the age of the mirror
                         AgeChecker ac = new AgeChecker(forceMirrorRegen);
 
@@ -55,21 +55,25 @@ namespace AudioManager
 
                         // 5) Do audio library organisational/metadata checks
                         LibChecker lc = new LibChecker(p.audioTags);
+
+                        // Print total time taken (captured into report)
+                        Doer.PrintTotalTimeTaken();
                     }
                     finally
                     {
-                        // Restore console (do not save report yet)
+                        // Restore real console output
                         Console.SetOut(teeWriter.ConsoleWriter);
                     }
 
-                    // Print total time taken and finish message, then save report
-                    Doer.PrintTotalTimeTaken();
+                    // Print finish message and mirror reminder to console only (not in report)
                     Console.WriteLine("\nFinished!\n");
+                    Console.WriteLine("Reminder: commit and push the AudioMirror repo:");
+                    Console.WriteLine(" → https://github.com/DavoDC/AudioMirror\n");
 
-                    // Save report (overwrite today's report if exists)
-                    new ReportWriter(captureWriter.ToString());
+                    // Save report
+                    ReportWriter.Save(captureWriter.ToString());
 
-                    // Done for Scan mode — avoid duplicate final messages
+                    // Analysis mode complete
                     return;
                 }
                 else if (mode == 2)
@@ -108,7 +112,7 @@ namespace AudioManager
                 Console.Clear();
                 Console.WriteLine("###### Audio Manager ######\n");
                 Console.WriteLine("Select mode:");
-                Console.WriteLine("  [1] Scan");
+                Console.WriteLine("  [1] Analysis");
                 Console.WriteLine("  [2] Integrate\n");
                 Console.WriteLine("Enter number:\n");
 
