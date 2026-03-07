@@ -33,15 +33,6 @@ namespace AudioManager
         /// <summary>
         /// Library folder names
         /// </summary>
-        
-        // Last run info file path
-        public static readonly string LastRunInfoFilePath = MirrorRepoPath + "LastRunInfo.txt";
-
-        // Age threshold for mirror regeneration
-        public static readonly TimeSpan AgeThreshold = TimeSpan.FromDays(7);
-
-        // Invalid file name characters
-        public static readonly char[] InvalidChars = Path.GetInvalidFileNameChars();
 
         public const string MiscDir    = "Miscellaneous Songs";
         public const string ArtistsDir = "Artists";
@@ -49,8 +40,25 @@ namespace AudioManager
         public const string MotivDir   = "Motivation";
 
         /// <summary>
-        // Tag validation
+        /// Mirror Management
+        /// </summary>
+
+        // Last run info file path
+        public static readonly string LastRunInfoFilePath = MirrorRepoPath + "LastRunInfo.txt";
+
+        // Age threshold for mirror regeneration
+        public static readonly TimeSpan AgeThreshold = TimeSpan.FromDays(7);
+
         /// <summary>
+        /// File System / Validation Utilities
+        /// </summary>
+
+        // Invalid file name characters
+        public static readonly char[] InvalidChars = Path.GetInvalidFileNameChars();
+
+        /// <summary>
+        /// Tag validation
+        /// </summary>
 
         /// Unwanted info in song titles that should be removed when validating tags
         public static readonly string[] UnwantedInfo = {
@@ -58,8 +66,8 @@ namespace AudioManager
         };
 
         /// <summary>
-        // Helpers
-        /// <summary>
+        /// Helpers
+        /// </summary>
 
         /// <summary>
         /// Gets the user's base path from the USERPROFILE environment variable,
