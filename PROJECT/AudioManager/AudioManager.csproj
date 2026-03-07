@@ -74,6 +74,7 @@
     <Compile Include="Code\Track\TrackXML.cs" />
     <Compile Include="Code\Doer\Parser.cs" />
     <Compile Include="Code\Program.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

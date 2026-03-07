@@ -11,16 +11,6 @@ namespace AudioManager
     /// </summary>
     internal class LibChecker : Doer
     {
-        // Constants
-        private readonly static string miscDir = "Miscellaneous Songs";
-        private readonly static string inMiscMsg = $" in the {miscDir} folder!";
-        private readonly static string artistsDir = "Artists";
-        private readonly static string musivDir = "Musivation";
-        private readonly static string motivDir = "Motivation";
-        private readonly static string[] unwantedInfo = { 
-            "feat.", "ft.", "edit", "bonus", "original", "soundtrack" 
-        };
-
         // Variables
         private List<TrackTag> audioTags;
 
@@ -73,8 +63,8 @@ namespace AudioManager
             CheckMiscFolder(artistsWithAudioFolder);
 
             // Check Musivation and Motivation folders
-            CheckMainFolderForGenre(musivDir, musivDir);
-            CheckMainFolderForGenre(motivDir, motivDir);
+            CheckMainFolderForGenre(Constants.MusivDir, Constants.MusivDir);
+            CheckMainFolderForGenre(Constants.MotivDir, Constants.MotivDir);
 
             // Finish and print time taken
             Console.WriteLine("");
@@ -144,7 +134,7 @@ namespace AudioManager
             int totalHits = 0;
 
             // For every unwanted string
-            foreach (var curUnwanted in unwantedInfo)
+            foreach (var curUnwanted in Constants.UnwantedInfo)
             {
                 // Check fields for unwanted substrings
                 totalHits += CheckProperty(tag, t => t.Artists, "artists", curUnwanted);
@@ -291,10 +281,10 @@ namespace AudioManager
         /// </summary>
         private List<string> CheckArtistFolder()
         {
-            Console.WriteLine($" - Checking {artistsDir} folder...");
+            Console.WriteLine($" - Checking {Constants.ArtistsDir} folder...");
 
             // Filter audio tags down to Artist Songs folder only
-            var artistAudioTags = FilterTagsByMainFolder(artistsDir);
+            var artistAudioTags = FilterTagsByMainFolder(Constants.ArtistsDir);
 
             // For all tags in the Artists folder
             int totalHits = 0;
@@ -373,10 +363,10 @@ namespace AudioManager
         /// </summary>
         private void CheckMiscFolder(List<string> artistsWithAudioFolder)
         {
-            Console.WriteLine($" - Checking {miscDir} folder...");
+            Console.WriteLine($" - Checking {Constants.MiscDir} folder...");
 
             // Filter audio tags down to Miscellaneous Songs folder only
-            var miscAudioTags = FilterTagsByMainFolder(miscDir);
+            var miscAudioTags = FilterTagsByMainFolder(Constants.MiscDir);
 
             // Generate primary artist frequency distribution of the Misc tags
             var sortedMiscArtistFreq = StatList.GetSortedFreqDist(miscAudioTags, t => t.PrimaryArtist);
@@ -395,15 +385,15 @@ namespace AudioManager
                 if (curMiscArtistCount >= 3)
                 {
                     string trioMsg = $"  - There are {curMiscArtistCount} songs by '{curMiscArtist}'";
-                    Console.WriteLine(trioMsg + inMiscMsg);
+                    Console.WriteLine(trioMsg + $" in the {Constants.MiscDir} folder!");
                     totalHits++;
                 }
 
                 // If song with an Artists folder is found in the Misc folder
                 if (artistsWithAudioFolder.Contains(curMiscArtist))
                 {
-                    string artistMsg = $"  - '{curMiscArtist}' has an {artistsDir} folder but has a song";
-                    Console.WriteLine(artistMsg + inMiscMsg);
+                    string artistMsg = $"  - '{curMiscArtist}' has an {Constants.ArtistsDir} folder but has a song";
+                    Console.WriteLine(artistMsg + $" in the {Constants.MiscDir} folder!");
                     totalHits++;
                 }
             }
