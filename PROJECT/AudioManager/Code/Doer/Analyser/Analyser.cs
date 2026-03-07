@@ -24,11 +24,14 @@ namespace AudioManager
             // Notify
             Console.WriteLine("\nAnalysing tags...");
 
-            // Calculate total playback hours
+            // General statistics
+            Console.WriteLine($"\n# General Statistics");
             double totalDuration = audioTags.Sum(tag => TimeSpan.Parse(tag.Length).TotalSeconds);
             double totalHours = Math.Round(totalDuration / 3600.0, 1);
             double days = Math.Round(totalHours / 24.0, 1);
-            Console.WriteLine($"\nTotal playback hours: {totalHours} hours (≈{days} days non-stop)");
+            Console.WriteLine($" - Total playback hours: {totalHours} hours (≈{days} days non-stop)");
+            TimeSpan avgLength = TimeSpan.FromSeconds(totalDuration / audioTags.Count);
+            Console.WriteLine($" - Average song length: {(int)avgLength.TotalMinutes}m{avgLength.Seconds:D2}s");
 
             // ### CALCULATE STATS
             // Calculate basic stats
