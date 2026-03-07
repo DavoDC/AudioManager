@@ -48,6 +48,7 @@ namespace AudioManager
                         track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
                         track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
                         track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
+                        track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
 
                         // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
                         string primaryArtist = track.PrimaryArtist;
@@ -107,6 +108,7 @@ namespace AudioManager
                                 File.Move(sourcePath, destPath);
                                 movedCount++;
                                 Console.WriteLine($"  Moved to: {relativeDest}");
+                                Console.Clear();
                                 break;
                             }
                             else if (key == ConsoleKey.Q)
@@ -144,6 +146,7 @@ namespace AudioManager
                                         if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
                                     }
                                     Console.WriteLine($"  Moved to: {rel}");
+                                    Console.Clear();
                                 }
 
                                 break;
@@ -158,7 +161,13 @@ namespace AudioManager
                     }
                 }
 
-                Console.WriteLine($"\n - Done. Moved: {movedCount}, Skipped: {skippedCount}");
+                Console.Clear();
+                Console.WriteLine("============================================================");
+                Console.WriteLine("  Integration complete");
+                Console.WriteLine("============================================================\n");
+                Console.WriteLine($"  Moved:   {movedCount}");
+                Console.WriteLine($"  Skipped: {skippedCount}");
+                Console.WriteLine("\n------------------------------------------------------------");
             }
             finally
             {
