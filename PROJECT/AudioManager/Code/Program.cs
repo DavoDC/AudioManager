@@ -22,29 +22,38 @@ namespace AudioManager
                 // Set mirror path relative to the executable
                 string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, Constants.MirrorFolderPath));
 
-                // Toggle forcing mirror to be regenerated (e.g. during development)
-                bool forceMirrorRegen = false;
-                //bool forceMirrorRegen = true;
+                // Prompt user for mode
+                int mode = PromptMode();
 
-                // 0) Integrate any new music from NewMusic folder
-                MusicIntegrator mi = new MusicIntegrator();
+                if (mode == 1)
+                {
+                    // Scan mode
 
-                // 1) Check the age of the mirror
-                //AgeChecker ac = new AgeChecker(forceMirrorRegen);
+                    // Ask whether to force mirror regeneration
+                    bool forceMirrorRegen = PromptForceMirrorRegen();
 
-                // 2) Create mirror of audio folder
-                // Note: Files created at this stage just contain paths to the actual file, not metadata info.
-                //Reflector r = new Reflector(mirrorPath);
+                    // 1) Check the age of the mirror
+                    AgeChecker ac = new AgeChecker(forceMirrorRegen);
 
-                // 3) Parse metadata into XML files and tag list
-                // Note: The file contents get overwritten with actual XML content in this stage.
-                //Parser p = new Parser(mirrorPath);
+                    // 2) Create mirror of audio folder
+                    // Note: Files created at this stage just contain paths to the actual file, not metadata info.
+                    Reflector r = new Reflector(mirrorPath);
 
-                // 4) Analyse metadata and print statistics
-                //Analyser a = new Analyser(p.audioTags);
+                    // 3) Parse metadata into XML files and tag list
+                    // Note: The file contents get overwritten with actual XML content in this stage.
+                    Parser p = new Parser(mirrorPath);
 
-                // 5) Do audio library organisational/metadata checks
-                //LibChecker lc = new LibChecker(p.audioTags);
+                    // 4) Analyse metadata and print statistics
+                    Analyser a = new Analyser(p.audioTags);
+
+                    // 5) Do audio library organisational/metadata checks
+                    LibChecker lc = new LibChecker(p.audioTags);
+                }
+                else if (mode == 2)
+                {
+                    // Integrate mode
+                    MusicIntegrator mi = new MusicIntegrator();
+                }
 
                 // Print total time taken
                 Doer.PrintTotalTimeTaken();
@@ -60,6 +69,48 @@ namespace AudioManager
                 Console.WriteLine($"\nStack Trace: \n{ex.StackTrace}");
                 Console.WriteLine("\n");
                 Environment.Exit(123);
+            }
+        }
+
+        /// <summary>
+        /// Prompt the user to select the program mode.
+        /// Clears the console and displays the mode menu, then reads a single key.
+        /// Loops until the user selects '1' or '2'.
+        /// </summary>
+        /// <returns>1 for Scan, 2 for Integrate</returns>
+        private static int PromptMode()
+        {
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("###### Audio Manager ######\n");
+                Console.WriteLine("Select mode:");
+                Console.WriteLine("  [1] Scan");
+                Console.WriteLine("  [2] Integrate\n");
+                Console.WriteLine("Enter number:\n");
+
+                var key = Console.ReadKey(intercept: true);
+                if (key.KeyChar == '1') return 1;
+                if (key.KeyChar == '2') return 2;
+
+                // invalid input -> loop
+            }
+        }
+
+        /// <summary>
+        /// Prompt whether to force mirror regeneration. Reads a single key and loops until Y/N.
+        /// </summary>
+        /// <returns>true if user selects Y, false for N</returns>
+        private static bool PromptForceMirrorRegen()
+        {
+            while (true)
+            {
+                Console.WriteLine(" - Force mirror regeneration?\n  [Y] Yes   [N] No\n");
+                var key = Console.ReadKey(intercept: true);
+                if (key.KeyChar == 'Y' || key.KeyChar == 'y') return true;
+                if (key.KeyChar == 'N' || key.KeyChar == 'n') return false;
+
+                // invalid input -> loop
             }
         }
     }
