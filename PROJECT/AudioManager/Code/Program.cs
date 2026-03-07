@@ -65,13 +65,14 @@ namespace AudioManager
                         Console.SetOut(teeWriter.ConsoleWriter);
                     }
 
-                    // Print finish message and mirror reminder to console only (not in report)
-                    Console.WriteLine("\nFinished!\n");
-                    Console.WriteLine("Reminder: commit and push the AudioMirror repo:");
-                    Console.WriteLine(" → https://github.com/DavoDC/AudioMirror\n");
-
-                    // Save report
+                    // Save report (overwrite today's report if exists)
                     ReportWriter.Save(captureWriter.ToString());
+
+                    // Reminder to commit AudioMirror repo (console only)
+                    Console.WriteLine("\nReminder: commit and push the AudioMirror repo.");
+
+                    // Finish message
+                    Console.WriteLine("\nFinished!\n");
 
                     // Analysis mode complete
                     return;
@@ -137,7 +138,7 @@ namespace AudioManager
                 Console.WriteLine(title + "\n");
                 for (int i = 0; i < options.Length; i++)
                 {
-                    Console.WriteLine(i == selected ? $"  ▶ {options[i]}" : $"    {options[i]}");
+                    Console.WriteLine(i == selected ? $"  > {options[i]}" : $"    {options[i]}");
                 }
                 var key = Console.ReadKey(intercept: true).Key;
                 if (key == ConsoleKey.UpArrow) selected = (selected == 0) ? options.Length - 1 : selected - 1;
