@@ -1,5 +1,6 @@
 ﻿using AudioManager.Code.Modules;
 using System;
+using System.IO;
 using System.Linq;
 using TagList = System.Collections.Generic.List<AudioManager.Code.Modules.TrackTag>;
 
@@ -32,6 +33,9 @@ namespace AudioManager
             Console.WriteLine($" - Total playback hours: {totalHours} hours (≈{days} days non-stop)");
             TimeSpan avgLength = TimeSpan.FromSeconds(totalDuration / audioTags.Count);
             Console.WriteLine($" - Average song length: {(int)avgLength.TotalMinutes}m{avgLength.Seconds:D2}s");
+            long totalBytes = new DirectoryInfo(Program.AudioFolderPath).GetFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+            double totalGB = Math.Round(totalBytes / 1_073_741_824.0, 2);
+            Console.WriteLine($" - Library size: {totalGB} GB");
 
             // ### CALCULATE STATS
             // Calculate basic stats
