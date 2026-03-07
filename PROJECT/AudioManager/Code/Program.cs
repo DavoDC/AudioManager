@@ -7,6 +7,10 @@ namespace AudioManager
     {
         //// CONSTANTS/SETTINGS
 
+        // Actual Audio folder path
+        private static readonly string audioFolderPath = @"C:\Users\David\Audio\";
+        public static string AudioFolderPath { get => audioFolderPath; }
+
         // The relative path from the executable back to the project folder
         private static readonly string projectPath = "..\\..\\..\\";
         public static string ProjectPath { get => projectPath; }
