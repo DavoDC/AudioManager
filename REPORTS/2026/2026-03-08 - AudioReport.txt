@@ -1,22 +1,16 @@
- - Force mirror regeneration?
-  [Y] Yes   [N] No
-
- - Force mirror regeneration?
-  [Y] Yes   [N] No
-
- - Force mirror regeneration?
-  [Y] Yes   [N] No
-
- - Force mirror regeneration?
-  [Y] Yes   [N] No
+###### Audio Report ######
+Generated: Sunday 8 March 2026, 00:33
+Commit:    4fbc731eb2cb7bcf1c2b960ae5ecc387668450ad
+Link:      https://github.com/DavoDC/AudioManager/commit/4fbc731eb2cb7bcf1c2b960ae5ecc387668450ad
+##########################
 
 
 Checking age of mirror...
- - DateTime.Now               2026-03-08 00:18:07
+ - DateTime.Now               2026-03-08 00:33:56
  - DateTime.MirrorCreation    2026-03-07 21:36:36
- - DateTime.MirrorAge         0d, 2h, 41m, 31s
+ - DateTime.MirrorAge         0d, 2h, 57m, 20s
  - Mirror was generated recently, no regeneration needed!
- - Time taken: 0.003 seconds
+ - Time taken: 0.002 seconds
 
 Creating mirror of 'C:\Users\David\Audio'...
  - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
@@ -24,11 +18,11 @@ Creating mirror of 'C:\Users\David\Audio'...
  - Non-MP3 files found: 18 (all expected)
  - MP3 filenames sanitised: 83
  - Recreated: False
- - Time taken: 0.54 seconds
+ - Time taken: 0.546 seconds
 
 Parsing audio metadata...
  - Tags parsed: 5422
- - Time taken: 0.941 seconds
+ - Time taken: 0.936 seconds
 
 Analysing tags...
 
@@ -152,7 +146,7 @@ Analysing tags...
  - Newest track:      0 years old (2026)
  - Oldest track:      92 years old (1934)
 
- - Time taken: 0.167 seconds
+ - Time taken: 0.169 seconds
 
 Checking library...
  - Checking all tags against filenames..
@@ -165,4 +159,6 @@ Checking library...
  - Checking Musivation folder...
  - Checking Motivation folder...
 
- - Time taken: 0.15 seconds
+ - Time taken: 0.154 seconds
+
+Total time taken: 1.807 seconds
