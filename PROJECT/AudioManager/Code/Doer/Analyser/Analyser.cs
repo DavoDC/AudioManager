@@ -26,24 +26,7 @@ namespace AudioManager
             Console.WriteLine("\nAnalysing tags...");
 
             // General statistics
-            Console.WriteLine($"\n# General Statistics");
-            double totalDuration = audioTags.Sum(tag => TimeSpan.Parse(tag.Length).TotalSeconds);
-            double totalHours = Math.Round(totalDuration / 3600.0, 1);
-            double days = Math.Round(totalHours / 24.0, 1);
-            Console.WriteLine($" - Total playback hours: {totalHours} hours (≈{days} days non-stop)");
-            TimeSpan avgLength = TimeSpan.FromSeconds(totalDuration / audioTags.Count);
-            Console.WriteLine($" - Average song length: {(int)avgLength.TotalMinutes}m{avgLength.Seconds:D2}s");
-            var durations = audioTags.Select(t => TimeSpan.Parse(t.Length).TotalSeconds).OrderBy(x => x).ToArray();
-            double medianSeconds = durations.Length % 2 == 1
-                ? durations[durations.Length / 2]
-                : (durations[durations.Length / 2 - 1] + durations[durations.Length / 2]) / 2;
-            TimeSpan median = TimeSpan.FromSeconds(medianSeconds);
-            Console.WriteLine($" - Median (typical) song length: {(int)median.TotalMinutes}m{median.Seconds:D2}s");
-            long totalBytes = new DirectoryInfo(Program.AudioFolderPath).GetFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
-            double totalGB = Math.Round(totalBytes / 1_073_741_824.0, 2);
-            Console.WriteLine($" - Total library size: {totalGB} GB");
-            double avgFileMB = Math.Round((totalBytes / (double)audioTags.Count) / 1_048_576, 2);
-            Console.WriteLine($" - Average file size: {avgFileMB} MB");
+            PrintGeneralStatistics(audioTags);
 
             // ### CALCULATE STATS
             // Calculate basic stats
@@ -73,6 +56,37 @@ namespace AudioManager
             // Finish and print time taken
             Console.WriteLine("");
             FinishAndPrintTimeTaken();
+        }
+
+        /// <summary>
+        /// Prints general statistics for the library.
+        /// </summary>
+        /// <param name="audioTags">List of audio tags</param>
+        private void PrintGeneralStatistics(TagList audioTags)
+        {
+            Console.WriteLine($"\n# General Statistics");
+
+            double totalDuration = audioTags.Sum(tag => TimeSpan.Parse(tag.Length).TotalSeconds);
+            double totalHours = Math.Round(totalDuration / 3600.0, 1);
+            double days = Math.Round(totalHours / 24.0, 1);
+            Console.WriteLine($" - Total playback hours: {totalHours} hours (≈{days} days)");
+
+            TimeSpan avgLength = TimeSpan.FromSeconds(totalDuration / audioTags.Count);
+            Console.WriteLine($" - Average song length: {(int)avgLength.TotalMinutes}m{avgLength.Seconds:D2}s");
+
+            var durations = audioTags.Select(t => TimeSpan.Parse(t.Length).TotalSeconds).OrderBy(x => x).ToArray();
+            double medianSeconds = durations.Length % 2 == 1
+                ? durations[durations.Length / 2]
+                : (durations[durations.Length / 2 - 1] + durations[durations.Length / 2]) / 2;
+            TimeSpan median = TimeSpan.FromSeconds(medianSeconds);
+            Console.WriteLine($" - Median (typical) song length: {(int)median.TotalMinutes}m{median.Seconds:D2}s");
+
+            long totalBytes = new DirectoryInfo(Program.AudioFolderPath).GetFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+            double totalGB = Math.Round(totalBytes / 1_073_741_824.0, 2);
+            Console.WriteLine($" - Total library size: {totalGB} GB");
+
+            double avgFileMB = Math.Round((totalBytes / (double)audioTags.Count) / 1_048_576, 2);
+            Console.WriteLine($" - Average file size: {avgFileMB} MB");
         }
     }
 }
