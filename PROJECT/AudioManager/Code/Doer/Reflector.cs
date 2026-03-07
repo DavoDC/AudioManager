@@ -28,7 +28,7 @@ namespace AudioManager
             this.mirrorPath = mirrorPath;
 
             // Notify
-            Console.WriteLine($"\nCreating mirror of '{Program.AudioFolderPath}'...");
+            Console.WriteLine($"\nCreating mirror of '{Constants.AudioFolderPath}'...");
 
             // Setup folder structure
             CreateFolders();
@@ -65,11 +65,11 @@ namespace AudioManager
             }
 
             // For every actual folder
-            string[] realDirs = Directory.GetDirectories(Program.AudioFolderPath, "*", SearchOption.AllDirectories);
+            string[] realDirs = Directory.GetDirectories(Constants.AudioFolderPath, "*", SearchOption.AllDirectories);
             foreach (var directoryPath in realDirs)
             {
                 // Get real relative path
-                string relativePath = GetRelativePath(Program.AudioFolderPath, directoryPath);
+                string relativePath = GetRelativePath(Constants.AudioFolderPath, directoryPath);
 
                 // Create relative folder within mirror path
                 string newDirectoryPath = Path.Combine(mirrorPath, relativePath);
@@ -90,11 +90,11 @@ namespace AudioManager
             List<string> nonMP3Files = new List<string>();
 
             // For every actual file
-            string[] realFiles = Directory.GetFiles(Program.AudioFolderPath, "*", SearchOption.AllDirectories);
+            string[] realFiles = Directory.GetFiles(Constants.AudioFolderPath, "*", SearchOption.AllDirectories);
             foreach (var realFilePath in realFiles)
             {
                 // Get relative file path
-                string relativePath = GetRelativePath(Program.AudioFolderPath, realFilePath);
+                string relativePath = GetRelativePath(Constants.AudioFolderPath, realFilePath);
 
                 // For non-MP3 files, add to list and skip
                 if (Path.GetExtension(realFilePath)?.ToLower() != ".mp3")

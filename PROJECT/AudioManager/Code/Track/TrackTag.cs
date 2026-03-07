@@ -1,4 +1,5 @@
-﻿using TagLib;
+﻿using AudioManager;
+using TagLib;
 using File = System.IO.File;
 using ID3Tag = TagLib.Id3v2.Tag;
 
@@ -16,8 +17,8 @@ namespace AudioManager.Code.Modules
         public TrackTag(string mirrorFilePath)
         {
             // Always initialise relative path
-            int relStartPos = mirrorFilePath.LastIndexOf(Program.MirrorFolderName);
-            RelPath = mirrorFilePath.Remove(0, relStartPos + Program.MirrorFolderName.Length);
+            int relStartPos = mirrorFilePath.LastIndexOf(Constants.MirrorFolderName);
+            RelPath = mirrorFilePath.Remove(0, relStartPos + Constants.MirrorFolderName.Length);
 
             // Get file contents of mirror file (should be a file path)
             string[] fileContents = File.ReadAllLines(mirrorFilePath);
