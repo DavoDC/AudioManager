@@ -1,142 +1,144 @@
 ###### Audio Report ######
-Generated: Sunday 8 March 2026, 00:50
-Commit:    86fdec41a76d97ff961ca00593f03f060620832b
-Link:      https://github.com/DavoDC/AudioManager/commit/86fdec41a76d97ff961ca00593f03f060620832b
+Generated: Sunday 8 March 2026, 09:41
+Commit:    5f4099cf3dcc7fe2875dc8b22ac84d16f545be18
+Link:      https://github.com/DavoDC/AudioManager/commit/5f4099cf3dcc7fe2875dc8b22ac84d16f545be18
 ##########################
 
 
 Checking age of mirror...
- - DateTime.Now               2026-03-08 00:50:07
- - DateTime.MirrorCreation    2026-03-07 21:36:36
- - DateTime.MirrorAge         0d, 3h, 13m, 31s
- - Mirror was generated recently, no regeneration needed!
- - Time taken: 0.002 seconds
+ - DateTime.Now               2026-03-08 09:40:52
+ - DateTime.MirrorCreation    2026-03-08 09:37:19
+ - DateTime.MirrorAge         0d, 0h, 3m, 33s
+ - Mirror was generated recently, but 'force regeneration' is active! Will regenerate!
+ - Time taken: 0.003 seconds
 
 Creating mirror of 'C:\Users\David\Audio'...
  - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
- - MP3 file count: 5422
+ - MP3 file count: 5471
  - Non-MP3 files found: 18 (all expected)
  - MP3 filenames sanitised: 83
- - Recreated: False
- - Time taken: 0.539 seconds
+ - Recreated: True
+ - Time taken: 3.862 seconds
 
 Parsing audio metadata...
- - Tags parsed: 5422
- - Time taken: 0.936 seconds
+ - Tags parsed: 5471
+ - Time taken: 9.723 seconds
 
 Analysing tags...
 
 # General Statistics
- - Total playback hours: 345.4 hours (≈14.4 days)
+ - Total playback hours: 348.4 hours (≈14.5 days)
  - Average song length: 3m49s
  - Median (typical) song length: 3m31s
- - Total library size: 27.58 GB
- - Average file size: 5.21 MB
+ - Total library size: 27.75 GB
+ - Average file size: 5.19 MB
 
 # Artists Statistics (Excluding Musivation)
 #     %          Artists                             Occurrences
-1     2.35%      Eminem                              155
-2     1.74%      Kodak Black                         115
-3     1.73%      Kevin Gates                         114
-4     1.42%      Kanye West                          94
-5     1.32%      Russ                                87
-6     1.21%      2Pac                                80
-7     0.97%      Lil Tecca                           64
-8     0.97%      KRS-One                             64
-9     0.92%      Juice WRLD                          61
-10    0.92%      Dual Core                           61
-11    0.89%      Foster Ebayy                        59
-12    0.85%      Epic Rap Battles of History         56
-13    0.80%      Snoop Dogg                          53
-14    0.77%      Chris Brown                         51
-15    0.76%      Dr. Dre                             50
-16    0.76%      Ice Cube                            50
-17    0.74%      Lil Wayne                           49
-18    0.70%      Dizzy Wright                        46
-19    0.68%      Wiz Khalifa                         45
-20    0.67%      Lil Mosey                           44
-21    0.64%      Drake                               42
-22    0.64%      YoungBoy Never Broke Again          42
-23    0.62%      DaBaby                              41
-24    0.62%      50 Cent                             41
+1     2.32%      Eminem                              155
+2     1.72%      Kodak Black                         115
+3     1.71%      Kevin Gates                         114
+4     1.41%      Kanye West                          94
+5     1.30%      Russ                                87
+6     1.20%      2Pac                                80
+7     0.96%      Lil Tecca                           64
+8     0.96%      KRS-One                             64
+9     0.91%      Juice WRLD                          61
+10    0.91%      Dual Core                           61
+11    0.88%      Foster Ebayy                        59
+12    0.84%      Epic Rap Battles of History         56
+13    0.79%      Snoop Dogg                          53
+14    0.76%      Chris Brown                         51
+15    0.75%      Dr. Dre                             50
+16    0.75%      Lil Wayne                           50
+17    0.75%      Ice Cube                            50
+18    0.69%      Dizzy Wright                        46
+19    0.69%      Wiz Khalifa                         46
+20    0.66%      Lil Mosey                           44
+21    0.63%      Drake                               42
+22    0.63%      Akon                                42
+23    0.63%      YoungBoy Never Broke Again          42
+24    0.61%      DaBaby                              41
+25    0.61%      50 Cent                             41
 
 # Artists Statistics (All)
 #     %          Artists                             Occurrences
-1     6.27%      Akira The Don                       496
-2     1.96%      Eminem                              155
-3     1.64%      Eric Thomas                         130
-4     1.45%      Kodak Black                         115
-5     1.44%      Kevin Gates                         114
-6     1.20%      Kanye West                          95
-7     1.20%      Jordan B. Peterson                  95
-8     1.18%      Alan Watts                          93
-9     1.10%      Russ                                87
-10    1.01%      2Pac                                80
-11    0.91%      Loot Bryon Smith                    72
-12    0.81%      Lil Tecca                           64
-13    0.81%      KRS-One                             64
-14    0.77%      Juice WRLD                          61
-15    0.77%      Dual Core                           61
-16    0.75%      Foster Ebayy                        59
-17    0.71%      Epic Rap Battles of History         56
-18    0.67%      Snoop Dogg                          53
+1     6.23%      Akira The Don                       497
+2     1.94%      Eminem                              155
+3     1.63%      Eric Thomas                         130
+4     1.44%      Kodak Black                         115
+5     1.43%      Kevin Gates                         114
+6     1.19%      Kanye West                          95
+7     1.19%      Jordan B. Peterson                  95
+8     1.16%      Alan Watts                          93
+9     1.09%      Russ                                87
+10    1.00%      2Pac                                80
+11    0.93%      Loot Bryon Smith                    74
+12    0.80%      Lil Tecca                           64
+13    0.80%      KRS-One                             64
+14    0.76%      Juice WRLD                          61
+15    0.76%      Dual Core                           61
+16    0.74%      Foster Ebayy                        59
+17    0.70%      Epic Rap Battles of History         56
+18    0.66%      Snoop Dogg                          53
 19    0.64%      Chris Brown                         51
 20    0.64%      Naval Ravikant                      51
 21    0.63%      Dr. Dre                             50
-22    0.63%      Ice Cube                            50
-23    0.62%      Lil Wayne                           49
+22    0.63%      Lil Wayne                           50
+23    0.63%      Ice Cube                            50
 
 # Genre Statistics 
 #     %          Genre                               Occurrences
-1     31.73%     Hip Hop                             2581
-2     31.54%     Rap                                 2566
-3     9.91%      Musivation                          806
-4     9.42%      Pop                                 766
-5     4.07%      Missing                             331
-6     2.62%      Rock                                213
-7     2.02%      R&B                                 164
-8     1.75%      Alternative                         142
-9     1.01%      Dance                               82
-10    1.01%      Films                               82
-11    1.01%      Games                               82
-12    0.73%      Motivation                          59
-13    0.68%      Electro                             55
+1     31.53%     Hip Hop                             2581
+2     31.34%     Rap                                 2566
+3     9.88%      Musivation                          809
+4     9.60%      Pop                                 786
+5     4.07%      Missing                             333
+6     2.63%      Rock                                215
+7     2.02%      R&B                                 165
+8     1.75%      Alternative                         143
+9     1.01%      Dance                               83
+10    1.00%      Films                               82
+11    1.00%      Games                               82
+12    0.72%      Motivation                          59
+13    0.67%      Electro                             55
 14    0.44%      Asian Music                         36
 15    0.39%      Disco                               32
-16    0.30%      Easy Listening                      24
+16    0.29%      Easy Listening                      24
+17    0.26%      Reggae                              21
 
 # Year Statistics 
 #     %          Year                                Occurrences
-1     9.39%      2022                                509
-2     7.47%      2020                                405
-3     7.05%      2021                                382
-4     6.82%      2019                                370
-5     5.02%      2023                                272
-6     4.96%      2012                                269
-7     4.72%      2018                                256
-8     4.68%      2024                                254
-9     4.59%      2013                                249
-10    4.11%      2025                                223
-11    3.91%      2015                                212
-12    3.67%      2014                                199
-13    3.41%      2017                                185
-14    2.73%      2007                                148
-15    2.71%      2009                                147
-16    2.60%      2010                                141
-17    2.56%      2008                                139
-18    2.32%      2016                                126
-19    2.31%      2011                                125
+1     9.30%      2022                                509
+2     7.40%      2020                                405
+3     7.02%      2021                                384
+4     6.78%      2019                                371
+5     4.97%      2023                                272
+6     4.94%      2012                                270
+7     4.68%      2018                                256
+8     4.66%      2024                                255
+9     4.55%      2013                                249
+10    4.13%      2025                                226
+11    3.87%      2015                                212
+12    3.64%      2014                                199
+13    3.38%      2017                                185
+14    2.76%      2007                                151
+15    2.74%      2009                                150
+16    2.67%      2010                                146
+17    2.61%      2008                                143
+18    2.32%      2011                                127
+19    2.32%      2016                                127
 
 # Decade Statistics 
 #     %          Decade                              Occurrences
-1     39.32%     2010s                               2132
-2     37.85%     2020s                               2052
-3     17.30%     2000s                               938
-4     3.15%      1990s                               171
-5     1.11%      1980s                               60
+1     39.15%     2010s                               2142
+2     37.65%     2020s                               2060
+3     17.57%     2000s                               961
+4     3.22%      1990s                               176
+5     1.15%      1980s                               63
 6     0.37%      1970s                               20
 7     0.33%      1940s                               18
-8     0.28%      1950s                               15
+8     0.27%      1950s                               15
 9     0.22%      1960s                               12
 10    0.07%      1930s                               4
 
@@ -146,19 +148,17 @@ Analysing tags...
  - Newest track:      0 years old (2026)
  - Oldest track:      92 years old (1934)
 
- - Time taken: 0.168 seconds
+ - Time taken: 0.148 seconds
 
 Checking library...
  - Checking all tags against filenames..
  - Checking all tags for unwanted/missing info...
-  - '\Miscellaneous Songs\Jimmy Eat World - Hear You Me.xml' is not set as a compilation!
-  - Total hits: 1
  - Checking all tags for duplicates...
  - Checking Artists folder...
  - Checking Miscellaneous Songs folder...
  - Checking Musivation folder...
  - Checking Motivation folder...
 
- - Time taken: 0.149 seconds
+ - Time taken: 0.152 seconds
 
-Total time taken: 1.794 seconds
+Total time taken: 13.888 seconds
