@@ -47,7 +47,7 @@ AudioManager/
 
 ## Development
 
-**Started:** November 2023 · **Status:** Actively maintained
+**Developed:** November 2023 · **Status:** Actively maintained
 
 ## Dependencies
 
