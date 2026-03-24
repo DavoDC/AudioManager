@@ -1,5 +1,9 @@
 # Audio Manager
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G31WKOCN)
+
+
+
 A C# console application for managing, analysing, and auditing a personal music library - generates metadata statistics, validates organisation, and automatically integrates new music.
 
 ## What it does
