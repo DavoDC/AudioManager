@@ -4,6 +4,12 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## ReportWriter - plain static class (already done)
+
+`ReportWriter` is already `internal static class`, not inheriting from Doer. Idea retired.
+
+---
+
 ## Analyser stats (already implemented)
 
 Total playback hours, average and median song length, total library size (GB), average file size (MB), track age stats (average, median, oldest, newest), year and decade frequency distribution. All in `Analyser.cs`.
