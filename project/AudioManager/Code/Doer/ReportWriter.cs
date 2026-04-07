@@ -5,12 +5,12 @@ using System.IO;
 namespace AudioManager
 {
     /// <summary>
-    /// Saves the audio report to the REPORTS folder in the repo root.
+    /// Saves the audio report to the reports folder in the repo root.
     /// </summary>
     internal static class ReportWriter
     {
         /// <summary>
-        /// Saves the given report content to a dated .txt file under REPORTS\{year}\. 
+        /// Saves the given report content to a dated .txt file under reports\{year}\.
         /// Overwrites any existing report for today. Prepends a generated header.
         /// </summary>
         /// <param name="reportContent">The captured console output from the Analysis run.</param>
@@ -29,7 +29,7 @@ namespace AudioManager
             Directory.CreateDirectory(yearFolder);
             File.WriteAllText(fullPath, header + reportContent);
 
-            Console.WriteLine($"\nReport saved: REPORTS\\{year}\\{filename}");
+            Console.WriteLine($"\nReport saved: reports\\{year}\\{filename}");
         }
 
         /// <summary>
