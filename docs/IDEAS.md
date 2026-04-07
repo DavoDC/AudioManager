@@ -28,6 +28,9 @@ but maybe good to ahve clean lib checker note there or issue note.  iF issues DO
 
 ---
 
+b8e15b11923e0b1c0bbcca1563e45b1e9eafa8ea = audio mirror commit that i think corresponds to NewMusic-Integration-Plan-20260407 , NEED TO FIX DATE ON THAT DOC coz it is wrong!  THAT integraiton was done long time ago!
+---
+
 **Single batch launcher** *(quick win)*
 
 Main entry point for the program. One `.bat` with a mode menu:
