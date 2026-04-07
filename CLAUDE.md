@@ -69,6 +69,11 @@ Run the compiled exe directly, or use the launcher in `scripts/`.
 - Never delete source files without confirming the destination write succeeded
 - When in doubt, do nothing and ask
 
+## Workflow Rules
+
+- **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
+- **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
+
 ## Current Focus
 
 See `docs/IDEAS.md` for the full priority list. Current goal: finish the new music integration pipeline (Stages 2 and 3) before running on the real library.
