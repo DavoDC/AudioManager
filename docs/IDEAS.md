@@ -18,12 +18,6 @@ Stage 1 integrator is working (reads tags, auto-routes, interactive Y/N/Q per fi
 
 ---
 
-**Fix git folder casing** *(repo hygiene, quick win)*
-
-Git still tracks folders in their old uppercase names (`PROJECT/`, `REPORTS/`, `Docs/`, `Code/`, `Doer/`, `Track/`, `Properties/`) while they are lowercase on disk. Fix requires two-step `git mv` per folder (Windows case-insensitive filesystem ignores direct renames). Also update `.csproj` compile paths and `.sln` project reference after renaming.
-
----
-
 **ReportWriter - plain static class**
 
 Should be a plain static class, NOT inheriting from the Doer base class.
@@ -129,5 +123,5 @@ Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an albu
 ## See Also
 
 - `HISTORY.md` - completed features, settled design decisions, parked ideas *(create when first item is completed)*
-- `Docs/music-library-rules.md` - canonical rules for library structure
-- `Docs/NewMusic integration plan.md` - integration pipeline design notes
+- `docs/music-library-rules.md` - canonical rules for library structure
+- `docs/NewMusic integration plan.md` - integration pipeline design notes
