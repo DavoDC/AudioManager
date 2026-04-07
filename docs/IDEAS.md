@@ -51,6 +51,15 @@ Append to `MusicIntegrationLog.json` per run:
 
 ---
 
+**Single batch launcher** *(quick win)*
+
+One `.bat` that always runs both analysis and integration:
+- Analysis always runs; saves report to file (integration terminal output must NOT be included in the report)
+- Integration runs after analysis; if NewMusic folder is empty or doesn't exist, skip silently - no prompt, no error
+- Show output in terminal, log to file, `cmd /k`, auto-compile via MSBuild before running
+
+---
+
 ## Lower Priority / Future
 
 *(Ordered by size - smaller first.)*
@@ -60,15 +69,6 @@ Append to `MusicIntegrationLog.json` per run:
 **ReportWriter - plain static class** *(quick win)*
 
 Should be a plain static class, NOT inheriting from the Doer base class.
-
----
-
-**Single batch launcher**
-
-One `.bat` that always runs both analysis and integration:
-- Analysis always runs; saves report to file (integration terminal output must NOT be included in the report)
-- Integration runs after analysis; if NewMusic folder is empty or doesn't exist, skip silently - no prompt, no error
-- Show output in terminal, log to file, `cmd /k`, auto-compile via MSBuild before running
 
 ---
 
