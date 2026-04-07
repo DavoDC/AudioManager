@@ -18,9 +18,26 @@ The integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, 
 
 ---
 
-**Dry run mode** *(quick win)*
+**Single batch launcher** *(quick win)*
 
-Add a `--dry-run` flag to MusicIntegrator that prints every planned action (tag change, rename, move) without executing any of them. Must be the default for first-time runs against a new batch. Real execution requires an explicit flag or confirmation prompt.
+Main entry point for the program. One `.bat` with a mode menu:
+1. Dry run integration - show all planned moves/tag changes, no files touched
+2. Real integration - execute moves and tag changes
+3. Analysis only - run Analyser, save report, skip integration
+
+Rules for all modes:
+- Auto-compile via MSBuild before running
+- Show output in terminal, log to file, `cmd /k`
+- Analysis always runs and saves report to file; integration terminal output must NOT bleed into the report
+- If NewMusic folder is empty or doesn't exist in integration modes, skip silently
+
+Dry run is the data-safety gate - must be run before every real integration. See dry run mode idea below for implementation detail.
+
+---
+
+**Dry run mode**
+
+MusicIntegrator prints every planned action (tag change, rename, move) without executing any of them. Invoked via the launcher menu (option 1) or a `--dry-run` flag.
 
 This is a data-safety gate - the music library is the primary copy and not frequently backed up. No batch should ever be run for real without a dry run first.
 
@@ -73,15 +90,6 @@ Without this, files get routed to Misc incorrectly for artists that should get t
 **Fully automate new-music batch sorting**
 
 The integrator should automatically sort every file in the NewMusic inbox to the correct destination with no prompts, applying all rules in `Music-Library-Rules.md` (routing priority, album subfolder rule, artist threshold, Akira/Loot special cases). The interactive Y/N/Q per-file flow is a stepping stone - the end goal is zero manual decisions for a standard batch. Any ambiguous edge cases (genuinely unknown genre, artist not in library) can still prompt, but the common path must be fully automatic.
-
----
-
-**Single batch launcher** *(quick win)*
-
-One `.bat` that always runs both analysis and integration:
-- Analysis always runs; saves report to file (integration terminal output must NOT be included in the report)
-- Integration runs after analysis; if NewMusic folder is empty or doesn't exist, skip silently - no prompt, no error
-- Show output in terminal, log to file, `cmd /k`, auto-compile via MSBuild before running
 
 ---
 
