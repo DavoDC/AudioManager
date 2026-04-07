@@ -24,18 +24,10 @@ For listening statistics, visit [LastFM](https://www.last.fm/user/david369music)
 
 ```
 AudioManager/
-├── Code/
-│   ├── Program.cs            # Entry point and mode selection
-│   ├── Constants.cs          # Configured paths and settings
-│   ├── TeeWriter.cs          # Dual output - screen + log file simultaneously
-│   ├── Doer/                 # Core processing modules (all auto-timed)
-│   │   ├── Analyser/         # Statistics generation
-│   │   ├── Reflector.cs      # XML mirror creation
-│   │   ├── MusicIntegrator.cs # Staging and file organisation
-│   │   ├── LibChecker.cs     # Library validation rules
-│   │   └── ReportWriter.cs   # Timestamped report output
-│   └── Track/                # Data models: Track, TrackTag, TrackXML
-└── REPORTS/                  # Auto-generated timestamped analysis reports
+├── docs/          # IDEAS.md, HISTORY.md, design and planning docs
+├── project/       # C# solution and source code
+├── reports/       # Auto-generated timestamped analysis reports
+└── scripts/       # Launchers and utility scripts
 ```
 
 ## Tech
