@@ -94,6 +94,12 @@ claude to deep dive this codebase look for improvements, issues, bugs
 
 ---
 
+**LibChecker: detect version/edition suffixes in title** *(quick win)*
+
+Titles should not contain suffixes like `(Explicit Version)`, `(Album Version)`, `(Radio Edit)`, `(Deluxe Edition)` etc. LibChecker currently misses these - caught manually when `Bow Wow;Chris Brown - Ain't Thinkin' 'Bout You (Explicit Version)` was integrated (Apr 2026). Add a check that flags titles containing known version/edition keywords.
+
+---
+
 **LibChecker owns validation** *(quick win)*
 
 MusicIntegrator must not duplicate LibChecker logic:

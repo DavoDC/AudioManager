@@ -76,10 +76,3 @@ Checking library...
  - Checking Motivation folder...
 ```
 
----
-
-## Follow-up Tasks
-
-- [ ] LibChecker missed `(Explicit Version)` in Bow Wow title - add detection rule
-- [ ] Push AudioMirror after re-running regeneration (was held back until clean run)
-- [ ] Sync new songs to iTunes, then sync iPhone
