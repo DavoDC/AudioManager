@@ -67,6 +67,10 @@ TODO:
 check over recent C:\Users\David\GitHubRepos\AudioMirror commits to see how structure changed! 
 update this whole doc as more of a record of what happened , in chronolgical order,  pre applied should be at top 
 
+e06a11a0d77e560c085afc656cbc3d93cbc943b3 = 'Ain't Thinkin' 'Bout You' -> Remove version from title = also did this, libchecker missed this!  add task to fix this in libchecker!
+
+after added new songs to itunes, synced iphone = need reminder for this 
+
 ---
 
 ## Pre-Applied (already done via mp3tag)
