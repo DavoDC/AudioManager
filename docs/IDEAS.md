@@ -8,23 +8,17 @@ Single source of truth for all pending work. Settled decisions and completed fea
 
 **Goal:** integrate new music from `C:\Users\David\Downloads\NewMusic` into library at `C:\Users\David\Audio`.
 
-Stage 1 integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, manual folder picker). Before running on the real library, the priority pending items are: Stage 2 (set IsCompilation tag, Akira genre fix), Stage 3 (integration log so moves can be reviewed). Constants.cs / LibChecker / ReportWriter cleanups are quick wins to do first.
+The integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, manual folder picker). Before running on the real library, two things must be in place: metadata editing (Akira genre fix, IsCompilation tag) and a JSON integration log so moves can be reviewed. Constants.cs and LibChecker are quick wins to clean up first.
 
 ---
 
 ## Pending - Main Work
 
-*(Ordered by priority. Quick wins first.)*
+*(Ordered by priority. All items below are required for the integration directive.)*
 
 ---
 
-**ReportWriter - plain static class**
-
-Should be a plain static class, NOT inheriting from the Doer base class.
-
----
-
-**Constants.cs consolidation**
+**Constants.cs consolidation** *(quick win)*
 
 Single source of truth at project level (not inside Code/ folder):
 - Extract `miscDir`, `artistsDir`, `musivDir`, `motivDir` from anywhere they're duplicated
@@ -32,11 +26,40 @@ Single source of truth at project level (not inside Code/ folder):
 
 ---
 
-**LibChecker owns validation**
+**LibChecker owns validation** *(quick win)*
 
 MusicIntegrator must not duplicate LibChecker logic:
 - MusicIntegrator handles routing/moving only
 - LibChecker runs after and validates the result
+
+---
+
+**Metadata editing before move**
+
+Before accepting a file move, apply metadata changes:
+- Set genre to `Musivation` for Akira The Don tracks
+- Set `IsCompilation = true` (TCMP tag) via ID3v2 on every file before moving
+- Only process `.mp3` files - filter other extensions out
+
+---
+
+**JSON integration log** *(depends on metadata editing above)*
+
+Append to `MusicIntegrationLog.json` per run:
+- Include full metadata fields and decision fields (source, destination, tag changes made, timestamp)
+- Decision history principle: on re-run, check log first before re-deciding
+
+---
+
+## Lower Priority / Future
+
+*(Ordered by size - smaller first.)*
+
+---
+
+**ReportWriter - plain static class** *(quick win)*
+
+Should be a plain static class, NOT inheriting from the Doer base class.
 
 ---
 
@@ -49,23 +72,6 @@ One `.bat` that always runs both analysis and integration:
 
 ---
 
-**Stage 2 - Metadata editing before move**
-
-Before accepting a file move, apply metadata changes:
-- Set genre to `Musivation` for Akira The Don tracks
-- Set `IsCompilation = true` (TCMP tag) via ID3v2 on every file before moving
-- Only process `.mp3` files - filter other extensions out
-
----
-
-**Stage 3 - JSON integration log** *(depends on Stage 2)*
-
-Append to `MusicIntegrationLog.json` per run:
-- Include full metadata fields and decision fields (source, destination, tag changes made, timestamp)
-- Decision history principle: on re-run, check log first before re-deciding
-
----
-
 **Analyser class stats**
 
 - Playback hours (total and average)
@@ -75,7 +81,7 @@ Append to `MusicIntegrationLog.json` per run:
 
 ---
 
-**Smart merge / scan-ahead logic** *(depends on Stage 2 + 3, largest item)*
+**Smart merge / scan-ahead logic** *(largest item)*
 
 Before integrating a batch, calculate post-integration artist counts:
 - Determine if new artist folders need creating (3+ song threshold)
@@ -83,12 +89,6 @@ Before integrating a batch, calculate post-integration artist counts:
 - Show preview/approval step before committing any moves
 - Fuzzy matching for artist name variations (e.g. "The Beatles" vs "Beatles")
 - Handle featured artists correctly in routing decisions
-
----
-
-## Lower Priority / Future
-
-*(Ordered by size - smaller first.)*
 
 ---
 
