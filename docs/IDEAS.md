@@ -18,6 +18,16 @@ The integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, 
 
 ---
 
+Quick task: 
+Go over C:\Users\David\GitHubRepos\AudioManager\docs\NewMusic-Integration-Plan-20260407b.md and refine as per notes inside it!
+
+---
+
+Consider if Checking library..., lib checker otuput should be removed from audio report coz should just be stats 
+but maybe good to ahve clean lib checker note there or issue note.  iF issues DO NOT commit report and DO not commit to audiomirror repo, fix issues first, then commit to both repos! document this rule somewhere and follow , maybe cluade.md and others 
+
+---
+
 **Single batch launcher** *(quick win)*
 
 Main entry point for the program. One `.bat` with a mode menu:
@@ -109,6 +119,12 @@ The report should be saved to a timestamped file (e.g. `logs/integration-YYYYMMD
 ---
 
 ## Lower Priority / Future
+
+**Integrate audio organisation Word doc into codebase**
+
+`C:\Users\David\GoogleDrive\Documents\WordDocs\Audio Folder Organisation Usage Process .docx` contains rules/process for the audio library. Extract and integrate its content into `docs/Music-Library-Rules.md` so all routing logic is in one place and the Word doc is no longer the source of truth.
+
+---
 
 **AudioMirror: auto-commit and push after regeneration**
 
