@@ -18,6 +18,20 @@ The integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, 
 
 ---
 
+FIRST task is a meta task is to go over this entire doc and turn these mnaully added tasks into proper tasks! and sort by quick win/priority.
+also need to check workspace repo for any audiomanager tasks and move into here. i think there was as task about possibly splitting integrator out.  maybe intergrator should be spearate project as its quite different from of project?  or good to stay here and benefits from shared code?  claude to investigate!   also might to split some of these things i manually added into separate tasks
+
+more ideas= review all docs and fix issues, ask questions ,  need to build up better docs and understand so claude cna work better with this proejct
+
+need to update goal = goal is that when next integraito happens, can use a program to help with it rather than doing manually! 
+
+maybe audioamanger is doing too much ,maybe it should be split out ... get claude to think about all the things it does, mirror, analysis, etc.  could certain parts be split out,  what parts make sense to be together , maybe good to keep all unified here. 
+
+highest piorities = docs , launching, then new features n stuff 
+need more planning first abouit overarching goals, organisation, before extending project 
+
+---
+
 Quick task: 
 Go over C:\Users\David\GitHubRepos\AudioManager\docs\NewMusic-Integration-Plan-20260407b.md and refine as per notes inside it!
 
@@ -36,6 +50,8 @@ review past integration docs against music library rules , music libnrary rules 
 ---
 
 **Single batch launcher** *(quick win)*
+
+very high priority to get the launching eaiser and make it so dont have to open visual studio!  need to auto build tho 
 
 Main entry point for the program. One `.bat` with a mode menu:
 1. Dry run integration - show all planned moves/tag changes, no files touched
@@ -67,6 +83,14 @@ This is a data-safety gate - the music library is the primary copy and not frequ
 Single source of truth at project level (not inside Code/ folder):
 - Extract `miscDir`, `artistsDir`, `musivDir`, `motivDir` from anywhere they're duplicated
 - LibChecker and MusicIntegrator must both read from Constants, never define their own copies
+
+---
+
+Get claude to scan over audiomirror xml metadata and commit history and understand how ive been organising library , maybe there are other rules not in doc
+
+---
+
+claude to deep dive this codebase look for improvements, issues, bugs 
 
 ---
 
@@ -132,12 +156,85 @@ The report should be saved to a timestamped file (e.g. `logs/integration-YYYYMMD
 **Integrate audio organisation Word doc into codebase**
 
 `C:\Users\David\GoogleDrive\Documents\WordDocs\Audio Folder Organisation Usage Process .docx` contains rules/process for the audio library. Extract and integrate its content into `docs/Music-Library-Rules.md` so all routing logic is in one place and the Word doc is no longer the source of truth.
+HERE IS DOC FOR PROCESSING:
+Process of Getting New Music
+Stage 1: Acquire
+1.	Discover on Spotify via release radar etc.  – add to liked songs.
+2.	Download from relevant place... – remove from liked songs. 
+
+Actually more happens here  - for each new song i find i also check that artist out, look at their top 10 streamed songs, look for toehr things i like,  maybe GUI dwave could help with this...
+
+
+Stage 2: Integrate
+1.	Apply some rules using Mp3tag in Downloads folder.
+2.	Integrate music into library following organisational rules below.
+3.	Run AudioManager program to check library and commit update , commit audio report and audio miror changes etc. 
+
+Stage 3: Sync to Device = CANT AUTOMATE THIS BUT tell user to do this 
+1.	Open iTunes and ensure device is detected.
+2.	Add Audio folder to iTunes.
+3.	Use File -> Library -> Show Duplicate Items, and remove duplicates.
+4.	Check for broken files (exclamation symbol on far left).
+5.	Sync device twice to get new music.
+
+Organisational Rules
+Note: Many of these rules are automatically checked by the AudioMirror project.
+Global Rules
+•	All files should be MP3 format
+o	For doing many, open Format Factory -> To MP3 -> Add files
+o	Search in Explorer for 'NOT *.mp3 AND NOT kind:folder'
+o	Output to Source file folder.
+•	Use MP3Tag’s tag to file name feature to name files: 
+o	%artist% - %title% 
+•	Tag should include Title, Artist, Album, Year, and a Cover, at least, ideally
+o	If no Album, use Title.
+•	Remove from all fields:
+o	"feat." or “ft.”
+o	"Edit”
+o	“Version”
+o	“Original"
+o	“Soundtrack”
+•	Set all tracks as compilations
+o	Stops iTunes from listing each track as a separate album due to having different artists
+
+Folder: Artists
+	Artists who have 3 or more songs.
+	Put Album names within folders, remainder goes into Singles.
+	No loose files!
+
+Folder: Compilations
+	Compilation albums.
+
+Folder: Musivation
+	All songs should have Musivation genre.
+
+Folder: Miscellaneous Songs
+	Random singles.
+	Try to move into Artists (look for trios or misplaced).
+	Try to move into Sources (look for movie soundtracks etc.).
+
+Folder: Sources
+	This for any tracks you discovered through a certain form of media.
+	Films
+o	Change "Original Motion Picture Soundtrack" to OST.
+o	All should have an album field containing “OST”.
+	Anime songs
+o	Use English titles for memorability.
+o	Use Anime name as Album.
+o	Full length for good ones, anime length for lesser ones.
+o	Replace cover art with Anime cover.
+
 
 ---
 
 **AudioMirror: auto-commit and push after regeneration**
 
 After AudioManager regenerates the AudioMirror XML files, automatically commit and push the AudioMirror repo. No manual GitHub Desktop step needed. Use `git add -u && git add untracked && git commit && git push` via Process/shell call from AudioManager after regeneration completes. Commit message format follows existing convention: `"Apr 7 Update"` style.
+BUT commit should not happen if there are libchecker issues!!!!!!!!!!!  try to minimise commits to audiomirror to make commit history clean.
+
+---
+
+claude do u think audio reports should in audiomanager or audio mirror ?  good that audio mirror is separate?  i split it off a while back, used to be together 
 
 ---
 
