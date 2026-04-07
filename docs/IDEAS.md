@@ -92,13 +92,9 @@ Before integrating a batch, calculate post-integration artist counts:
 
 ---
 
-**Document and automate the full new-music integration workflow**
+**Fully automate new-music batch sorting**
 
-Same approach as RivalsVidMaker - document the entire manual workflow end-to-end first, then look for automation opportunities, then gradually automate more and more of the pipeline. Goal: run one tool, new music ends up in the right place with correct tags, zero manual steps.
-
----
-
-*(DWave features - full plan in P10 directive.)*
+The integrator should automatically sort every file in the NewMusic inbox to the correct destination with no prompts, applying all rules in `Music-Library-Rules.md` (routing priority, album subfolder rule, artist threshold, Akira/Loot special cases). The interactive Y/N/Q per-file flow is a stepping stone - the end goal is zero manual decisions for a standard batch. Any ambiguous edge cases (new artist below threshold, unknown genre) can still prompt, but the common path must be fully automatic.
 
 ---
 
@@ -123,5 +119,7 @@ Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an albu
 ## See Also
 
 - `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
-- `docs/music-library-rules.md` - canonical rules for library structure
-- `docs/NewMusic integration plan.md` - integration pipeline design notes
+- `docs/Music-Library-Rules.md` - canonical rules for library structure
+- `docs/Integration-Workflow.md` - steps for integrating a new music batch
+- `docs/NewMusic-Integration-Plan.md` - past batch integration (April 2026 case study)
+- `docs/AudioMirror-Format.md` - AudioMirror XML format and repo info
