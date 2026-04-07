@@ -6,7 +6,9 @@ Single source of truth for all pending work. Settled decisions and completed fea
 
 ## Current Focus
 
-MusicIntegrator pipeline - Stage 2 (metadata editing) and Stage 3 (integration log) are next, then smart merge logic.
+**Goal:** integrate new music from `C:\Users\David\Downloads\NewMusic` into library at `C:\Users\David\Audio`.
+
+Stage 1 integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, manual folder picker). Before running on the real library, the priority pending items are: Stage 2 (set IsCompilation tag, Akira genre fix), Stage 3 (integration log so moves can be reviewed). Constants.cs / LibChecker / ReportWriter cleanups are quick wins to do first.
 
 ---
 
@@ -38,11 +40,12 @@ MusicIntegrator must not duplicate LibChecker logic:
 
 ---
 
-**Separate batch launchers**
+**Single batch launcher**
 
-- One `.bat` for Analysis mode (scan + report + mirror)
-- One `.bat` for Integration mode (validate tags + move + update mirror)
-- Both: show output in terminal, log to file, `cmd /k`, auto-compile via MSBuild before running
+One `.bat` that always runs both analysis and integration:
+- Analysis always runs; saves report to file (integration terminal output must NOT be included in the report)
+- Integration runs after analysis; if NewMusic folder is empty or doesn't exist, skip silently - no prompt, no error
+- Show output in terminal, log to file, `cmd /k`, auto-compile via MSBuild before running
 
 ---
 
@@ -85,7 +88,17 @@ Before integrating a batch, calculate post-integration artist counts:
 
 ## Lower Priority / Future
 
-*(DWave features - full plan in P10 directive. Ordered by size - smaller first.)*
+*(Ordered by size - smaller first.)*
+
+---
+
+**Document and automate the full new-music integration workflow**
+
+Same approach as RivalsVidMaker - document the entire manual workflow end-to-end first, then look for automation opportunities, then gradually automate more and more of the pipeline. Goal: run one tool, new music ends up in the right place with correct tags, zero manual steps.
+
+---
+
+*(DWave features - full plan in P10 directive.)*
 
 ---
 
