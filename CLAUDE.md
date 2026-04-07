@@ -58,6 +58,17 @@ Run the compiled exe directly, or use the launcher in `scripts/`.
 - Reports output: `<repo-root>\reports\` (written by ReportWriter)
 - Mirror repo: sits next to this repo at `..\AudioMirror\`
 
+## Data Safety - HIGHEST PRIORITY
+
+**The music library and NewMusic inbox must NEVER experience data loss.**
+
+- The library at `C:\Users\David\Audio\` is the primary copy and is not frequently backed up
+- The NewMusic inbox at `C:\Users\David\Downloads\NewMusic\` is also not backed up
+- Before ANY file operation (move, rename, delete, overwrite): verify the operation is safe and reversible
+- Prefer dry-run mode first - always test against a small sample before running on the real library
+- Never delete source files without confirming the destination write succeeded
+- When in doubt, do nothing and ask
+
 ## Current Focus
 
 See `docs/IDEAS.md` for the full priority list. Current goal: finish the new music integration pipeline (Stages 2 and 3) before running on the real library.

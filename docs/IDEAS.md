@@ -18,6 +18,14 @@ The integrator is working (reads tags, auto-routes, interactive Y/N/Q per file, 
 
 ---
 
+**Dry run mode** *(quick win)*
+
+Add a `--dry-run` flag to MusicIntegrator that prints every planned action (tag change, rename, move) without executing any of them. Must be the default for first-time runs against a new batch. Real execution requires an explicit flag or confirmation prompt.
+
+This is a data-safety gate - the music library is the primary copy and not frequently backed up. No batch should ever be run for real without a dry run first.
+
+---
+
 **Constants.cs consolidation** *(quick win)*
 
 Single source of truth at project level (not inside Code/ folder):
