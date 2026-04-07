@@ -18,6 +18,12 @@ Stage 1 integrator is working (reads tags, auto-routes, interactive Y/N/Q per fi
 
 ---
 
+**Fix git folder casing** *(repo hygiene, quick win)*
+
+Git still tracks folders in their old uppercase names (`PROJECT/`, `REPORTS/`, `Docs/`, `Code/`, `Doer/`, `Track/`, `Properties/`) while they are lowercase on disk. Fix requires two-step `git mv` per folder (Windows case-insensitive filesystem ignores direct renames). Also update `.csproj` compile paths and `.sln` project reference after renaming.
+
+---
+
 **ReportWriter - plain static class**
 
 Should be a plain static class, NOT inheriting from the Doer base class.
