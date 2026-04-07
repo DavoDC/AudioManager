@@ -29,6 +29,10 @@ but maybe good to ahve clean lib checker note there or issue note.  iF issues DO
 ---
 
 b8e15b11923e0b1c0bbcca1563e45b1e9eafa8ea = audio mirror commit that i think corresponds to NewMusic-Integration-Plan-20260407 , NEED TO FIX DATE ON THAT DOC coz it is wrong!  THAT integraiton was done long time ago!
+
+---
+
+review past integration docs against music library rules , music libnrary rules should be fully comprehensive. need to perfect rules doc before writing integrator to automate!!!!!!!!!!
 ---
 
 **Single batch launcher** *(quick win)*
@@ -37,6 +41,8 @@ Main entry point for the program. One `.bat` with a mode menu:
 1. Dry run integration - show all planned moves/tag changes, no files touched
 2. Real integration - execute moves and tag changes
 3. Analysis only - run Analyser, save report, skip integration
+
+Could have top level menu instead of sub menus or vice versae. e.g. top level menus = Analysis (No Force Regen), Analysis (Froce Regen), Integration (Dry Run), Integration
 
 Rules for all modes:
 - Auto-compile via MSBuild before running
