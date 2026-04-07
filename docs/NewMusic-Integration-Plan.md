@@ -1,5 +1,10 @@
-# NewMusic Integration Plan
-*47 tracks — review before execution*
+# New Music Integration - Case Study (2026-04-07)
+
+> **Historical document - frozen.** This is a record of one batch integration of new music into David's library. It is not a template or active plan - just a case study for reference.
+
+## Context
+
+David periodically integrates batches of new music into his personal library. This document captures the plan for one such batch: 47 tracks acquired and integrated in early April 2026. Each track required decisions about tagging, filename formatting, and destination folder within the library structure.
 
 ---
 
@@ -18,28 +23,28 @@
 
 ---
 
-## Artists — Existing Folders
+## Artists - Existing Folders
 
 ### Avril Lavigne
 | Current Filename | Destination |
 |---|---|
 | `Avril Lavigne - I'm with You.mp3` | `Artists/Avril Lavigne/Let Go/` *(album folder exists)* |
-| `Avril Lavigne - Bite Me.mp3` | `Artists/Avril Lavigne/Singles/` *(album "Bite Me" — 1 song)* |
-| `Avril Lavigne - Fall To Pieces.mp3` | `Artists/Avril Lavigne/Singles/` *(album "Under My Skin" — 1 song)* |
-| `Avril Lavigne - When You're Gone.mp3` | `Artists/Avril Lavigne/Singles/` *(album "The Best Damn Thing..." — 1 song)* |
-| `Avril Lavigne - Wish You Were Here.mp3` | `Artists/Avril Lavigne/Singles/` *(album "Goodbye Lullaby..." — 1 song)* |
+| `Avril Lavigne - Bite Me.mp3` | `Artists/Avril Lavigne/Singles/` *(album "Bite Me" - 1 song)* |
+| `Avril Lavigne - Fall To Pieces.mp3` | `Artists/Avril Lavigne/Singles/` *(album "Under My Skin" - 1 song)* |
+| `Avril Lavigne - When You're Gone.mp3` | `Artists/Avril Lavigne/Singles/` *(album "The Best Damn Thing..." - 1 song)* |
+| `Avril Lavigne - Wish You Were Here.mp3` | `Artists/Avril Lavigne/Singles/` *(album "Goodbye Lullaby..." - 1 song)* |
 
 ### David Guetta
 | Current Filename | New Filename | Destination |
 |---|---|---|
-| `David Guetta - Memories (feat. Kid Cudi).mp3` | `David Guetta;Kid Cudi - Memories (feat. Kid Cudi).mp3` | `Artists/David Guetta/Singles/` *(album = title — 1 song)* |
+| `David Guetta - Memories (feat. Kid Cudi).mp3` | `David Guetta;Kid Cudi - Memories (feat. Kid Cudi).mp3` | `Artists/David Guetta/Singles/` *(album = title - 1 song)* |
 
 ### Jay-Z
 | Current Filename | New Filename | Tag Changes | Destination |
 |---|---|---|---|
-| `JAŸ-Z - Young Forever.mp3` | `JAY-Z;Mr Hudson - Young Forever.mp3` | TPE1: `JAY-Z;Mr Hudson` | `Artists/Jay-Z/Singles/` *(album "The Blueprint 3" — 1 song)* |
+| `JAŸ-Z - Young Forever.mp3` | `JAY-Z;Mr Hudson - Young Forever.mp3` | TPE1: `JAY-Z;Mr Hudson` | `Artists/Jay-Z/Singles/` *(album "The Blueprint 3" - 1 song)* |
 
-### Katy Perry *(2 songs, same album → new album folder)*
+### Katy Perry *(2 songs, same album - new album folder)*
 | Current Filename | Destination |
 |---|---|
 | `Katy Perry - Hot N Cold.mp3` | `Artists/Katy Perry/One Of The Boys (15th Anniversary Edition)/` *(new)* |
@@ -48,33 +53,33 @@
 ### Nic D
 | Current Filename | New Filename | Destination |
 |---|---|---|
-| `Nic D - Daytona.mp3` | `Nic D;Vwillz - Daytona.mp3` | `Artists/Nic D/Singles/` *(album = title — 1 song)* |
+| `Nic D - Daytona.mp3` | `Nic D;Vwillz - Daytona.mp3` | `Artists/Nic D/Singles/` *(album = title - 1 song)* |
 
 ### Phil Collins
 | Current Filename | Destination |
 |---|---|
-| `Phil Collins - I Wish It Would Rain Down (2016 Remaster).mp3` | `Artists/Phil Collins/Singles/` *(album "The Singles (Expanded)" — 1 song)* |
+| `Phil Collins - I Wish It Would Rain Down (2016 Remaster).mp3` | `Artists/Phil Collins/Singles/` *(album "The Singles (Expanded)" - 1 song)* |
 
 ### Plies
 | Current Filename | New Filename | Destination |
 |---|---|---|
-| `Plies - Hypnotized (feat. Akon).mp3` | `Plies;Akon - Hypnotized (feat. Akon).mp3` | `Artists/Plies/Singles/` *(album = title — 1 song)* |
+| `Plies - Hypnotized (feat. Akon).mp3` | `Plies;Akon - Hypnotized (feat. Akon).mp3` | `Artists/Plies/Singles/` *(album = title - 1 song)* |
 
 ### Wiz Khalifa
 | Current Filename | New Filename | Destination |
 |---|---|---|
-| `Wiz Khalifa - Let It Go (feat. Akon).mp3` | `Wiz Khalifa;Akon - Let It Go (feat. Akon).mp3` | `Artists/Wiz Khalifa/Singles/` *(album "O.N.I.F.C. Deluxe" — 1 song)* |
+| `Wiz Khalifa - Let It Go (feat. Akon).mp3` | `Wiz Khalifa;Akon - Let It Go (feat. Akon).mp3` | `Artists/Wiz Khalifa/Singles/` *(album "O.N.I.F.C. Deluxe" - 1 song)* |
 
 ### mike *(folder name is `mike`, not `mike.`)*
 | Current Filename | Destination |
 |---|---|
-| `mike. - woke up new.mp3` | `Artists/mike/Singles/` *(album = title — 1 song)* |
+| `mike. - woke up new.mp3` | `Artists/mike/Singles/` *(album = title - 1 song)* |
 
 ---
 
-## Artists — New Folders (3+ song threshold triggered)
+## Artists - New Folders (3+ song threshold triggered)
 
-### Fort Minor *(4 new — all from "The Rising Tied (Deluxe Edition)")*
+### Fort Minor *(4 new - all from "The Rising Tied (Deluxe Edition)")*
 | Current Filename | New Filename | Destination |
 |---|---|---|
 | `Fort Minor - Believe Me (feat. Bobo & Styles of Beyond).mp3` | `Fort Minor;BOBO;Styles Of Beyond - Believe Me (feat. Bobo & Styles of Beyond).mp3` | `Artists/Fort Minor/The Rising Tied (Deluxe Edition)/` *(new)* |
@@ -85,31 +90,31 @@
 ### Backstreet Boys *(2 new + 2 from Misc = 4 total)*
 | Source | Filename | Destination |
 |---|---|---|
-| NewMusic | `Backstreet Boys - Everybody (Backstreet's Back) (Radio Edit).mp3` | `Artists/Backstreet Boys/Singles/` *(album "Backstreet's Back" — 1)* |
-| NewMusic | `Backstreet Boys - Shape of My Heart.mp3` | `Artists/Backstreet Boys/Singles/` *(album "Original Album Classics" — 1)* |
-| **Misc** | `Backstreet Boys - I Want It That Way.mp3` | `Artists/Backstreet Boys/Singles/` *(album "Millennium" — 1)* |
-| **Misc** | `Backstreet Boys - Inconsolable.mp3` | `Artists/Backstreet Boys/Singles/` *(album "Unbreakable" — 1)* |
+| NewMusic | `Backstreet Boys - Everybody (Backstreet's Back) (Radio Edit).mp3` | `Artists/Backstreet Boys/Singles/` *(album "Backstreet's Back" - 1)* |
+| NewMusic | `Backstreet Boys - Shape of My Heart.mp3` | `Artists/Backstreet Boys/Singles/` *(album "Original Album Classics" - 1)* |
+| Misc | `Backstreet Boys - I Want It That Way.mp3` | `Artists/Backstreet Boys/Singles/` *(album "Millennium" - 1)* |
+| Misc | `Backstreet Boys - Inconsolable.mp3` | `Artists/Backstreet Boys/Singles/` *(album "Unbreakable" - 1)* |
 
 ### Bone Thugs-N-Harmony *(2 new + 1 from Misc = 3 total)*
 | Source | Current Filename | New Filename | Destination |
 |---|---|---|---|
-| NewMusic | `Bone Thugs-N-Harmony - Never Forget Me (Album Version Explicit).mp3` | `Bone Thugs-N-Harmony;Akon - Never Forget Me (Album Version Explicit).mp3` | `Artists/Bone Thugs-N-Harmony/Strength & Loyalty/` *(new — 2 songs from album)* |
-| NewMusic | `Bone Thugs-N-Harmony - Tha Crossroads.mp3` | *(unchanged)* | `Artists/Bone Thugs-N-Harmony/Singles/` *(album "E. 1999 Eternal" — 1)* |
-| **Misc** | `Bone Thugs-N-Harmony; Akon - I Tried.mp3` | `Bone Thugs-N-Harmony;Akon - I Tried.mp3` | `Artists/Bone Thugs-N-Harmony/Strength & Loyalty/` *(new — 2 songs from album)* |
+| NewMusic | `Bone Thugs-N-Harmony - Never Forget Me (Album Version Explicit).mp3` | `Bone Thugs-N-Harmony;Akon - Never Forget Me (Album Version Explicit).mp3` | `Artists/Bone Thugs-N-Harmony/Strength & Loyalty/` *(new - 2 songs from album)* |
+| NewMusic | `Bone Thugs-N-Harmony - Tha Crossroads.mp3` | *(unchanged)* | `Artists/Bone Thugs-N-Harmony/Singles/` *(album "E. 1999 Eternal" - 1)* |
+| Misc | `Bone Thugs-N-Harmony; Akon - I Tried.mp3` | `Bone Thugs-N-Harmony;Akon - I Tried.mp3` | `Artists/Bone Thugs-N-Harmony/Strength & Loyalty/` *(new - 2 songs from album)* |
 
 ### Bryan Adams *(2 new + 1 from Misc = 3 total, all from "Reckless")*
 | Source | Filename | Destination |
 |---|---|---|
-| NewMusic | `Bryan Adams - Heaven.mp3` | `Artists/Bryan Adams/Reckless/` *(new — 3 songs from album)* |
+| NewMusic | `Bryan Adams - Heaven.mp3` | `Artists/Bryan Adams/Reckless/` *(new - 3 songs from album)* |
 | NewMusic | `Bryan Adams - Somebody.mp3` | `Artists/Bryan Adams/Reckless/` *(new)* |
-| **Misc** | `Bryan Adams - Summer Of '69.mp3` | `Artists/Bryan Adams/Reckless/` *(new)* |
+| Misc | `Bryan Adams - Summer Of '69.mp3` | `Artists/Bryan Adams/Reckless/` *(new)* |
 
 ### Lupe Fiasco *(2 new + 1 from Misc = 3 total)*
 | Source | Filename | Destination |
 |---|---|---|
-| NewMusic | `Lupe Fiasco - Hip-Hop Saved My Life (feat. Nikki Jean).mp3` | `Artists/Lupe Fiasco/Lupe Fiasco's The Cool/` *(new — 2 songs from album)* |
+| NewMusic | `Lupe Fiasco - Hip-Hop Saved My Life (feat. Nikki Jean).mp3` | `Artists/Lupe Fiasco/Lupe Fiasco's The Cool/` *(new - 2 songs from album)* |
 | NewMusic | `Lupe Fiasco - Superstar (feat. Matthew Santos).mp3` | `Artists/Lupe Fiasco/Lupe Fiasco's The Cool/` *(new)* |
-| **Misc** | `Lupe Fiasco - The Show Goes On.mp3` | `Artists/Lupe Fiasco/Singles/` *(album = title — 1 song)* |
+| Misc | `Lupe Fiasco - The Show Goes On.mp3` | `Artists/Lupe Fiasco/Singles/` *(album = title - 1 song)* |
 
 ---
 
