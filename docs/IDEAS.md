@@ -120,6 +120,5 @@ Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an albu
 
 - `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
 - `docs/Music-Library-Rules.md` - canonical rules for library structure
-- `docs/Integration-Workflow.md` - steps for integrating a new music batch
 - `docs/NewMusic-Integration-Plan.md` - past batch integration (April 2026 case study)
 - `docs/AudioMirror-Format.md` - AudioMirror XML format and repo info
