@@ -122,6 +122,6 @@ Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an albu
 
 ## See Also
 
-- `HISTORY.md` - completed features, settled design decisions, parked ideas *(create when first item is completed)*
+- `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
 - `docs/music-library-rules.md` - canonical rules for library structure
 - `docs/NewMusic integration plan.md` - integration pipeline design notes
