@@ -59,6 +59,23 @@ Append to `MusicIntegrationLog.json` per run:
 
 ---
 
+**Scan-ahead: 3-song threshold and Misc migration**
+
+Before processing a batch, scan all files to calculate post-integration artist counts. This is required to correctly apply the routing rules:
+- Identify artists in the batch that will hit the 3+ song threshold -> new artist folder needed
+- Identify existing Misc songs by those artists -> migrate them to the new folder at the same time
+- Show a preview of all planned moves before executing anything
+
+Without this, files get routed to Misc incorrectly for artists that should get their own folder.
+
+---
+
+**Fully automate new-music batch sorting**
+
+The integrator should automatically sort every file in the NewMusic inbox to the correct destination with no prompts, applying all rules in `Music-Library-Rules.md` (routing priority, album subfolder rule, artist threshold, Akira/Loot special cases). The interactive Y/N/Q per-file flow is a stepping stone - the end goal is zero manual decisions for a standard batch. Any ambiguous edge cases (genuinely unknown genre, artist not in library) can still prompt, but the common path must be fully automatic.
+
+---
+
 **Single batch launcher** *(quick win)*
 
 One `.bat` that always runs both analysis and integration:
@@ -80,32 +97,6 @@ Should be a plain static class, NOT inheriting from the Doer base class.
 
 ---
 
-**Analyser class stats**
-
-- Playback hours (total and average)
-- Song length metrics (shortest, longest, mean)
-- Library size (track count, total size in MB/GB)
-- Age stats (oldest track, newest track, year distribution)
-
----
-
-**Smart merge / scan-ahead logic** *(largest item)*
-
-Before integrating a batch, calculate post-integration artist counts:
-- Determine if new artist folders need creating (3+ song threshold)
-- Determine if existing misc songs should migrate to the new artist folder
-- Show preview/approval step before committing any moves
-- Fuzzy matching for artist name variations (e.g. "The Beatles" vs "Beatles")
-- Handle featured artists correctly in routing decisions
-
----
-
-**Fully automate new-music batch sorting**
-
-The integrator should automatically sort every file in the NewMusic inbox to the correct destination with no prompts, applying all rules in `Music-Library-Rules.md` (routing priority, album subfolder rule, artist threshold, Akira/Loot special cases). The interactive Y/N/Q per-file flow is a stepping stone - the end goal is zero manual decisions for a standard batch. Any ambiguous edge cases (new artist below threshold, unknown genre) can still prompt, but the common path must be fully automatic.
-
----
-
 **"My Edits" tracking**
 
 Detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
@@ -121,6 +112,12 @@ Flag songs where a parody and its original are both in the library.
 **Album completion detection**
 
 Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an album is owned.
+
+---
+
+**Fuzzy artist name matching**
+
+Handle artist name variations during routing (e.g. "The Beatles" vs "Beatles", featured artist formatting differences). Lower priority - only matters at scale.
 
 ---
 
