@@ -93,7 +93,29 @@ The integrator should automatically sort every file in the NewMusic inbox to the
 
 ---
 
+**Confidence report: user must be certain nothing was lost or misrouted**
+
+After every integration run the integrator must produce a confidence report that lets the user verify the batch with zero manual checking. Design goals:
+
+- Every source file accounted for - show a per-file table: original filename, destination path, tag changes applied, status (moved / skipped / error)
+- Before/after counts - total files in NewMusic inbox before vs. files moved successfully; any mismatch is a hard error, not a warning
+- Destination sanity check - after moving, re-read each destination file and confirm it is readable and tags are intact (not corrupted in transit)
+- New folders listed explicitly - any newly created artist/album/category folder is called out so the user can spot misroutes at a glance
+- Errors surfaced clearly - any file that could not be moved or tagged is shown with the reason; run does not silently continue
+- Dry run matches real run - dry run output format must be identical to the real run report (minus "moved" status), so the user can diff them
+
+The report should be saved to a timestamped file (e.g. `logs/integration-YYYYMMDD.txt`) AND printed to terminal. LibChecker then runs immediately after as a second layer of validation.
+
+---
+
 ## Lower Priority / Future
+
+**AudioMirror: auto-commit and push after regeneration**
+
+After AudioManager regenerates the AudioMirror XML files, automatically commit and push the AudioMirror repo. No manual GitHub Desktop step needed. Use `git add -u && git add untracked && git commit && git push` via Process/shell call from AudioManager after regeneration completes. Commit message format follows existing convention: `"Apr 7 Update"` style.
+
+---
+
 
 *(Ordered by size - smaller first.)*
 
@@ -127,5 +149,6 @@ Handle artist name variations during routing (e.g. "The Beatles" vs "Beatles", f
 
 - `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
 - `docs/Music-Library-Rules.md` - canonical rules for library structure
-- `docs/NewMusic-Integration-Plan.md` - past batch integration (April 2026 case study)
+- `docs/NewMusic-Integration-Plan-20260407.md` - past batch integration (April 2026 batch A)
+- `docs/NewMusic-Integration-Plan-20260407b.md` - past batch integration (April 2026 batch B)
 - `docs/AudioMirror-Format.md` - AudioMirror XML format and repo info
