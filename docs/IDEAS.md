@@ -91,12 +91,6 @@ One `.bat` that always runs both analysis and integration:
 
 ---
 
-**ReportWriter - plain static class** *(quick win)*
-
-Should be a plain static class, NOT inheriting from the Doer base class.
-
----
-
 **"My Edits" tracking**
 
 Detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
