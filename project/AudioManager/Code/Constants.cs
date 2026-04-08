@@ -66,7 +66,7 @@ namespace AudioManager
 
         /// Unwanted info in song titles that should be removed when validating tags
         public static readonly string[] UnwantedInfo = {
-            "feat.", "ft.", "edit", "bonus", "original", "soundtrack"
+            "feat.", "ft.", "edit", "bonus", "original", "soundtrack", "version", "explicit"
         };
 
         /// <summary>
