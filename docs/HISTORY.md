@@ -4,6 +4,24 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-08 - LibChecker: version/edition suffix detection
+
+Added `"version"` and `"explicit"` to `Constants.UnwantedInfo`. LibChecker now flags titles containing `(Explicit Version)`, `(Album Version)` etc. `(Radio Edit)` and `(Deluxe Edition)` were already caught by the existing `"edit"` entry.
+
+---
+
+## Constants.cs consolidation (already done)
+
+`MiscDir`, `ArtistsDir`, `MusivDir`, `MotivDir` were already defined in `Constants.cs`. Both `LibChecker` and `MusicIntegrator` already read from `Constants` - no duplication existed.
+
+---
+
+## LibChecker owns validation (already done)
+
+`MusicIntegrator`'s only "validation" is a routing precondition (skip files missing artist/title - can't determine destination without them). This is not duplicated LibChecker logic. The boundary was already clean.
+
+---
+
 ## ReportWriter - plain static class (already done)
 
 `ReportWriter` is already `internal static class`, not inheriting from Doer. Idea retired.

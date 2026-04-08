@@ -49,16 +49,7 @@ The Word doc below is the original process source. Extract all rules into `docs/
 
 ### Quick Wins
 
-**Constants.cs consolidation**
-Single source of truth at project level (not inside Code/ folder):
-- Extract `miscDir`, `artistsDir`, `musicDir`, `motivDir` from anywhere they are duplicated
-- LibChecker and MusicIntegrator must both read from Constants, never define their own copies
-
-**LibChecker: detect version/edition suffixes in title**
-Titles must not contain suffixes like `(Explicit Version)`, `(Album Version)`, `(Radio Edit)`, `(Deluxe Edition)`. LibChecker currently misses these - caught manually when `Bow Wow;Chris Brown - Ain't Thinkin' 'Bout You (Explicit Version)` was integrated (Apr 2026). Add a check that flags titles containing known version/edition keywords.
-
-**LibChecker owns validation**
-MusicIntegrator handles routing/moving only. LibChecker runs after and validates the result. Remove any duplicated validation logic from MusicIntegrator.
+*(none remaining - see HISTORY.md)*
 
 ---
 
