@@ -4,6 +4,12 @@ Single source of truth for all pending work. Settled decisions and completed fea
 
 ---
 
+## Immediate Actions
+
+- [ ] **Run LibChecker on full library** - "version" and "explicit" added to UnwantedInfo (commit 24340979), likely surfaces new hits. Fix any found issues, then commit library + report.
+
+---
+
 ## Current Goal
 
 Get to the point where a new music batch can be integrated using the program rather than manually - with dry run, metadata editing, routing, validation, and a confidence report.
