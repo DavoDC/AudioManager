@@ -136,10 +136,13 @@ namespace AudioManager
             // For every unwanted string
             foreach (var curUnwanted in Constants.UnwantedInfo)
             {
-                // Check fields for unwanted substrings
+                // Check tag fields for unwanted substrings
                 totalHits += CheckProperty(tag, t => t.Artists, "artists", curUnwanted);
                 totalHits += CheckProperty(tag, t => t.Title, "title", curUnwanted);
                 totalHits += CheckProperty(tag, t => t.Album, "album", curUnwanted);
+
+                // Also check the filename - title tag may be clean but filename not yet renamed
+                totalHits += CheckProperty(tag, t => GetFileName(t), "filename", curUnwanted);
             }
 
             return totalHits;
