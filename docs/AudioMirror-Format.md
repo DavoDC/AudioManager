@@ -4,6 +4,11 @@
 - Path: `C:\Users\David\GitHubRepos\AudioMirror`
 - Commit format: `Mar 8 Update` (abbreviated month + day number + "Update")
 
+## Commit Rules
+- **Do NOT commit if LibChecker reports any issues.** Fix all issues first, then commit both AudioMirror and the audio report together.
+- If LibChecker is clean, the audio report shows a single `LibChecker: Clean` line.
+- If LibChecker has issues, they are prominently flagged in the report and the AudioMirror commit is blocked until resolved.
+
 ## XML Format
 
 Each track is an individual `.xml` file. Structure:
