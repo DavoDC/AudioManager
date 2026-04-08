@@ -55,7 +55,8 @@ The Word doc below is the original process source. Extract all rules into `docs/
 
 ### Quick Wins
 
-*(none remaining - see HISTORY.md)*
+**LibChecker: move hardcoded exceptions to config file**
+`IsExceptionToRules()` in `LibChecker.cs` has hardcoded artist/title/album whitelists (KRS-One, "Original Rappers", "Going To Be Alright", "Medicine Man", "Agatha All Along", Eric Thomas, etc.). Move these to `config/libchecker-exceptions.json` at the repo root so exceptions can be added without recompiling.
 
 ---
 
