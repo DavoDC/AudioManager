@@ -6,6 +6,7 @@ Single source of truth for all pending work. Settled decisions and completed fea
 
 ## Immediate Actions
 
+- [ ] **David: review all docs before further implementation** - `Music-Library-Rules.md`, `AudioMirror-Format.md`, and the integration plan case studies are the requirements docs for this software. Review them for accuracy and completeness before any more integrator/launcher code is written. Corrections go back into the docs first, then code follows.
 - [ ] **Run LibChecker on full library** - "version" and "explicit" added to UnwantedInfo (commit 24340979), filename check added (commit a2f01004). Both likely surface new hits. Fix any found issues, then commit library + report.
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - Claude to scan AudioMirror XML files, cross-reference every track against the rules doc, and produce a report of violations and gaps. Then review LibChecker source - identify any rules from the doc that LibChecker does not currently enforce, and add the missing checks. Goal: LibChecker should be comprehensive enough that a clean run means the library fully conforms to the rules.
 
