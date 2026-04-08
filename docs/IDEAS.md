@@ -24,22 +24,7 @@ Get to the point where a new music batch can be integrated using the program rat
 
 ### Docs & Knowledge
 
-Do these before writing more integrator code - rules must be correct before automating them.
-
-**Review and improve all docs** *(start here)*
-Go through all docs in `docs/`, fix inaccuracies, clarify ambiguities, answer open questions. Goal: any future session should be able to pick up the project cold from docs alone.
-
-**Refine NewMusic-Integration-Plan-20260407b.md**
-Open notes inside that doc need resolving. See file for detail.
-
-**Fix date on NewMusic-Integration-Plan-20260407.md**
-The date is wrong - that integration was done earlier than Apr 7 2026. Check AudioMirror commit `b8e15b11923e0b1c0bbcca1563e45b1e9eafa8ea` to find the real date and correct the filename and doc header.
-
-**Review past integration docs for undocumented rules**
-Scan AudioMirror XML metadata and commit history. Look for routing decisions not yet captured in `Music-Library-Rules.md`. Rules doc must be comprehensive before the integrator can fully automate them.
-
-**Extract Word doc into Music-Library-Rules.md**
-The Word doc below is the original process source. Extract all rules into `docs/Music-Library-Rules.md` so the Word doc is no longer the source of truth. Extracted content is pasted at the bottom of this file for convenience.
+*(All done - see HISTORY.md)*
 
 ---
 
@@ -144,75 +129,10 @@ Handle artist name variations during routing (e.g. "The Beatles" vs "Beatles", f
 
 ---
 
-## Reference: Word Doc Content (for extraction into Music-Library-Rules.md)
-
-Source: `C:\Users\David\GoogleDrive\Documents\WordDocs\Audio Folder Organisation Usage Process .docx`
-Extract this into `docs/Music-Library-Rules.md`, then this section can be removed.
-
-### Process of Getting New Music
-
-**Stage 1: Acquire**
-1. Discover on Spotify via release radar etc. - add to liked songs.
-2. For each new song, also check that artist out - look at their top 10 streamed songs, look for other things you like.
-3. Download from relevant place - remove from liked songs.
-
-**Stage 2: Integrate**
-1. Apply rules using Mp3tag in Downloads folder.
-2. Integrate music into library following organisational rules below.
-3. Run AudioManager program to check library, commit update, commit audio report and AudioMirror changes.
-
-**Stage 3: Sync to Device** *(cannot automate - prompt user)*
-1. Open iTunes and ensure device is detected.
-2. Add Audio folder to iTunes.
-3. Use File -> Library -> Show Duplicate Items, and remove duplicates.
-4. Check for broken files (exclamation symbol on far left).
-5. Sync device twice to get new music.
-
-### Organisational Rules
-
-**Global Rules**
-- All files should be MP3 format
-  - To convert many: Format Factory -> To MP3 -> Add files -> Output to Source file folder
-  - Search in Explorer for `NOT *.mp3 AND NOT kind:folder`
-- Use MP3Tag's tag-to-filename feature: `%artist% - %title%`
-- Tags must include at minimum: Title, Artist, Album, Year, Cover
-  - If no album, use Title as Album
-- Remove from all fields: "feat.", "ft.", "Edit", "Version", "Original", "Soundtrack"
-- Set all tracks as compilations (TCMP=1) - stops iTunes listing each track as a separate album
-
-**Folder: Artists**
-- Artists who have 3 or more songs
-- Put album names within subfolders; remainder goes into Singles
-- No loose files
-
-**Folder: Compilations**
-- Compilation albums
-
-**Folder: Musivation**
-- All songs should have Musivation genre
-
-**Folder: Miscellaneous Songs**
-- Random singles
-- Try to move into Artists (look for trios or misplaced)
-- Try to move into Sources (look for movie soundtracks etc.)
-
-**Folder: Sources**
-- Tracks discovered through a specific form of media
-- Films:
-  - Change "Original Motion Picture Soundtrack" to OST
-  - All should have an album field containing "OST"
-- Anime songs:
-  - Use English titles for memorability
-  - Use Anime name as Album
-  - Full length for good ones, anime length for lesser ones
-  - Replace cover art with Anime cover
-
----
-
 ## See Also
 
 - `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
 - `docs/Music-Library-Rules.md` - canonical rules for library structure
 - `docs/NewMusic-Integration-Plan-20260308.md` - past batch integration (March 2026 batch A)
-- `docs/NewMusic-Integration-Plan-20260407b.md` - past batch integration (April 2026 batch B) *[complete, notes inside need resolving]*
+- `docs/NewMusic-Integration-Plan-20260407b.md` - past batch integration (April 2026 batch B)
 - `docs/AudioMirror-Format.md` - AudioMirror XML format and repo info
