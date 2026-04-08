@@ -126,7 +126,7 @@ David periodically integrates batches of new music into his personal library. Th
 | `A Touch Of Class - Around the World (La La La La La).mp3` | `A Touch Of Class;Pete Konemann - Around the World (La La La La La).mp3` | |
 | `Busy Signal - Sweet Love (Night Shift).mp3` | *(unchanged)* | |
 | `Chiddy Bang - Dream Chasin'.mp3` | *(unchanged)* | |
-| `Chiddy Bang - Mind Your Manners (feat. Icona Pop).mp3` | `Chiddy Bang;Icona Pop - Mind Your Manners (feat. Icona Pop).mp3` | |
+| `Chiddy Bang - Mind Your Manners (feat. Icona Pop).mp3` | `Chiddy Bang;Icona Pop - Mind Your Manners (feat. Icona Pop).mp3` | **BUG**: title tag was cleaned but filename not renamed - `feat.` still in filename. Needs manual rename + LibChecker fix (was not checking filenames for unwanted strings). |
 | `Colby O'Donis - What You Got.mp3` | `Colby O'Donis;Akon - What You Got.mp3` | |
 | `Dan + Shay - 10,000 Hours.mp3` | `Dan + Shay;Justin Bieber - 10,000 Hours.mp3` | |
 | `David Fleming - Last Son.mp3` | *(unchanged)* | |
