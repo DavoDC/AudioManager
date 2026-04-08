@@ -1,10 +1,10 @@
-# New Music Integration - Case Study (2026-04-07)
+# New Music Integration - Case Study (2026-03-08)
 
 > **Historical document - frozen.** This is a record of one batch integration of new music into David's library. It is not a template or active plan - just a case study for reference.
 
 ## Context
 
-David periodically integrates batches of new music into his personal library. This document captures the plan for one such batch: 47 tracks acquired and integrated in early April 2026. Each track required decisions about tagging, filename formatting, and destination folder within the library structure.
+David periodically integrates batches of new music into his personal library. This document captures the plan for one such batch: 47 tracks acquired and integrated in early March 2026. Each track required decisions about tagging, filename formatting, and destination folder within the library structure.
 
 ---
 
