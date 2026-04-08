@@ -16,16 +16,6 @@ Get to the point where a new music batch can be integrated using the program rat
 
 ---
 
-## Open Decisions
-
-**[DECIDED] Integrator stays in AudioManager** - The integrator shares Constants, LibChecker, and tag models with the rest of AudioManager. Splitting it out would require duplicating or packaging shared code with no real gain at this scale. Keep unified - logical separation (each has its own entry point) is enough.
-
-**[DECIDED] Audio reports stay in AudioManager** - AudioMirror is a data repo. Generating/storing analysis reports there would blur its purpose. AudioManager owns the tools and the outputs.
-
-**[OPEN] LibChecker output in audio report** - "Checking library..." process lines don't belong in a stats report. Proposal: if LibChecker clean, show a single `LibChecker: Clean` line. If issues, prominently flag them and block the AudioMirror commit. Document this rule once decided.
-
----
-
 ## Pending - Priority Order
 
 *(Quick wins first, then by dependency order.)*
