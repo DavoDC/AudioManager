@@ -134,5 +134,5 @@ Handle artist name variations during routing (e.g. "The Beatles" vs "Beatles", f
 - `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
 - `docs/Music-Library-Rules.md` - canonical rules for library structure
 - `docs/NewMusic-Integration-Plan-20260308.md` - past batch integration (March 2026 batch A)
-- `docs/NewMusic-Integration-Plan-20260407b.md` - past batch integration (April 2026 batch B)
+- `docs/NewMusic-Integration-Plan-20260407.md` - past batch integration (April 2026)
 - `docs/AudioMirror-Format.md` - AudioMirror XML format and repo info
