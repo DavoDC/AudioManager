@@ -71,12 +71,19 @@ namespace AudioManager
             // Check Artists folder
             List<string> artistsWithAudioFolder = CheckArtistFolder();
 
+            // Check album subfolder rule (2+ songs -> album folder; 1 song -> Singles/)
+            CheckAlbumSubfolderRule();
+
             // Check Miscellaneous Songs folder
             CheckMiscFolder(artistsWithAudioFolder);
 
             // Check Musivation and Motivation folders
             CheckMainFolderForGenre(Constants.MusivDir, Constants.MusivDir);
             CheckMainFolderForGenre(Constants.MotivDir, Constants.MotivDir);
+
+            // Check genre vs folder (inverse: tracks with genre outside expected folder)
+            CheckGenreVsFolder(Constants.MusivDir, Constants.MusivDir);
+            CheckGenreVsFolder(Constants.MotivDir, Constants.MotivDir);
 
             // Check Sources folder
             CheckSourcesFolder();
@@ -473,6 +480,82 @@ namespace AudioManager
             }
 
             // Print hits
+            PrintTotalHits(totalHits);
+        }
+
+        /// <summary>
+        /// Checks the album subfolder rule for the Artists folder:
+        /// - 2+ songs from the same album must be in an album-named subfolder (not Singles/)
+        /// - Exactly 1 song from an album must be in Singles/ (not in an album-named subfolder)
+        /// </summary>
+        private void CheckAlbumSubfolderRule()
+        {
+            Console.WriteLine($" - Checking {Constants.ArtistsDir} album subfolder rules...");
+            int totalHits = 0;
+
+            var artistAudioTags = FilterTagsByMainFolder(Constants.ArtistsDir);
+
+            // Group by (primaryArtist, album), skip tracks with missing album
+            var albumGroups = artistAudioTags
+                .Where(t => !t.Album.Equals("Missing"))
+                .GroupBy(t => new { t.PrimaryArtist, t.Album });
+
+            foreach (var group in albumGroups)
+            {
+                int count = group.Count();
+
+                if (count >= 2)
+                {
+                    // 2+ songs from same album: should be in an album subfolder, not Singles/
+                    foreach (TrackTag tag in group)
+                    {
+                        if (GetDirectParentFolder(tag).Equals(Constants.SinglesDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Console.WriteLine($"  - '{tag.RelPath}': {count} songs from album '{group.Key.Album}' but in {Constants.SinglesDir}/ (use album subfolder)");
+                            totalHits++;
+                        }
+                    }
+                }
+                else
+                {
+                    // 1 song from album: should be in Singles/, not in an album-named subfolder
+                    TrackTag tag = group.First();
+                    string parentFolder = GetDirectParentFolder(tag);
+                    string artistFolderName = GetRelPathPart(tag, 2);
+
+                    // Skip loose files in artist root (already caught by CheckArtistFolder)
+                    if (!parentFolder.Equals(Constants.SinglesDir, StringComparison.OrdinalIgnoreCase)
+                        && !parentFolder.Equals(artistFolderName))
+                    {
+                        Console.WriteLine($"  - '{tag.RelPath}': only 1 song from album '{group.Key.Album}' but in subfolder '{parentFolder}/' (should be {Constants.SinglesDir}/)");
+                        totalHits++;
+                    }
+                }
+            }
+
+            PrintTotalHits(totalHits);
+        }
+
+        /// <summary>
+        /// Checks that tracks with a genre of Musivation or Motivation are in the correct folder.
+        /// Flags any track with these genres that lives outside its expected folder.
+        /// </summary>
+        private void CheckGenreVsFolder(string folderName, string genre)
+        {
+            Console.WriteLine($" - Checking for '{genre}' genre outside {folderName}/...");
+            int totalHits = 0;
+
+            foreach (TrackTag tag in audioTags)
+            {
+                if (GetRelPathPart(tag, 1) == folderName) continue;
+
+                if (tag.Genres.Contains(genre))
+                {
+                    Console.WriteLine($"  - '{tag.RelPath}' has genre '{genre}' but is not in {folderName}/");
+                    totalHits++;
+                }
+            }
+
             PrintTotalHits(totalHits);
         }
 
