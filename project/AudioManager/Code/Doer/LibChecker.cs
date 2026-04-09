@@ -17,6 +17,12 @@ namespace AudioManager
         private List<TrackTag> audioTags;
         private List<XmlElement> exceptions;
 
+        /// <summary>True if LibChecker found zero issues across all checks.</summary>
+        public bool IsClean { get; private set; }
+
+        // Accumulates hits from all checks to determine IsClean
+        private int grandTotalHits = 0;
+
         /// <summary>
         /// Construct a library checker
         /// </summary>
@@ -74,6 +80,10 @@ namespace AudioManager
 
             // Check Sources folder
             CheckSourcesFolder();
+
+            // Set clean flag
+            IsClean = grandTotalHits == 0;
+            if (IsClean) Console.WriteLine(" - LibChecker: Clean");
 
             // Finish and print time taken
             Console.WriteLine("");
@@ -522,10 +532,12 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Print message displaying the total hits, if there were any
+        /// Print message displaying the total hits, if there were any.
+        /// Also accumulates into grandTotalHits to determine IsClean.
         /// </summary>
         private void PrintTotalHits(int totalHits)
         {
+            grandTotalHits += totalHits;
             if (totalHits != 0)
             {
                 Console.WriteLine($"  - Total hits: {totalHits}");
