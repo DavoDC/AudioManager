@@ -44,19 +44,22 @@ namespace AudioManager
                     try
                     {
                         // Read tags directly from file
-                        TagLib.File tagFile = TagLib.File.Create(sourcePath);
-                        Tag tag = tagFile.Tag;
-
-                        // Populate Track object
                         Track track = new Track();
-                        track.Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
-                        track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
-                        track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
-                        track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
-                        track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
+                        using (TagLib.File tagFile = TagLib.File.Create(sourcePath))
+                        {
+                            Tag tag = tagFile.Tag;
+                            track.Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
+                            track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
+                            track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
+                            track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
+                            track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
+                        }
 
                         // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
                         string primaryArtist = track.PrimaryArtist;
+
+                        // Pre-process: apply tag fixes before routing/moving
+                        PreProcessTags(sourcePath, track);
 
                         // Skip if un-routable
                         if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
@@ -191,6 +194,70 @@ namespace AudioManager
         }
 
         /// <summary>
+        /// Applies required tag fixes to an incoming file before routing.
+        /// In dry-run mode, logs what would change without writing.
+        /// Rules applied:
+        ///   - TCMP (IsCompilation) must be True on every track
+        ///   - Akira The Don tracks must have genre = Musivation
+        /// </summary>
+        private void PreProcessTags(string sourcePath, Track track)
+        {
+            TagLib.File tagFile = null;
+            bool anyChange = false;
+
+            try
+            {
+                // Check TCMP - must be True on every track
+                tagFile = TagLib.File.Create(sourcePath);
+                var id3 = (TagLib.Id3v2.Tag)tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
+                if (!id3.IsCompilation)
+                {
+                    if (dryRun)
+                    {
+                        Console.WriteLine($"  [DRY RUN] Would set TCMP=True on '{Path.GetFileName(sourcePath)}'");
+                    }
+                    else
+                    {
+                        id3.IsCompilation = true;
+                        anyChange = true;
+                        Console.WriteLine($"  [TAG FIX] Set TCMP=True on '{Path.GetFileName(sourcePath)}'");
+                    }
+                    track.Compilation = "True"; // keep in-memory track in sync
+                }
+
+                // Akira The Don: genre must be Musivation
+                if (track.Artists.Contains("Akira The Don") &&
+                    !track.Genres.Contains(Constants.MusivDir))
+                {
+                    if (dryRun)
+                    {
+                        Console.WriteLine($"  [DRY RUN] Would set Genre=Musivation on '{Path.GetFileName(sourcePath)}'");
+                    }
+                    else
+                    {
+                        tagFile.Tag.Genres = new[] { Constants.MusivDir };
+                        anyChange = true;
+                        Console.WriteLine($"  [TAG FIX] Set Genre=Musivation on '{Path.GetFileName(sourcePath)}'");
+                    }
+                    track.Genres = Constants.MusivDir; // keep in-memory track in sync
+                }
+
+                if (anyChange)
+                {
+                    tagFile.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  [WARN] Tag pre-processing failed for '{Path.GetFileName(sourcePath)}': {ex.Message}");
+            }
+            finally
+            {
+                tagFile?.Dispose();
+            }
+        }
+
+        /// <summary>
         /// Determines the destination directory for a track based on its metadata.
         /// </summary>
         /// <param name="track">The track to route.</param>
@@ -223,8 +290,9 @@ namespace AudioManager
                 }
                 else
                 {
-                    reason = "Artist folder exists; no distinct album";
-                    return artistFolder;
+                    // No distinct album -> Singles/ (avoids loose files directly in artist folder)
+                    reason = "Artist folder exists; no distinct album -> Singles/";
+                    return Path.Combine(artistFolder, "Singles");
                 }
             }
 
