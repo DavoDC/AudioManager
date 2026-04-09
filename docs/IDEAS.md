@@ -52,16 +52,16 @@ Get to the point where a new music batch can be integrated using the program rat
 
 *(In dependency order - implement top to bottom.)*
 
-**Metadata editing before move**
-Before accepting a file move, apply:
-- Set genre to `Musivation` for Akira The Don tracks
-- Set `IsCompilation = true` (TCMP tag) via ID3v2 on every file before moving
-- Filter out non-`.mp3` files
+**Metadata editing before move** *(implemented)*
+- TCMP=True set on every incoming track via `PreProcessTags()`
+- Akira The Don genre set to Musivation via `PreProcessTags()`
+- Non-MP3 files already filtered by `*.mp3` glob in Directory.GetFiles
 
-**JSON integration log** *(depends on: Metadata editing)*
-Append to `MusicIntegrationLog.json` per run:
-- Full metadata fields + decision fields: source, destination, tag changes made, timestamp
-- On re-run, check log first before re-deciding (decision history principle)
+**Integration log** *(implemented)*
+`SaveLog()` writes `logs/integration-YYYYMMDD.txt` (or `-dryrun.txt`) per run.
+Per-file: filename, artists, title, album, destination, tag changes, status (moved/skipped/error).
+Summary: total in NewMusic, moved count, skipped count.
+Logs folder is gitignored.
 
 **Scan-ahead: 3-song threshold and Misc migration** *(depends on: JSON log)*
 Before processing a batch, scan all files to calculate post-integration artist counts:
