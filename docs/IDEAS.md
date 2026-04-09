@@ -72,18 +72,21 @@ Remaining: existing Misc songs for those artists still need MANUAL migration (fl
 The auto-migration of existing Misc songs is not implemented - it involves moving existing library files
 which is a high-risk operation that needs a separate confirmation step.
 
-**Fully automate batch sorting** *(depends on: scan-ahead)*
-Zero prompts for standard cases. Apply all rules from `Music-Library-Rules.md` automatically. Ambiguous edge cases (unknown genre, artist not in library) can still prompt - but the common path must be fully automatic. The current interactive Y/N/Q per-file flow is a stepping stone, not the end goal.
+**Fully automate batch sorting** *(implemented)*
+Standard routes (Musivation, Motivation, Artists/ folder) are auto-accepted with `[AUTO]` label.
+Only Misc routing prompts the user - it's ambiguous (artist may belong elsewhere).
+Prompt changes from "[Y] Accept  [N]..." to "[Y] Accept (Misc)  [N]..." to make it clear why you're being asked.
 
-**Confidence report** *(depends on: fully automated sorting)*
-After every integration run, produce a report so the user can verify the batch with zero manual checking:
-- Per-file table: original filename, destination, tag changes applied, status (moved/skipped/error)
-- Before/after counts: files in NewMusic before vs. moved successfully - mismatch is a hard error, not a warning
-- Destination sanity check: re-read each destination file, confirm readable and tags intact
-- New folders listed explicitly - any newly created folder called out so the user can spot misroutes
-- Errors surfaced clearly - run does not silently continue past failures
-- Save to `logs/integration-YYYYMMDD.txt` AND print to terminal
-- LibChecker runs immediately after as a second validation layer
+**Confidence report** *(implemented)*
+`PrintConfidenceReport()` prints after every run:
+- Count check: NewMusic total vs moved vs skipped (mismatch = hard error)
+- Per-file table: filename, status, destination, tag changes applied
+- New folders: any folder with exactly 1 file after the run (likely newly created)
+- Destination sanity check: re-reads each moved file to confirm exists and readable
+- Error summary: any files that failed
+
+Remaining: LibChecker auto-run as second validation layer after integration is not implemented.
+(Analysis mode re-runs LibChecker fully; integrate mode doesn't currently trigger it.)
 
 ---
 
