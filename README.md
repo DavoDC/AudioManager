@@ -9,7 +9,7 @@ A C# console application for managing, analysing, and auditing a personal music 
 ## What it does
 
 - **Mirror** - creates a lightweight XML snapshot of the library metadata (see [AudioMirror](https://github.com/DavoDC/AudioMirror))
-- **Analyse** - generates timestamped statistical reports and runs full library validation (LibChecker)
+- **Analyse** - generates timestamped statistical reports, runs full library validation (LibChecker), and auto-commits AudioMirror if the library is clean
 - **Integrate** - scans a staging folder for new MP3s, pre-processes tags, routes files automatically, and produces a confidence report
 
 ## Statistics Provided
@@ -29,7 +29,6 @@ New music integration is fully automated for standard cases:
 3. **Auto-routing** - standard routes (Musivation, Motivation, existing Artists folder) are accepted automatically; only ambiguous Misc routing prompts the user
 4. **Confidence report** - count check, per-file table, destination sanity check, error summary
 5. **Integration log** - saved to `logs/integration-YYYYMMDD.txt`
-6. **AudioMirror auto-commit** - commits and pushes AudioMirror after every clean LibChecker run
 
 ## Project Structure
 
@@ -37,9 +36,9 @@ New music integration is fully automated for standard cases:
 AudioManager/
 ├── config/        # LibChecker exceptions config (libchecker-exceptions.xml)
 ├── docs/          # IDEAS.md, HISTORY.md, design and planning docs
-├── logs/          # Integration run logs (gitignored)
+├── logs/          # Integration run logs - gitignored
 ├── project/       # C# solution and source code
-├── reports/       # Auto-generated timestamped analysis reports (gitignored)
+├── reports/       # Auto-generated timestamped analysis reports - gitignored
 └── scripts/       # Launchers (launch.bat) and utility scripts
 ```
 
