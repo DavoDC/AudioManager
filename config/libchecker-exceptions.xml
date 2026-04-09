@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LibChecker exceptions config.
+  Each <Exception> has an 'unwanted' attribute (or '*' to match all unwanted strings).
+  Child elements specify the matching condition (all must match = AND logic):
+    <Album equals="..." />
+    <Album contains="..." />
+    <Artists contains="..." />
+    <Title contains="..." />
+    <Title equals="..." />
+  Comparisons are case-sensitive to match tag values exactly.
+-->
+<Exceptions>
+
+  <!-- "Original Rappers" album legitimately contains 'original' -->
+  <Exception unwanted="original">
+    <Album equals="Original Rappers" />
+  </Exception>
+
+  <!-- KRS-One tracks legitimately reference 'original' -->
+  <Exception unwanted="original">
+    <Artists contains="KRS-One" />
+  </Exception>
+
+  <!-- Bebe Rexha radio edit - intentional -->
+  <Exception unwanted="edit">
+    <Title contains="Going To Be Alright" />
+  </Exception>
+
+  <!-- Dr. Dre / Eminem - intentional edit -->
+  <Exception unwanted="edit">
+    <Title contains="Medicine Man" />
+  </Exception>
+
+  <!-- Anniversary/deluxe editions are fine to keep -->
+  <Exception unwanted="edit">
+    <Album contains="Edition" />
+  </Exception>
+
+  <!-- Kid Cudi track title that happens to contain 'soundtrack' -->
+  <Exception unwanted="soundtrack">
+    <Title equals="Soundtrack 2 My Life" />
+  </Exception>
+
+  <!-- Agatha All Along TV cast recording - all tag rules exempt -->
+  <Exception unwanted="*">
+    <Artists contains="Agatha All Along" />
+  </Exception>
+
+  <!-- Eric Thomas motivational bonus interview - exempt from tag cleanup -->
+  <Exception unwanted="*">
+    <Artists contains="Eric Thomas" />
+    <Title contains="BONUS INTERVIEW" />
+  </Exception>
+
+</Exceptions>
