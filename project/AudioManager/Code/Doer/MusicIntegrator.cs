@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using File = System.IO.File;
 using TagLib;
 
@@ -58,6 +59,9 @@ namespace AudioManager
                     return;
                 }
 
+                // Scan-ahead: identify artists that will hit 3+ threshold
+                var newArtistFolders = RunScanAhead(files);
+
                 foreach (var sourcePath in files)
                 {
                     var entry = new LogEntry { Filename = Path.GetFileName(sourcePath) };
@@ -100,7 +104,7 @@ namespace AudioManager
                         string destFilename = sanitisedArtists + " - " + sanitisedTitle + ".mp3";
 
                         // Determine destination directory and reason
-                        string destDir = GetDestDir(track, out string reason);
+                        string destDir = GetDestDir(track, newArtistFolders, out string reason);
 
                         // Ensure destination directory exists for relative path computation
                         string destPath = Path.Combine(destDir, destFilename);
@@ -233,6 +237,88 @@ namespace AudioManager
         }
 
         /// <summary>
+        /// Pre-scans the batch to find artists that will hit the 3-song threshold.
+        /// Checks existing Misc songs in AudioMirror XML + batch count.
+        /// Returns a set of primary artist names that need a new Artists/ folder.
+        /// Prints a preview of what will happen for those artists.
+        /// </summary>
+        private HashSet<string> RunScanAhead(string[] batchFiles)
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Count artists in the incoming batch
+            var batchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var f in batchFiles)
+            {
+                try
+                {
+                    using (TagLib.File tf = TagLib.File.Create(f))
+                    {
+                        string artists = tf.Tag.JoinedPerformers;
+                        if (string.IsNullOrEmpty(artists)) continue;
+                        string primary = Track.ProcessProperty(artists)[0].Trim();
+                        if (string.IsNullOrEmpty(primary)) continue;
+                        batchCounts[primary] = batchCounts.ContainsKey(primary) ? batchCounts[primary] + 1 : 1;
+                    }
+                }
+                catch { /* skip unreadable files */ }
+            }
+
+            // Count existing Misc songs by artist from AudioMirror XML
+            var miscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            string mirrorMiscPath = Path.GetFullPath(Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory, Constants.MirrorFolderPath, Constants.MiscDir));
+            if (Directory.Exists(mirrorMiscPath))
+            {
+                foreach (var xmlFile in Directory.GetFiles(mirrorMiscPath, "*.xml"))
+                {
+                    try
+                    {
+                        var xmlDoc = new System.Xml.XmlDocument();
+                        xmlDoc.Load(xmlFile);
+                        var artistsEl = xmlDoc.SelectSingleNode("//Artists");
+                        if (artistsEl == null) continue;
+                        string primary = Track.ProcessProperty(artistsEl.InnerText)[0].Trim();
+                        if (string.IsNullOrEmpty(primary)) continue;
+                        miscCounts[primary] = miscCounts.ContainsKey(primary) ? miscCounts[primary] + 1 : 1;
+                    }
+                    catch { /* skip malformed XML */ }
+                }
+            }
+
+            // Find artists that will hit 3+ threshold and don't already have an Artists/ folder
+            var previewLines = new List<string>();
+            foreach (var kvp in batchCounts)
+            {
+                string artist = kvp.Key;
+                int batchCount = kvp.Value;
+                int miscCount = miscCounts.ContainsKey(artist) ? miscCounts[artist] : 0;
+                int total = batchCount + miscCount;
+
+                string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, artist);
+                if (total >= 3 && !Directory.Exists(artistFolder))
+                {
+                    result.Add(artist);
+                    string note = miscCount > 0
+                        ? $"{batchCount} in batch + {miscCount} in Misc = {total} total -> new Artists/{artist}/"
+                        : $"{batchCount} in batch = {total} total -> new Artists/{artist}/";
+                    if (miscCount > 0)
+                        note += $" (NOTE: {miscCount} existing Misc song(s) need manual migration)";
+                    previewLines.Add($"  - {note}");
+                }
+            }
+
+            if (result.Count > 0)
+            {
+                Console.WriteLine($"\nScan-ahead: {result.Count} artist(s) will hit 3-song threshold:");
+                foreach (var line in previewLines) Console.WriteLine(line);
+                Console.WriteLine();
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Applies required tag fixes to an incoming file before routing.
         /// In dry-run mode, logs what would change without writing.
         /// Rules applied:
@@ -330,11 +416,12 @@ namespace AudioManager
         /// Determines the destination directory for a track based on its metadata.
         /// </summary>
         /// <param name="track">The track to route.</param>
+        /// <param name="newArtistFolders">Scan-ahead result: artists getting new folders this batch.</param>
         /// <param name="reason">Output: human-readable reason for the proposed destination.</param>
         /// <returns>The full destination directory path.</returns>
-        private string GetDestDir(Track track, out string reason)
+        private string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason)
         {
-            // Genres-based rules
+            // Genres-based rules (highest priority)
             if (!track.Genres.Equals("Missing") && track.Genres.IndexOf(Constants.MusivDir, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason = "Genre is Musivation";
@@ -347,20 +434,22 @@ namespace AudioManager
                 return Path.Combine(Constants.AudioFolderPath, Constants.MotivDir);
             }
 
-            // Artist folder rules
             string primaryArtist = track.PrimaryArtist;
             string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, primaryArtist);
-            if (Directory.Exists(artistFolder))
+
+            // Artist folder exists OR scan-ahead says this artist needs a new one
+            bool routeToArtists = Directory.Exists(artistFolder) || newArtistFolders.Contains(primaryArtist);
+            if (routeToArtists)
             {
+                string scanNote = newArtistFolders.Contains(primaryArtist) ? " [new via scan-ahead]" : "";
                 if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist))
                 {
-                    reason = "Artist folder exists; routed into album subfolder";
+                    reason = $"Artist folder{scanNote}; routed into album subfolder";
                     return Path.Combine(artistFolder, track.Album);
                 }
                 else
                 {
-                    // No distinct album -> Singles/ (avoids loose files directly in artist folder)
-                    reason = "Artist folder exists; no distinct album -> Singles/";
+                    reason = $"Artist folder{scanNote}; no distinct album -> Singles/";
                     return Path.Combine(artistFolder, "Singles");
                 }
             }
