@@ -136,6 +136,12 @@ Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an albu
 **Fuzzy artist name matching**
 Handle artist name variations during routing (e.g. "The Beatles" vs "Beatles", featured artist formatting differences). Lower priority - only matters at scale.
 
+**README: mention folder picker**
+Integration pipeline has an interactive folder browser when user rejects Misc routing (including "New folder" option). Could add a brief mention to the README integration section.
+
+**README: mention LibChecker checks**
+README says "full library validation" but doesn't list what LibChecker validates (filename format, unwanted tag strings, missing tags, album cover count, compilation flag, duplicates, artist-folder matching, album subfolder rule, misc folder review, genre-folder consistency, Sources OST check). Could add a short summary to the README.
+
 ---
 
 ## See Also

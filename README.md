@@ -12,9 +12,17 @@ A C# console application for managing, analysing, and auditing a personal music 
 - **Analyse** - generates timestamped statistical reports, runs full library validation (LibChecker), and auto-commits AudioMirror if the library is clean
 - **Integrate** - scans a staging folder for new MP3s, pre-processes tags, routes files automatically, and produces a confidence report
 
+## Usage
+
+Run via the launcher or CLI:
+
+- **Launcher:** `scripts/launch.bat` - builds via MSBuild, then presents a menu (analysis, analysis with force regen, integration dry run, integration real)
+- **CLI:** `AudioManager.exe analysis [--force-regen]` or `AudioManager.exe integrate [--dry-run]`
+- **Dry run:** always run integration with `--dry-run` first - prints every planned action without moving any files
+
 ## Statistics Provided
 
-- Total track count, total playback hours, library size on disk
+- Total playback hours, library size on disk, average file size
 - Average and median song length and track age
 - Percentage and count breakdown of: artists, genres, release years, decades
 
