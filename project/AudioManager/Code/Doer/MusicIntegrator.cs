@@ -122,7 +122,13 @@ namespace AudioManager
 
                         entry.Destination = relativeDest;
 
-                        // Interactive screen
+                        // Standard routes are auto-accepted (no prompt needed).
+                        // Only Misc routing requires confirmation - it's ambiguous.
+                        bool isStandardRoute = !destDir.StartsWith(
+                            Path.Combine(Constants.AudioFolderPath, Constants.MiscDir),
+                            StringComparison.OrdinalIgnoreCase);
+
+                        // Print track header
                         Console.Clear();
                         Console.WriteLine("============================================================");
                         Console.WriteLine($"  {track.Artists} - {track.Title}");
@@ -141,9 +147,21 @@ namespace AudioManager
                             entry.Status = "would-move";
                             logEntries.Add(entry); movedCount++;
                         }
+                        else if (isStandardRoute)
+                        {
+                            // Standard route: auto-accept
+                            Directory.CreateDirectory(destDir);
+                            File.Move(sourcePath, destPath);
+                            movedCount++;
+                            Console.WriteLine($"  [AUTO] Moved to: {relativeDest}");
+                            Console.Clear();
+                            entry.Status = "moved";
+                            logEntries.Add(entry);
+                        }
                         else
                         {
-                            Console.WriteLine("  [Y] Accept   [N] Choose folder   [Q] Quit");
+                            // Misc route: confirm with user
+                            Console.WriteLine("  [Y] Accept (Misc)   [N] Choose folder   [Q] Quit");
                             Console.WriteLine("------------------------------------------------------------");
 
                             // Wait for input
