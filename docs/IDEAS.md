@@ -32,30 +32,19 @@ Get to the point where a new music batch can be integrated using the program rat
 
 ### Quick Wins
 
-**LibChecker: move hardcoded exceptions to config file**
-`IsExceptionToRules()` in `LibChecker.cs` has hardcoded artist/title/album whitelists (KRS-One, "Original Rappers", "Going To Be Alright", "Medicine Man", "Agatha All Along", Eric Thomas, etc.). Move these to `config/libchecker-exceptions.json` at the repo root so exceptions can be added without recompiling.
+*(All done - see HISTORY.md)*
 
 ---
 
 ### Launcher
 
-**Single batch launcher** *(quick win, high priority)*
-One `.bat` file, menu-driven. Auto-builds via MSBuild before running.
+**Single batch launcher** *(implemented: `scripts/launch.bat`)*
+~~One `.bat` file, menu-driven. Auto-builds via MSBuild before running.~~ Done.
+- Remaining: integration terminal output must NOT bleed into the analysis report (already handled by TeeWriter in analysis mode; integrate mode doesn't use capture).
 
-Top-level menu:
-1. Analysis (No Force Regen)
-2. Analysis (Force Regen)
-3. Integration (Dry Run)
-4. Integration (Real)
-
-Rules for all modes:
-- Auto-compile via MSBuild before running
-- Show output in terminal, log to file, `cmd /k`
-- Analysis always runs and saves report to file; integration terminal output must NOT bleed into the report
-- If NewMusic folder is empty or doesn't exist in integration modes, skip silently
-
-**Dry run mode** *(data-safety gate)*
-MusicIntegrator prints every planned action (tag change, rename, move) without executing any of them. Invoked via launcher option 3 or `--dry-run` flag. Must run before every real integration. Output format must be identical to real run report (minus "moved" status) so the user can diff them.
+**Dry run mode** *(implemented: `--dry-run` flag)*
+~~MusicIntegrator prints every planned action without executing.~~ Done - invoked via launcher option 3 or `--dry-run` flag.
+- Remaining: tag changes and renames are not yet implemented (only moves), so dry-run covers what integration currently does.
 
 ---
 
@@ -112,6 +101,12 @@ Rules:
 
 **Deep dive: codebase audit**
 Scan for bugs, improvements, architectural issues. Document findings. Do after docs are solid so issues can be evaluated against intended behaviour.
+
+---
+
+### AudioMirror as primary scan target (already implemented)
+
+AudioMirror XML files are the source of truth for all analysis and LibChecker runs - the actual audio files are never touched during analysis. This is intentional and correct: AudioMirror is safer (no risk of corrupting audio files), faster (XML reads vs audio file I/O), and version-controlled (XML diffs show what changed). Any future analysis tools should read from AudioMirror XML, not from the audio files directly.
 
 ---
 
