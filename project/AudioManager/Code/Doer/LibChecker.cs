@@ -72,6 +72,9 @@ namespace AudioManager
             CheckMainFolderForGenre(Constants.MusivDir, Constants.MusivDir);
             CheckMainFolderForGenre(Constants.MotivDir, Constants.MotivDir);
 
+            // Check Sources folder
+            CheckSourcesFolder();
+
             // Finish and print time taken
             Console.WriteLine("");
             FinishAndPrintTimeTaken();
@@ -460,6 +463,47 @@ namespace AudioManager
             }
 
             // Print hits
+            PrintTotalHits(totalHits);
+        }
+
+        /// <summary>
+        /// Check the Sources folder: Films must have OST in Album, Shows should have OST in Album.
+        /// </summary>
+        private void CheckSourcesFolder()
+        {
+            Console.WriteLine($" - Checking {Constants.SourcesDir} folder...");
+
+            var sourcesTags = FilterTagsByMainFolder(Constants.SourcesDir);
+            int totalHits = 0;
+
+            foreach (TrackTag tag in sourcesTags)
+            {
+                // Get subfolder (Films, Shows, Anime) from path position 2
+                string[] pathParts = GetPathParts(tag);
+                if (pathParts.Length < 3) continue;
+                string subFolder = pathParts[2];
+
+                if (subFolder.Equals("Films", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Films rule: Album must contain "OST"
+                    if (!tag.Album.Contains("OST"))
+                    {
+                        Console.WriteLine($"  - '{tag.RelPath}' is in Films but Album has no 'OST': '{tag.Album}'");
+                        totalHits++;
+                    }
+                }
+                else if (subFolder.Equals("Shows", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Shows rule: Album should be "{Show Name} OST"
+                    if (!tag.Album.Contains("OST"))
+                    {
+                        Console.WriteLine($"  - '{tag.RelPath}' is in Shows but Album has no 'OST': '{tag.Album}'");
+                        totalHits++;
+                    }
+                }
+                // Anime: no strict Album rule enforced by LibChecker
+            }
+
             PrintTotalHits(totalHits);
         }
 
