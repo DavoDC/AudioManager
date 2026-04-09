@@ -13,9 +13,9 @@
 3. Download from relevant source - remove from liked songs.
 
 **Stage 2: Integrate**
-1. Apply rules using Mp3tag in the Downloads/NewMusic folder (tag cleanup, filename format, TCMP).
-2. Integrate music into library following the rules below.
-3. Run AudioManager - checks library, commits audio report and AudioMirror changes.
+1. Apply rules using Mp3tag in the Downloads/NewMusic folder (tag cleanup, filename format). Note: TCMP and Akira The Don genre are set automatically by AudioManager - no need to set in Mp3tag.
+2. Run AudioManager integrate (dry run first, then real) - routes files into library.
+3. Run AudioManager analysis - checks library, commits audio report and AudioMirror changes.
 
 **Stage 3: Sync to Device** *(manual - cannot automate)*
 1. Open iTunes and ensure device is detected.
