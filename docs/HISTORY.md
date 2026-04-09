@@ -4,6 +4,19 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-09 - LibChecker: album subfolder rule + inverse genre check
+
+Two new checks added based on Music-Library-Rules.md gap analysis:
+
+- `CheckAlbumSubfolderRule()`: flags Artists/ tracks violating the album subfolder rule.
+  - 2+ songs from same album in `Singles/` instead of an album subfolder.
+  - Only 1 song from an album in an album-named subfolder instead of `Singles/`.
+- `CheckGenreVsFolder(folder, genre)`: flags tracks with Musivation/Motivation genre that are
+  outside their expected folder (inverse of the existing `CheckMainFolderForGenre` check).
+- `Constants.SinglesDir = "Singles"` added.
+
+---
+
 ## 2026-04-09 - LibChecker exceptions moved to config file
 
 `IsExceptionToRules()` hardcoded whitelists extracted to `config/libchecker-exceptions.xml`. LibChecker now loads exceptions at startup via `LoadExceptions()`. Add new exceptions without recompiling - edit the XML and run. Existing exceptions: KRS-One, Original Rappers, Going To Be Alright, Medicine Man, Edition albums, Soundtrack 2 My Life, Agatha All Along, Eric Thomas bonus interview.
