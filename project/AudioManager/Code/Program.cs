@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace AudioManager
 {
@@ -22,15 +23,43 @@ namespace AudioManager
                 // Set mirror path relative to the executable
                 string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, Constants.MirrorFolderPath));
 
-                // Prompt user for mode
-                int mode = PromptMode();
+                // Detect CLI args: "analysis [--force-regen]" or "integrate [--dry-run]"
+                int mode;
+                bool forceMirrorRegen;
+                bool dryRun = false;
+                if (args.Length > 0)
+                {
+                    string modeArg = args[0].ToLower();
+                    bool forceRegen = args.Any(a => a.Equals("--force-regen", StringComparison.OrdinalIgnoreCase));
+                    dryRun = args.Any(a => a.Equals("--dry-run", StringComparison.OrdinalIgnoreCase));
+
+                    if (modeArg == "analysis" || modeArg == "analyse" || modeArg == "analyze")
+                    {
+                        mode = 1;
+                        forceMirrorRegen = forceRegen;
+                    }
+                    else if (modeArg == "integrate" || modeArg == "integration")
+                    {
+                        mode = 2;
+                        forceMirrorRegen = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] | integrate [--dry-run]");
+                        Environment.Exit(1);
+                        return;
+                    }
+                }
+                else
+                {
+                    // Interactive menu fallback
+                    mode = PromptMode();
+                    forceMirrorRegen = (mode == 1) ? PromptForceMirrorRegen() : false;
+                }
 
                 if (mode == 1)
                 {
                     // Analysis mode
-
-                    // Ask whether to force mirror regeneration (before capture — not part of report)
-                    bool forceMirrorRegen = PromptForceMirrorRegen();
 
                     // Start capturing console output for report
                     StringWriter captureWriter = new StringWriter();
@@ -80,7 +109,7 @@ namespace AudioManager
                 else if (mode == 2)
                 {
                     // Integrate mode
-                    MusicIntegrator mi = new MusicIntegrator();
+                    MusicIntegrator mi = new MusicIntegrator(dryRun);
                 }
 
                 // Print total time taken (Integrate mode only)
