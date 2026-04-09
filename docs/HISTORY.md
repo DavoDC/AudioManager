@@ -10,6 +10,19 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-09 - Integration pipeline: pre-process tags, log, routing fix
+
+- `PreProcessTags()` runs on every incoming file before routing: sets TCMP=True on all tracks, sets Genre=Musivation for Akira The Don. Works in dry-run mode (prints what would change without writing).
+- `SaveLog()` writes `logs/integration-YYYYMMDD[-dryrun].txt` after every run. Per-file: filename, artists, title, album, destination, tag changes, status. Summary line with totals.
+- `GetDestDir()`: fixed routing bug - when artist folder exists but no distinct album, routes to `Singles/` instead of artist root (prevents loose files that LibChecker would flag).
+- TagLib resource leak fixed: `TagLib.File.Create()` now wrapped in `using` block.
+- `SourcesDir = "Sources"` added to Constants (was the only main folder without one).
+- `CheckSourcesFolder()` added to LibChecker: flags Sources/Films and Sources/Shows tracks where Album does not contain "OST".
+- Analyser library size: fixed to count only `.mp3` files (previously included .ini, .lnk, etc.).
+- `LogsPath` added to Constants (gitignored `logs/` folder).
+
+---
+
 ## 2026-04-09 - Batch launcher, CLI args, dry-run mode
 
 - `scripts/launch.bat` - menu-driven launcher, auto-builds via MSBuild, 4 modes (analysis / force-regen / dry-run / real integrate), `cmd /k` to keep window open.
