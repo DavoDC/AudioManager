@@ -1,8 +1,10 @@
 ﻿using AudioManager.Code.Modules;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml;
 
 namespace AudioManager
 {
@@ -13,6 +15,7 @@ namespace AudioManager
     {
         // Variables
         private List<TrackTag> audioTags;
+        private List<XmlElement> exceptions;
 
         /// <summary>
         /// Construct a library checker
@@ -25,6 +28,9 @@ namespace AudioManager
 
             // Save parameter
             this.audioTags = audioTags;
+
+            // Load exceptions from config
+            exceptions = LoadExceptions();
 
             // Check all tags
             int totalTagHits = 0;
@@ -239,43 +245,67 @@ namespace AudioManager
             return 0;
         }
 
-        /// <returns>True if metadata combination is whitelisted, false otherwise</returns>
+        /// <summary>
+        /// Loads exception rules from config/libchecker-exceptions.xml.
+        /// Falls back to empty list if file not found.
+        /// </summary>
+        private List<XmlElement> LoadExceptions()
+        {
+            var result = new List<XmlElement>();
+            try
+            {
+                if (!File.Exists(Constants.LibCheckerExceptionsPath))
+                {
+                    Console.WriteLine($"  [WARN] Exceptions config not found: {Constants.LibCheckerExceptionsPath}");
+                    return result;
+                }
+                var doc = new XmlDocument();
+                doc.Load(Constants.LibCheckerExceptionsPath);
+                foreach (XmlElement el in doc.SelectNodes("//Exception"))
+                {
+                    result.Add(el);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  [WARN] Could not load exceptions config: {ex.Message}");
+            }
+            return result;
+        }
+
+        /// <returns>True if metadata combination is whitelisted by config, false otherwise</returns>
         private bool IsExceptionToRules(TrackTag tag, string unwanted)
         {
-            if (unwanted.Equals("original") &&
-                (tag.Album.Equals("Original Rappers") || tag.Artists.Contains("KRS-One")))
+            foreach (XmlElement ex in exceptions)
             {
-                return true;
-            }
+                string exUnwanted = ex.GetAttribute("unwanted");
 
-            if (unwanted.Equals("edit"))
-            {
-                if (tag.Title.Contains("Going To Be Alright") || tag.Title.Contains("Medicine Man"))
+                // Check if this exception applies to the current unwanted string
+                if (exUnwanted != "*" && !exUnwanted.Equals(unwanted, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Check all child conditions (AND logic)
+                bool allMatch = true;
+                foreach (XmlElement cond in ex.ChildNodes.OfType<XmlElement>())
                 {
-                    return true;
+                    string field = cond.Name;           // "Title", "Artists", "Album"
+                    string op = cond.GetAttribute("equals") != "" ? "equals" : "contains";
+                    string value = op == "equals" ? cond.GetAttribute("equals") : cond.GetAttribute("contains");
+
+                    string tagValue = field == "Title" ? tag.Title
+                                    : field == "Artists" ? tag.Artists
+                                    : field == "Album" ? tag.Album
+                                    : "";
+
+                    bool condMet = op == "equals"
+                        ? tagValue.Equals(value)
+                        : tagValue.Contains(value);
+
+                    if (!condMet) { allMatch = false; break; }
                 }
 
-                if(tag.Album.Contains("Edition"))
-                {
-                    return true;
-                }
+                if (allMatch) return true;
             }
-
-            if (unwanted.Equals("soundtrack") && tag.Title.Equals("Soundtrack 2 My Life"))
-            {
-                return true;
-            }
-
-            if(tag.Artists.Contains("Agatha All Along"))
-            {
-                return true;
-            }
-
-            if (tag.Artists.Contains("Eric Thomas") && tag.Title.Contains("BONUS INTERVIEW"))
-            {
-                return true;
-            }
-
             return false;
         }
 

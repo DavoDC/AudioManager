@@ -34,6 +34,10 @@ namespace AudioManager
         public static readonly string ReportsPath = Path.GetFullPath(
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "reports"));
 
+        // Path to the LibChecker exceptions config file
+        public static readonly string LibCheckerExceptionsPath = Path.GetFullPath(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "config", "libchecker-exceptions.xml"));
+
         /// <summary>
         /// Library folder names
         /// </summary>
