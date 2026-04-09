@@ -12,12 +12,17 @@ namespace AudioManager
     /// </summary>
     internal class MusicIntegrator : Doer
     {
+        private bool dryRun;
+
         /// <summary>
         /// Construct and run the music integrator
         /// </summary>
-        public MusicIntegrator()
+        /// <param name="dryRun">If true, print planned actions without executing any file moves.</param>
+        public MusicIntegrator(bool dryRun = false)
         {
-            Console.WriteLine("\nIntegrating new music...");
+            this.dryRun = dryRun;
+            string modeLabel = dryRun ? " [DRY RUN - no files will be moved]" : "";
+            Console.WriteLine($"\nIntegrating new music...{modeLabel}");
 
             int movedCount = 0;
             int skippedCount = 0;
@@ -94,64 +99,74 @@ namespace AudioManager
                         Console.WriteLine($"\n  Proposed: {relativeDest}");
                         Console.WriteLine($"  Reason:   {reason}");
                         Console.WriteLine("\n------------------------------------------------------------");
-                        Console.WriteLine("  [Y] Accept   [N] Choose folder   [Q] Quit");
-                        Console.WriteLine("------------------------------------------------------------");
 
-                        // Wait for input
-                        while (true)
+                        if (dryRun)
                         {
-                            var key = Console.ReadKey(intercept: true).Key;
-                            if (key == ConsoleKey.Y)
-                            {
-                                // Accept: move
-                                Directory.CreateDirectory(destDir);
-                                File.Move(sourcePath, destPath);
-                                movedCount++;
-                                Console.WriteLine($"  Moved to: {relativeDest}");
-                                Console.Clear();
-                                break;
-                            }
-                            else if (key == ConsoleKey.Q)
-                            {
-                                Console.WriteLine("\n - Quit. Remaining files left for next run.");
-                                return; // exits foreach, hits finally
-                            }
-                            else if (key == ConsoleKey.N)
-                            {
-                                // Folder picker
-                                string chosen = PickFolder();
-                                if (string.IsNullOrEmpty(chosen))
-                                {
-                                    // cancelled selection, redisplay prompt
-                                    Console.WriteLine("  Folder selection cancelled.");
-                                    continue;
-                                }
+                            // Dry run: print planned action, no file move
+                            Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
+                            movedCount++;
+                        }
+                        else
+                        {
+                            Console.WriteLine("  [Y] Accept   [N] Choose folder   [Q] Quit");
+                            Console.WriteLine("------------------------------------------------------------");
 
-                                string newDestDir = chosen;
-                                string newDestPath = Path.Combine(newDestDir, destFilename);
-                                Directory.CreateDirectory(newDestDir);
-                                if (File.Exists(newDestPath))
+                            // Wait for input
+                            while (true)
+                            {
+                                var key = Console.ReadKey(intercept: true).Key;
+                                if (key == ConsoleKey.Y)
                                 {
-                                    Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
-                                    skippedCount++;
-                                }
-                                else
-                                {
-                                    File.Move(sourcePath, newDestPath);
+                                    // Accept: move
+                                    Directory.CreateDirectory(destDir);
+                                    File.Move(sourcePath, destPath);
                                     movedCount++;
-                                    string rel = newDestPath;
-                                    if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        rel = newDestPath.Substring(Constants.AudioFolderPath.Length);
-                                        if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
-                                    }
-                                    Console.WriteLine($"  Moved to: {rel}");
+                                    Console.WriteLine($"  Moved to: {relativeDest}");
                                     Console.Clear();
+                                    break;
                                 }
+                                else if (key == ConsoleKey.Q)
+                                {
+                                    Console.WriteLine("\n - Quit. Remaining files left for next run.");
+                                    return; // exits foreach, hits finally
+                                }
+                                else if (key == ConsoleKey.N)
+                                {
+                                    // Folder picker
+                                    string chosen = PickFolder();
+                                    if (string.IsNullOrEmpty(chosen))
+                                    {
+                                        // cancelled selection, redisplay prompt
+                                        Console.WriteLine("  Folder selection cancelled.");
+                                        continue;
+                                    }
 
-                                break;
+                                    string newDestDir = chosen;
+                                    string newDestPath = Path.Combine(newDestDir, destFilename);
+                                    Directory.CreateDirectory(newDestDir);
+                                    if (File.Exists(newDestPath))
+                                    {
+                                        Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
+                                        skippedCount++;
+                                    }
+                                    else
+                                    {
+                                        File.Move(sourcePath, newDestPath);
+                                        movedCount++;
+                                        string rel = newDestPath;
+                                        if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            rel = newDestPath.Substring(Constants.AudioFolderPath.Length);
+                                            if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                                        }
+                                        Console.WriteLine($"  Moved to: {rel}");
+                                        Console.Clear();
+                                    }
+
+                                    break;
+                                }
+                                // ignore other keys
                             }
-                            // ignore other keys
                         }
                     }
                     catch (Exception ex)
@@ -163,9 +178,9 @@ namespace AudioManager
 
                 Console.Clear();
                 Console.WriteLine("============================================================");
-                Console.WriteLine("  Integration complete");
+                Console.WriteLine(dryRun ? "  Dry Run complete (no files moved)" : "  Integration complete");
                 Console.WriteLine("============================================================\n");
-                Console.WriteLine($"  Moved:   {movedCount}");
+                Console.WriteLine(dryRun ? $"  Would move: {movedCount}" : $"  Moved:   {movedCount}");
                 Console.WriteLine($"  Skipped: {skippedCount}");
                 Console.WriteLine("\n------------------------------------------------------------");
             }
