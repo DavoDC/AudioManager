@@ -63,12 +63,14 @@ Per-file: filename, artists, title, album, destination, tag changes, status (mov
 Summary: total in NewMusic, moved count, skipped count.
 Logs folder is gitignored.
 
-**Scan-ahead: 3-song threshold and Misc migration** *(depends on: JSON log)*
-Before processing a batch, scan all files to calculate post-integration artist counts:
-- Artists in batch that will hit the 3+ song threshold -> create artist folder
-- Existing Misc songs by those artists -> migrate to new folder at the same time
-- Show a preview of all planned moves before executing anything
-Without this, files get routed to Misc incorrectly for artists that should get their own folder.
+**Scan-ahead: 3-song threshold routing** *(implemented - routing only)*
+`RunScanAhead()` pre-scans batch tags + AudioMirror Misc XMLs to find artists hitting 3+.
+Those artists get routed to `Artists/{artist}/` instead of Misc - shown in reason as "[new via scan-ahead]".
+Preview printed before the per-file loop.
+
+Remaining: existing Misc songs for those artists still need MANUAL migration (flagged in preview).
+The auto-migration of existing Misc songs is not implemented - it involves moving existing library files
+which is a high-risk operation that needs a separate confirmation step.
 
 **Fully automate batch sorting** *(depends on: scan-ahead)*
 Zero prompts for standard cases. Apply all rules from `Music-Library-Rules.md` automatically. Ambiguous edge cases (unknown genre, artist not in library) can still prompt - but the common path must be fully automatic. The current interactive Y/N/Q per-file flow is a stepping stone, not the end goal.
@@ -87,13 +89,12 @@ After every integration run, produce a report so the user can verify the batch w
 
 ### AudioMirror Integration
 
-**Auto-commit and push after regeneration**
-After AudioManager regenerates the AudioMirror XML files, automatically commit and push the AudioMirror repo. No manual GitHub Desktop step. Commit message format follows existing convention (e.g. `"Apr 7 Update"`).
-
-Rules:
-- Do NOT commit if LibChecker reports any issues - fix first, then commit
-- Only commit if files actually changed (avoid empty commits)
-- This keeps AudioMirror commit history clean
+**Auto-commit and push after regeneration** *(implemented)*
+`AudioMirrorCommitter.TryCommit()` runs after every clean analysis run.
+- Skips if LibChecker had any hits
+- Skips if nothing changed (git status --porcelain is empty)
+- Commits staged AUDIO_MIRROR/ with "MMM d Update" message and pushes
+- LibChecker now exposes `IsClean` property; prints "LibChecker: Clean" when zero hits
 
 ---
 
