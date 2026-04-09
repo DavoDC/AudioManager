@@ -14,7 +14,9 @@ Single source of truth for all pending work. Settled decisions and completed fea
 
 ## Current Goal
 
-Get to the point where a new music batch can be integrated using the program rather than manually - with dry run, metadata editing, routing, validation, and a confidence report.
+~~Get to the point where a new music batch can be integrated using the program rather than manually - with dry run, metadata editing, routing, validation, and a confidence report.~~
+
+**GOAL ACHIEVED (2026-04-09).** All integration pipeline features implemented. Next goal: first real integration run using the program, then LibChecker clean run to validate the library state.
 
 ---
 
@@ -103,8 +105,13 @@ Remaining: LibChecker auto-run as second validation layer after integration is n
 
 ### Codebase Audit
 
-**Deep dive: codebase audit**
-Scan for bugs, improvements, architectural issues. Document findings. Do after docs are solid so issues can be evaluated against intended behaviour.
+**Deep dive: codebase audit** *(done 2026-04-09)*
+Issues found and fixed:
+- Analyser library size counted non-MP3 files (fixed: `*.mp3` filter)
+- LibChecker missing Sources/Films and Sources/Shows OST check (fixed: `CheckSourcesFolder()`)
+- MusicIntegrator TagLib resource leak (fixed: `using` block)
+- MusicIntegrator routing: "no distinct album" went to artist root (fixed: routes to `Singles/`)
+- AgeChecker early-return path skips `FinishAndPrintTimeTaken()` (minor, not fixed - timing only)
 
 ---
 
