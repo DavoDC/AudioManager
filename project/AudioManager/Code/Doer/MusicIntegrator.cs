@@ -1,7 +1,9 @@
 ﻿using AudioManager.Code.Modules;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using File = System.IO.File;
 using TagLib;
 
@@ -13,6 +15,19 @@ namespace AudioManager
     internal class MusicIntegrator : Doer
     {
         private bool dryRun;
+
+        /// <summary>Per-file integration result for the log.</summary>
+        private class LogEntry
+        {
+            public string Filename;
+            public string Title;
+            public string Artists;
+            public string Album;
+            public string Destination;
+            public List<string> TagChanges = new List<string>();
+            public string Status; // "moved", "would-move", "skipped", "error"
+            public string Detail; // reason or error message
+        }
 
         /// <summary>
         /// Construct and run the music integrator
@@ -26,12 +41,16 @@ namespace AudioManager
 
             int movedCount = 0;
             int skippedCount = 0;
+            var logEntries = new List<LogEntry>();
+            int totalFiles = 0;
 
             try
             {
                 var files = Directory.Exists(Constants.NewMusicPath)
                     ? Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories)
                     : Array.Empty<string>();
+
+                totalFiles = files.Length;
 
                 if (files.Length == 0)
                 {
@@ -41,6 +60,7 @@ namespace AudioManager
 
                 foreach (var sourcePath in files)
                 {
+                    var entry = new LogEntry { Filename = Path.GetFileName(sourcePath) };
                     try
                     {
                         // Read tags directly from file
@@ -55,17 +75,22 @@ namespace AudioManager
                             track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
                         }
 
+                        entry.Title = track.Title;
+                        entry.Artists = track.Artists;
+                        entry.Album = track.Album;
+
                         // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
                         string primaryArtist = track.PrimaryArtist;
 
                         // Pre-process: apply tag fixes before routing/moving
-                        PreProcessTags(sourcePath, track);
+                        entry.TagChanges = PreProcessTags(sourcePath, track);
 
                         // Skip if un-routable
                         if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
                         {
                             Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': missing required tag");
-                            skippedCount++;
+                            entry.Status = "skipped"; entry.Detail = "missing required tag";
+                            logEntries.Add(entry); skippedCount++;
                             continue;
                         }
 
@@ -91,6 +116,8 @@ namespace AudioManager
                             }
                         }
 
+                        entry.Destination = relativeDest;
+
                         // Interactive screen
                         Console.Clear();
                         Console.WriteLine("============================================================");
@@ -107,7 +134,8 @@ namespace AudioManager
                         {
                             // Dry run: print planned action, no file move
                             Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
-                            movedCount++;
+                            entry.Status = "would-move";
+                            logEntries.Add(entry); movedCount++;
                         }
                         else
                         {
@@ -126,11 +154,14 @@ namespace AudioManager
                                     movedCount++;
                                     Console.WriteLine($"  Moved to: {relativeDest}");
                                     Console.Clear();
+                                    entry.Status = "moved";
+                                    logEntries.Add(entry);
                                     break;
                                 }
                                 else if (key == ConsoleKey.Q)
                                 {
                                     Console.WriteLine("\n - Quit. Remaining files left for next run.");
+                                    entry.Status = "quit"; logEntries.Add(entry);
                                     return; // exits foreach, hits finally
                                 }
                                 else if (key == ConsoleKey.N)
@@ -150,7 +181,8 @@ namespace AudioManager
                                     if (File.Exists(newDestPath))
                                     {
                                         Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
-                                        skippedCount++;
+                                        entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                        logEntries.Add(entry); skippedCount++;
                                     }
                                     else
                                     {
@@ -164,6 +196,9 @@ namespace AudioManager
                                         }
                                         Console.WriteLine($"  Moved to: {rel}");
                                         Console.Clear();
+                                        entry.Destination = rel;
+                                        entry.Status = "moved";
+                                        logEntries.Add(entry);
                                     }
 
                                     break;
@@ -175,7 +210,8 @@ namespace AudioManager
                     catch (Exception ex)
                     {
                         Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': error reading file ({ex.Message})");
-                        skippedCount++;
+                        entry.Status = "error"; entry.Detail = ex.Message;
+                        logEntries.Add(entry); skippedCount++;
                     }
                 }
 
@@ -186,6 +222,9 @@ namespace AudioManager
                 Console.WriteLine(dryRun ? $"  Would move: {movedCount}" : $"  Moved:   {movedCount}");
                 Console.WriteLine($"  Skipped: {skippedCount}");
                 Console.WriteLine("\n------------------------------------------------------------");
+
+                // Save integration log
+                SaveLog(logEntries, totalFiles, movedCount, skippedCount);
             }
             finally
             {
@@ -200,52 +239,37 @@ namespace AudioManager
         ///   - TCMP (IsCompilation) must be True on every track
         ///   - Akira The Don tracks must have genre = Musivation
         /// </summary>
-        private void PreProcessTags(string sourcePath, Track track)
+        /// <returns>List of changes made (or would be made in dry-run).</returns>
+        private List<string> PreProcessTags(string sourcePath, Track track)
         {
+            var changes = new List<string>();
             TagLib.File tagFile = null;
             bool anyChange = false;
 
             try
             {
-                // Check TCMP - must be True on every track
                 tagFile = TagLib.File.Create(sourcePath);
                 var id3 = (TagLib.Id3v2.Tag)tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
+
+                // Check TCMP - must be True on every track
                 if (!id3.IsCompilation)
                 {
-                    if (dryRun)
-                    {
-                        Console.WriteLine($"  [DRY RUN] Would set TCMP=True on '{Path.GetFileName(sourcePath)}'");
-                    }
-                    else
-                    {
-                        id3.IsCompilation = true;
-                        anyChange = true;
-                        Console.WriteLine($"  [TAG FIX] Set TCMP=True on '{Path.GetFileName(sourcePath)}'");
-                    }
-                    track.Compilation = "True"; // keep in-memory track in sync
+                    changes.Add("Set TCMP=True");
+                    track.Compilation = "True";
+                    if (!dryRun) { id3.IsCompilation = true; anyChange = true; }
+                    Console.WriteLine($"  [{(dryRun ? "DRY RUN" : "TAG FIX")}] {changes.Last()} on '{Path.GetFileName(sourcePath)}'");
                 }
 
                 // Akira The Don: genre must be Musivation
-                if (track.Artists.Contains("Akira The Don") &&
-                    !track.Genres.Contains(Constants.MusivDir))
+                if (track.Artists.Contains("Akira The Don") && !track.Genres.Contains(Constants.MusivDir))
                 {
-                    if (dryRun)
-                    {
-                        Console.WriteLine($"  [DRY RUN] Would set Genre=Musivation on '{Path.GetFileName(sourcePath)}'");
-                    }
-                    else
-                    {
-                        tagFile.Tag.Genres = new[] { Constants.MusivDir };
-                        anyChange = true;
-                        Console.WriteLine($"  [TAG FIX] Set Genre=Musivation on '{Path.GetFileName(sourcePath)}'");
-                    }
-                    track.Genres = Constants.MusivDir; // keep in-memory track in sync
+                    changes.Add("Set Genre=Musivation");
+                    track.Genres = Constants.MusivDir;
+                    if (!dryRun) { tagFile.Tag.Genres = new[] { Constants.MusivDir }; anyChange = true; }
+                    Console.WriteLine($"  [{(dryRun ? "DRY RUN" : "TAG FIX")}] {changes.Last()} on '{Path.GetFileName(sourcePath)}'");
                 }
 
-                if (anyChange)
-                {
-                    tagFile.Save();
-                }
+                if (anyChange) tagFile.Save();
             }
             catch (Exception ex)
             {
@@ -254,6 +278,51 @@ namespace AudioManager
             finally
             {
                 tagFile?.Dispose();
+            }
+
+            return changes;
+        }
+
+        /// <summary>
+        /// Saves a formatted integration log to logs/integration-YYYYMMDD.txt.
+        /// </summary>
+        private void SaveLog(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
+        {
+            try
+            {
+                string logsDir = Constants.LogsPath;
+                Directory.CreateDirectory(logsDir);
+
+                string date = DateTime.Now.ToString("yyyy-MM-dd");
+                string suffix = dryRun ? "-dryrun" : "";
+                string logPath = Path.Combine(logsDir, $"integration-{date}{suffix}.txt");
+
+                var sb = new StringBuilder();
+                sb.AppendLine(dryRun ? "Integration Dry Run" : "Integration Log");
+                sb.AppendLine($"Date: {DateTime.Now:yyyy-MM-dd HH:mm}");
+                sb.AppendLine($"Total in NewMusic: {totalFiles}  |  Moved: {movedCount}  |  Skipped: {skippedCount}");
+                sb.AppendLine(new string('-', 60));
+                sb.AppendLine();
+
+                foreach (var e in entries)
+                {
+                    sb.AppendLine($"[{e.Status?.ToUpper()}] {e.Filename}");
+                    sb.AppendLine($"  Artist: {e.Artists}  |  Title: {e.Title}  |  Album: {e.Album}");
+                    if (!string.IsNullOrEmpty(e.Destination))
+                        sb.AppendLine($"  Dest: {e.Destination}");
+                    if (e.TagChanges?.Count > 0)
+                        sb.AppendLine($"  Tags: {string.Join(", ", e.TagChanges)}");
+                    if (!string.IsNullOrEmpty(e.Detail))
+                        sb.AppendLine($"  Detail: {e.Detail}");
+                    sb.AppendLine();
+                }
+
+                File.WriteAllText(logPath, sb.ToString());
+                Console.WriteLine($"\nLog saved: logs\\integration-{date}{suffix}.txt");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  [WARN] Could not save integration log: {ex.Message}");
             }
         }
 
