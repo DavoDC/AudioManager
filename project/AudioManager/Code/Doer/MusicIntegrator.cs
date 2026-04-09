@@ -245,7 +245,8 @@ namespace AudioManager
                 Console.WriteLine($"  Skipped: {skippedCount}");
                 Console.WriteLine("\n------------------------------------------------------------");
 
-                // Save integration log
+                // Print confidence report to console + save to log file
+                PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
                 SaveLog(logEntries, totalFiles, movedCount, skippedCount);
             }
             finally
@@ -385,6 +386,111 @@ namespace AudioManager
             }
 
             return changes;
+        }
+
+        /// <summary>
+        /// Prints a confidence report to the console after integration.
+        /// Covers: count check, per-file table, new folders, destination sanity check, errors.
+        /// </summary>
+        private void PrintConfidenceReport(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
+        {
+            Console.WriteLine("\n============================================================");
+            Console.WriteLine(dryRun ? "  CONFIDENCE REPORT (Dry Run)" : "  CONFIDENCE REPORT");
+            Console.WriteLine("============================================================\n");
+
+            // 1. Count check
+            int expectedMoved = totalFiles - skippedCount;
+            bool countOk = dryRun || (movedCount == expectedMoved);
+            string countLine = $"  Files in NewMusic: {totalFiles}  |  Moved: {movedCount}  |  Skipped: {skippedCount}";
+            Console.WriteLine(countLine);
+            if (!countOk)
+                Console.WriteLine($"  [ERROR] Count mismatch! Expected {expectedMoved} moved, got {movedCount}.");
+
+            // 2. Per-file table
+            Console.WriteLine("\n  --- Per-file results ---");
+            foreach (var e in entries)
+            {
+                string tagNote = e.TagChanges?.Count > 0 ? $" | Tags: {string.Join(", ", e.TagChanges)}" : "";
+                string destNote = !string.IsNullOrEmpty(e.Destination) ? $"\n    -> {e.Destination}" : "";
+                string detailNote = !string.IsNullOrEmpty(e.Detail) ? $" ({e.Detail})" : "";
+                Console.WriteLine($"  [{e.Status?.ToUpper()}] {e.Filename}{tagNote}{detailNote}{destNote}");
+            }
+
+            // 3. New folders created
+            if (!dryRun)
+            {
+                var movedEntries = entries.Where(e => e.Status == "moved" && !string.IsNullOrEmpty(e.Destination)).ToList();
+                var newFolders = new HashSet<string>();
+                foreach (var e in movedEntries)
+                {
+                    string destFolder = Path.GetDirectoryName(e.Destination);
+                    if (!string.IsNullOrEmpty(destFolder))
+                    {
+                        string fullDir = Path.Combine(Constants.AudioFolderPath, destFolder);
+                        // Only report folders that were just created (i.e. didn't exist before this run)
+                        // We approximate: if this is the only file in the folder, it's new
+                        if (Directory.Exists(fullDir) && Directory.GetFiles(fullDir).Length == 1)
+                        {
+                            newFolders.Add(destFolder);
+                        }
+                    }
+                }
+                if (newFolders.Count > 0)
+                {
+                    Console.WriteLine("\n  --- New folders created ---");
+                    foreach (var f in newFolders) Console.WriteLine($"  + {f}");
+                }
+            }
+
+            // 4. Destination sanity check (re-read each moved file)
+            if (!dryRun)
+            {
+                var failedSanity = new List<string>();
+                foreach (var e in entries.Where(en => en.Status == "moved"))
+                {
+                    if (string.IsNullOrEmpty(e.Destination)) continue;
+                    string fullPath = Path.Combine(Constants.AudioFolderPath, e.Destination);
+                    if (!File.Exists(fullPath))
+                    {
+                        failedSanity.Add($"  [MISSING] {e.Destination}");
+                        continue;
+                    }
+                    try
+                    {
+                        using (TagLib.File tf = TagLib.File.Create(fullPath))
+                        {
+                            // Readable = OK (just opening it is enough to verify)
+                        }
+                    }
+                    catch
+                    {
+                        failedSanity.Add($"  [UNREADABLE] {e.Destination}");
+                    }
+                }
+                if (failedSanity.Count > 0)
+                {
+                    Console.WriteLine("\n  [ERROR] Destination sanity check FAILED:");
+                    foreach (var f in failedSanity) Console.WriteLine(f);
+                }
+                else if (movedCount > 0)
+                {
+                    Console.WriteLine($"\n  Sanity check: all {movedCount} moved file(s) exist and are readable.");
+                }
+            }
+
+            // 5. Error summary
+            var errors = entries.Where(e => e.Status == "error").ToList();
+            if (errors.Count > 0)
+            {
+                Console.WriteLine($"\n  [ERRORS: {errors.Count}]");
+                foreach (var e in errors) Console.WriteLine($"  - {e.Filename}: {e.Detail}");
+            }
+            else
+            {
+                Console.WriteLine("\n  No errors.");
+            }
+
+            Console.WriteLine("\n============================================================");
         }
 
         /// <summary>
