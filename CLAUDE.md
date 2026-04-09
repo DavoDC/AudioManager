@@ -2,11 +2,9 @@
 
 ## What it does
 
-C# console app for managing a personal music library. Four modes:
-- **Mirror** - generates an XML snapshot of the library (for AudioMirror repo)
-- **Analyse** - generates timestamped statistical reports saved to `reports/`
-- **Audit** - validates library structure, file format, and metadata completeness
-- **Integrate** - scans `Downloads/NewMusic/`, validates ID3 tags, moves files into the organised library
+C# console app for managing a personal music library. Two modes:
+- **Analysis** - full pipeline: regenerate AudioMirror XML (Reflector), parse metadata (Parser), generate stats report (Analyser), validate library (LibChecker), save report (ReportWriter), auto-commit AudioMirror if clean (AudioMirrorCommitter)
+- **Integrate** - scans `Downloads/NewMusic/`, pre-processes tags, routes files into the library, saves integration log
 
 ## Tech Stack
 
@@ -21,20 +19,25 @@ AudioManager/
   CLAUDE.md
   README.md
   .gitignore
+  config/                      # libchecker-exceptions.xml (edit without recompiling)
   docs/                        # IDEAS.md, HISTORY.md, design docs
+  logs/                        # integration run logs (gitignored, written by MusicIntegrator)
   scripts/                     # launchers and one-off utility scripts
   project/                     # C# solution
     AudioManager.sln
     AudioManager/
       Code/                    # all C# source
-        Program.cs             # entry point and mode selection
+        Program.cs             # entry point, mode selection, CLI args handler
         Constants.cs           # all paths and settings (single source of truth)
         TeeWriter.cs           # dual output: screen + log file simultaneously
         Doer/                  # core processing modules (all auto-timed via Doer base class)
           Analyser/            # statistics generation
-          Reflector.cs         # XML mirror creation
-          MusicIntegrator.cs   # staging folder scan and file routing
+          AgeChecker.cs        # checks age of mirror, triggers regen if stale
+          AudioMirrorCommitter.cs  # auto-commits AudioMirror after clean LibChecker run
           LibChecker.cs        # library validation rules
+          MusicIntegrator.cs   # staging folder scan, tag pre-processing, file routing
+          Parser.cs            # parses XML mirror into tag list
+          Reflector.cs         # XML mirror creation
           ReportWriter.cs      # timestamped report output
         Track/                 # data models: Track, TrackTag, TrackXML
   reports/                     # auto-generated timestamped reports (gitignored, written by C# app)
@@ -76,4 +79,4 @@ Run the compiled exe directly, or use the launcher in `scripts/`.
 
 ## Current Focus
 
-See `docs/IDEAS.md` for the full priority list. Current goal: finish the new music integration pipeline (Stages 2 and 3) before running on the real library.
+See `docs/IDEAS.md` for the full priority list. Integration pipeline complete. Next: first real integration run using the program, then a clean LibChecker run to validate full library state.
