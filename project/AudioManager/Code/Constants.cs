@@ -38,6 +38,10 @@ namespace AudioManager
         public static readonly string LibCheckerExceptionsPath = Path.GetFullPath(
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "config", "libchecker-exceptions.xml"));
 
+        // Path to the integration logs folder (gitignored, written by MusicIntegrator)
+        public static readonly string LogsPath = Path.GetFullPath(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "logs"));
+
         /// <summary>
         /// Library folder names
         /// </summary>
