@@ -97,8 +97,11 @@ namespace AudioManager
                     // Save report (overwrite today's report if exists)
                     ReportWriter.Save(captureWriter.ToString());
 
-                    // Reminder to commit AudioMirror repo (console only)
-                    Console.WriteLine("\nReminder: commit and push the AudioMirror repo.");
+                    // 6) Auto-commit AudioMirror if LibChecker was clean
+                    // Runs after report save so the commit output is not captured into the report.
+                    // LibChecker prints "LibChecker: Clean" to the captured stream when zero issues found.
+                    bool libCheckerClean = captureWriter.ToString().Contains("LibChecker: Clean");
+                    AudioMirrorCommitter.TryCommit(libCheckerClean);
 
                     // Finish message
                     Console.WriteLine("\nFinished!\n");
