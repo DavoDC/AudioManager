@@ -51,6 +51,7 @@ namespace AudioManager
         public const string MusivDir   = "Musivation";
         public const string MotivDir   = "Motivation";
         public const string SourcesDir = "Sources";
+        public const string SinglesDir = "Singles";
 
         /// <summary>
         /// Mirror Management
