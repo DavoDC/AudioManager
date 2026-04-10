@@ -61,6 +61,7 @@ These two items are grouped because the migration makes adding tests trivial, an
 
 **Goal: close the minor gaps left inside otherwise-done features.**
 
+- [ ] **Refactor Constants.cs path builders - the 5x `".."` chains are ugly** - `MirrorRepoPath`, `ReportsPath`, `LibCheckerExceptionsPath`, `LogsPath` all do `Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "..."))` with hardcoded `..` counts matching the `project/AudioManager/bin/Release` depth. Fragile and ugly. Better: a single `RepoRoot` helper that walks up until it finds a sentinel file (`CLAUDE.md`, `README.md`, or `.git/`), then all paths become `Path.Combine(RepoRoot, "reports")` etc. Isolates the depth-counting to one place and self-heals if the build output path ever changes.
 - [ ] **Dry-run covers tag changes and renames** - currently dry-run only covers moves (because tag changes and renames aren't implemented at all). When those features are added, ensure dry-run prints them.
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 - [ ] **LibChecker auto-run as second validation layer after integration** - analysis mode already re-runs LibChecker fully; integrate mode doesn't. Add it so a post-integration LibChecker hit immediately flags a broken run.
