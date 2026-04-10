@@ -21,14 +21,18 @@ namespace AudioManager
         // Relative path from executable back to project folder
         public const string ProjectPath = "..\\..\\..\\";
 
-        // Relative path to mirror repo (assumed to sit next to this repo)
-        public static readonly string MirrorRepoPath = ProjectPath + "..\\..\\AudioMirror\\";
+        // Absolute path to the mirror repo (assumed to sit next to this repo in GitHubRepos\).
+        // Uses AppDomain.CurrentDomain.BaseDirectory (the exe's location) so the path is
+        // independent of the current working directory - launching from scripts\ vs bin\Release
+        // used to resolve to C:\AudioMirror because relative paths used cwd, not the exe dir.
+        public static readonly string MirrorRepoPath = Path.GetFullPath(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "AudioMirror")) + Path.DirectorySeparatorChar;
 
         // Mirror folder name
         public const string MirrorFolderName = "AUDIO_MIRROR";
 
-        // Relative path to mirror folder
-        public static readonly string MirrorFolderPath = $"{MirrorRepoPath}\\{MirrorFolderName}";
+        // Absolute path to mirror folder
+        public static readonly string MirrorFolderPath = Path.Combine(MirrorRepoPath, MirrorFolderName);
 
         // Path to the reports folder in the repo root (e.g. C:\Users\David\GitHubRepos\AudioManager\reports\)
         public static readonly string ReportsPath = Path.GetFullPath(
