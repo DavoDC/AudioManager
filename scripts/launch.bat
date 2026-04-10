@@ -16,7 +16,7 @@ echo.
 
 :: Build
 echo [BUILD] Compiling...
-%MSBUILD% "%SLN%" -p:Configuration=Release -p:Platform=x86 -verbosity:minimal
+%MSBUILD% "%SLN%" -p:Configuration=Release -p:Platform="Any CPU" -verbosity:minimal
 if errorlevel 1 (
     echo [ERROR] Build failed. Aborting.
     pause
