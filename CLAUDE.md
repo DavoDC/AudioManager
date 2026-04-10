@@ -49,10 +49,14 @@ AudioManager/
 
 Build with MSBuild (no need to open Visual Studio):
 ```
-"C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" project\AudioManager.sln -p:Configuration=Release -p:Platform=x86 -verbosity:minimal
+"C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" project\AudioManager.sln -p:Configuration=Release -p:Platform="Any CPU" -verbosity:minimal
 ```
 
 Run the compiled exe directly, or use the launcher in `scripts/`.
+
+**CRITICAL: old-style csproj requires manual file registration.** This is a .NET Framework 4.8 project with the legacy csproj format. New `.cs` files are NOT auto-included - you MUST add a `<Compile Include="Code\...\NewFile.cs" />` entry to `project\AudioManager\AudioManager.csproj` whenever you create a new source file, or the build will fail with `CS0103: The name '...' does not exist in the current context`. Always verify the csproj was updated after adding a file.
+
+**Solution only defines `Any CPU` platform.** Never pass `-p:Platform=x86` to MSBuild - it will fail with `MSB4126: The specified solution configuration "Release|x86" is invalid`. Use `-p:Platform="Any CPU"`.
 
 ## Key Paths (from Constants.cs)
 
