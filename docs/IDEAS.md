@@ -2,145 +2,89 @@
 
 Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
 
----
-
-## Immediate Actions
-
-- [x] **David: review all docs before further implementation** - done 2026-04-09. All docs reviewed and updated to reflect current code state (CLAUDE.md modes, project structure, current focus; Music-Library-Rules.md Stage 2 workflow).
-- [ ] **Run LibChecker on full library** - "version" and "explicit" added to UnwantedInfo (commit 24340979), filename check added (commit a2f01004). Both likely surface new hits. Fix any found issues, then commit library + report.
-- [ ] **Deep dive: audit full library against Music-Library-Rules.md** - Claude to scan AudioMirror XML files, cross-reference every track against the rules doc, and produce a report of violations and gaps. Then review LibChecker source - identify any rules from the doc that LibChecker does not currently enforce, and add the missing checks. Goal: LibChecker should be comprehensive enough that a clean run means the library fully conforms to the rules.
-  - *Partial progress (2026-04-09)*: LibChecker rules gap analysis done. Added `CheckAlbumSubfolderRule()` (album subfolder rule) and `CheckGenreVsFolder()` (inverse genre check). Remaining: run LibChecker on full library to surface actual hits; scan AudioMirror XMLs for violations not caught by LibChecker.
+Phases run top-to-bottom. Don't start Phase N+1 until Phase N is done, unless explicitly parked.
 
 ---
 
-## Current Goal
+## Phase 0 - UNBLOCK: make the program runnable via launch.bat
 
-~~Get to the point where a new music batch can be integrated using the program rather than manually - with dry run, metadata editing, routing, validation, and a confidence report.~~
+**Top priority. Nothing else matters until `scripts/launch.bat` builds and runs end-to-end.**
 
-**GOAL ACHIEVED (2026-04-09).** All integration pipeline features implemented. Next goal: first real integration run using the program, then LibChecker clean run to validate the library state.
-
----
-
-## Pending - Priority Order
-
-*(Quick wins first, then by dependency order.)*
+- [x] **Fix `Platform=x86` -> `Any CPU` in launch.bat and CLAUDE.md** (done 2026-04-10)
+- [x] **Register `AudioMirrorCommitter.cs` in csproj** (done 2026-04-10)
+- [ ] **Claude to test-build launch.bat end-to-end himself** - actually run MSBuild + smoke-test each mode (analysis, dry-run, integrate) before handing back. No more "try it again" round trips. See `feedback/feedback_test_build_fixes_yourself.md` in workspace memory.
+- [ ] **Add a CRITICAL note to CLAUDE.md about the csproj file-registration gotcha** (done 2026-04-10 - see Build and Run section)
 
 ---
 
-### Docs & Knowledge
+## Phase 1 - First real run of the pipeline
 
-*(All done - see HISTORY.md)*
+**Goal: prove the completed integration pipeline works on real data.** All features are built; this is the validation phase.
 
----
-
-### Quick Wins
-
-*(All done - see HISTORY.md)*
-
----
-
-### Launcher
-
-**Single batch launcher** *(implemented: `scripts/launch.bat`)*
-~~One `.bat` file, menu-driven. Auto-builds via MSBuild before running.~~ Done.
-- Remaining: integration terminal output must NOT bleed into the analysis report (already handled by TeeWriter in analysis mode; integrate mode doesn't use capture).
-
-**Dry run mode** *(implemented: `--dry-run` flag)*
-~~MusicIntegrator prints every planned action without executing.~~ Done - invoked via launcher option 3 or `--dry-run` flag.
-- Remaining: tag changes and renames are not yet implemented (only moves), so dry-run covers what integration currently does.
+- [ ] **Run LibChecker on full library** - `version`, `explicit`, filename check, album subfolder rule, and inverse genre check are all new since the last clean run. All likely to surface hits. Fix issues, then commit library + report.
+- [ ] **First real integration run using the program** (not manual) - use dry-run first, confirm all routing looks right, then real run. This is the goal that was marked ACHIEVED 2026-04-09 at the code level; this phase proves it empirically.
+- [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
+  - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.
 
 ---
 
-### Integration Pipeline
+## Phase 2 - Modernise: .NET 8 migration + minimal tests
 
-*(In dependency order - implement top to bottom.)*
+**Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths.**
 
-**Metadata editing before move** *(implemented)*
-- TCMP=True set on every incoming track via `PreProcessTags()`
-- Akira The Don genre set to Musivation via `PreProcessTags()`
-- Non-MP3 files already filtered by `*.mp3` glob in Directory.GetFiles
+These two items are grouped because the migration makes adding tests trivial, and the tests need the SDK-style project to avoid the exact csproj-registration bug we just hit.
 
-**Integration log** *(implemented)*
-`SaveLog()` writes `logs/integration-YYYYMMDD.txt` (or `-dryrun.txt`) per run.
-Per-file: filename, artists, title, album, destination, tag changes, status (moved/skipped/error).
-Summary: total in NewMusic, moved count, skipped count.
-Logs folder is gitignored.
-
-**Scan-ahead: 3-song threshold routing** *(implemented - routing only)*
-`RunScanAhead()` pre-scans batch tags + AudioMirror Misc XMLs to find artists hitting 3+.
-Those artists get routed to `Artists/{artist}/` instead of Misc - shown in reason as "[new via scan-ahead]".
-Preview printed before the per-file loop.
-
-Remaining: existing Misc songs for those artists still need MANUAL migration (flagged in preview).
-The auto-migration of existing Misc songs is not implemented - it involves moving existing library files
-which is a high-risk operation that needs a separate confirmation step.
-
-**Fully automate batch sorting** *(implemented)*
-Standard routes (Musivation, Motivation, Artists/ folder) are auto-accepted with `[AUTO]` label.
-Only Misc routing prompts the user - it's ambiguous (artist may belong elsewhere).
-Prompt changes from "[Y] Accept  [N]..." to "[Y] Accept (Misc)  [N]..." to make it clear why you're being asked.
-
-**Confidence report** *(implemented)*
-`PrintConfidenceReport()` prints after every run:
-- Count check: NewMusic total vs moved vs skipped (mismatch = hard error)
-- Per-file table: filename, status, destination, tag changes applied
-- New folders: any folder with exactly 1 file after the run (likely newly created)
-- Destination sanity check: re-reads each moved file to confirm exists and readable
-- Error summary: any files that failed
-
-Remaining: LibChecker auto-run as second validation layer after integration is not implemented.
-(Analysis mode re-runs LibChecker fully; integrate mode doesn't currently trigger it.)
+- [ ] **Survey: confirm .NET 8 migration has no blockers** - grep for `ConfigurationManager`, `AppDomain`, `System.Web`, `System.ServiceModel`, `Remoting`. Check `App.config` contents. Confirm TagLib# is the only NuGet dep. Expect no blockers - this is a console app.
+- [ ] **Migrate project to .NET 8 (SDK-style csproj)** - replace old-style csproj with ~15-line SDK-style (`<Project Sdk="Microsoft.NET.Sdk">` + `TargetFramework` + `PackageReference`). Delete `packages/` folder + `packages.config`. Delete or trim `Properties/AssemblyInfo.cs`. Update `launch.bat` exe path (`bin\Release\net8.0\AudioManager.exe`). Claude to test-build both modes himself before committing.
+  - **Why:** SDK-style csproj auto-includes all `.cs` files. The `AudioMirrorCommitter.cs` bug that broke Phase 0 cannot happen in SDK-style. Also: faster builds, no `packages/` folder, PackageReference instead of packages.config, LTS until Nov 2026.
+- [ ] **Add minimal automated tests (scoped down from kitchen-sink)** - ROI analysis showed full test suite not worth it; these three are.
+  - **Smoke build test** (~50 lines): MSBuild builds cleanly; exe runs with `--help` without crashing. Catches today's class of bug. Payback in weeks.
+  - **`GetDestDir()` routing tests** (~150 lines): fixed inputs (artist, album, scan-ahead set) -> fixed destinations. Routing is the most dangerous code path - wrong dest = real files moved wrong. Payback in 1-2 months.
+  - **`PreProcessTags()` tag-mutation tests** (~80 lines): no-TCMP input -> TCMP=True; Akira The Don wrong-genre input -> Musivation. Tiny and easy.
+  - **Skipped:** full LibChecker-rule suite (~400+ lines, 6-12 month payback - add incrementally when rules change, don't backfill). Full integration test with fake MP3s (too heavy, dry-run already covers).
+  - Add `AudioManager.Tests` xUnit project; wire into `launch.bat` as "Run tests" menu item; broken tests block exe launch.
 
 ---
 
-### AudioMirror Integration
+## Phase 3 - Gaps vs RivalsVidMaker / SBS_Download
 
-**Auto-commit and push after regeneration** *(implemented)*
-`AudioMirrorCommitter.TryCommit()` runs after every clean analysis run.
-- Skips if LibChecker had any hits
-- Skips if nothing changed (git status --porcelain is empty)
-- Commits staged AUDIO_MIRROR/ with "MMM d Update" message and pushes
-- LibChecker now exposes `IsClean` property; prints "LibChecker: Clean" when zero hits
+**Goal: close the structural gaps identified in the 2026-04-10 comparison.** These are polish / robustness, not blockers.
 
----
-
-### Codebase Audit
-
-**Deep dive: codebase audit** *(done 2026-04-09)*
-Issues found and fixed:
-- Analyser library size counted non-MP3 files (fixed: `*.mp3` filter)
-- LibChecker missing Sources/Films and Sources/Shows OST check (fixed: `CheckSourcesFolder()`)
-- MusicIntegrator TagLib resource leak (fixed: `using` block)
-- MusicIntegrator routing: "no distinct album" went to artist root (fixed: routes to `Singles/`)
-- AgeChecker early-return path skips `FinishAndPrintTimeTaken()` (minor, not fixed - timing only)
+- [ ] **Run-state tracking** - RivalsVidMaker has `data/state.json` tracking per-output status with timestamps. AudioManager has no memory of "did I already integrate this NewMusic batch?" - re-running on an empty folder silently does nothing with no audit trail. Add `data/state.json` (or similar) tracking integration runs: timestamp, source folder fingerprint, files moved, outcome. Surfaced in launcher menu ("Last run: Apr 10, 42 files moved, clean").
+- [ ] **Simplify launch.bat - move menu logic into Program.cs** - RivalsVidMaker's `run.bat` is 2 lines; all menu/mode logic lives in Python. AudioManager's `launch.bat` is 91 lines with its own menu, duplicating CLI arg logic already in `Program.cs`. Refactor: `launch.bat` becomes a ~5-line wrapper that just builds + runs `AudioManager.exe` with no args; all menu logic lives in Program.cs where it's testable and debuggable.
+- [ ] **Add `libchecker-exceptions.example.xml`** - RivalsVidMaker commits a `config.example.json` placeholder; real config gitignored. AudioManager commits the real `libchecker-exceptions.xml` directly. Add an example template so the repo demonstrates the format without baking in personal exceptions. (Minor - current file is already sanitised, but the pattern is cleaner.)
+- [ ] **Split `scripts/` into `scripts/` and `scripts/once_off/`** - RivalsVidMaker separates ad-hoc / one-time scripts from production launchers. AudioManager mixes everything. Minor cleanup.
 
 ---
 
-### AudioMirror as primary scan target (already implemented)
+## Phase 4 - Small remaining sub-items from completed features
 
-AudioMirror XML files are the source of truth for all analysis and LibChecker runs - the actual audio files are never touched during analysis. This is intentional and correct: AudioMirror is safer (no risk of corrupting audio files), faster (XML reads vs audio file I/O), and version-controlled (XML diffs show what changed). Any future analysis tools should read from AudioMirror XML, not from the audio files directly.
+**Goal: close the minor gaps left inside otherwise-done features.**
+
+- [ ] **Dry-run covers tag changes and renames** - currently dry-run only covers moves (because tag changes and renames aren't implemented at all). When those features are added, ensure dry-run prints them.
+- [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
+- [ ] **LibChecker auto-run as second validation layer after integration** - analysis mode already re-runs LibChecker fully; integrate mode doesn't. Add it so a post-integration LibChecker hit immediately flags a broken run.
+- [ ] **README: mention folder picker** - integration pipeline has an interactive folder browser when user rejects Misc routing. Brief mention in README integration section.
+- [ ] **README: list LibChecker checks** - README says "full library validation" but doesn't list what LibChecker validates (filename format, unwanted tag strings, missing tags, album cover count, compilation flag, duplicates, artist-folder matching, album subfolder rule, misc folder review, genre-folder consistency, Sources OST check).
 
 ---
 
-## Lower Priority / Future
+## Phase 5 - Lower priority / future
 
-**"My Edits" tracking**
-Detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
+**Goal: nice-to-haves, parked until the above phases are done.**
 
-**Parody/original song pairing detection**
-Flag songs where a parody and its original are both in the library.
+- **"My Edits" tracking** - detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
+- **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
+- **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
+- **Fuzzy artist name matching** - handle artist name variations during routing ("The Beatles" vs "Beatles", featured artist formatting differences). Only matters at scale.
 
-**Album completion detection**
-Cross-reference library against Spotify/MusicBrainz - flag where 50%+ of an album is owned.
+---
 
-**Fuzzy artist name matching**
-Handle artist name variations during routing (e.g. "The Beatles" vs "Beatles", featured artist formatting differences). Lower priority - only matters at scale.
+## Settled / not doing
 
-**README: mention folder picker**
-Integration pipeline has an interactive folder browser when user rejects Misc routing (including "New folder" option). Could add a brief mention to the README integration section.
-
-**README: mention LibChecker checks**
-README says "full library validation" but doesn't list what LibChecker validates (filename format, unwanted tag strings, missing tags, album cover count, compilation flag, duplicates, artist-folder matching, album subfolder rule, misc folder review, genre-folder consistency, Sources OST check). Could add a short summary to the README.
+- **AudioMirror as primary scan target** - already implemented and correct. AudioMirror XML is the source of truth for all analysis and LibChecker runs. The actual audio files are never touched during analysis. Safer, faster, version-controlled. Any future analysis tools should read from AudioMirror XML, not audio files directly.
+- **Full LibChecker unit test suite** - ROI not worth it (~400+ lines, 6-12 month payback). Add tests incrementally when rules change.
+- **Full integration test with fake MP3s** - too heavy, dry-run already covers this.
 
 ---
 
