@@ -4,6 +4,16 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-10 - Build fixes: launch.bat platform + missing csproj Compile entry
+
+Two build failures surfaced when trying to run LibChecker for the first time since the integration pipeline work:
+
+1. **`scripts/launch.bat` line 19** passed `-p:Platform=x86` to MSBuild, but the solution only defines `Debug|Any CPU` and `Release|Any CPU`. Error: `MSB4126: The specified solution configuration "Release|x86" is invalid`. Fixed to `-p:Platform="Any CPU"`. CLAUDE.md line 52 had the same bad example and was also corrected, so future sessions don't keep copying it.
+
+2. **`AudioMirrorCommitter.cs` was never registered in `AudioManager.csproj`.** The file was created in an earlier session but the old-style .NET Framework csproj requires an explicit `<Compile Include="..." />` entry per file - new files are NOT auto-included. Error: `CS0103: The name 'AudioMirrorCommitter' does not exist in the current context`. Added the Compile entry. Added a CRITICAL guard rule to CLAUDE.md "Build and Run" section so this can't silently recur - any new .cs file must be registered in the csproj.
+
+---
+
 ## 2026-04-09 - LibChecker: album subfolder rule + inverse genre check
 
 Two new checks added based on Music-Library-Rules.md gap analysis:
