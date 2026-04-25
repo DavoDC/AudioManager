@@ -4,6 +4,17 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-25 - Phase 0 complete: program verified runnable end-to-end
+
+All Phase 0 blockers resolved. MSBuild compiles clean. `integrate --dry-run` handles empty inbox correctly. `analysis` runs end-to-end: mirror regenerated (5491 tracks), metadata parsed, stats generated, LibChecker ran, report saved, AudioMirror commit correctly blocked due to LibChecker hits.
+
+- `launch.bat` platform flag fixed (`x86` -> `Any CPU`) - done 2026-04-10
+- `AudioMirrorCommitter.cs` registered in csproj - done 2026-04-10
+- CRITICAL csproj file-registration note added to CLAUDE.md Build and Run section - done 2026-04-10
+- Full end-to-end smoke test (MSBuild + all modes) verified by Claude - done 2026-04-25
+
+---
+
 ## 2026-04-10 - Constants.MirrorRepoPath made absolute (cwd-independent)
 
 `Constants.MirrorRepoPath` was built from the relative `ProjectPath = "..\\..\\..\\"` literal, which .NET resolves against the **current working directory**, not the exe location. When launched via `scripts/launch.bat` (cwd = `scripts\`), the relative path walked up too far and resolved to `C:\AudioMirror\` - producing `Could not find path 'C:\AudioMirror\LastRunInfo.txt'` in `AgeChecker..ctor` before anything else could run. Fixed by rebuilding `MirrorRepoPath` with `Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "AudioMirror"))` - same pattern already used by `ReportsPath`, `LibCheckerExceptionsPath`, and `LogsPath`. Also tidied `MirrorFolderPath` to use `Path.Combine` (removes a stray double-backslash). Callers that already wrapped `MirrorRepoPath` in `Path.GetFullPath(Path.Combine(...))` continue to work (idempotent). Verified by running `AudioManager.exe analysis` from a `scripts\` cwd - mirror path now resolves to `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR` and the full analysis pipeline runs clean.
