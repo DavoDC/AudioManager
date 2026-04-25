@@ -6,23 +6,12 @@ Phases run top-to-bottom. Don't start Phase N+1 until Phase N is done, unless ex
 
 ---
 
-## Phase 0 - UNBLOCK: make the program runnable via launch.bat
-
-**Top priority. Nothing else matters until `scripts/launch.bat` builds and runs end-to-end.**
-
-- [x] **Fix `Platform=x86` -> `Any CPU` in launch.bat and CLAUDE.md** (done 2026-04-10)
-- [x] **Register `AudioMirrorCommitter.cs` in csproj** (done 2026-04-10)
-- [ ] **Claude to test-build launch.bat end-to-end himself** - actually run MSBuild + smoke-test each mode (analysis, dry-run, integrate) before handing back. No more "try it again" round trips. See `feedback/feedback_test_build_fixes_yourself.md` in workspace memory.
-- [ ] **Add a CRITICAL note to CLAUDE.md about the csproj file-registration gotcha** (done 2026-04-10 - see Build and Run section)
-
----
-
 ## Phase 1 - First real run of the pipeline
 
 **Goal: prove the completed integration pipeline works on real data.** All features are built; this is the validation phase.
 
 - [ ] **Run LibChecker on full library** - `version`, `explicit`, filename check, album subfolder rule, and inverse genre check are all new since the last clean run. All likely to surface hits. Fix issues, then commit library + report.
-- [ ] **First real integration run using the program** (not manual) - use dry-run first, confirm all routing looks right, then real run. This is the goal that was marked ACHIEVED 2026-04-09 at the code level; this phase proves it empirically.
+- [ ] **First real integration run using the program** (not manual) - use dry-run first, confirm all routing looks right, then real run. This is the goal that was marked ACHIEVED 2026-04-09 at the code level; this phase proves it empirically. **Routing capability as of 2026-04-25:** auto-routes Artist songs (existing folders + scan-ahead for 3+ threshold), Musivation, Motivation. Sources/Films/Shows/Anime NOT auto-routed - those fall to Misc and require manual folder-picker redirection (Phase 4 item). For a batch with only artist songs, program is fully ready.
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
   - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.
 
@@ -65,6 +54,7 @@ These two items are grouped because the migration makes adding tests trivial, an
 - [ ] **Dry-run covers tag changes and renames** - currently dry-run only covers moves (because tag changes and renames aren't implemented at all). When those features are added, ensure dry-run prints them.
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 - [ ] **LibChecker auto-run as second validation layer after integration** - analysis mode already re-runs LibChecker fully; integrate mode doesn't. Add it so a post-integration LibChecker hit immediately flags a broken run.
+- [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate). This was visible in Batch B: Victorious and Bollywood tracks had to be manually redirected. Routing logic: if `Album` contains "OST" or "Soundtrack", prompt for Sources subfolder rather than auto-routing to Misc.
 - [ ] **README: mention folder picker** - integration pipeline has an interactive folder browser when user rejects Misc routing. Brief mention in README integration section.
 - [ ] **README: list LibChecker checks** - README says "full library validation" but doesn't list what LibChecker validates (filename format, unwanted tag strings, missing tags, album cover count, compilation flag, duplicates, artist-folder matching, album subfolder rule, misc folder review, genre-folder consistency, Sources OST check).
 
