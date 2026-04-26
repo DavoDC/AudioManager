@@ -2,26 +2,41 @@
 
 Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
 
-Phases run top-to-bottom. Don't start Phase N+1 until Phase N is done, unless explicitly parked.
+## Organization: Tiered Priorities
+
+Work is grouped by safety tier. Items within a tier can be done in any order or in parallel.
+**Do NOT move to the next tier until the current tier is verified working on real data.**
+
+**Why tiers?** AudioManager moves real files. Safety is non-negotiable. Tiers make blocking items explicit (TIER 0: safety prerequisites), then MVP (does it work?), then quality/polish (nice-to-have). This matches how a solo developer actually reasons about work.
 
 ---
 
-## Phase 1 - First real run of the pipeline
+## TIER 0 - BLOCKING (Safety Prerequisites)
+
+**Goal: ensure integration cannot corrupt the library.** These items must be in place before any real integration run.
+
+- [ ] **Pre-integration gate: verify AudioMirror is fresh and LibChecker is clean before integrating** - The first step of any integration run must confirm the library is in a known-good state before adding new songs. Approach: (1) run Analysis mode to regenerate the AudioMirror XMLs, (2) check for any changes in the AudioMirror repo (git status or hash comparison) - no changes means the mirror already matched the library and is up to date, (3) verify LibChecker reports clean. If the mirror is stale OR LibChecker has hits: STOP - print a clear error ("Fix library issues before adding new songs") and exit integrate mode. Commit discipline: library fixes must land in a separate AudioMirror commit before the new batch is integrated; the batch itself gets its own subsequent commit. This prevents the new batch and pre-existing issues from being mixed in the same diff.
+
+- [ ] **Pre-integration duplicate check: warn if song already in library** - Before routing each track from NewMusic, search AudioMirror XML files for an existing track with the same primary artist AND the same title. Search artist and title as separate XML field reads (`<Artists>` and `<Title>`) - never by filename. If a match is found: clear the screen, show the matching library entry path, then prompt `[D] Delete from NewMusic  [K] Keep and continue integrating  [Q] Quit`. Exact match only (case-insensitive, trimmed) - no fuzzy matching (see TIER 4 for that). Dry-run mode: show "[DRY RUN] Would delete from NewMusic" but do not actually delete.
+
+- [ ] **LibChecker auto-run as second validation layer after integration** - analysis mode already re-runs LibChecker fully; integrate mode doesn't. Add it so a post-integration LibChecker hit immediately flags a broken run.
+
+---
+
+## TIER 1 - MVP (Core Pipeline Works)
 
 **Goal: prove the completed integration pipeline works on real data.** All features are built; this is the validation phase.
 
 - [ ] **Run LibChecker on full library** - `version`, `explicit`, filename check, album subfolder rule, and inverse genre check are all new since the last clean run. All likely to surface hits. Fix issues, then commit library + report.
-- [ ] **First real integration run using the program** (not manual) - use dry-run first, confirm all routing looks right, then real run. This is the goal that was marked ACHIEVED 2026-04-09 at the code level; this phase proves it empirically. **Routing capability as of 2026-04-25:** auto-routes Artist songs (existing folders + scan-ahead for 3+ threshold), Musivation, Motivation. Sources/Films/Shows/Anime NOT auto-routed - those fall to Misc and require manual folder-picker redirection (Phase 4 item). For a batch with only artist songs, program is fully ready.
+- [ ] **First real integration run using the program** (not manual) - use dry-run first, confirm all routing looks right, then real run. This is the goal that was marked ACHIEVED 2026-04-09 at the code level; this tier proves it empirically. **Routing capability as of 2026-04-25:** auto-routes Artist songs (existing folders + scan-ahead for 3+ threshold), Musivation, Motivation. Sources/Films/Shows/Anime NOT auto-routed - those fall to Misc and require manual folder-picker redirection (TIER 3 item). For a batch with only artist songs, program is fully ready.
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
   - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.
 
 ---
 
-## Phase 2 - Modernise: .NET 8 migration + minimal tests
+## TIER 2 - QUALITY (Robustness & Test Coverage)
 
 **Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths.**
-
-These two items are grouped because the migration makes adding tests trivial, and the tests need the SDK-style project to avoid the exact csproj-registration bug we just hit.
 
 - [ ] **Survey: confirm .NET 8 migration has no blockers** - grep for `ConfigurationManager`, `AppDomain`, `System.Web`, `System.ServiceModel`, `Remoting`. Check `App.config` contents. Confirm TagLib# is the only NuGet dep. Expect no blockers - this is a console app.
 - [ ] **Migrate project to .NET 8 (SDK-style csproj)** - replace old-style csproj with ~15-line SDK-style (`<Project Sdk="Microsoft.NET.Sdk">` + `TargetFramework` + `PackageReference`). Delete `packages/` folder + `packages.config`. Delete or trim `Properties/AssemblyInfo.cs`. Update `launch.bat` exe path (`bin\Release\net8.0\AudioManager.exe`). Claude to test-build both modes himself before committing.
@@ -35,38 +50,26 @@ These two items are grouped because the migration makes adding tests trivial, an
 
 ---
 
-## Phase 3 - Gaps vs RivalsVidMaker / SBS_Download
+## TIER 3 - POLISH (Structural Alignment & Nice-to-Have)
 
-**Goal: close the structural gaps identified in the 2026-04-10 comparison.** These are polish / robustness, not blockers.
+**Goal: close structural gaps and improve developer experience.** Non-blocking enhancements.
 
+- [ ] **Refactor Constants.cs path builders - the 5x `".."` chains are ugly** - `MirrorRepoPath`, `ReportsPath`, `LibCheckerExceptionsPath`, `LogsPath` all do `Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "..."))` with hardcoded `..` counts matching the `project/AudioManager/bin/Release` depth. Fragile and ugly. Better: a single `RepoRoot` helper that walks up until it finds a sentinel file (`CLAUDE.md`, `README.md`, or `.git/`), then all paths become `Path.Combine(RepoRoot, "reports")` etc. Isolates the depth-counting to one place and self-heals if the build output path ever changes.
 - [ ] **Run-state tracking** - RivalsVidMaker has `data/state.json` tracking per-output status with timestamps. AudioManager has no memory of "did I already integrate this NewMusic batch?" - re-running on an empty folder silently does nothing with no audit trail. Add `data/state.json` (or similar) tracking integration runs: timestamp, source folder fingerprint, files moved, outcome. Surfaced in launcher menu ("Last run: Apr 10, 42 files moved, clean").
 - [ ] **Simplify launch.bat - move menu logic into Program.cs** - RivalsVidMaker's `run.bat` is 2 lines; all menu/mode logic lives in Python. AudioManager's `launch.bat` is 91 lines with its own menu, duplicating CLI arg logic already in `Program.cs`. Refactor: `launch.bat` becomes a ~5-line wrapper that just builds + runs `AudioManager.exe` with no args; all menu logic lives in Program.cs where it's testable and debuggable.
 - [ ] **Add `libchecker-exceptions.example.xml`** - RivalsVidMaker commits a `config.example.json` placeholder; real config gitignored. AudioManager commits the real `libchecker-exceptions.xml` directly. Add an example template so the repo demonstrates the format without baking in personal exceptions. (Minor - current file is already sanitised, but the pattern is cleaner.)
 - [ ] **Split `scripts/` into `scripts/` and `scripts/once_off/`** - RivalsVidMaker separates ad-hoc / one-time scripts from production launchers. AudioManager mixes everything. Minor cleanup.
-
----
-
-## Phase 4 - Small remaining sub-items from completed features
-
-**Goal: close the minor gaps left inside otherwise-done features.**
-
-- [ ] **Pre-integration gate: verify AudioMirror is fresh and LibChecker is clean before integrating** - The first step of any integration run must be confirming the library is in a known-good state before adding new songs. Approach: (1) run Analysis mode to regenerate the AudioMirror XMLs, (2) check for any changes in the AudioMirror repo (git status or hash comparison) - no changes means the mirror already matched the library and is up to date, (3) verify LibChecker reports clean. If the mirror is stale OR LibChecker has hits: STOP - print a clear error ("Fix library issues before adding new songs") and exit integrate mode. Commit discipline: library fixes must land in a separate AudioMirror commit before the new batch is integrated; the batch itself gets its own subsequent commit. This prevents the new batch and pre-existing issues from being mixed in the same diff.
-
-- [ ] **Pre-integration duplicate check: warn if song already in library** - Before routing each track from NewMusic, search AudioMirror XML files for an existing track with the same primary artist AND the same title. Search artist and title as separate XML field reads (`<Artists>` and `<Title>`) - never by filename. If a match is found: clear the screen, show the matching library entry path, then prompt `[D] Delete from NewMusic  [K] Keep and continue integrating  [Q] Quit`. Exact match only (case-insensitive, trimmed) - no fuzzy matching (see Phase 5 for that). Dry-run mode: show "[DRY RUN] Would delete from NewMusic" but do not actually delete.
-
-- [ ] **Refactor Constants.cs path builders - the 5x `".."` chains are ugly** - `MirrorRepoPath`, `ReportsPath`, `LibCheckerExceptionsPath`, `LogsPath` all do `Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "..."))` with hardcoded `..` counts matching the `project/AudioManager/bin/Release` depth. Fragile and ugly. Better: a single `RepoRoot` helper that walks up until it finds a sentinel file (`CLAUDE.md`, `README.md`, or `.git/`), then all paths become `Path.Combine(RepoRoot, "reports")` etc. Isolates the depth-counting to one place and self-heals if the build output path ever changes.
 - [ ] **Dry-run covers tag changes and renames** - currently dry-run only covers moves (because tag changes and renames aren't implemented at all). When those features are added, ensure dry-run prints them.
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
-- [ ] **LibChecker auto-run as second validation layer after integration** - analysis mode already re-runs LibChecker fully; integrate mode doesn't. Add it so a post-integration LibChecker hit immediately flags a broken run.
 - [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate). This was visible in Batch B: Victorious and Bollywood tracks had to be manually redirected. Routing logic: if `Album` contains "OST" or "Soundtrack", prompt for Sources subfolder rather than auto-routing to Misc.
 - [ ] **README: mention folder picker** - integration pipeline has an interactive folder browser when user rejects Misc routing. Brief mention in README integration section.
 - [ ] **README: list LibChecker checks** - README says "full library validation" but doesn't list what LibChecker validates (filename format, unwanted tag strings, missing tags, album cover count, compilation flag, duplicates, artist-folder matching, album subfolder rule, misc folder review, genre-folder consistency, Sources OST check).
 
 ---
 
-## Phase 5 - Lower priority / future
+## TIER 4 - FUTURE (Lower Priority / Nice-to-Have)
 
-**Goal: nice-to-haves, parked until the above phases are done.**
+**Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
 
 - **Review mode - library pruning / song-by-song decision tracking** - the library only grows; it needs a structured way to shrink. Add a new `review` mode that walks every song one by one, shows context (tags, folder, optional play count / popularity / lyrics), and asks: keep / remove / defer. Every decision is persisted to a config file (e.g. `config/review-decisions.xml` or similar) with: song fingerprint (artist + title or file hash), decision, date, reason. Old decisions are re-surfaced periodically (e.g. after 12 months) so the review is not one-shot - tastes change, a "keep" today may be a "remove" next year.
   - **Removal candidate signals** (surfaced in review mode to guide decisions, not auto-removed):
@@ -78,7 +81,7 @@ These two items are grouped because the migration makes adding tests trivial, an
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
 - **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
 - **Fuzzy artist name matching** - handle artist name variations during routing ("The Beatles" vs "Beatles", featured artist formatting differences). Only matters at scale.
-- **Fuzzy duplicate title matching** - extend the pre-integration duplicate check to catch near-matches (e.g. "Song (feat. X)" vs "Song", "Song - Remix" vs "Song"). Approach: normalise both sides before comparison by stripping featured artist parentheticals, stripping remix/edit/version suffixes, collapsing whitespace. Blocked by: the exact-match duplicate check (Phase 4) must be in place first.
+- **Fuzzy duplicate title matching** - extend the pre-integration duplicate check to catch near-matches (e.g. "Song (feat. X)" vs "Song", "Song - Remix" vs "Song"). Approach: normalise both sides before comparison by stripping featured artist parentheticals, stripping remix/edit/version suffixes, collapsing whitespace. Blocked by: the exact-match duplicate check (TIER 0) must be in place first.
 
 ---
 
