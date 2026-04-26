@@ -72,18 +72,20 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 
 **Important:** Don't skip this step. Sometimes whole albums get added but may have tracks you don't want. Better to remove unwanted songs now than after integration.
 
-### STAGE 3 SUBSTEP C: Real Integration Execution
+### STAGE 3 SUBSTEP C: Prepare for Integration - Achieve Clean Library State
 
-**Status: BLOCKED** - Integration blocking issues require code fixes
+**Status: BLOCKED** - Library must be in clean state before integrating new 126 tracks
 
-**Required before proceeding:**
+**Required before adding new music:**
 - [ ] Use Sonnet + /dev-session to identify and fix integration blocking issues
-- [ ] Fix LibChecker issues blocking integration
+- [ ] Run analysis via AudioManager to get LibChecker clean
 - [ ] Verify integration script runs without errors
 - [ ] Verify program commits results to AudioMirror repo
-- [ ] Test with sample file set
+- [ ] Confirm library reports 0 LibChecker issues (clean state)
 
-**Then execute:**
+**Purpose:** Get existing library organized and clean BEFORE integrating the 126 new tracks. Don't add new music to a messy library.
+
+**Then execute real integration:**
 - [ ] Launch AudioManager: `scripts/launch.bat`
 - [ ] Select `4. Integration (Real)`
 - [ ] Execute full integration with tag cleanup, filename renaming, and folder routing per Music-Library-Rules
