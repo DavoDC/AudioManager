@@ -97,18 +97,25 @@ Move files to correct album subfolder or Singles/.
 
 ---
 
-## SECTION 3: SOURCES FOLDER - VERIFY OST DESIGNATION (8 issues) - COMPLETE
+## SECTION 3: SOURCES FOLDER - ALBUM TAG VALIDATION (8 issues) - COMPLETE
 
-**RULE:** Only add OST to album tag if the ALBUM itself IS the official soundtrack. Regular artist albums featured in shows/movies keep original album names.
+**RULE (Smart Folder Matching):** If album contains source folder name, album must end with OST. Otherwise, no OST requirement.
 
-- [x] a-ha - Take on Me (Super Mario Bros. Movie) -- KEEP album 'Hunting High and Low' (featured track, not OST)
-- [x] Bonnie Tyler - Holding Out for a Hero (Super Mario Bros. Movie) -- KEEP album 'The Very Best of Bonnie Tyler' (featured track, not OST)
-- [x] Electric Light Orchestra - Mr. Blue Sky (Super Mario Bros. Movie) -- KEEP album 'Out of the Blue' (featured track, not OST)
-- [x] Dee Snider - We're Not Gonna Take It (Peacemaker) -- KEEP album 'We Are the Ones' (featured track, not OST)
-- [x] Hanoi Rocks - Don't You Ever Leave Me (Peacemaker) -- KEEP album 'Two Steps From The Move' (featured track, not OST)
-- [x] Pretty Maids - Little Drops Of Heaven (Peacemaker) -- KEEP album 'Pandemonium' (featured track, not OST)
-- [x] Wig Wam - Do Ya Wanna Taste It (Peacemaker) -- KEEP album 'Non Stop Rock'n Roll' (featured track, not OST)
-- [x] Cristobal Tapia de Veer - Aloha! (The White Lotus) -- VERIFIED album 'The White Lotus OST' (official soundtrack)
+**Tracks in Sources/Films/The Super Mario Bros. Movie/ - Featured Tracks (album does NOT contain folder name)**
+- [x] a-ha - Take on Me -- Album: 'Hunting High and Low' ✓ (featured, not OST)
+- [x] Bonnie Tyler - Holding Out for a Hero -- Album: 'The Very Best of Bonnie Tyler' ✓ (featured, not OST)
+- [x] Electric Light Orchestra - Mr. Blue Sky -- Album: 'Out of the Blue' ✓ (featured, not OST)
+
+**Tracks in Sources/Shows/Peacemaker/ - Featured Tracks (album does NOT contain folder name)**
+- [x] Dee Snider - We're Not Gonna Take It -- Album: 'We Are the Ones' ✓ (featured, not OST)
+- [x] Hanoi Rocks - Don't You Ever Leave Me -- Album: 'Two Steps From The Move' ✓ (featured, not OST)
+- [x] Pretty Maids - Little Drops Of Heaven -- Album: 'Pandemonium' ✓ (featured, not OST)
+- [x] Wig Wam - Do Ya Wanna Taste It -- Album: 'Non Stop Rock'n Roll' ✓ (featured, not OST)
+
+**Tracks in Sources/Shows/ - Official Soundtrack**
+- [x] Cristobal Tapia de Veer - Aloha! -- Album: 'The White Lotus OST' ✓ (official soundtrack, contains folder name, ends with OST)
+
+**Note:** These 7 featured tracks will not flag as issues once smart folder-matching rule is implemented in TIER 1.
 
 ---
 
