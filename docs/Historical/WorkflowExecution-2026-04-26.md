@@ -24,9 +24,9 @@ Execution log for Music Discovery to Device Workflow.
 
 **Via script:**
 - [x] Ran `open_playlist_in_manager` script (`C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager`)
-- [x] Verified 80 songs placed in `C:\Users\David\Downloads\NewMusic\`
+- [x] Verified 126 songs placed in `C:\Users\David\Downloads\NewMusic\`
 
-**Result:** 80 tracks downloaded and ready for integration.
+**Result:** 126 tracks downloaded and ready for integration.
 
 ---
 
@@ -49,11 +49,11 @@ Tag, organize, and route files with quality control review.
 These newly enabled rules revealed 80 previously undetected library organization issues. **This is NOT expected in future workflow runs** - once these issues are fixed, dry runs should find minimal or zero compliance issues.
 
 - [x] Launched AudioManager dry run (`scripts/launch.bat` → `3. Integration (Dry Run)`)
-- [x] Identified 80 library compliance issues (one-time discovery from new LibChecker validations)
+- [x] Identified 80 library compliance issues in existing library (one-time discovery from new LibChecker validations)
 - [x] Applied all corrections (27 tag fixes, 46 folder moves, 8 source validations)
 - [x] Ran LibChecker verification to confirm fixes
 
-**Expected future workflow:** Dry run should complete with 0-2 issues (minor tag inconsistencies), not 80. This batch fix is addressing the backlog from LibChecker enhancement.
+**Expected future workflow:** Dry run should complete with 0-2 issues (minor tag inconsistencies), not 80. This batch fix is addressing the backlog from LibChecker enhancement. Note: 126 new tracks being added are separate from these 80 existing library fixes.
 
 **See:** `LibraryCorrectionLog-2026-04-26.md` for detailed corrections and verification results.
 
