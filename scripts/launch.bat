@@ -3,6 +3,14 @@
 :: ============================================================
 :: AudioManager Launcher
 :: ============================================================
+:: Usage (non-interactive): launch.bat <mode> [args]
+::   launch.bat analysis
+::   launch.bat analysis --force-regen
+::   launch.bat integrate --dry-run
+::   launch.bat integrate
+:: Usage (interactive): launch.bat
+
+setlocal enabledelayedexpansion
 
 set EXE=%~dp0..\project\AudioManager\bin\Release\AudioManager.exe
 set START_TIME=%TIME%
@@ -22,7 +30,16 @@ if errorlevel 1 (
 
 echo.
 
-:: Menu
+:: If arguments provided, run in non-interactive mode
+if not "%1"=="" (
+    echo [RUN] %*
+    echo ============================================================
+    echo.
+    "%EXE%" %*
+    goto done
+)
+
+:: Interactive menu (no arguments provided)
 echo Select mode:
 echo   1. Analysis (No Force Regen)
 echo   2. Analysis (Force Regen)
