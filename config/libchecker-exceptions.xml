@@ -53,4 +53,10 @@
     <Title contains="BONUS INTERVIEW" />
   </Exception>
 
+  <!-- Akira The Don;Scott Adams - 'VERSION' is part of the official title -->
+  <Exception unwanted="version">
+    <Artists contains="Scott Adams" />
+    <Title contains="BETTER VERSION OF YOURSELF" />
+  </Exception>
+
 </Exceptions>
