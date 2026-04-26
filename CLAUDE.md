@@ -47,12 +47,19 @@ AudioManager/
 
 ## Build and Run
 
-Build with MSBuild (no need to open Visual Studio):
+**ALWAYS use the build script.** Never rebuild the MSBuild command yourself or re-derive the build invocation. The canonical build command lives in `scripts/build.bat`. This keeps build logic in one place - iterate on the script, not the invocation.
+
+Build via script:
 ```
-"C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" project\AudioManager.sln -p:Configuration=Release -p:Platform="Any CPU" -verbosity:minimal
+scripts/build.bat
 ```
 
-Run the compiled exe directly, or use the launcher in `scripts/`.
+Run the launcher (builds + menu):
+```
+scripts/launch.bat
+```
+
+For programmatic access: run the exe directly from `project/AudioManager/bin/Release/AudioManager.exe` (build.bat must have succeeded first).
 
 **CRITICAL: old-style csproj requires manual file registration.** This is a .NET Framework 4.8 project with the legacy csproj format. New `.cs` files are NOT auto-included - you MUST add a `<Compile Include="Code\...\NewFile.cs" />` entry to `project\AudioManager\AudioManager.csproj` whenever you create a new source file, or the build will fail with `CS0103: The name '...' does not exist in the current context`. Always verify the csproj was updated after adding a file.
 
