@@ -4,6 +4,10 @@ Execution log for Music Discovery to Device Workflow.
 
 **Overall Status: STAGES 1-2 COMPLETE | STAGE 3 IN PROGRESS | STAGE 4 PENDING**
 
+⚠️ **IMPORTANT:** This workflow involves TWO COMPLETELY SEPARATE CONCERNS:
+1. **NEW MUSIC:** 126 tracks acquired from Spotify (Stages 1-2, ongoing)
+2. **LIBRARY FIXES:** 80 pre-existing library organization issues fixed (Stage 3A, separate concern - triggered by LibChecker enhancement)
+
 ---
 
 ## STAGE 1: DISCOVERY
