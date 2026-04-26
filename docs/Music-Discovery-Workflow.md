@@ -14,7 +14,7 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 2. Run `C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager` on that playlist
 3. This script opens each track in a special service in browser, then places songs in `C:\Users\David\Downloads\NewMusic\`
 
-> **Note:** SpotifyPlaylistGen is currently rough. Future: integrate into SpotifyPlaylist tool for seamless workflow.
+> **Note:** `open_playlist_in_manager` script is rough and not fully integrated. Future: integrate seamlessly into SpotifyPlaylistGen.
 
 ## Stage 3: Integrate
 
