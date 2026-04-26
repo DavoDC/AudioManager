@@ -50,7 +50,7 @@ Run the AudioManager launcher: `scripts/launch.bat`
 
 ### Currently Implemented (TIER 0/1)
 - ✓ **Filename renaming:** Per naming convention
-- ✓ **Routing:** Artist songs to existing folders or with 3+ threshold scan-ahead. Falls to Misc for unknown artists.
+- ✓ **Routing:** Artist songs to existing folders or with 3+ threshold scan-ahead. Falls to Misc for unknown artists. Sources/Films/Shows/Anime: interactive folder-picker when needed.
 - ✓ **File movement:** Integrates into library folder structure
 - ✓ **Post-integration validation:** Run LibChecker to verify clean state
 - ✓ **Commit:** Results to AudioMirror repo
@@ -59,11 +59,6 @@ Run the AudioManager launcher: `scripts/launch.bat`
 ### Planned/In Progress (TIER 1)
 - 🔄 **Tag cleanup auto-removal:** Strip unwanted text (feat., version, explicit) from tags before integration (TIER 1, currently manual via Mp3tag)
 - 🔄 **Pre-integration LibChecker gate:** Check library is clean before allowing integration (TIER 0 blocking)
-
-### Not Yet Implemented (TIER 3 - Feasibility Uncertain)
-- ❌ **Sources/Films/Shows/Anime routing:** Interactive prompt for folder instead of defaulting to Misc (TIER 3)
-  - **Challenge:** Metadata alone rarely indicates source type (film/show/anime). Would require studying existing metadata patterns or accepting permanent manual folder-picker.
-  - See `docs/IDEAS.md` for metadata audit plan.
 
 ### Full Pipeline Vision
 Once all features complete: one command (`AudioManager --integrate`), zero manual Mp3tag or separate analysis steps.
