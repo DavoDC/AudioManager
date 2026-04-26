@@ -4,8 +4,6 @@
 :: AudioManager Launcher
 :: ============================================================
 
-set MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-set SLN=%~dp0..\project\AudioManager.sln
 set EXE=%~dp0..\project\AudioManager\bin\Release\AudioManager.exe
 set START_TIME=%TIME%
 
@@ -15,15 +13,13 @@ echo ============================================================
 echo.
 
 :: Build
-echo [BUILD] Compiling...
-%MSBUILD% "%SLN%" -p:Configuration=Release -p:Platform="Any CPU" -verbosity:minimal
+call "%~dp0build.bat"
 if errorlevel 1 (
     echo [ERROR] Build failed. Aborting.
     pause
     cmd /k
 )
 
-echo [BUILD] Done.
 echo.
 
 :: Menu
