@@ -18,12 +18,20 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 
 ## Stage 3: Integrate
 
-1. Apply rules using Mp3tag in `Downloads/NewMusic` folder (tag cleanup, filename format)
-   - Note: TCMP and Akira The Don genre are set automatically by AudioManager - no need to set in Mp3tag
-2. Run AudioManager integrate (dry run first, then real) - routes files into library per Music-Library-Rules
-3. Run AudioManager analysis - checks library integrity, commits audio report and AudioMirror changes
+Run AudioManager in integrator mode (dry run first, then real):
+```
+AudioManager --integrate --dry-run
+AudioManager --integrate
+```
 
-> **Future:** AudioManager should handle all tag rules automatically (TCMP, genre assignment for Musivation) so Mp3tag step becomes optional.
+This one command handles:
+- Tag cleanup and compliance per Music-Library-Rules (add TCMP, set Musivation genre, remove unwanted strings)
+- Filename renaming per naming convention
+- Routing files to library folders (Artists, Musivation, Motivation, Compilations, Misc, or Sources with optional prompt for Films/Shows/Anime)
+- Integration into library
+- Analysis and commit of results to AudioMirror repo
+
+Result: fully automated, no manual Mp3tag or separate analysis step needed.
 
 ## Stage 4: Sync to Device
 

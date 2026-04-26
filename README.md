@@ -30,13 +30,16 @@ For listening statistics, visit [LastFM](https://www.last.fm/user/david369music)
 
 ## Integration Pipeline
 
-New music integration is fully automated for standard cases:
+**One command handles complete integration:** drop new MP3s in `Downloads/NewMusic`, run integrator mode, program handles everything:
 
-1. **Scan-ahead** - pre-scans the batch to identify artists hitting the 3-song threshold (routes to `Artists/` instead of `Misc`)
-2. **Tag pre-processing** - sets `TCMP=1` on all incoming tracks; sets `Genre=Musivation` for Akira The Don tracks
-3. **Auto-routing** - standard routes (Musivation, Motivation, existing Artists folder) are accepted automatically; only ambiguous Misc routing prompts the user
-4. **Confidence report** - count check, per-file table, destination sanity check, error summary
-5. **Integration log** - saved to `logs/integration-YYYYMMDD.txt`
+1. **Tag pre-processing** - adds `TCMP=1` to all tracks, sets `Genre=Musivation` for Akira The Don, removes unwanted tag strings per rules
+2. **Filename cleanup** - renames files per naming convention (artist - title.mp3)
+3. **Scan-ahead** - identifies artists hitting the 3-song threshold (routes to `Artists/` instead of `Misc`)
+4. **Auto-routing** - routes to destination folders: Artists, Musivation, Motivation, Compilations, Misc, or Sources (with optional user prompt for Films/Shows/Anime)
+5. **Library integration** - moves files into the library
+6. **Analysis and commit** - runs full library validation (LibChecker), generates analysis report, auto-commits results to AudioMirror repo
+
+No manual Mp3tag editing needed. Dry-run mode (`--dry-run`) shows all planned changes without moving files.
 
 ## Project Structure
 
