@@ -10,26 +10,44 @@ namespace AudioManager
     internal static class ReportWriter
     {
         /// <summary>
-        /// Saves the given report content to a dated .txt file under reports\{year}\.
+        /// Saves the given report content to a dated .txt file.
+        /// If LibChecker found issues, saves to reports\with-issues\ (gitignored).
+        /// If clean, saves to reports\{year}\ for records.
         /// Overwrites any existing report for today. Prepends a generated header.
         /// </summary>
         /// <param name="reportContent">The captured console output from the Analysis run.</param>
-        public static void Save(string reportContent)
+        /// <param name="libCheckerClean">Whether LibChecker reported zero issues.</param>
+        public static void Save(string reportContent, bool libCheckerClean)
         {
             DateTime now = DateTime.Now;
-            string year = now.Year.ToString();
-            string yearFolder = Path.Combine(Constants.ReportsPath, year);
             string filename = now.ToString("yyyy-MM-dd") + " - AudioReport.txt";
-            string fullPath = Path.Combine(yearFolder, filename);
+
+            // Determine save location based on LibChecker status
+            string folder;
+            string displayPath;
+            if (libCheckerClean)
+            {
+                // Clean library - save to permanent records
+                string year = now.Year.ToString();
+                folder = Path.Combine(Constants.ReportsPath, year);
+                displayPath = $"reports\\{year}\\{filename}";
+            }
+            else
+            {
+                // Issues found - save to gitignored folder to avoid cluttering diffs
+                folder = Path.Combine(Constants.ReportsPath, "with-issues");
+                displayPath = $"reports\\with-issues\\{filename}";
+            }
 
             // Build and prepend header
             string header = BuildHeader(now);
 
             // Save to file (overwrite same-day report if it exists)
-            Directory.CreateDirectory(yearFolder);
+            Directory.CreateDirectory(folder);
+            string fullPath = Path.Combine(folder, filename);
             File.WriteAllText(fullPath, header + reportContent);
 
-            Console.WriteLine($"\nReport saved: reports\\{year}\\{filename}");
+            Console.WriteLine($"\nReport saved: {displayPath}");
         }
 
         /// <summary>
