@@ -47,27 +47,24 @@ AudioManager/
 
 ## Build and Run
 
-**ALWAYS use scripts.** Never rebuild MSBuild commands or re-derive invocations - the scripts are the source of truth.
+**For humans:** Use `scripts/launch.bat` for interactive menu with built-in build.
 
-Build:
+**For Claude:** Call the exe directly (build.bat handles compilation):
+
+1. Build first (one-time or before running):
 ```
 scripts/build.bat
 ```
 
-Run launcher (interactive menu):
+2. Run exe with arguments (no interactive prompts):
 ```
-scripts/launch.bat
-```
-
-Run launcher (programmatic - no interactive prompts):
-```
-scripts/launch.bat analysis
-scripts/launch.bat analysis --force-regen
-scripts/launch.bat integrate --dry-run
-scripts/launch.bat integrate
+project\AudioManager\bin\Release\AudioManager.exe analysis
+project\AudioManager\bin\Release\AudioManager.exe analysis --force-regen
+project\AudioManager\bin\Release\AudioManager.exe integrate --dry-run
+project\AudioManager\bin\Release\AudioManager.exe integrate
 ```
 
-The launcher always builds first, then either shows the menu (no args) or runs the command directly (with args).
+This keeps the argument interface in ONE place (C# Program.cs) and documentation in CLAUDE.md, avoiding duplication in scripts. Humans use launch.bat for menus; Claude calls the exe directly and reads invocation from this doc.
 
 **CRITICAL: old-style csproj requires manual file registration.** This is a .NET Framework 4.8 project with the legacy csproj format. New `.cs` files are NOT auto-included - you MUST add a `<Compile Include="Code\...\NewFile.cs" />` entry to `project\AudioManager\AudioManager.csproj` whenever you create a new source file, or the build will fail with `CS0103: The name '...' does not exist in the current context`. Always verify the csproj was updated after adding a file.
 
