@@ -1,10 +1,10 @@
 # Audio Tag Fixes Checklist - 2026-04-26
 
-**Total Issues: 86** (2 exceptions added for legitimate version text in official titles)
+**Total Issues: 84** (4 exceptions added for false positives)
 
 ---
 
-## SECTION 1: TAG & FILENAME CLEANUP (33 issues)
+## SECTION 1: TAG & FILENAME CLEANUP (31 issues)
 
 Remove unwanted words from Title/Album/Filename tags in mp3tag.
 
@@ -16,14 +16,16 @@ Remove unwanted words from Title/Album/Filename tags in mp3tag.
 - [x] Freeway;50 Cent - Take It To The Top (Album Version Explicit) -- remove "version" + "explicit" from title/filename
 - [x] Akira The Don;Alan Watts - Beware of Virtue (20K Version) -- KEEP "version" (part of official title) - added to exceptions
 - [x] Akira The Don;Alan Watts - The Highest Virtue (20K Version) -- KEEP "version" (part of official title) - added to exceptions
-- [ ] Simply Red - Holding Back the Years (2008 Remaster) -- remove "version" from album tag
-- [ ] Xzibit; Strong Arm Steady - Beware Of Us -- remove "explicit" from album tag
-- [ ] David Guetta;Kid Cudi - Memories -- remove "feat." from filename
-- [ ] Fort Minor;BOBO;Styles Of Beyond - Believe Me -- remove "feat." from filename
-- [ ] Fort Minor;Holly Brook;Jonah Matranga - Where'd You Go -- remove "feat." from filename
-- [ ] Fort Minor;John Legend - High Road -- remove "feat." from filename
-- [ ] Kodak Black - Identity Theft -- remove "ft." from filename
-- [ ] Lil Tecca - NEVER LEFT -- remove "ft." from filename
+- [x] Simply Red - Holding Back the Years (2008 Remaster) -- remove "version" from album tag
+- [x] Xzibit; Strong Arm Steady - Beware Of Us -- remove "explicit" from album tag
+- [x] David Guetta;Kid Cudi - Memories -- remove "feat." from filename
+- [x] Fort Minor;BOBO;Styles Of Beyond - Believe Me -- remove "feat." from filename
+- [x] Fort Minor;Holly Brook;Jonah Matranga - Where'd You Go -- remove "feat." from filename
+- [x] Fort Minor;John Legend - High Road -- remove "feat." from filename
+- [x] Kodak Black - Identity Theft -- FALSE POSITIVE ("ft." is part of "Theft") - added to exceptions
+  - **IMPROVEMENT: ft. checking should ignore if preceded by a letter (part of word)**
+- [x] Lil Tecca - NEVER LEFT -- FALSE POSITIVE ("ft." is part of "LEFT") - added to exceptions
+  - **IMPROVEMENT: ft. checking should ignore if preceded by a letter (part of word)**
 - [ ] Lupe Fiasco;Matthew Santos - Superstar -- remove "feat." from filename
 - [ ] Lupe Fiasco;Nikki Jean - Hip-Hop Saved My Life -- remove "feat." from filename
 - [ ] Plies;Akon - Hypnotized -- remove "feat." from filename
