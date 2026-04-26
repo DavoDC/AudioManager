@@ -55,7 +55,7 @@ These newly enabled rules revealed 80 previously undetected library organization
 
 **Expected future workflow:** Dry run should complete with 0-2 issues (minor tag inconsistencies), not 80. This batch fix is addressing the backlog from LibChecker enhancement.
 
-**See:** `AudioFixes-2026-04-26-Corrections.md` for detailed corrections and verification results.
+**See:** `LibraryCorrectionLog-2026-04-26.md` for detailed corrections and verification results.
 
 ### STAGE 3 SUBSTEP B: Review New Music - Listen & Verify
 
@@ -118,13 +118,13 @@ This is the first complete run through the workflow. Feedback from this executio
 - [ ] Note any issues encountered during real integration
 - [ ] Document unexpected behavior or edge cases
 - [ ] Record workflow pain points or inefficiencies
-- [ ] Save to `docs/Historical/AudioFixes-2026-04-26-Feedback.md`
+- [ ] Save to `docs/Historical/WorkflowExecution-2026-04-26-Feedback.md`
 
 ### STAGE 5 SUBSTEP B: Process Feedback to IDEAS.md
 
 Use `/process-feedback` skill to convert feedback into actionable improvement tasks:
 
-- [ ] Run `/process-feedback` on feedback doc (`AudioFixes-2026-04-26-Feedback.md`)
+- [ ] Run `/process-feedback` on feedback doc (`WorkflowExecution-2026-04-26-Feedback.md`)
 - [ ] Skill generates product tasks and Claude learnings
 - [ ] Create entries in `docs/IDEAS.md` for enhancements
 - [ ] Categorize by priority (TIER 0 BLOCKING, TIER 1 MVP, TIER 2 QUALITY, etc.)
