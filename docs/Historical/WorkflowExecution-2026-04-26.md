@@ -30,6 +30,9 @@ Execution log for Music Discovery to Device Workflow.
 
 **Via script:**
 - [x] Ran `open_playlist_in_manager` script (`C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager`)
+  - Script extracts track artists and names from Spotify playlist
+  - Sends to music service app for downloading
+  - Music service app downloads tracks using artist/name data
 - [x] Verified songs placed in `C:\Users\David\Downloads\NewMusic\`
 
 **Result:** Tracks downloaded and ready for review.
