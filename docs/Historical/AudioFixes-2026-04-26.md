@@ -1,10 +1,10 @@
 # Audio Tag Fixes Checklist - 2026-04-26
 
-**Total Issues: 84** (4 exceptions added for false positives)
+**Total Issues to Fix: 80** (3 Akira exceptions, 3 LibChecker mid-word "ft." false positives, 1 Coolio deleted, 3 legitimate false positives = 10 removed from original 90)
 
 ---
 
-## SECTION 1: TAG & FILENAME CLEANUP (31 issues)
+## SECTION 1: TAG & FILENAME CLEANUP (27 issues)
 
 Remove unwanted words from Title/Album/Filename tags in mp3tag.
 
@@ -22,14 +22,12 @@ Remove unwanted words from Title/Album/Filename tags in mp3tag.
 - [x] Fort Minor;BOBO;Styles Of Beyond - Believe Me -- remove "feat." from filename
 - [x] Fort Minor;Holly Brook;Jonah Matranga - Where'd You Go -- remove "feat." from filename
 - [x] Fort Minor;John Legend - High Road -- remove "feat." from filename
-- [x] Kodak Black - Identity Theft -- FALSE POSITIVE ("ft." is part of "Theft") - added to exceptions
-  - **IMPROVEMENT: ft. checking should ignore if preceded by a letter (part of word)**
-- [x] Lil Tecca - NEVER LEFT -- FALSE POSITIVE ("ft." is part of "LEFT") - added to exceptions
-  - **IMPROVEMENT: ft. checking should ignore if preceded by a letter (part of word)**
-- [ ] Lupe Fiasco;Matthew Santos - Superstar -- remove "feat." from filename
-- [ ] Lupe Fiasco;Nikki Jean - Hip-Hop Saved My Life -- remove "feat." from filename
-- [ ] Plies;Akon - Hypnotized -- remove "feat." from filename
-- [ ] Russ - NO TEARS LEFT -- remove "ft." from filename
+- [LIBCHECKER BUG] Kodak Black - Identity Theft -- FALSE POSITIVE ("ft." is part of "Theft") - will be fixed by TIER 1 regex improvement
+- [LIBCHECKER BUG] Lil Tecca - NEVER LEFT -- FALSE POSITIVE ("ft." is part of "LEFT") - will be fixed by TIER 1 regex improvement
+- [x] Lupe Fiasco;Matthew Santos - Superstar -- remove "feat." from filename
+- [x] Lupe Fiasco;Nikki Jean - Hip-Hop Saved My Life -- remove "feat." from filename
+- [d] Plies;Akon - Hypnotized -- remove "feat." from filename
+- [LIBCHECKER BUG] Russ - NO TEARS LEFT -- FALSE POSITIVE ("ft." is part of "LEFT") - will be fixed by TIER 1 regex improvement
 - [ ] Wiz Khalifa;Akon - Let It Go -- remove "feat." from filename
 - [ ] Chiddy Bang;Icona Pop - Mind Your Manners -- remove "feat." from filename
 - [ ] Maino;T-Pain - All the Above -- remove "feat." from filename
