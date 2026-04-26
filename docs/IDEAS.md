@@ -2,6 +2,24 @@
 
 Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
 
+---
+
+## STRATEGIC DECISION GATE (before TIER 2)
+
+**Evaluate: Python rewrite vs .NET 8 migration**
+
+Current plan (TIER 2): survey .NET 8 blockers, then migrate to SDK-style csproj.
+
+Alternative: rewrite in Python instead.
+- **Rationale:** no build step (lightweight), no VS2022 dev dependency, newer Python ecosystem for audio metadata.
+- **Decision criteria:** token cost comparison (Opus planning + Haiku execution for Python rewrite vs straightforward .NET migration). Which has better ROI and dev experience?
+- **Gate:** confirm Python has required dependency (TagLib equivalent - likely `mutagen` or `tinytag` for audio metadata reading). No showstoppers expected.
+- **Owner:** David (strategic call). **Status:** pending evaluation.
+
+Do NOT start TIER 2 until this decision is made. If Python wins, TIER 2 becomes Python implementation. If .NET wins, TIER 2 is the migration as currently written.
+
+---
+
 ## Organization: Tiered Priorities
 
 Work is grouped by safety tier. Items within a tier can be done in any order or in parallel.
