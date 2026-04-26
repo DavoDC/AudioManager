@@ -37,18 +37,20 @@ Tag, organize, and route files with quality control review.
 
 **Status: ✓ COMPLETE**
 
-**Context:** LibChecker was significantly enhanced ~17 days ago (commit `3a5a8ce2`, April 9) with new validation rules:
+⚠️ **NON-TYPICAL WORKFLOW** - This step encountered 80 issues due to recent LibChecker enhancement, not normal workflow.
+
+**One-time context:** LibChecker was significantly enhanced ~17 days ago (commit `3a5a8ce2`, April 9) with new validation rules:
 - Album subfolder placement rule (Singles/ vs album folder logic)
 - Genre vs folder consistency check
 
-These new rules triggered discovery of 80 library compliance issues during this dry run.
+These newly enabled rules revealed 80 previously undetected library organization issues. **This is NOT expected in future workflow runs** - once these issues are fixed, dry runs should find minimal or zero compliance issues.
 
 - [x] Launched AudioManager dry run (`scripts/launch.bat` → `3. Integration (Dry Run)`)
-- [x] Identified 80 library compliance issues (revealed by recent LibChecker rule enhancements)
+- [x] Identified 80 library compliance issues (one-time discovery from new LibChecker validations)
 - [x] Applied all corrections (27 tag fixes, 46 folder moves, 8 source validations)
 - [x] Ran LibChecker verification to confirm fixes
 
-**LibChecker Enhancement Context:** Commit `3a5a8ce2` added CheckAlbumSubfolderRule() and CheckGenreVsFolder() - these new validations exposed organization issues that weren't previously detected.
+**Expected future workflow:** Dry run should complete with 0-2 issues (minor tag inconsistencies), not 80. This batch fix is addressing the backlog from LibChecker enhancement.
 
 **See:** `AudioFixes-2026-04-26-Corrections.md` for detailed corrections and verification results.
 
