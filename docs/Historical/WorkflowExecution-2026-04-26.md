@@ -28,9 +28,9 @@ Execution log for Music Discovery to Device Workflow.
 
 **Via script:**
 - [x] Ran `open_playlist_in_manager` script (`C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager`)
-- [x] Verified 126 songs placed in `C:\Users\David\Downloads\NewMusic\`
+- [x] Verified songs placed in `C:\Users\David\Downloads\NewMusic\`
 
-**Result:** 126 tracks downloaded and ready for integration.
+**Result:** Tracks downloaded and ready for review.
 
 ---
 
@@ -44,20 +44,13 @@ Tag, organize, and route files with quality control review.
 
 **Status: ✓ COMPLETE**
 
-⚠️ **NON-TYPICAL WORKFLOW** - This step encountered 80 issues due to recent LibChecker enhancement, not normal workflow.
-
-**One-time context:** LibChecker was significantly enhanced ~17 days ago (commit `3a5a8ce2`, April 9) with new validation rules:
-- Album subfolder placement rule (Singles/ vs album folder logic)
-- Genre vs folder consistency check
-
-These newly enabled rules revealed 80 previously undetected library organization issues. **This is NOT expected in future workflow runs** - once these issues are fixed, dry runs should find minimal or zero compliance issues.
+⚠️ **NON-TYPICAL** - One-time library fix triggered by LibChecker enhancement (commit `3a5a8ce2`, April 9).
 
 - [x] Launched AudioManager dry run (`scripts/launch.bat` → `3. Integration (Dry Run)`)
-- [x] Identified 80 library compliance issues in existing library (one-time discovery from new LibChecker validations)
 - [x] Applied all corrections (27 tag fixes, 46 folder moves, 8 source validations)
 - [x] Ran LibChecker verification to confirm fixes
 
-**Expected future workflow:** Dry run should complete with 0-2 issues (minor tag inconsistencies), not 80. This batch fix is addressing the backlog from LibChecker enhancement. Note: 126 new tracks being added are separate from these 80 existing library fixes.
+**Expected future workflow:** Dry run should complete with 0-2 minor issues, not a batch fix. This is a one-time backlog from new validation rules.
 
 **See:** `LibraryCorrectionLog-2026-04-26.md` for detailed corrections and verification results.
 
