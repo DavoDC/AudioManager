@@ -139,3 +139,15 @@ Use `/process-feedback` skill to convert feedback into actionable improvement ta
 - [ ] Create entries in `docs/IDEAS.md` for enhancements
 - [ ] Categorize by priority (TIER 0 BLOCKING, TIER 1 MVP, TIER 2 QUALITY, etc.)
 - [ ] Link feedback source back to this workflow execution
+
+### STAGE 5 SUBSTEP C: Review Workflow Documentation
+
+**Meta-improvement step:** Review this workflow document itself for gaps and process optimization.
+
+- [ ] Check for missing workflow steps not documented here
+- [ ] Identify tedious or repetitive manual steps that could be automated
+- [ ] Look for process improvements to make workflow easier/faster
+- [ ] Update `docs/Music-Discovery-Workflow.md` with any discovered gaps
+- [ ] Create TIER 0/1 ideas in `docs/IDEAS.md` for workflow automation opportunities
+
+**Goal:** Each workflow run should make the next run easier. This doc is a living record of what works and what can be improved.
