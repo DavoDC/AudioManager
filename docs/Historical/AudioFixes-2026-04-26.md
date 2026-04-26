@@ -122,8 +122,10 @@ This is the first complete run through the workflow. Feedback from this executio
 
 ### STAGE 5 SUBSTEP B: Process Feedback to IDEAS.md
 
-- [ ] Review recorded feedback
-- [ ] Identify process improvements for future runs
+Use `/process-feedback` skill to convert feedback into actionable improvement tasks:
+
+- [ ] Run `/process-feedback` on feedback doc (`AudioFixes-2026-04-26-Feedback.md`)
+- [ ] Skill generates product tasks and Claude learnings
 - [ ] Create entries in `docs/IDEAS.md` for enhancements
 - [ ] Categorize by priority (TIER 0 BLOCKING, TIER 1 MVP, TIER 2 QUALITY, etc.)
-- [ ] Link back to this workflow execution
+- [ ] Link feedback source back to this workflow execution
