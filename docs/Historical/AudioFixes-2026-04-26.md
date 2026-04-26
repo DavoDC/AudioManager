@@ -2,9 +2,11 @@
 
 **Total Issues to Fix: 80** (3 Akira exceptions, 3 LibChecker mid-word "ft." false positives, 1 Coolio deleted, 3 legitimate false positives = 10 removed from original 90)
 
+**Progress: Section 1 (27 tag fixes) COMPLETE. Remaining: Section 2 (46 folder moves) + Section 3 (8 sources fixes)**
+
 ---
 
-## SECTION 1: TAG & FILENAME CLEANUP (27 issues)
+## SECTION 1: TAG & FILENAME CLEANUP (27 issues) - COMPLETE
 
 Remove unwanted words from Title/Album/Filename tags in mp3tag.
 
@@ -26,13 +28,13 @@ Remove unwanted words from Title/Album/Filename tags in mp3tag.
 - [LIBCHECKER BUG] Lil Tecca - NEVER LEFT -- FALSE POSITIVE ("ft." is part of "LEFT") - will be fixed by TIER 1 regex improvement
 - [x] Lupe Fiasco;Matthew Santos - Superstar -- remove "feat." from filename
 - [x] Lupe Fiasco;Nikki Jean - Hip-Hop Saved My Life -- remove "feat." from filename
-- [d] Plies;Akon - Hypnotized -- remove "feat." from filename
+- [x] Plies;Akon - Hypnotized -- remove "feat." from filename
 - [LIBCHECKER BUG] Russ - NO TEARS LEFT -- FALSE POSITIVE ("ft." is part of "LEFT") - will be fixed by TIER 1 regex improvement
-- [ ] Wiz Khalifa;Akon - Let It Go -- remove "feat." from filename
-- [ ] Chiddy Bang;Icona Pop - Mind Your Manners -- remove "feat." from filename
-- [ ] Maino;T-Pain - All the Above -- remove "feat." from filename
-- [ ] Mase;Total - What You Want -- remove "feat." from filename
-- [ ] P-Money;Akon - Keep on Calling -- remove "feat." from filename
+- [x] Wiz Khalifa;Akon - Let It Go -- remove "feat." from filename
+- [x] Chiddy Bang;Icona Pop - Mind Your Manners -- remove "feat." from filename
+- [x] Maino;T-Pain - All the Above -- remove "feat." from filename
+- [x] Mase;Total - What You Want -- remove "feat." from filename
+- [x] P-Money;Akon - Keep on Calling -- remove "feat." from filename
 
 ---
 
