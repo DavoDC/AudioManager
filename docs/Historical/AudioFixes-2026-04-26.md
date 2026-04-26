@@ -2,7 +2,7 @@
 
 **Total Issues to Fix: 80** (3 Akira exceptions, 3 LibChecker mid-word "ft." false positives, 1 Coolio deleted, 3 legitimate false positives = 10 removed from original 90)
 
-**Progress: Section 1 (27 tag fixes) COMPLETE. Section 2: 30/46 folder moves complete. Remaining: 16 folder moves + Section 3 (8 sources fixes) = 24 issues**
+**Progress: Section 1 (27 tag fixes) COMPLETE. Section 2 (46 folder/metadata moves) COMPLETE. Final: Section 3 (8 sources fixes) remaining**
 
 ---
 
@@ -38,7 +38,7 @@ Remove unwanted words from Title/Album/Filename tags in mp3tag.
 
 ---
 
-## SECTION 2: ALBUM FOLDER ORGANIZATION (46 issues) - 30/46 COMPLETE
+## SECTION 2: ALBUM FOLDER ORGANIZATION (46 issues) - COMPLETE
 
 Move files to correct album subfolder or Singles/.
 
@@ -75,14 +75,14 @@ Move files to correct album subfolder or Singles/.
 - [x] YoungBoy Never Broke Again - Dedicated -- move to AI YoungBoy album folder
 - [x] YoungBoy Never Broke Again - No. 9 -- move to AI YoungBoy album folder
 
-- [ ] David Massengill - Fireball -- move from The Return/ to Singles/
-- [ ] David Massengill - Noah -- move from The Return/ to Singles/
-- [ ] David Massengill - You and Me -- move from The Return/ to Singles/
-- [ ] John Williamson - Bush Barber -- move from The Very Best of John Williamson/ to Singles/
-- [ ] John Williamson - Bushtown -- move from The Very Best of John Williamson/ to Singles/
-- [ ] John Williamson - Dad's Flowers -- move from The Very Best of John Williamson/ to Singles/
-- [ ] KSI;Lil Wayne - Lose -- move from Thick Of It/ to Singles/
-- [ ] Lady Gaga;Beyonce - Telephone -- move from The Fame/ to Singles/
+- [x] David Massengill - Fireball -- move from The Return/ to Singles/
+- [x] David Massengill - Noah -- move from The Return/ to Singles/
+- [x] David Massengill - You and Me -- move from The Return/ to Singles/
+- [x] John Williamson - Bush Barber -- move from The Very Best of John Williamson/ to Singles/
+- [x] John Williamson - Bushtown -- move from The Very Best of John Williamson/ to Singles/
+- [x] John Williamson - Dad's Flowers -- move from The Very Best of John Williamson/ to Singles/
+- [x] KSI;Lil Wayne - Lose -- move from Thick Of It/ to Singles/
+- [x] Lady Gaga;Beyonce - Telephone -- move from The Fame/ to Singles/
 - [x] Lil Wayne - Let It All Work Out -- move from Tha Carter V/ to Singles/
 - [x] Michael Jackson;Akon - Hold My Hand -- move from Michael/ to Singles/
 - [x] Moneybagg Yo - Scorpio -- move from A Gangsta's Pain/ to Singles/
