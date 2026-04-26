@@ -86,3 +86,29 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 - [ ] Sync device twice to pick up new music
 
 **Status: PENDING** - Awaiting Stage 3 (Real Integration) completion
+
+---
+
+## STAGE 5: RECORD & PROCESS FEEDBACK
+
+*(First-time workflow run - feedback gathering)*
+
+**Status: PENDING** - After Stage 3C completion
+
+This is the first complete run through the workflow. Feedback from this execution should be recorded and processed into IDEAS.md for process improvements.
+
+### STAGE 5 SUBSTEP A: Record Feedback
+
+- [ ] Note any issues encountered during dry run
+- [ ] Note any issues encountered during real integration
+- [ ] Document unexpected behavior or edge cases
+- [ ] Record workflow pain points or inefficiencies
+- [ ] Save to `docs/Historical/AudioFixes-2026-04-26-Feedback.md`
+
+### STAGE 5 SUBSTEP B: Process Feedback to IDEAS.md
+
+- [ ] Review recorded feedback
+- [ ] Identify process improvements for future runs
+- [ ] Create entries in `docs/IDEAS.md` for enhancements
+- [ ] Categorize by priority (TIER 0 BLOCKING, TIER 1 MVP, TIER 2 QUALITY, etc.)
+- [ ] Link back to this workflow execution
