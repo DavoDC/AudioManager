@@ -77,8 +77,8 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 **Status: BLOCKED** - Library must be in clean state before integrating new 126 tracks
 
 **Required before adding new music:**
-- [ ] Use Sonnet + /dev-session to identify and fix integration blocking issues
-- [ ] Run analysis via AudioManager to get LibChecker clean
+- [ ] Use Sonnet + /dev-session to identify and fix issues causing LibChecker errors
+- [ ] Run analysis via AudioManager to verify LibChecker runs clean
 - [ ] Verify integration script runs without errors
 - [ ] Verify program commits results to AudioMirror repo
 - [ ] Confirm library reports 0 LibChecker issues (clean state)
