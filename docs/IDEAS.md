@@ -50,6 +50,10 @@ These two items are grouped because the migration makes adding tests trivial, an
 
 **Goal: close the minor gaps left inside otherwise-done features.**
 
+- [ ] **Pre-integration gate: verify AudioMirror is fresh and LibChecker is clean before integrating** - The first step of any integration run must be confirming the library is in a known-good state before adding new songs. Approach: (1) run Analysis mode to regenerate the AudioMirror XMLs, (2) check for any changes in the AudioMirror repo (git status or hash comparison) - no changes means the mirror already matched the library and is up to date, (3) verify LibChecker reports clean. If the mirror is stale OR LibChecker has hits: STOP - print a clear error ("Fix library issues before adding new songs") and exit integrate mode. Commit discipline: library fixes must land in a separate AudioMirror commit before the new batch is integrated; the batch itself gets its own subsequent commit. This prevents the new batch and pre-existing issues from being mixed in the same diff.
+
+- [ ] **Pre-integration duplicate check: warn if song already in library** - Before routing each track from NewMusic, search AudioMirror XML files for an existing track with the same primary artist AND the same title. Search artist and title as separate XML field reads (`<Artists>` and `<Title>`) - never by filename. If a match is found: clear the screen, show the matching library entry path, then prompt `[D] Delete from NewMusic  [K] Keep and continue integrating  [Q] Quit`. Exact match only (case-insensitive, trimmed) - no fuzzy matching (see Phase 5 for that). Dry-run mode: show "[DRY RUN] Would delete from NewMusic" but do not actually delete.
+
 - [ ] **Refactor Constants.cs path builders - the 5x `".."` chains are ugly** - `MirrorRepoPath`, `ReportsPath`, `LibCheckerExceptionsPath`, `LogsPath` all do `Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "..."))` with hardcoded `..` counts matching the `project/AudioManager/bin/Release` depth. Fragile and ugly. Better: a single `RepoRoot` helper that walks up until it finds a sentinel file (`CLAUDE.md`, `README.md`, or `.git/`), then all paths become `Path.Combine(RepoRoot, "reports")` etc. Isolates the depth-counting to one place and self-heals if the build output path ever changes.
 - [ ] **Dry-run covers tag changes and renames** - currently dry-run only covers moves (because tag changes and renames aren't implemented at all). When those features are added, ensure dry-run prints them.
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
@@ -74,6 +78,7 @@ These two items are grouped because the migration makes adding tests trivial, an
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
 - **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
 - **Fuzzy artist name matching** - handle artist name variations during routing ("The Beatles" vs "Beatles", featured artist formatting differences). Only matters at scale.
+- **Fuzzy duplicate title matching** - extend the pre-integration duplicate check to catch near-matches (e.g. "Song (feat. X)" vs "Song", "Song - Remix" vs "Song"). Approach: normalise both sides before comparison by stripping featured artist parentheticals, stripping remix/edit/version suffixes, collapsing whitespace. Blocked by: the exact-match duplicate check (Phase 4) must be in place first.
 
 ---
 
