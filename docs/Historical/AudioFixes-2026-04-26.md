@@ -37,10 +37,15 @@ Tag, organize, and route files with quality control review.
 
 **Status: ✓ COMPLETE**
 
+**⚠ NOTE: Non-typical workflow step** - LibChecker was updated mid-process (commit `6bdf44e3`) to fix false positive regex bugs instead of adding exceptions. This revealed 80 actual issues instead of 70.
+
 - [x] Launched AudioManager dry run (`scripts/launch.bat` → `3. Integration (Dry Run)`)
-- [x] Identified 80 library compliance issues requiring manual correction
+- [x] Updated LibChecker regex to require whitespace before "ft." (fixed false positives)
+- [x] Re-ran validation and identified 80 actual library compliance issues
 - [x] Applied all corrections (27 tag fixes, 46 folder moves, 8 source validations)
 - [x] Ran LibChecker verification to confirm fixes
+
+**LibChecker Code Update:** Commit `6bdf44e3` removed false positive exceptions and fixed regex to properly detect "feat." prefixes only when preceded by whitespace. This is typically a TIER 1 improvement task, but was expedited as blocking issue.
 
 **See:** `AudioFixes-2026-04-26-Corrections.md` for detailed corrections and verification results.
 
