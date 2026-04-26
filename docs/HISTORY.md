@@ -4,6 +4,20 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-26 - Pre-integration gate: verify AudioMirror fresh and LibChecker clean
+
+Implemented mandatory safety gate before integration runs. When user invokes `integrate` mode:
+1. Regenerates AudioMirror XMLs to ensure current library state is captured
+2. Checks if XMLs changed (ignores LastRunInfo.txt timestamp-only updates) - if XMLs changed, mirror is stale
+3. Runs LibChecker on the fresh data - if any issues found, must be fixed first
+4. Only proceeds to integration if BOTH checks pass: fresh mirror AND clean library
+
+Error messages guide user: "AudioMirror is out of sync with the library" or "LibChecker found issues in the library. Fix library issues before adding new songs."
+
+Prevents corruption risk by ensuring new songs are integrated only when library state is known-good. Tested with real library (5491 tracks) - gate correctly rejects integration when LibChecker finds issues, allows proceed when both conditions met.
+
+---
+
 ## 2026-04-25 - Phase 0 complete: program verified runnable end-to-end
 
 All Phase 0 blockers resolved. MSBuild compiles clean. `integrate --dry-run` handles empty inbox correctly. `analysis` runs end-to-end: mirror regenerated (5491 tracks), metadata parsed, stats generated, LibChecker ran, report saved, AudioMirror commit correctly blocked due to LibChecker hits.

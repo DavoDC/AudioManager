@@ -111,7 +111,14 @@ namespace AudioManager
                 }
                 else if (mode == 2)
                 {
-                    // Integrate mode
+                    // Integrate mode - run pre-integration gate first
+                    if (!RunPreIntegrationGate(mirrorPath))
+                    {
+                        Console.WriteLine("\nFix library issues before adding new songs.\n");
+                        Environment.Exit(1);
+                    }
+
+                    // Gate passed - proceed with integration
                     MusicIntegrator mi = new MusicIntegrator(dryRun);
                 }
 
@@ -129,6 +136,100 @@ namespace AudioManager
                 Console.WriteLine($"\nStack Trace: \n{ex.StackTrace}");
                 Console.WriteLine("\n");
                 Environment.Exit(123);
+            }
+        }
+
+        /// <summary>
+        /// Pre-integration validation gate: ensures AudioMirror is fresh and LibChecker is clean.
+        /// </summary>
+        /// <param name="mirrorPath">Path to the AudioMirror folder.</param>
+        /// <returns>true if gate passes (mirror fresh and LibChecker clean), false otherwise.</returns>
+        private static bool RunPreIntegrationGate(string mirrorPath)
+        {
+            Console.WriteLine("\nPre-integration validation...");
+
+            try
+            {
+                // Get mirror repo path
+                string mirrorRepoPath = Path.GetFullPath(Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory, Constants.MirrorRepoPath));
+
+                if (!Directory.Exists(mirrorRepoPath))
+                {
+                    Console.WriteLine(" - ERROR: AudioMirror repo not found. Cannot validate library state.");
+                    return false;
+                }
+
+                // Step 1: Regenerate AudioMirror XMLs
+                Console.WriteLine(" - Regenerating AudioMirror XMLs...");
+                Reflector r = new Reflector(mirrorPath);
+                Parser p = new Parser(mirrorPath);
+
+                // Step 2: Check if AudioMirror XMLs changed (is it fresh?)
+                Console.WriteLine(" - Checking if AudioMirror is fresh...");
+                string mirrorStatusOutput = RunGitStatus(mirrorRepoPath);
+
+                // Ignore LastRunInfo.txt (just a timestamp) - only care about XML changes
+                var changedFiles = mirrorStatusOutput
+                    .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(line => !line.Contains("LastRunInfo.txt"))
+                    .ToList();
+
+                bool mirrorIsStale = changedFiles.Count > 0;
+
+                if (mirrorIsStale)
+                {
+                    Console.WriteLine(" - ERROR: AudioMirror is out of sync with the library.");
+                    Console.WriteLine("   AudioMirror is the source of truth for all library validation.");
+                    Console.WriteLine("   Commit the mirror changes (git commit in AudioMirror/) before integrating new songs.");
+                    return false;
+                }
+
+                // Step 3: Verify LibChecker is clean
+                Console.WriteLine(" - Running library validation...");
+                LibChecker lc = new LibChecker(p.audioTags);
+
+                if (!lc.IsClean)
+                {
+                    Console.WriteLine(" - ERROR: LibChecker found issues in the library.");
+                    return false;
+                }
+
+                Console.WriteLine(" - Pre-integration validation passed.\n");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($" - ERROR during pre-integration validation: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Runs 'git status --porcelain' and returns the output.
+        /// </summary>
+        private static string RunGitStatus(string repoPath)
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo("git", "status --porcelain")
+                {
+                    WorkingDirectory = repoPath,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using (var proc = System.Diagnostics.Process.Start(psi))
+                {
+                    string output = proc.StandardOutput.ReadToEnd();
+                    proc.WaitForExit();
+                    return output;
+                }
+            }
+            catch (Exception)
+            {
+                return "error";
             }
         }
 
