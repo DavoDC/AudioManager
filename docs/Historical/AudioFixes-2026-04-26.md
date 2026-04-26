@@ -18,9 +18,12 @@ Execution log for Music Discovery to Device Workflow.
 
 ## STAGE 2: ACQUIRING
 
+**Via Spotify:**
 - [x] Created playlist with all new songs
 - [x] Removed all songs from liked songs
-- [x] Ran `open_playlist_in_manager` script to download tracks
+
+**Via script:**
+- [x] Ran `open_playlist_in_manager` script (`C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager`)
 - [x] Verified 80 songs placed in `C:\Users\David\Downloads\NewMusic\`
 
 **Result:** 80 tracks downloaded and ready for integration.
