@@ -14,7 +14,9 @@ Execution log for Music Discovery to Device Workflow.
 
 - [x] Discovered music on Spotify via release radar
 - [x] Added to liked songs
-- [x] Checked artists and top 10 streamed songs for additional tracks
+- [x] Explored deeper: checked songs on albums already in library that had liked tracks
+- [x] Listened to artists' top songs and other tracks from albums already present
+- [x] Added new tracks to liked songs based on preference
 
 **Result:** Music identified and ready for acquisition.
 
