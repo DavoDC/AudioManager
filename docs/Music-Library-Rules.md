@@ -78,15 +78,20 @@ Audio/
 - All songs must have genre `Motivation`
 
 ## Folder: Sources
-Tracks discovered through a specific form of media.
+Tracks discovered through a specific form of media. **CRITICAL DISTINCTION:**
 
-**Films** (`Sources/Films/{film name}/`)
-- Album field must contain `OST` (e.g. `Kabhi Khushi Kabhie Gham OST`)
-- Strip `Original Motion Picture Soundtrack` -> replace with `OST`
-- Strip `original` and `soundtrack` from all other fields
+**Official Soundtracks** (album IS the soundtrack compilation, e.g., "Peacemaker (Original Soundtrack)")
+- Album field format: `{Show/Movie Name} OST` (e.g., `Peacemaker OST`, `The White Lotus OST`)
+- Strip `Original Motion Picture Soundtrack` -> replace with show/movie name + OST
+- Folder: `Sources/Shows/{show name}/` or `Sources/Films/{film name}/`
+- Example: Cristobal Tapia de Veer - Aloha! -> Album: "The White Lotus OST"
 
-**Shows** (`Sources/Shows/{show name}/`)
-- Album field should be `{Show Name} OST`
+**Songs featured in shows/movies** (regular artist album that appears in credits, NOT a soundtrack)
+- **DO NOT add OST to album tag** - album is the artist's original album name
+- Album field: keep original (e.g., `Hunting High and Low`, `The Very Best of Bonnie Tyler`)
+- Folder: either leave in `Artists/` OR move to `Sources/Shows/{show name}/` with original album tag intact
+- Example: a-ha - Take on Me -> Album: "Hunting High and Low" (NOT "OST"), Folder: Sources/Shows/The Super Mario Bros. Movie/
+- **Why:** Adding OST is misleading - this is NOT an official soundtrack album, just a featured track
 - Strip `feat.` and unwanted strings from tags per global rules
 
 **Anime** (`Sources/Anime/{anime name}/`)

@@ -2,7 +2,12 @@
 
 **Total Issues to Fix: 80** (3 Akira exceptions, 3 LibChecker mid-word "ft." false positives, 1 Coolio deleted, 3 legitimate false positives = 10 removed from original 90)
 
-**Progress: Section 1 (27 tag fixes) COMPLETE. Section 2 (46 folder/metadata moves) COMPLETE. Final: Section 3 (8 sources fixes) remaining**
+**Progress: ALL SECTIONS COMPLETE**
+- Section 1 (27 tag fixes) ✓
+- Section 2 (46 folder/metadata moves) ✓
+- Section 3 (8 sources OST verification) ✓
+
+**Ready to run AudioManager report to verify all 80 issues fixed and LibChecker clean.**
 
 ---
 
@@ -92,18 +97,18 @@ Move files to correct album subfolder or Singles/.
 
 ---
 
-## SECTION 3: SOURCES FOLDER - ADD "OST" TO ALBUMS (8 issues)
+## SECTION 3: SOURCES FOLDER - VERIFY OST DESIGNATION (8 issues) - COMPLETE
 
-Edit Album tag in mp3tag to add "OST" designation.
+**RULE:** Only add OST to album tag if the ALBUM itself IS the official soundtrack. Regular artist albums featured in shows/movies keep original album names.
 
-- [ ] a-ha - Take on Me (The Super Mario Bros. Movie) -- Album: 'Hunting High and Low' to 'Hunting High and Low OST'
-- [ ] Bonnie Tyler - Holding Out for a Hero (The Super Mario Bros. Movie) -- Album: 'The Very Best of Bonnie Tyler' to 'The Very Best of Bonnie Tyler OST'
-- [ ] Electric Light Orchestra - Mr. Blue Sky (The Super Mario Bros. Movie) -- Album: 'Out of the Blue' to 'Out of the Blue OST'
-- [ ] Dee Snider - We're Not Gonna Take It (Peacemaker) -- Album: 'We Are the Ones' to 'We Are the Ones OST'
-- [ ] Hanoi Rocks - Don't You Ever Leave Me (Peacemaker) -- Album: 'Two Steps From The Move' to 'Two Steps From The Move OST'
-- [ ] Pretty Maids - Little Drops Of Heaven (Peacemaker) -- Album: 'Pandemonium' to 'Pandemonium OST'
-- [ ] Wig Wam - Do Ya Wanna Taste It (Peacemaker) -- Album: 'Non Stop Rock'n Roll' to 'Non Stop Rock'n Roll OST'
-- [ ] Cristobal Tapia de Veer - Aloha! (The White Lotus) -- verify album tag already has OST
+- [x] a-ha - Take on Me (Super Mario Bros. Movie) -- KEEP album 'Hunting High and Low' (featured track, not OST)
+- [x] Bonnie Tyler - Holding Out for a Hero (Super Mario Bros. Movie) -- KEEP album 'The Very Best of Bonnie Tyler' (featured track, not OST)
+- [x] Electric Light Orchestra - Mr. Blue Sky (Super Mario Bros. Movie) -- KEEP album 'Out of the Blue' (featured track, not OST)
+- [x] Dee Snider - We're Not Gonna Take It (Peacemaker) -- KEEP album 'We Are the Ones' (featured track, not OST)
+- [x] Hanoi Rocks - Don't You Ever Leave Me (Peacemaker) -- KEEP album 'Two Steps From The Move' (featured track, not OST)
+- [x] Pretty Maids - Little Drops Of Heaven (Peacemaker) -- KEEP album 'Pandemonium' (featured track, not OST)
+- [x] Wig Wam - Do Ya Wanna Taste It (Peacemaker) -- KEEP album 'Non Stop Rock'n Roll' (featured track, not OST)
+- [x] Cristobal Tapia de Veer - Aloha! (The White Lotus) -- VERIFIED album 'The White Lotus OST' (official soundtrack)
 
 ---
 
