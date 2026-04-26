@@ -7,7 +7,7 @@ type: project
 # AudioManager Strategic Decision: Python Rewrite vs .NET 8 Migration
 
 **Date:** 2026-04-26
-**Status:** Pending evaluation (decision gate before TIER 2 work begins)
+**Status:** Pending evaluation (TIER 2 decision gate in IDEAS.md)
 
 ## The Fork
 
@@ -38,4 +38,4 @@ Alternative: rewrite the console app in Python instead of migrating .NET.
 
 **DO NOT start TIER 2 until this decision is made.**
 
-See `AudioManager/docs/IDEAS.md` - "STRATEGIC DECISION GATE (before TIER 2)" section for the refined question.
+See `AudioManager/docs/IDEAS.md` - "TIER 2 - DECISION GATE: Python Rewrite vs .NET 8 Migration" section for the full decision criteria.

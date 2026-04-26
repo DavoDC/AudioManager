@@ -2,24 +2,6 @@
 
 Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
 
----
-
-## STRATEGIC DECISION GATE (before TIER 2)
-
-**Evaluate: Python rewrite vs .NET 8 migration**
-
-Current plan (TIER 2): survey .NET 8 blockers, then migrate to SDK-style csproj.
-
-Alternative: rewrite in Python instead.
-- **Rationale:** no build step (lightweight), no VS2022 dev dependency, newer Python ecosystem for audio metadata.
-- **Decision criteria:** token cost comparison (Opus planning + Haiku execution for Python rewrite vs straightforward .NET migration). Which has better ROI and dev experience?
-- **Gate:** confirm Python has required dependency (TagLib equivalent - likely `mutagen` or `tinytag` for audio metadata reading). No showstoppers expected.
-- **Owner:** David (strategic call). **Status:** pending evaluation.
-
-Do NOT start TIER 2 until this decision is made. If Python wins, TIER 2 becomes Python implementation. If .NET wins, TIER 2 is the migration as currently written.
-
----
-
 ## Organization: Tiered Priorities
 
 Work is grouped by safety tier. Items within a tier can be done in any order or in parallel.
@@ -60,6 +42,22 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 ## TIER 2 - QUALITY (Robustness & Test Coverage)
 
 **Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths.**
+
+### DECISION GATE: Python Rewrite vs .NET 8 Migration
+
+**Evaluate** - before starting any work below, decide the implementation path:
+
+**Option A (current plan):** survey .NET 8 blockers, then migrate to SDK-style csproj.
+
+**Option B (alternative):** rewrite in Python instead.
+- No build step (lightweight), no VS2022 dev dependency, modern Python audio metadata ecosystem
+- **Decision criteria:** token cost comparison (Opus planning + Haiku execution for Python vs straightforward .NET migration)
+- **Gate:** confirm Python has required dependency (TagLib equivalent - likely `mutagen` or `tinytag` for metadata reading)
+- **Owner:** David (strategic call). **Status:** pending evaluation.
+
+**If Python:** TIER 2 becomes Python rewrite + tests. **If .NET:** proceed with items below as written.
+
+---
 
 - [ ] **Survey: confirm .NET 8 migration has no blockers** - grep for `ConfigurationManager`, `AppDomain`, `System.Web`, `System.ServiceModel`, `Remoting`. Check `App.config` contents. Confirm TagLib# is the only NuGet dep. Expect no blockers - this is a console app.
 - [ ] **Migrate project to .NET 8 (SDK-style csproj)** - replace old-style csproj with ~15-line SDK-style (`<Project Sdk="Microsoft.NET.Sdk">` + `TargetFramework` + `PackageReference`). Delete `packages/` folder + `packages.config`. Delete or trim `Properties/AssemblyInfo.cs`. Update `launch.bat` exe path (`bin\Release\net8.0\AudioManager.exe`). Claude to test-build both modes himself before committing.
