@@ -2,6 +2,29 @@
 
 Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
 
+## Workflow Completion Checklist
+
+**Features required for fully automated Music Discovery to Device Workflow** (see `docs/Music-Discovery-Workflow.md`):
+
+### TIER 0 - Blocking Prerequisites
+- [ ] Pre-integration LibChecker validation gate (check library clean before allowing integration)
+- [ ] Integrator mode - one command for complete tag cleanup + routing + analysis
+- [ ] Pre-integration duplicate check (warn if song already in library)
+- [ ] Post-integration LibChecker auto-run validation
+
+### TIER 1 - MVP Pipeline  
+- [ ] Tag cleanup auto-removal (strip feat., version, explicit from tags)
+- [ ] Fix LibChecker duplicate detection bug (handle featured artists)
+- [ ] Fix LibChecker "feat." false positives (require whitespace)
+- [ ] Fix LibChecker Sources OST validation (smart folder matching)
+- [ ] Run LibChecker on full library (validate all new rules)
+- [ ] First real integration run (empirical test of pipeline)
+
+### TIER 3 - Polish
+- [ ] Sources/Films/Shows/Anime auto-routing (prompt for folder instead of Misc)
+
+---
+
 ## Organization: Tiered Priorities
 
 Work is grouped by safety tier. Items within a tier can be done in any order or in parallel.
