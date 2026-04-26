@@ -2,7 +2,7 @@
 
 **Total Issues to Fix: 80** (3 Akira exceptions, 3 LibChecker mid-word "ft." false positives, 1 Coolio deleted, 3 legitimate false positives = 10 removed from original 90)
 
-**Progress: Section 1 (27 tag fixes) COMPLETE. Remaining: Section 2 (46 folder moves) + Section 3 (8 sources fixes)**
+**Progress: Section 1 (27 tag fixes) COMPLETE. Section 2: 30/46 folder moves complete. Remaining: 16 folder moves + Section 3 (8 sources fixes) = 24 issues**
 
 ---
 
@@ -38,42 +38,43 @@ Remove unwanted words from Title/Album/Filename tags in mp3tag.
 
 ---
 
-## SECTION 2: ALBUM FOLDER ORGANIZATION (46 issues)
+## SECTION 2: ALBUM FOLDER ORGANIZATION (46 issues) - 30/46 COMPLETE
 
 Move files to correct album subfolder or Singles/.
 
-- [ ] Avril Lavigne - Fall To Pieces -- move to Under My Skin album folder
-- [ ] Avril Lavigne - My Happy Ending -- move to Under My Skin album folder
-- [ ] Bad Meets Evil;Eminem;Royce da 5'9 - Fast Lane -- move to Hell: The Sequel album folder
-- [ ] Bad Meets Evil;Eminem;Royce da 5'9;Bruno Mars - Lighters -- move to Hell: The Sequel album folder
-- [ ] Bob Dylan - Duquesne Whistle -- move to The Essential Bob Dylan album folder
-- [ ] Bob Dylan - Hurricane -- move to The Essential Bob Dylan album folder
-- [ ] Chris Brown;Too Short;E-40 - Undrunk -- move to Slime & B album folder
-- [ ] Chris Brown;Young Thug - Go Crazy -- move to Slime & B album folder
-- [ ] Coolio;Snoop Dogg - Gangsta Walk (Urban Version) -- move to Gangsta Walk album folder [DELETED]
-- [ ] Coolio;Snoop Dogg - Gangsta Walk -- move to Gangsta Walk album folder
-- [ ] Don Toliver - Get Throwed -- move to Life of a DON album folder
-- [ ] Don Toliver;Travis Scott - Flocky Flocky -- move to Life of a DON album folder
-- [ ] First Signal - Face Your Fears -- move to Face Your Fears album folder
-- [ ] First Signal - Shoot the Bullet -- move to Face Your Fears album folder
-- [ ] Future;Juice WRLD - Fine China -- move to WRLD ON DRUGS album folder
-- [ ] Future;Juice WRLD - Hard Work Pays Off -- move to WRLD ON DRUGS album folder
-- [ ] Hilltop Hoods - Cosby Sweater -- move to Walking Under Stars album folder
-- [ ] Hilltop Hoods;Maverick Sabre;Brother Ali - Live And Let Go -- move to Walking Under Stars album folder
-- [ ] Hopsin - Nocturnal Rainbows -- move to Raw album folder
-- [ ] Hopsin - Sag My Pants -- move to Raw album folder
-- [ ] Kanye West;Mr Hudson - Paranoid -- move to 808s & Heartbreak album folder
-- [ ] Kanye West;Young Jeezy - Amazing -- move to 808s & Heartbreak album folder
-- [ ] KSI - Low -- move to Thick Of It album folder
-- [ ] Lil Uzi Vert - Do What I Want -- move to The Perfect LUV Tape album folder
-- [ ] Lil Uzi Vert - Erase Your Social -- move to The Perfect LUV Tape album folder
-- [ ] Roddy Ricch - The Box -- move to Please Excuse Me for Being Antisocial album folder
-- [ ] Roddy Ricch;Mustard - High Fashion -- move to Please Excuse Me for Being Antisocial album folder
-- [ ] Taylor Swift - Stay Stay Stay -- move to Red album folder
-- [ ] Taylor Swift - We Are Never Ever Getting Back Together -- move to Red album folder
-- [ ] Too Short;Parliament Funkadelic - Gettin' It -- move to The Mack of the Century album folder
-- [ ] YoungBoy Never Broke Again - Dedicated -- move to AI YoungBoy album folder
-- [ ] YoungBoy Never Broke Again - No. 9 -- move to AI YoungBoy album folder
+- [x] Avril Lavigne - Fall To Pieces -- move to Under My Skin album folder
+- [x] Avril Lavigne - My Happy Ending -- move to Under My Skin album folder
+- [x] Bad Meets Evil;Eminem;Royce da 5'9 - Fast Lane -- move to Hell: The Sequel album folder
+- [x] Bad Meets Evil;Eminem;Royce da 5'9;Bruno Mars - Lighters -- move to Hell: The Sequel album folder
+- [x] Bob Dylan - Duquesne Whistle -- move to The Essential Bob Dylan album folder
+- [x] Bob Dylan - Hurricane -- move to The Essential Bob Dylan album folder
+- [x] Chris Brown;Too Short;E-40 - Undrunk -- move to Slime & B album folder
+- [x] Chris Brown;Young Thug - Go Crazy -- move to Slime & B album folder
+- [N/A] Coolio;Snoop Dogg - Gangsta Walk (Urban Version) -- move to Gangsta Walk album folder [DELETED]
+- [N/A] Coolio;Snoop Dogg - Gangsta Walk -- move to Gangsta Walk album folder
+- [x] Don Toliver - Get Throwed -- move to Life of a DON album folder
+- [x] Don Toliver;Travis Scott - Flocky Flocky -- move to Life of a DON album folder
+- [x] First Signal - Face Your Fears -- move to Face Your Fears album folder
+- [x] First Signal - Shoot the Bullet -- move to Face Your Fears album folder
+- [x] Future;Juice WRLD - Fine China -- move to WRLD ON DRUGS album folder
+- [x] Future;Juice WRLD - Hard Work Pays Off -- move to WRLD ON DRUGS album folder
+- [x] Hilltop Hoods - Cosby Sweater -- move to Walking Under Stars album folder
+- [x] Hilltop Hoods;Maverick Sabre;Brother Ali - Live And Let Go -- move to Walking Under Stars album folder
+- [x] Hopsin - Nocturnal Rainbows -- move to Raw album folder
+- [x] Hopsin - Sag My Pants -- move to Raw album folder
+- [x] Kanye West;Mr Hudson - Paranoid -- move to 808s & Heartbreak album folder
+- [x] Kanye West;Young Jeezy - Amazing -- move to 808s & Heartbreak album folder
+- [x] KSI - Low -- move to Thick Of It album folder
+- [x] Lil Uzi Vert - Do What I Want -- move to The Perfect LUV Tape album folder
+- [x] Lil Uzi Vert - Erase Your Social -- move to The Perfect LUV Tape album folder
+- [x] Roddy Ricch - The Box -- move to Please Excuse Me for Being Antisocial album folder
+- [x] Roddy Ricch;Mustard - High Fashion -- move to Please Excuse Me for Being Antisocial album folder
+- [x] Taylor Swift - Stay Stay Stay -- move to Red album folder
+- [x] Taylor Swift - We Are Never Ever Getting Back Together -- move to Red album folder
+- [x] Too Short;Parliament Funkadelic - Gettin' It -- move to The Mack of the Century album folder
+- [x] YoungBoy Never Broke Again - Dedicated -- move to AI YoungBoy album folder
+- [x] YoungBoy Never Broke Again - No. 9 -- move to AI YoungBoy album folder
+
 - [ ] David Massengill - Fireball -- move from The Return/ to Singles/
 - [ ] David Massengill - Noah -- move from The Return/ to Singles/
 - [ ] David Massengill - You and Me -- move from The Return/ to Singles/
@@ -82,12 +83,12 @@ Move files to correct album subfolder or Singles/.
 - [ ] John Williamson - Dad's Flowers -- move from The Very Best of John Williamson/ to Singles/
 - [ ] KSI;Lil Wayne - Lose -- move from Thick Of It/ to Singles/
 - [ ] Lady Gaga;Beyonce - Telephone -- move from The Fame/ to Singles/
-- [ ] Lil Wayne - Let It All Work Out -- move from Tha Carter V/ to Singles/
-- [ ] Michael Jackson;Akon - Hold My Hand -- move from Michael/ to Singles/
-- [ ] Moneybagg Yo - Scorpio -- move from A Gangsta's Pain/ to Singles/
-- [ ] Moneybagg Yo - Wockesha -- move from A Gangsta's Pain/ to Singles/
-- [ ] Phil Collins - I Wish It Would Rain Down (2016 Remaster) -- check album tag
-- [ ] Phil Collins - In the Air Tonight (2015 Remaster) -- check album tag
+- [x] Lil Wayne - Let It All Work Out -- move from Tha Carter V/ to Singles/
+- [x] Michael Jackson;Akon - Hold My Hand -- move from Michael/ to Singles/
+- [x] Moneybagg Yo - Scorpio -- move from A Gangsta's Pain/ to Singles/
+- [x] Moneybagg Yo - Wockesha -- move from A Gangsta's Pain/ to Singles/
+- [x] Phil Collins - I Wish It Would Rain Down (2016 Remaster) -- check album tag
+- [x] Phil Collins - In the Air Tonight (2015 Remaster) -- check album tag
 
 ---
 
