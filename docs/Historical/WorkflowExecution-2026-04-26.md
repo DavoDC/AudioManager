@@ -98,10 +98,16 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 
 *(Manual - cannot automate)*
 
-- [ ] Open iTunes and ensure device is detected
+### STAGE 4 SUBSTEP A: Update iTunes Library
+
 - [ ] Add Audio folder to iTunes
 - [ ] File → Library → Show Duplicate Items → remove duplicates
 - [ ] Check for broken files (exclamation symbol on far left)
+- [ ] Verify library is ready for sync
+
+### STAGE 4 SUBSTEP B: Sync to Device
+
+- [ ] Open iTunes and ensure device is detected
 - [ ] Sync device twice to pick up new music
 
 **Status: PENDING** - Awaiting Stage 3 (Real Integration) completion
