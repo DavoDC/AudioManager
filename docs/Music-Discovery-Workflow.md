@@ -60,8 +60,10 @@ Run the AudioManager launcher: `scripts/launch.bat`
 - 🔄 **Tag cleanup auto-removal:** Strip unwanted text (feat., version, explicit) from tags before integration (TIER 1, currently manual via Mp3tag)
 - 🔄 **Pre-integration LibChecker gate:** Check library is clean before allowing integration (TIER 0 blocking)
 
-### Not Yet Implemented (TIER 3)
-- ❌ **Sources/Films/Shows/Anime routing:** Auto-prompt for folder instead of defaulting to Misc (TIER 3 - currently manual redirect)
+### Not Yet Implemented (TIER 3 - Feasibility Uncertain)
+- ❌ **Sources/Films/Shows/Anime routing:** Interactive prompt for folder instead of defaulting to Misc (TIER 3)
+  - **Challenge:** Metadata alone rarely indicates source type (film/show/anime). Would require studying existing metadata patterns or accepting permanent manual folder-picker.
+  - See `docs/IDEAS.md` for metadata audit plan.
 
 ### Full Pipeline Vision
 Once all features complete: one command (`AudioManager --integrate`), zero manual Mp3tag or separate analysis steps.

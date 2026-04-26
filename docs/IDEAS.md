@@ -21,7 +21,10 @@ Single source of truth for all pending work. Settled decisions and completed fea
 - [ ] First real integration run (empirical test of pipeline)
 
 ### TIER 3 - Polish
-- [ ] Sources/Films/Shows/Anime auto-routing (prompt for folder instead of Misc)
+- [ ] Sources/Films/Shows/Anime routing (prompt for folder instead of Misc) - challenge: may not be automatable from metadata alone
+
+### TIER 4 - Exploratory (Feasibility Uncertain)
+- [ ] Audit existing Sources metadata patterns (Films/Shows/Anime) to determine if auto-detection heuristics are possible
 
 ---
 
@@ -106,7 +109,10 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 - [ ] **Dry-run covers tag changes and renames** - currently dry-run only covers moves (because tag changes and renames aren't implemented at all). When those features are added, ensure dry-run prints them.
 - [ ] **Generate reports in markdown (.md) instead of .txt** - existing reports are plain text. Markdown output with headers, formatting, and better structure improves readability when viewing in an editor or on GitHub. Rename output files to `.md` and use basic markdown syntax: `# Title`, `## Section`, `- bullet points`, code blocks for file paths or error details. Backwards-compatible: dry-run and LibChecker reports should both switch.
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
-- [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate). This was visible in Batch B: Victorious and Bollywood tracks had to be manually redirected. Routing logic: if `Album` contains "OST" or "Soundtrack", prompt for Sources subfolder rather than auto-routing to Misc.
+- [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate). 
+  - **Challenge:** Automating this is difficult - metadata alone rarely indicates source type. Current approach: if `Album` contains "OST" or "Soundtrack", prompt user for subfolder choice rather than defaulting to Misc.
+  - **Alternative approach:** Study existing Sources/Films, Sources/Shows, Sources/Anime tracks for metadata patterns (album names, artist names, genre, etc.) that distinguish them. May reveal rough heuristics for auto-detection, or may confirm that folder-picker prompt is the only reliable option.
+  - **Recommendation:** TIER 4 exploratory task - audit existing metadata patterns before deciding if automation is feasible. May need to accept manual folder-picker as permanent solution.
 - [ ] **README: mention folder picker** - integration pipeline has an interactive folder browser when user rejects Misc routing. Brief mention in README integration section.
 - [ ] **README: list LibChecker checks** - README says "full library validation" but doesn't list what LibChecker validates (filename format, unwanted tag strings, missing tags, album cover count, compilation flag, duplicates, artist-folder matching, album subfolder rule, misc folder review, genre-folder consistency, Sources OST check).
 - [ ] **Audit libchecker-exceptions.xml - distinguish bug fixes from genuine exceptions** - review all exceptions to identify which are workarounds for LibChecker regex bugs (e.g., "version" in legitimate titles like Alan Watts tracks) vs. genuine tracks that need exemption (e.g., Eric Thomas bonus content). For each regex-bug workaround, ensure there's a corresponding TIER 1 code improvement in IDEAS. Goal: exceptions.xml contains only track-specific needs, not rule improvements. Low priority - documents intent rather than changing behaviour.
