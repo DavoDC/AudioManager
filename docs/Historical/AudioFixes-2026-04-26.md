@@ -37,15 +37,18 @@ Tag, organize, and route files with quality control review.
 
 **Status: ✓ COMPLETE**
 
-**⚠ NOTE: Non-typical workflow step** - LibChecker was updated mid-process (commit `6bdf44e3`) to fix false positive regex bugs instead of adding exceptions. This revealed 80 actual issues instead of 70.
+**Context:** LibChecker was significantly enhanced ~17 days ago (commit `3a5a8ce2`, April 9) with new validation rules:
+- Album subfolder placement rule (Singles/ vs album folder logic)
+- Genre vs folder consistency check
+
+These new rules triggered discovery of 80 library compliance issues during this dry run.
 
 - [x] Launched AudioManager dry run (`scripts/launch.bat` → `3. Integration (Dry Run)`)
-- [x] Updated LibChecker regex to require whitespace before "ft." (fixed false positives)
-- [x] Re-ran validation and identified 80 actual library compliance issues
+- [x] Identified 80 library compliance issues (revealed by recent LibChecker rule enhancements)
 - [x] Applied all corrections (27 tag fixes, 46 folder moves, 8 source validations)
 - [x] Ran LibChecker verification to confirm fixes
 
-**LibChecker Code Update:** Commit `6bdf44e3` removed false positive exceptions and fixed regex to properly detect "feat." prefixes only when preceded by whitespace. This is typically a TIER 1 improvement task, but was expedited as blocking issue.
+**LibChecker Enhancement Context:** Commit `3a5a8ce2` added CheckAlbumSubfolderRule() and CheckGenreVsFolder() - these new validations exposed organization issues that weren't previously detected.
 
 **See:** `AudioFixes-2026-04-26-Corrections.md` for detailed corrections and verification results.
 
