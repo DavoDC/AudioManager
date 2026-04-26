@@ -70,4 +70,14 @@
     <Title contains="The Highest Virtue" />
   </Exception>
 
+  <!-- 'ft.' is part of word (Theft), not featuring abbreviation -->
+  <Exception unwanted="ft.">
+    <Title equals="Identity Theft" />
+  </Exception>
+
+  <!-- 'ft.' is part of word (LEFT), not featuring abbreviation -->
+  <Exception unwanted="ft.">
+    <Title equals="NEVER LEFT" />
+  </Exception>
+
 </Exceptions>
