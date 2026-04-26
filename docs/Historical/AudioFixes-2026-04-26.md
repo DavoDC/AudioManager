@@ -61,7 +61,9 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 
 **Required before proceeding:**
 - [ ] Use Sonnet + /dev-session to identify and fix integration blocking issues
+- [ ] Fix LibChecker issues blocking integration
 - [ ] Verify integration script runs without errors
+- [ ] Verify program commits results to AudioMirror repo
 - [ ] Test with sample file set
 
 **Then execute:**
@@ -69,7 +71,7 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 - [ ] Select `4. Integration (Real)`
 - [ ] Execute full integration with tag cleanup, filename renaming, and folder routing per Music-Library-Rules
 - [ ] Verify files integrated into library (Artists, Musivation, Motivation, Compilations, Misc, or Sources folders)
-- [ ] Analyze results and commit to AudioMirror repo
+- [ ] Confirm results committed to AudioMirror repo (program must auto-commit)
 
 ---
 
