@@ -44,13 +44,19 @@ AudioManager integration to tag, organize, and route files.
 
 ### STAGE 3 SUBSTEP B: Real Integration Execution
 
+**Status: BLOCKED** - Integration blocking issues require code fixes
+
+**Required before proceeding:**
+- [ ] Use Sonnet + /dev-session to identify and fix integration blocking issues
+- [ ] Verify integration script runs without errors
+- [ ] Test with sample file set
+
+**Then execute:**
 - [ ] Launch AudioManager: `scripts/launch.bat`
 - [ ] Select `4. Integration (Real)`
 - [ ] Execute full integration with tag cleanup, filename renaming, and folder routing per Music-Library-Rules
 - [ ] Verify files integrated into library (Artists, Musivation, Motivation, Compilations, Misc, or Sources folders)
 - [ ] Analyze results and commit to AudioMirror repo
-
-**Status:** PENDING
 
 ---
 
