@@ -1,10 +1,10 @@
 # Audio Tag Fixes Checklist - 2026-04-26
 
-**Total Issues: 88**
+**Total Issues: 86** (2 exceptions added for legitimate version text in official titles)
 
 ---
 
-## SECTION 1: TAG & FILENAME CLEANUP (35 issues)
+## SECTION 1: TAG & FILENAME CLEANUP (33 issues)
 
 Remove unwanted words from Title/Album/Filename tags in mp3tag.
 
@@ -14,8 +14,8 @@ Remove unwanted words from Title/Album/Filename tags in mp3tag.
 - [x] Twista;CeeLo - Hope (Album Version) -- removed "version" from title/filename
   - **WATCH: Check for duplicate flag after fix - if triggered, duplicate checker needs to consider all featured artists**
 - [x] Freeway;50 Cent - Take It To The Top (Album Version Explicit) -- remove "version" + "explicit" from title/filename
-- [ ] Akira The Don;Alan Watts - Beware of Virtue (20K Version) -- remove "version" from title/filename
-- [ ] Akira The Don;Alan Watts - The Highest Virtue (20K Version) -- remove "version" from title/filename
+- [x] Akira The Don;Alan Watts - Beware of Virtue (20K Version) -- KEEP "version" (part of official title) - added to exceptions
+- [x] Akira The Don;Alan Watts - The Highest Virtue (20K Version) -- KEEP "version" (part of official title) - added to exceptions
 - [ ] Simply Red - Holding Back the Years (2008 Remaster) -- remove "version" from album tag
 - [ ] Xzibit; Strong Arm Steady - Beware Of Us -- remove "explicit" from album tag
 - [ ] David Guetta;Kid Cudi - Memories -- remove "feat." from filename
