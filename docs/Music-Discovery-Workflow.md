@@ -48,18 +48,23 @@ Run the AudioManager launcher: `scripts/launch.bat`
 - Choose `3. Integration (Dry Run)` - preview all planned changes
 - Choose `4. Integration (Real)` - execute the integration
 
-The program automatically handles:
-- **Pre-integration validation:** Check that library LibChecker is clean before proceeding (TIER 0 safety gate)
-- **Tag cleanup:** Compliance per Music-Library-Rules (add TCMP, set Musivation genre, remove unwanted strings)
-- **Filename renaming:** Per naming convention
-- **Routing:** Files to library folders (Artists, Musivation, Motivation, Compilations, Misc, or Sources with optional prompt for Films/Shows/Anime)
-- **File movement:** Integrate into library folder structure
-- **Post-integration validation:** Run LibChecker to verify clean state
-- **Commit:** Results to AudioMirror repo
+### Currently Implemented (TIER 0/1)
+- ✓ **Filename renaming:** Per naming convention
+- ✓ **Routing:** Artist songs to existing folders or with 3+ threshold scan-ahead. Falls to Misc for unknown artists.
+- ✓ **File movement:** Integrates into library folder structure
+- ✓ **Post-integration validation:** Run LibChecker to verify clean state
+- ✓ **Commit:** Results to AudioMirror repo
+- ✓ **Pre-integration duplicate check:** Warns if song already in library (TIER 0)
 
-Result: fully automated end-to-end. One command, zero manual Mp3tag or separate analysis steps needed.
+### Planned/In Progress (TIER 1)
+- 🔄 **Tag cleanup auto-removal:** Strip unwanted text (feat., version, explicit) from tags before integration (TIER 1, currently manual via Mp3tag)
+- 🔄 **Pre-integration LibChecker gate:** Check library is clean before allowing integration (TIER 0 blocking)
 
-> **NOTE:** Pre-integration LibChecker validation is a TIER 0 blocking feature (see `docs/IDEAS.md`). When implemented, it will be fully automated - no manual intervention needed.
+### Not Yet Implemented (TIER 3)
+- ❌ **Sources/Films/Shows/Anime routing:** Auto-prompt for folder instead of defaulting to Misc (TIER 3 - currently manual redirect)
+
+### Full Pipeline Vision
+Once all features complete: one command (`AudioManager --integrate`), zero manual Mp3tag or separate analysis steps.
 
 ## Stage 4: Sync to Device
 
