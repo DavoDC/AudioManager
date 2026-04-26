@@ -59,4 +59,15 @@
     <Title contains="BETTER VERSION OF YOURSELF" />
   </Exception>
 
+  <!-- Akira The Don;Alan Watts - 'VERSION' is part of official titles -->
+  <Exception unwanted="version">
+    <Artists contains="Alan Watts" />
+    <Title contains="Beware of Virtue" />
+  </Exception>
+
+  <Exception unwanted="version">
+    <Artists contains="Alan Watts" />
+    <Title contains="The Highest Virtue" />
+  </Exception>
+
 </Exceptions>
