@@ -18,11 +18,10 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 
 ## Stage 3: Integrate
 
-Run AudioManager in integrator mode (dry run first, then real):
-```
-AudioManager --integrate --dry-run
-AudioManager --integrate
-```
+Run the AudioManager launcher:
+1. `scripts/launch.bat`
+2. Choose `3. Integration (Dry Run)` - preview all planned changes
+3. Choose `4. Integration (Real)` - execute the integration
 
 This one command handles:
 - Tag cleanup and compliance per Music-Library-Rules (add TCMP, set Musivation genre, remove unwanted strings)
