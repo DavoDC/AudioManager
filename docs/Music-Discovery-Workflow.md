@@ -40,27 +40,26 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 
 ## Stage 3: Integrate
 
-**Input:** MP3 files in `C:\Users\David\Downloads\NewMusic\`, clean library state (LibChecker 0 issues)  
+**Input:** MP3 files in `C:\Users\David\Downloads\NewMusic\`, library ready for integration  
 **Output:** Tagged, named, and organized files integrated into library; AudioMirror updated
 
-### Pre-Integration: Achieve Clean Library
-1. Fix any LibChecker blocking issues (via dev session)
-2. Run AudioManager analysis to get library clean (0 LibChecker issues)
-3. This ensures library is ready before adding new music
+### Integration Launcher
+Run the AudioManager launcher: `scripts/launch.bat`
+- Choose `3. Integration (Dry Run)` - preview all planned changes
+- Choose `4. Integration (Real)` - execute the integration
 
-### Integration Steps
-1. Run the AudioManager launcher: `scripts/launch.bat`
-2. Choose `3. Integration (Dry Run)` - preview all planned changes
-3. Choose `4. Integration (Real)` - execute the integration
+The program automatically handles:
+- **Pre-integration validation:** Check that library LibChecker is clean before proceeding (TIER 0 safety gate)
+- **Tag cleanup:** Compliance per Music-Library-Rules (add TCMP, set Musivation genre, remove unwanted strings)
+- **Filename renaming:** Per naming convention
+- **Routing:** Files to library folders (Artists, Musivation, Motivation, Compilations, Misc, or Sources with optional prompt for Films/Shows/Anime)
+- **File movement:** Integrate into library folder structure
+- **Post-integration validation:** Run LibChecker to verify clean state
+- **Commit:** Results to AudioMirror repo
 
-This handles:
-- Tag cleanup and compliance per Music-Library-Rules (add TCMP, set Musivation genre, remove unwanted strings)
-- Filename renaming per naming convention
-- Routing files to library folders (Artists, Musivation, Motivation, Compilations, Misc, or Sources with optional prompt for Films/Shows/Anime)
-- Integration into library
-- Analysis and commit of results to AudioMirror repo
+Result: fully automated end-to-end. One command, zero manual Mp3tag or separate analysis steps needed.
 
-Result: fully automated, no manual Mp3tag or separate analysis step needed.
+> **NOTE:** Pre-integration LibChecker validation is a TIER 0 blocking feature (see `docs/IDEAS.md`). When implemented, it will be fully automated - no manual intervention needed.
 
 ## Stage 4: Sync to Device
 
