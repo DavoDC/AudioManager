@@ -123,6 +123,36 @@ namespace AudioManager
 
                     // Gate passed - proceed with integration
                     MusicIntegrator mi = new MusicIntegrator(dryRun);
+
+                    // Post-integration validation: regenerate mirror and run LibChecker
+                    if (!dryRun)
+                    {
+                        Console.WriteLine("\nPost-integration validation...");
+                        try
+                        {
+                            // Regenerate mirror to reflect newly integrated files
+                            Console.WriteLine(" - Regenerating AudioMirror XMLs...");
+                            Reflector r = new Reflector(mirrorPath);
+                            Parser p = new Parser(mirrorPath);
+
+                            // Run LibChecker to validate the updated library
+                            Console.WriteLine(" - Running library validation...");
+                            LibChecker lc = new LibChecker(p.audioTags);
+
+                            if (lc.IsClean)
+                            {
+                                Console.WriteLine(" - Post-integration validation: CLEAN (no issues found)\n");
+                            }
+                            else
+                            {
+                                Console.WriteLine(" - Post-integration validation: ISSUES FOUND (see above)\n");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($" - WARNING: Could not run post-integration validation: {ex.Message}\n");
+                        }
+                    }
                 }
 
                 // Print total time taken (Integrate mode only)
