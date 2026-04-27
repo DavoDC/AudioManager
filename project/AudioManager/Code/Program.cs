@@ -43,9 +43,14 @@ namespace AudioManager
                         mode = 2;
                         forceMirrorRegen = false;
                     }
+                    else if (modeArg == "tagfix" || modeArg == "fix-tags")
+                    {
+                        mode = 3;
+                        forceMirrorRegen = false;
+                    }
                     else
                     {
-                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] | integrate [--dry-run]");
+                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] | integrate [--dry-run] | tagfix [--dry-run]");
                         Environment.Exit(1);
                         return;
                     }
@@ -154,12 +159,20 @@ namespace AudioManager
                         }
                     }
                 }
+                else if (mode == 3)
+                {
+                    // TagFix mode - clean tags in NewMusic folder
+                    TagFixer tf = new TagFixer(dryRun);
+                }
 
-                // Print total time taken (Integrate mode only)
-                Doer.PrintTotalTimeTaken();
+                // Print total time taken (Integrate and TagFix modes only)
+                if (mode == 2 || mode == 3)
+                {
+                    Doer.PrintTotalTimeTaken();
 
-                // Finish message (Integrate mode only)
-                Console.WriteLine("\nFinished!\n");
+                    // Finish message (Integrate and TagFix modes only)
+                    Console.WriteLine("\nFinished!\n");
+                }
             }
             catch (Exception ex)
             {
