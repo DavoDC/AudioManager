@@ -37,7 +37,9 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 
 ## TIER 2 - QUALITY (Robustness & Test Coverage)
 
-**Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths.**
+**Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths. Also investigate performance bottlenecks.**
+
+- [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
 
 ### DECISION GATE: Python Rewrite vs .NET 8 Migration
 
