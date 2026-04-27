@@ -212,13 +212,22 @@ namespace AudioManager
                         else if (isStandardRoute)
                         {
                             // Standard route: auto-accept
-                            Directory.CreateDirectory(destDir);
-                            File.Move(sourcePath, destPath);
-                            movedCount++;
-                            Console.WriteLine($"  [AUTO] Moved to: {relativeDest}");
-                            Console.Clear();
-                            entry.Status = "moved";
-                            logEntries.Add(entry);
+                            if (File.Exists(destPath))
+                            {
+                                Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
+                                entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                logEntries.Add(entry); skippedCount++;
+                            }
+                            else
+                            {
+                                Directory.CreateDirectory(destDir);
+                                File.Move(sourcePath, destPath);
+                                movedCount++;
+                                Console.WriteLine($"  [AUTO] Moved to: {relativeDest}");
+                                Console.Clear();
+                                entry.Status = "moved";
+                                logEntries.Add(entry);
+                            }
                         }
                         else
                         {
@@ -233,13 +242,22 @@ namespace AudioManager
                                 if (key == ConsoleKey.Y)
                                 {
                                     // Accept: move
-                                    Directory.CreateDirectory(destDir);
-                                    File.Move(sourcePath, destPath);
-                                    movedCount++;
-                                    Console.WriteLine($"  Moved to: {relativeDest}");
-                                    Console.Clear();
-                                    entry.Status = "moved";
-                                    logEntries.Add(entry);
+                                    if (File.Exists(destPath))
+                                    {
+                                        Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
+                                        entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
+                                    else
+                                    {
+                                        Directory.CreateDirectory(destDir);
+                                        File.Move(sourcePath, destPath);
+                                        movedCount++;
+                                        Console.WriteLine($"  Moved to: {relativeDest}");
+                                        Console.Clear();
+                                        entry.Status = "moved";
+                                        logEntries.Add(entry);
+                                    }
                                     break;
                                 }
                                 else if (key == ConsoleKey.Q)
