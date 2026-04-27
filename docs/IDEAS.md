@@ -17,10 +17,6 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 
 - [ ] **HIGHEST PRIORITY: Integrator mode - one command for complete tag cleanup + routing + analysis** - The program's core purpose is to eliminate manual work. Stage 3 (Integrate) must be ONE command that: (1) reads raw MP3s from Downloads/NewMusic, (2) applies all tag rules (add TCMP=1, set genre for Musivation tracks), (3) renames files per naming convention, (4) routes to destination folders per Music-Library-Rules (Artists, Musivation, Motivation, Compilations, Misc, Sources), (5) moves files into library, (6) runs analysis and commits results. Dry-run mode shows all changes without moving files. This replaces the current manual workflow: Mp3tag cleanup + integrate + analysis. **Vision:** user drops batch in Downloads/NewMusic, runs `AudioManager --integrate`, program handles everything except (optionally) Sources/Films/Shows/Anime routing which can prompt for folder choice. Result: no manual tagging, no separate analysis step, fully automated for artist songs.
 
-- [ ] **Pre-integration duplicate check: warn if song already in library** - Before routing each track from NewMusic, search AudioMirror XML files for an existing track with the same primary artist AND the same title. Search artist and title as separate XML field reads (`<Artists>` and `<Title>`) - never by filename. If a match is found: clear the screen, show the matching library entry path, then prompt `[D] Delete from NewMusic  [K] Keep and continue integrating  [Q] Quit`. Exact match only (case-insensitive, trimmed) - no fuzzy matching (see TIER 4 for that). Dry-run mode: show "[DRY RUN] Would delete from NewMusic" but do not actually delete.
-
-- [ ] **LibChecker auto-run as second validation layer after integration** - analysis mode already re-runs LibChecker fully; integrate mode doesn't. Add it so a post-integration LibChecker hit immediately flags a broken run.
-
 ---
 
 ## TIER 1 - MVP (Core Pipeline Works)

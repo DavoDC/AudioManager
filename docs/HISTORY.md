@@ -4,6 +4,25 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-27 - Pre-integration duplicate check and post-integration validation (TIER 0)
+
+Implemented two safety features blocking TIER 0 to enable the first real integration run:
+
+**Feature 1: Pre-integration duplicate check**
+- Before routing each track from NewMusic, searches AudioMirror XML files for an existing track with the same primary artist AND title
+- Comparison is case-insensitive and whitespace-trimmed
+- If found: displays the matching library entry path and prompts user with [D]elete from NewMusic, [K]eep and continue, [Q]uit
+- Dry-run mode shows what would be deleted without actually deleting
+- Prevents accidentally importing songs already in the library
+
+**Feature 2: Post-integration LibChecker auto-run**
+- After integration completes successfully (not in dry-run), automatically regenerates AudioMirror and runs LibChecker on the updated library
+- Catches broken integration runs immediately (zero issues expected if integration was clean)
+- Reports "CLEAN" or "ISSUES FOUND" for user visibility
+- Both features unblock the first real integration run by providing automated safety gates: duplicate prevention and post-integration validation
+
+---
+
 ## 2026-04-27 - LibChecker stability: eliminated duplicate detection and false positive bugs
 
 Two causally-linked LibChecker bugs fixed in one session, both blocking clean TIER 1 integration runs:
