@@ -18,15 +18,15 @@ namespace AudioManager
         // The path to the new music folder (e.g. C:\Users\David\Downloads\NewMusic\)
         public static readonly string NewMusicPath = Path.Combine(UserBasePath, "Downloads", "NewMusic");
 
+        // Absolute path to the repo root (discovered by walking up from exe directory)
+        public static readonly string RepoRoot = FindRepoRoot();
+
         // Relative path from executable back to project folder
         public const string ProjectPath = "..\\..\\..\\";
 
-        // Absolute path to the mirror repo (assumed to sit next to this repo in GitHubRepos\).
-        // Uses AppDomain.CurrentDomain.BaseDirectory (the exe's location) so the path is
-        // independent of the current working directory - launching from scripts\ vs bin\Release
-        // used to resolve to C:\AudioMirror because relative paths used cwd, not the exe dir.
+        // Absolute path to the mirror repo (assumed to sit next to this repo in GitHubRepos\)
         public static readonly string MirrorRepoPath = Path.GetFullPath(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "AudioMirror")) + Path.DirectorySeparatorChar;
+            Path.Combine(RepoRoot, "..", "AudioMirror")) + Path.DirectorySeparatorChar;
 
         // Mirror folder name
         public const string MirrorFolderName = "AUDIO_MIRROR";
@@ -34,17 +34,14 @@ namespace AudioManager
         // Absolute path to mirror folder
         public static readonly string MirrorFolderPath = Path.Combine(MirrorRepoPath, MirrorFolderName);
 
-        // Path to the reports folder in the repo root (e.g. C:\Users\David\GitHubRepos\AudioManager\reports\)
-        public static readonly string ReportsPath = Path.GetFullPath(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "reports"));
+        // Path to the reports folder in the repo root
+        public static readonly string ReportsPath = Path.Combine(RepoRoot, "reports");
 
         // Path to the LibChecker exceptions config file
-        public static readonly string LibCheckerExceptionsPath = Path.GetFullPath(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "config", "libchecker-exceptions.xml"));
+        public static readonly string LibCheckerExceptionsPath = Path.Combine(RepoRoot, "config", "libchecker-exceptions.xml");
 
         // Path to the integration logs folder (gitignored, written by MusicIntegrator)
-        public static readonly string LogsPath = Path.GetFullPath(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "logs"));
+        public static readonly string LogsPath = Path.Combine(RepoRoot, "logs");
 
         /// <summary>
         /// Library folder names
@@ -107,6 +104,37 @@ namespace AudioManager
             }
 
             return userProfile;
+        }
+
+        /// <summary>
+        /// Finds the repo root by walking up from the exe directory until a sentinel file is found.
+        /// Sentinels: CLAUDE.md, README.md, or .git directory.
+        /// Falls back to exe directory if no sentinel is found.
+        /// Replaces hardcoded ".." chains with dynamic discovery.
+        /// </summary>
+        /// <returns>The repo root directory path.</returns>
+        private static string FindRepoRoot()
+        {
+            string current = AppDomain.CurrentDomain.BaseDirectory;
+            string[] sentinels = { "CLAUDE.md", "README.md", ".git" };
+
+            while (!string.IsNullOrEmpty(current))
+            {
+                foreach (var sentinel in sentinels)
+                {
+                    string path = Path.Combine(current, sentinel);
+                    if (File.Exists(path) || Directory.Exists(path))
+                    {
+                        return current;
+                    }
+                }
+
+                DirectoryInfo parent = Directory.GetParent(current);
+                if (parent == null) break;
+                current = parent.FullName;
+            }
+
+            return AppDomain.CurrentDomain.BaseDirectory;
         }
     }
 }
