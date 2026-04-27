@@ -4,6 +4,29 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-27 - TIER 0/TIER 3 features completed: TagFixer, LibChecker exceptions, markdown reports, README updates
+
+Completed suite of safety and quality features spanning TIER 0 and TIER 3:
+
+**TIER 0 - TagFixer module (pre-integration tag cleanup)**
+- Created **TagFixer** command that runs before integration to clean raw NewMusic files
+- Removes parenthetical phrases from Title/Album tags (e.g., `"Song (feat. Artist)"` -> `"Song"`)
+- Renames files per convention: `{artists};{artists} - {title}.mp3`
+- Moves featured artists to TPE1 tag (semicolon-separated)
+- Sets TCMP=1 on all tracks
+- Sets genre for Musivation/Motivation tracks
+- Supports dry-run mode showing changes without modifying files
+- Unblocks the first real integration run: user runs `tagfix` -> `integrate` -> `analyze` in sequence with zero manual tag work
+
+**TIER 3 - Polish & documentation**
+- Added `libchecker-exceptions.example.xml` template showing exception format and matching conditions
+- Scripts folder structure verified: one-off Python scripts in `scripts/once-off/`; production launchers in `scripts/` root
+- Dry-run coverage complete: TagFixer `--dry-run` shows tag changes, Integrator `--dry-run` shows routing decisions
+- Markdown reports: ReportWriter and MusicIntegrator now output `.md` files with headers, bold, bullets, inline code
+- Updated README: added folder picker mention to Integration Pipeline section and LibChecker Validations section listing all 11 checks
+
+---
+
 ## 2026-04-27 - Pre-integration duplicate check and post-integration validation (TIER 0)
 
 Implemented two safety features blocking TIER 0 to enable the first real integration run:
