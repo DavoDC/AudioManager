@@ -177,6 +177,10 @@ namespace AudioManager
             // Print non-MP3 file info
             var nonMP3info = ProcessNonMP3(nonMP3Files);
             Console.WriteLine($" - Non-MP3 files found: {nonMP3info.Item1}");
+            if (nonMP3info.Item3 != null)
+            {
+                Console.WriteLine($"  - Extension list: {nonMP3info.Item3}");
+            }
             if (nonMP3info.Item2 != null)
             {
                 Console.Write(nonMP3info.Item2);
@@ -193,11 +197,11 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Generate an info string from a list of non-MP3 filenames
+        /// Generate info strings from a list of non-MP3 filenames
         /// </summary>
         /// <param name="nonMP3Files"></param>
-        /// <returns>Tuple of (count info, detailed unexpected files info)</returns>
-        private Tuple<string, string> ProcessNonMP3(List<string> nonMP3Files)
+        /// <returns>Tuple of (count info, detailed unexpected files info, extension list)</returns>
+        private Tuple<string, string, string> ProcessNonMP3(List<string> nonMP3Files)
         {
             // Extract list of extensions
             var extList = nonMP3Files.Select(fileName => Path.GetExtension(fileName)).ToList();
@@ -208,6 +212,9 @@ namespace AudioManager
 
             // Combine and format info
             string nonMP3infoStr = $"{extList.Count} ({(allExpected ? "all expected" : "UNEXPECTED!")})";
+
+            // Format extension list
+            string extListInfo = string.Join(", ", extList.Distinct().OrderBy(e => e));
 
             // If extensions were unexpected, build details string
             string detailedInfo = null;
@@ -233,7 +240,7 @@ namespace AudioManager
             }
 
             // Return info
-            return Tuple.Create<string, string>(nonMP3infoStr, detailedInfo);
+            return Tuple.Create<string, string, string>(nonMP3infoStr, detailedInfo, extListInfo);
         }
 
 
