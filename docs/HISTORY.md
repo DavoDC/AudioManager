@@ -4,7 +4,30 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
-## 2026-04-27 - Fixed LibChecker duplicate detection to consider all featured artists
+## 2026-04-27 - LibChecker stability: eliminated duplicate detection and false positive bugs
+
+Two causally-linked LibChecker bugs fixed in one session, both blocking clean TIER 1 integration runs:
+
+**Fix 1: Duplicate detection now considers all featured artists**
+- Changed grouping from `{ Title, PrimaryArtist }` to `{ Title, Artists }`
+- Previously: "Twista;CeeLo - Hope" and "Twista;Faith Evans - Hope" wrongly flagged as duplicates
+- Now: Only flagged if title AND all artists match exactly
+- Verified with full library analysis (5489 tracks) - no false positives
+
+**Fix 2: Eliminated 'feat.' and 'ft.' false positives in titles/filenames**
+- Changed unwanted-string detection from simple `Contains` to regex for abbreviations
+- Previously flagged mid-word matches: "Identity Theft" (ft.), "NEVER LEFT" (ft.), "NO TEARS LEFT" (ft.)
+- Now requires whitespace/punctuation before abbreviation: `(?:^|[\s\-\(\)\[\]\/,])`
+- Legitimate featured artists like "(feat. Artist)" or " ft. Artist" still correctly flagged
+- Verified: full library analysis, 0 false positives for "feat."/"ft."
+
+Both fixes are in the same file (LibChecker.cs) and address the same outcome: enabling reliable TIER 1 integration runs. Committed separately but documented together as a subsystem stabilization.
+
+---
+
+## Previous entry (2026-04-27) - Fixed LibChecker duplicate detection to consider all featured artists
+
+(Merged into the combined entry above.)
 
 LibChecker's duplicate detection was grouping tracks by `{ Title, PrimaryArtist }` only, incorrectly flagging different songs with the same title but different featured artists as duplicates. Example: "Twista;CeeLo - Hope" and "Twista;Faith Evans - Hope" were wrongly grouped together despite having different collaborators.
 
