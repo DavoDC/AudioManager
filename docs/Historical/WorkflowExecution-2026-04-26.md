@@ -22,20 +22,151 @@ Execution log for Music Discovery to Device Workflow.
 
 ---
 
-## STAGE 2: ACQUIRING
+## STAGE 2: ACQUIRING - Spotify Playlist Script Execution
 
-**Via Spotify:**
-- [x] Created playlist with all new songs
-- [x] Removed all songs from liked songs
+**Status: ✓ COMPLETE**  
+**Execution Date:** 2026-04-26  
+**Evidence Location:** `C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager\`
 
-**Via script:**
-- [x] Ran `open_playlist_in_manager` script (`C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager`)
-  - Script extracts track artists and names from Spotify playlist
-  - Sends to music service app for downloading
-  - Music service app downloads tracks using artist/name data
-- [x] Verified songs placed in `C:\Users\David\Downloads\NewMusic\`
+---
 
-**Result:** Tracks downloaded and ready for review.
+### STAGE 2 FORENSIC BREAKDOWN
+
+#### SUBSTEP 1: Spotify Playlist Preparation
+**When:** ~2026-04-25 to ~2026-04-26 (estimated)  
+**Actions:**
+- [x] Created Spotify playlist with new songs
+- [x] Added all discovered music to playlist (from Stage 1)
+- [x] Removed all songs from liked songs (cleanup)
+
+**Playlist Details:**
+- Playlist ID: `5KdoBnznZE4q1p7ODE2871`
+- Platform: Spotify
+
+---
+
+#### SUBSTEP 2: Script Execution - Open Playlist in Manager
+
+**When:** 2026-04-26 11:25:37 +0800 (script start)  
+**Duration:** ~7 minutes (11:25:37 to 11:32:50)  
+**Process:** Script extracted tracks from Spotify playlist and sent to music service app
+
+**Timeline from Logs:**
+
+| Time | Action | Details |
+|------|--------|---------|
+| 11:25:37 | Script start | open_playlist.log created |
+| 11:25:37 | Cache load | Loaded cached JSON: 5KdoBnznZE4q1p7ODE2871.json |
+| 11:25-11:31 | Spotify API call | GET /v1/playlists/5KdoBnznZE4q1p7ODE2871?additional_types=track |
+| 11:31 | API response | HTTP 200 (success) |
+| 11:32:50 | Script complete | All tracks sent to manager; browser opened |
+
+**Tracks Processed:**
+- Cached tracks: 28 (from JSON file)
+- Tracks opened in music service app: 28
+
+**Tracks List (from open_playlist.log):**
+```
+1. Surf Mesa & Joshua Golden & FLETCHER - Another Life (feat. FLETCHER & Josh Golden)
+2. Akira The Don & Rupert Spira - INTO THE INFINITE
+3. Akira The Don & Rupert Spira - THE SHINING OF BEING
+4. Sig Roy - pull up
+5. Sig Roy - Together
+6. Lupe Fiasco & Guy Sebastian - Battle Scars (with Guy Sebastian)
+7. Lupe Fiasco - Samurai
+8. Lupe Fiasco - Paris, Tokyo
+9. Dylan Owen - The Glory Years
+10. Dylan Owen - Sail Up The Sun
+11. Dylan Owen & Watsky & Sol & Harrison Sands - Evergreen Nights
+12. Victoria Justice - RAW
+13. Cafuné - Tek It
+14. Joshua Golden - 143
+15. Lupe Fiasco - Dots & Lines
+16. Shaggy & Rik Rok - It Wasn't Me
+17. mike. - play my hand
+18. Akira The Don & Brian Tracy - UNSTOPPABLE
+19. Shaggy - Keep'n It Real
+20. The Marías - No One Noticed
+21. Dizzy Wright & Nowdaze - Loophole (feat. Nowdaze)
+22. Sig Roy - Don't Let Me Down
+23. Temper City - Self Aware
+24. mike. - real things
+25. Fame Or Juliet - No Tears
+26. Lupe Fiasco - Till I Get There
+27. Dylan Owen - The Window Seat
+28. Ravyn Lenae - Love Me Not
+```
+
+**Log Files Generated:**
+- `open_playlist.log` (1.3 KB) - Script execution log
+- `API response.log` (68 KB) - Full Spotify API response
+- `5KdoBnznZE4q1p7ODE2871.json` (1.6 KB) - Cached playlist data (28 tracks)
+- `FEEDBACK.txt` (336 B) - Developer feedback (URL format suggestions)
+
+**Script Details:**
+```
+Script: open_playlist_in_manager.py
+Location: C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist_in_manager\
+Purpose: Extract artists and track names from Spotify playlist, send to music service app
+Method: Spotify API call (Bearer token auth) → send to localhost:6595
+Status: ✓ Successful (HTTP 200)
+```
+
+---
+
+#### DISCREPANCY: 28 Tracks vs 126 Tracks
+
+**Issue:** Workflow doc claims 126 tracks acquired, but logs show 28 tracks
+
+**Investigation:**
+- Stage 2 script execution: 28 tracks (verified in logs)
+- Reported in workflow doc: 126 tracks
+- Where did the additional 98 tracks come from?
+
+**Possible Explanations:**
+1. Multiple script runs (only logs from 2026-04-26 11:25 found)
+2. Playlist size increased between Stage 1 and Stage 2
+3. Different playlist or download source for remaining tracks
+4. Manual addition of tracks outside script
+
+**Current Status:** ⚠️ INVESTIGATION NEEDED - 28 tracks verified by logs, 126 tracks claimed in workflow but source unconfirmed
+
+---
+
+#### SUBSTEP 3: Download via Music Service App
+
+**When:** 2026-04-26 ~11:33 onwards (estimated)  
+**Location:** `C:\Users\David\Downloads\NewMusic\`  
+**Status:** ✓ Tracks downloaded (verified by workflow status)
+
+**Evidence:**
+- [x] Workflow doc confirms "Verified songs placed in `C:\Users\David\Downloads\NewMusic\`"
+- [x] Later stages reference 126 tracks in NewMusic folder
+- [x] Commit dd7c2900 (2026-04-26 21:07) confirms track count as 126
+
+**Notes:**
+- Music service app downloaded tracks using artist/name pairs from script
+- Download completed before Stage 3A (dry run at ~18:40 same day)
+- No logs accessible from music service app (separate tool)
+
+---
+
+### STAGE 2 SUMMARY
+
+| Aspect | Details |
+|--------|---------|
+| **Status** | ✓ COMPLETE |
+| **Date** | 2026-04-26 |
+| **Script Execution Time** | 11:25:37 to 11:32:50 +0800 (7 minutes) |
+| **Tracks via Script** | 28 (verified by logs) |
+| **Total Tracks in NewMusic** | 126 (verified by later commit dd7c2900) |
+| **Log Files** | 4 files in SpotifyPlaylistGen/scripts/open_playlist_in_manager/ |
+| **API Status** | ✓ HTTP 200 (Spotify API success) |
+| **Downloads** | ✓ Completed to `C:\Users\David\Downloads\NewMusic\` |
+
+**Result:** ✓ Tracks downloaded and ready for review (Stage 3B)
+
+⚠️ **Note:** Track count discrepancy (28 in logs, 126 in final count) requires investigation for complete forensic record. Likely explanation: multiple downloads or combined sources, but source not fully documented.
 
 ---
 
@@ -80,45 +211,7 @@ These stricter rules revealed 80 pre-existing library issues hidden under previo
 
 ---
 
-#### SUBSTEP A.2: ROOT CAUSE ANALYSIS & CODEBASE IMPROVEMENTS
-
-**When:** 2026-04-26 18:40 - 2026-04-27 ~13:00 (approximate, ~18-27 hours)  
-**Tools Used:** Haiku + /dev-session (per daily log 2026-04-27 entry)  
-**Evidence:** Session history + Daily logs + Git commits
-
-**Work Performed:**
-
-1. **Analyzed LibChecker bugs discovered in dry run**
-   - Duplicate detection was only checking primary artist, not all featured artists
-   - Regex for "feat." and "ft." was causing false positives in song titles (e.g., "LEFT" contains "ft.")
-   - Sources OST validation rule needed context-aware logic (featured vs official OST)
-
-2. **Fixed LibChecker Codebase (3 commits merged):**
-   - **aac1ccb5**: LibChecker - eliminate 'feat.' and 'ft.' false positives mid-word
-     - Changed regex to use word boundaries: `\bft\.|\bfeat\.`
-     - Impact: Prevents matching "ft." inside words like "LEFT"
-   
-   - **b63b83dc**: LibChecker duplicate detection now considers all featured artists
-     - Changed grouping from `{ Title, PrimaryArtist }` to `{ Title, Artists }`
-     - Verified with full library analysis (5489 tracks)
-   
-   - **9fb6d5ef**: LibChecker Sources OST validation - smart folder-to-album matching
-     - Smart rule: If album contains source folder name (e.g., "Peacemaker"), require "OST" suffix
-     - Otherwise, allow original album name (for featured tracks)
-     - Eliminated 7 false positive flags
-
-3. **Added AudioManager Integration Safety Features (2 TIER 0 features):**
-   - **acea2fca**: Pre-integration duplicate check + Post-integration LibChecker validation
-     - Pre-integration: Searches AudioMirror for existing tracks, prompts user
-     - Post-integration: Auto-runs LibChecker to validate integration success
-   
-   - **439257e8**: Disabled AudioMirrorCommitter auto-commit for safety
-     - Auto-commit disabled (too risky during development)
-     - Manual instructions shown instead: "commit in GHD with message: Apr 27 Update"
-
----
-
-#### SUBSTEP A.3: MANUAL CORRECTIONS APPLIED
+#### SUBSTEP A.2: MANUAL CORRECTIONS APPLIED
 
 **When:** 2026-04-26 18:40 - 2026-04-27 21:30 (approximately 27 hours cumulative)  
 **Method:** Applied corrections via AudioManager integration interface  
@@ -178,7 +271,48 @@ Moved tracks from Singles/ to correct album subfolders (or vice versa):
 
 **All 46 verified in commit 4077088 as file path renames** ✓
 
-**Correction Set 3: Sources Folder Validation (8 items)**
+---
+
+#### SUBSTEP A.3: ROOT CAUSE ANALYSIS & CODEBASE IMPROVEMENTS
+
+**When:** 2026-04-26 18:40 - 2026-04-27 ~13:00 (parallel/concurrent with A.2)  
+**Tools Used:** Haiku + /dev-session (per daily log 2026-04-27 entry)  
+**Evidence:** Session history + Daily logs + Git commits  
+**Trigger:** Issues found in A.1, analyzed while A.2 corrections were being applied
+
+**Work Performed:**
+
+1. **Analyzed LibChecker bugs discovered in dry run (A.1)**
+   - Duplicate detection was only checking primary artist, not all featured artists
+   - Regex for "feat." and "ft." was causing false positives in song titles (e.g., "LEFT" contains "ft.")
+   - Sources OST validation rule needed context-aware logic (featured vs official OST)
+
+2. **Fixed LibChecker Codebase (3 commits merged):**
+   - **aac1ccb5**: LibChecker - eliminate 'feat.' and 'ft.' false positives mid-word
+     - Changed regex to use word boundaries: `\bft\.|\bfeat\.`
+     - Impact: Prevents matching "ft." inside words like "LEFT"
+   
+   - **b63b83dc**: LibChecker duplicate detection now considers all featured artists
+     - Changed grouping from `{ Title, PrimaryArtist }` to `{ Title, Artists }`
+     - Verified with full library analysis (5489 tracks)
+   
+   - **9fb6d5ef**: LibChecker Sources OST validation - smart folder-to-album matching
+     - Smart rule: If album contains source folder name (e.g., "Peacemaker"), require "OST" suffix
+     - Otherwise, allow original album name (for featured tracks)
+     - Eliminated 7 false positive flags
+
+3. **Added AudioManager Integration Safety Features (2 TIER 0 features):**
+   - **acea2fca**: Pre-integration duplicate check + Post-integration LibChecker validation
+     - Pre-integration: Searches AudioMirror for existing tracks, prompts user
+     - Post-integration: Auto-runs LibChecker to validate integration success
+   
+   - **439257e8**: Disabled AudioMirrorCommitter auto-commit for safety
+     - Auto-commit disabled (too risky during development)
+     - Manual instructions shown instead: "commit in GHD with message: Apr 27 Update"
+
+---
+
+#### SUBSTEP A.4: SOURCES FOLDER VALIDATION (8 items)
 
 Applied smart folder-to-album validation rule:
 - **Rule:** If album contains source folder name (e.g., "Peacemaker"), require "OST" at end
@@ -200,7 +334,7 @@ Applied smart folder-to-album validation rule:
 
 ---
 
-#### SUBSTEP A.4: LIBCHECKER VERIFICATION SCAN
+#### SUBSTEP A.5: LIBCHECKER VERIFICATION SCAN
 
 **When:** 2026-04-26 ~18:40 (initial) + ~2026-04-27 (post-fixes)  
 **Tool:** LibChecker validation module
@@ -231,7 +365,7 @@ Sources OST validation: 7 featured tracks (expected per smart rule)
 
 ---
 
-#### SUBSTEP A.5: COMMIT TO AUDIOMIRROR
+#### SUBSTEP A.6: COMMIT TO AUDIOMIRROR
 
 **When:** 2026-04-27 21:36:10 +0800  
 **Commit SHA:** 4077088d36992d527b7eea9f3b7ba3a5d  
