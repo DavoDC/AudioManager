@@ -81,6 +81,13 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 
 Library is now in clean state (Stage 3A complete). Library cleanup has been committed (4077088).
 
+**Required before adding new music - COMPLETED:**
+- [x] Use Sonnet + /dev-session to identify and fix issues causing LibChecker errors
+- [x] Run analysis via AudioManager to verify LibChecker runs clean
+- [x] Verify integration script runs without errors
+- [x] Verify program commits results to AudioMirror repo
+- [x] Confirm library reports 0 LibChecker issues (clean state)
+
 **Next: Execute real integration of 126 new tracks:**
 
 - [ ] Launch AudioManager: `scripts/launch.bat`
@@ -91,11 +98,6 @@ Library is now in clean state (Stage 3A complete). Library cleanup has been comm
   - Folder routing (Artists, Musivation, Motivation, Compilations, Misc, or Sources)
 - [ ] Verify files integrated into library correctly
 - [ ] Confirm results committed to AudioMirror repo (program must auto-commit)
-
-**Note:** Previous blocking conditions met:
-- [x] Library organized and clean (Stage 3A complete)
-- [x] LibChecker reports 0 library issues (3 false positives documented)
-- [x] Integration script ready
 
 ---
 
