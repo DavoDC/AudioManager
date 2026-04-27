@@ -45,7 +45,7 @@ namespace AudioManager
 
             // Manual commit instructions
             string commitMsg = DateTime.Now.ToString("MMM d") + " Update";
-            Console.WriteLine($" - AudioMirror's changes are ready to be committed! ✅");
+            Console.WriteLine($" - AudioMirror's changes are ready to be committed!");
             Console.WriteLine($" - Commit in GHD with the message: {commitMsg}");
 
             // DISABLED AUTO-COMMIT (see IDEAS.md TIER 3 to re-enable when stable)
