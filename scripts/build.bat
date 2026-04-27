@@ -5,7 +5,7 @@
 
 setlocal enabledelayedexpansion
 
-set MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+set MSBUILD="C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
 set SLN=%~dp0..\project\AudioManager.sln
 set EXE=%~dp0..\project\AudioManager\bin\Release\AudioManager.exe
 
