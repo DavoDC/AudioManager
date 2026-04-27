@@ -227,7 +227,7 @@ namespace AudioManager
                     .OrderBy(group => group.Key);
 
                 var sb = new StringBuilder();
-                sb.Append("\n  - Unexpected file types:\n");
+                sb.Append("  - Unexpected file types:\n");
                 foreach (var extGroup in unexpectedByExt)
                 {
                     sb.Append($"    {extGroup.Key} ({extGroup.Count()} files):\n");
