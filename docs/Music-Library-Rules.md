@@ -24,21 +24,34 @@ Audio/
 ---
 
 ## Global Tag Rules (all tracks)
+
+**AUTOMATED VIA TAGFIXER** - These rules are automatically applied by the TagFixer module before integration. Do not manually fix these; the program handles them.
+
 - All files must be `.mp3` format
   - To convert many: Format Factory -> To MP3 -> Add files -> Output to source folder
   - Search Explorer for `NOT *.mp3 AND NOT kind:folder` to find non-MP3s
 - `TCMP` = 1 (Compilation) on every track - stops iTunes grouping each track as a separate album
+  - **AutoFixed:** TagFixer sets TCMP=1 on all files from NewMusic
 - Required tags: Title (TIT2), Artists (TPE1), Album (TALB), Year (TDRC), exactly 1 album cover (APIC)
-- If no album exists, use the track Title as the Album value
+  - If no album exists, use the track Title as the Album value
 - Featured artists semicolon-separated in TPE1, primary artist first: `MainArtist;FeatArtist`
-- Remove from ALL tag fields: `feat.`, `ft.`, `Edit`, `Version`, `Original`, `Soundtrack`, `Explicit`
+  - **AutoFixed:** TagFixer ensures all featured artists are in TPE1, primary first
+- Remove from ALL tag fields: `feat.`, `ft.`, `Edit`, `Version`, `Original`, `Soundtrack`, `Explicit`, `(Album Version)`, `(Radio Edit)`
   - "feat." info belongs in TPE1 only, not in TIT2 or TALB
+  - **AutoFixed:** TagFixer strips these from Title and Album tags
 - Genre must match folder for Musivation/Motivation tracks
+  - **AutoFixed:** TagFixer sets genre for Musivation/Motivation tracks if not already set
 
 ## Filename Convention
+
+**AUTOMATED VIA TAGFIXER** - Filenames are automatically set by the TagFixer module before integration based on the TPE1 (artist) and TIT2 (title) tags.
+
 - Format: `{all TPE1 artists semicolon-separated} - {title}.mp3`
 - Example: `Chiddy Bang;Icona Pop - Mind Your Manners.mp3`
-- Use MP3Tag's tag-to-filename feature: `%artist% - %title%`
+  - Not: `Chiddy Bang - Mind Your Manners (feat. Icona Pop).mp3`
+  - The "(feat. Icona Pop)" is removed from title tag and Icona Pop is added to TPE1 artist tag
+- **AutoFixed:** TagFixer renames files to match this convention, pulling from cleaned TPE1 and TIT2 tags
+- Manual alternative: Use MP3Tag's tag-to-filename feature: `%artist% - %title%` (but TagFixer should handle this automatically)
 
 ---
 
