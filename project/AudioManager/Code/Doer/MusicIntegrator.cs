@@ -574,7 +574,7 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Saves a formatted integration log to logs/integration-YYYYMMDD.txt.
+        /// Saves a formatted integration log to logs/integration-YYYYMMDD.md in markdown format.
         /// </summary>
         private void SaveLog(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
         {
@@ -585,30 +585,36 @@ namespace AudioManager
 
                 string date = DateTime.Now.ToString("yyyy-MM-dd");
                 string suffix = dryRun ? "-dryrun" : "";
-                string logPath = Path.Combine(logsDir, $"integration-{date}{suffix}.txt");
+                string logPath = Path.Combine(logsDir, $"integration-{date}{suffix}.md");
 
                 var sb = new StringBuilder();
-                sb.AppendLine(dryRun ? "Integration Dry Run" : "Integration Log");
-                sb.AppendLine($"Date: {DateTime.Now:yyyy-MM-dd HH:mm}");
-                sb.AppendLine($"Total in NewMusic: {totalFiles}  |  Moved: {movedCount}  |  Skipped: {skippedCount}");
-                sb.AppendLine(new string('-', 60));
+                sb.AppendLine($"# {(dryRun ? "Integration Dry Run" : "Integration Log")}");
+                sb.AppendLine();
+                sb.AppendLine($"**Date:** {DateTime.Now:yyyy-MM-dd HH:mm}");
+                sb.AppendLine();
+                sb.AppendLine($"**Results:** {movedCount} moved, {skippedCount} skipped (total {totalFiles} files)");
+                sb.AppendLine();
+                sb.AppendLine("---");
                 sb.AppendLine();
 
                 foreach (var e in entries)
                 {
-                    sb.AppendLine($"[{e.Status?.ToUpper()}] {e.Filename}");
-                    sb.AppendLine($"  Artist: {e.Artists}  |  Title: {e.Title}  |  Album: {e.Album}");
+                    sb.AppendLine($"## [{e.Status?.ToUpper()}] {e.Filename}");
+                    sb.AppendLine();
+                    sb.AppendLine($"- **Artist:** {e.Artists}");
+                    sb.AppendLine($"- **Title:** {e.Title}");
+                    sb.AppendLine($"- **Album:** {e.Album}");
                     if (!string.IsNullOrEmpty(e.Destination))
-                        sb.AppendLine($"  Dest: {e.Destination}");
+                        sb.AppendLine($"- **Destination:** `{e.Destination}`");
                     if (e.TagChanges?.Count > 0)
-                        sb.AppendLine($"  Tags: {string.Join(", ", e.TagChanges)}");
+                        sb.AppendLine($"- **Tags:** {string.Join(", ", e.TagChanges)}");
                     if (!string.IsNullOrEmpty(e.Detail))
-                        sb.AppendLine($"  Detail: {e.Detail}");
+                        sb.AppendLine($"- **Note:** {e.Detail}");
                     sb.AppendLine();
                 }
 
                 File.WriteAllText(logPath, sb.ToString());
-                Console.WriteLine($"\nLog saved: logs\\integration-{date}{suffix}.txt");
+                Console.WriteLine($"\nLog saved: logs\\integration-{date}{suffix}.md");
             }
             catch (Exception ex)
             {
