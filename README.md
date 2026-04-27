@@ -17,8 +17,25 @@ A C# console application for managing, analysing, and auditing a personal music 
 Run via the launcher or CLI:
 
 - **Launcher:** `scripts/launch.bat` - builds via MSBuild, then presents a menu (analysis, analysis with force regen, integration dry run, integration real)
-- **CLI:** `AudioManager.exe analysis [--force-regen]` or `AudioManager.exe integrate [--dry-run]`
-- **Dry run:** always run integration with `--dry-run` first - prints every planned action without moving any files
+- **CLI:** `AudioManager.exe analysis [--force-regen]` | `AudioManager.exe tagfix [--dry-run]` | `AudioManager.exe integrate [--dry-run]`
+- **Dry run:** always run with `--dry-run` first - prints every planned action without modifying files
+
+## LibChecker Validations
+
+Ensures the library conforms to organization rules:
+- **Filename matching** - all artists from tag appear in filename
+- **Tag completeness** - Title, Artists, Album, Year present on all tracks
+- **Unwanted strings** - flags feat., ft., edit, bonus, original, soundtrack, version, explicit in tags
+- **Album cover** - exactly 1 cover per track (APIC frame)
+- **Compilation flag** - TCMP=1 on all tracks
+- **Duplicates** - no artist+title duplicates (detects re-integrated songs)
+- **Artist folder structure** - Artists with 3+ songs have dedicated folders
+- **Album subfolders** - 2+ songs from same album → album subfolder; 1 song → Singles/
+- **Misc folder review** - warns if Misc folder has grown too large
+- **Genre consistency** - Musivation/Motivation folders have matching genre tag
+- **Sources validation** - soundtrack tracks properly named and organized
+
+Run: `AudioManager.exe analysis` (includes LibChecker in the pipeline)
 
 ## Statistics Provided
 
@@ -30,16 +47,34 @@ For listening statistics, visit [LastFM](https://www.last.fm/user/david369music)
 
 ## Integration Pipeline
 
-**One command handles complete integration:** drop new MP3s in `Downloads/NewMusic`, run integrator mode, program handles everything:
+**Automated end-to-end workflow:** drop new MP3s in `Downloads/NewMusic`, run the three-step sequence below:
 
-1. **Tag pre-processing** - adds `TCMP=1` to all tracks, sets `Genre=Musivation` for Akira The Don, removes unwanted tag strings per rules
-2. **Filename cleanup** - renames files per naming convention (artist - title.mp3)
-3. **Scan-ahead** - identifies artists hitting the 3-song threshold (routes to `Artists/` instead of `Misc`)
-4. **Auto-routing** - routes to destination folders: Artists, Musivation, Motivation, Compilations, Misc, or Sources (with optional user prompt for Films/Shows/Anime)
-5. **Library integration** - moves files into the library
-6. **Analysis and commit** - runs full library validation (LibChecker), generates analysis report, auto-commits results to AudioMirror repo
+### Step 1: Tag Fixing (TagFixer)
+Cleans raw MP3s before integration:
+- Removes parenthetical phrases from titles (e.g., `(feat. Artist)`, `(Remix)`)
+- Extracts featured artists and adds to the artist tag
+- Renames files per convention: `{artists} - {title}.mp3`
+- Sets `TCMP=1` on all tracks
+- Sets genre for special artists (Akira The Don → Musivation)
 
-No manual Mp3tag editing needed. Dry-run mode (`--dry-run`) shows all planned changes without moving files.
+Run: `AudioManager.exe tagfix [--dry-run]`
+
+### Step 2: Integration (MusicIntegrator)
+Routes cleaned files into the library:
+- Scan-ahead identifies artists hitting the 3-song threshold (routes to `Artists/` instead of `Misc`)
+- Auto-routes to destination folders based on metadata: Artists (with album subfolders), Musivation, Motivation, Misc
+- Optional folder picker for ambiguous routes (Films/Shows/Anime media, Compilations)
+
+Run: `AudioManager.exe integrate [--dry-run]`
+
+### Step 3: Analysis & Validation (Analyser + LibChecker)
+- Regenerates AudioMirror XML with newly integrated tracks
+- Runs full library validation (LibChecker), generates timestamped report
+- Auto-commits AudioMirror if library is clean
+
+Auto-runs after step 2, or manually: `AudioManager.exe analysis`
+
+**No manual MP3tag editing needed.** Always use `--dry-run` first to preview changes.
 
 ## Project Structure
 
