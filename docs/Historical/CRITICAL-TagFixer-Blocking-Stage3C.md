@@ -32,9 +32,16 @@ The AudioManager integration system has a **critical missing component: TagFixer
 
 **Responsibilities (per Music-Library-Rules.md):**
 
-1. **Remove unwanted words from tags:**
-   - Remove from Title and Album: "(feat. ...)", "(ft. ...)", "(Album Version)", "(Explicit)", "(Edit)", "(Radio Edit)", "(Original)", "(Remix)", "(Version)"
-   - But preserve legitimate "feat." info in TPE1 (artist tag)
+1. **Remove entire parenthetical phrases from Title and Album tags (NOT just substrings):**
+   - ❌ **WRONG:** Remove substring "feat." → would leave "(Akon)" behind
+   - ✅ **RIGHT:** Remove entire phrase "(feat. Akon)" → clean title
+   - Phrases to remove: "(feat. ...)", "(ft. ...)", "(Album Version)", "(Explicit)", "(Edit)", "(Radio Edit)", "(Original)", "(Remix)", "(Version)"
+   - Examples:
+     - `"Cool Song (feat. Akon)"` → `"Cool Song"` (entire parenthetical removed)
+     - `"Track (Album Version)"` → `"Track"` (entire phrase removed, not just "Version")
+     - `"Song (Explicit)"` → `"Song"`
+   - **CRITICAL SAFETY:** Never strip just "feat." or "ft." as substrings - they're part of other words (e.g., "LEFT" contains "ft.", "Safety" contains "feat.")
+   - Move featured artist info to TPE1 (artist tag) instead: extract artist name and add as semicolon-separated
 
 2. **Fix featured artists in TPE1 (artist tag):**
    - Current filename: `Chiddy Bang - Mind Your Manners (feat. Icona Pop).mp3`
