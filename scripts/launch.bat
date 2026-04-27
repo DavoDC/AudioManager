@@ -8,7 +8,7 @@ set EXE=%~dp0..\project\AudioManager\bin\Release\AudioManager.exe
 set START_TIME=%TIME%
 
 echo ============================================================
-echo  AudioManager Launcher
+echo AudioManager Launcher
 echo ============================================================
 echo.
 

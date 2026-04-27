@@ -158,7 +158,7 @@ namespace AudioManager
 
 
         /// <summary>
-        /// Print info about completed mirroring process 
+        /// Print info about completed mirroring process
         /// </summary>
         /// <param name="statisticsInfo"></param>
         private void PrintStats(Tuple<int, int, List<string>> statisticsInfo)
@@ -179,7 +179,7 @@ namespace AudioManager
             Console.WriteLine($" - Non-MP3 files found: {nonMP3info.Item1}");
             if (nonMP3info.Item2 != null)
             {
-                Console.WriteLine($"  - Extension list: {nonMP3info.Item2}");
+                Console.Write(nonMP3info.Item2);
             }
 
             // Print sanitisation count
@@ -196,7 +196,7 @@ namespace AudioManager
         /// Generate an info string from a list of non-MP3 filenames
         /// </summary>
         /// <param name="nonMP3Files"></param>
-        /// <returns></returns>
+        /// <returns>Tuple of (count info, detailed unexpected files info)</returns>
         private Tuple<string, string> ProcessNonMP3(List<string> nonMP3Files)
         {
             // Extract list of extensions
@@ -204,16 +204,36 @@ namespace AudioManager
 
             // Check against expected types
             var expectedExt = new HashSet<string> { ".ini", ".txt", ".lnk", ".ffs_db" };
-            bool expected = extList.TrueForAll(ext => expectedExt.Contains(ext));
+            bool allExpected = extList.TrueForAll(ext => expectedExt.Contains(ext));
 
             // Combine and format info
-            string nonMP3infoStr = $"{extList.Count} ({(expected ? "all expected" : "UNEXPECTED!")})";
+            string nonMP3infoStr = $"{extList.Count} ({(allExpected ? "all expected" : "UNEXPECTED!")})";
 
-            // If extensions were unexpected, include in info
-            string extListInfo = expected ? null : string.Join(",", extList);
+            // If extensions were unexpected, build details string
+            string detailedInfo = null;
+            if (!allExpected)
+            {
+                // Group files by extension, filter to only unexpected ones
+                var unexpectedByExt = nonMP3Files
+                    .GroupBy(file => Path.GetExtension(file))
+                    .Where(group => !expectedExt.Contains(group.Key))
+                    .OrderBy(group => group.Key);
 
-            // Return info and extensions list
-            return Tuple.Create(nonMP3infoStr, extListInfo);
+                var sb = new StringBuilder();
+                sb.Append("\n  - Unexpected file types:\n");
+                foreach (var extGroup in unexpectedByExt)
+                {
+                    sb.Append($"    {extGroup.Key} ({extGroup.Count()} files):\n");
+                    foreach (var file in extGroup.OrderBy(f => f))
+                    {
+                        sb.Append($"      - {file}\n");
+                    }
+                }
+                detailedInfo = sb.ToString();
+            }
+
+            // Return info
+            return Tuple.Create<string, string>(nonMP3infoStr, detailedInfo);
         }
 
 
