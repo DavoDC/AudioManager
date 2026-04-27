@@ -27,6 +27,14 @@ Completed suite of safety and quality features spanning TIER 0 and TIER 3:
 
 ---
 
+## 2026-04-27 - Constants.cs refactor and LibChecker Sources validation (TIER 1/3)
+
+**Constants.cs refactor (TIER 3)** - Replaced all hardcoded `Path.GetFullPath(Path.Combine(BaseDirectory, "..", "..", ...))` chains with a single `FindRepoRoot()` helper that walks up the directory tree looking for sentinel files (CLAUDE.md, README.md, or .git). All paths now use: `Path.Combine(RepoRoot, "reports")` etc. Eliminates fragile depth-counting and self-heals if build output path changes. Commit: `3a3113e0`.
+
+**LibChecker Sources OST validation (TIER 1)** - Implemented smart folder-to-album matching in `CheckSourcesFolder()`. Official soundtracks in Sources/Shows and Sources/Films are only flagged if album contains the source folder name (e.g., Peacemaker folder requires album "Peacemaker OST") but allows featured tracks to keep original album names (e.g., a-ha's "Hunting High and Low"). Eliminates 7 false positive flags and correctly distinguishes soundtrack-specific album tags from featured-track albums.
+
+---
+
 ## 2026-04-27 - Pre-integration duplicate check and post-integration validation (TIER 0)
 
 Implemented two safety features blocking TIER 0 to enable the first real integration run:
