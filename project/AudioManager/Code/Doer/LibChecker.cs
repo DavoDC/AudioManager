@@ -397,7 +397,7 @@ namespace AudioManager
 
             // Get duplicate tracks using LINQ
             var duplicateTracks = audioTags
-                .GroupBy(t => new { t.Title, t.PrimaryArtist }) // Group the tracks by Title and Primary Artist
+                .GroupBy(t => new { t.Title, t.Artists }) // Group the tracks by Title and all Artists
                 .Where(g => g.Count() > 1) // Filter to counts above 1
                 .SelectMany(g => g); // Get instances
 
