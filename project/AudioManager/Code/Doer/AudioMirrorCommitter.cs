@@ -50,6 +50,30 @@ namespace AudioManager
             string commitMsg = DateTime.Now.ToString("MMM d") + " Update";
             Console.WriteLine($"   git commit -m \"{commitMsg}\"");
             Console.WriteLine($"   git push");
+
+            // DISABLED AUTO-COMMIT (see IDEAS.md TIER 3 to re-enable when stable)
+            // OLD CODE BELOW - commented out for future re-enable:
+            //
+            // // Stage AUDIO_MIRROR folder
+            // // RunGit(repoPath, "add AUDIO_MIRROR/");
+            // //
+            // // // Build commit message: "Apr 9 Update"
+            // // // string commitMsg = DateTime.Now.ToString("MMM d") + " Update";
+            // // // string commitResult = RunGit(repoPath, $"commit -m \"{commitMsg}\"");
+            // // // if (string.IsNullOrWhiteSpace(commitResult) || commitResult.Contains("nothing to commit"))
+            // // // {
+            // // //     Console.WriteLine(" - Nothing staged to commit.");
+            // // //     return;
+            // // // }
+            // // //
+            // // // Console.WriteLine($" - Committed: {commitMsg}");
+            // // //
+            // // // // Push
+            // // // string pushResult = RunGit(repoPath, "push");
+            // // // bool pushOk = !pushResult.Contains("error") && !pushResult.Contains("fatal");
+            // // // Console.WriteLine(pushOk
+            // // //     ? " - Pushed to remote."
+            // // //     : $" - Push may have failed. Check output: {pushResult}");
         }
 
         /// <summary>
