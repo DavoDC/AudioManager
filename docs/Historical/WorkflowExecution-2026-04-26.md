@@ -47,20 +47,38 @@ Tag, organize, and route files with quality control review.
 
 ### STAGE 3 SUBSTEP A: Dry Run & Validation
 
-**Status: ✓ COMPLETE & COMMITTED**
+**Status: ✓ COMPLETE**
 
 ⚠️ **NON-TYPICAL** - One-time library fix triggered by LibChecker enhancement (commit `3a5a8ce2`, April 9).
 
 - [x] Launched AudioManager dry run (`scripts/launch.bat` → `3. Integration (Dry Run)`)
-- [x] Applied all corrections (27 tag fixes, 46 folder moves, 8 source validations)
-- [x] Ran LibChecker verification to confirm fixes
-- [x] **All changes integrated to AudioMirror** (commit `4077088d36992d527b7eea9f3b7ba3a5d`, 2026-04-27)
+- [x] Ran LibChecker verification scan
+- [x] Identified 80 issues: 27 tag/filename cleanup, 46 folder moves, 8 source validations
 
-**Result:** 80 corrections applied and verified. Library now clean and ready for new music integration.
+**Result:** 80 corrections identified and documented in LibraryCorrectionLog-2026-04-26.md.
 
 **Expected future workflow:** Dry run should complete with 0-2 minor issues, not a batch fix. This is a one-time backlog from new validation rules.
 
-**See:** `LibraryCorrectionLog-2026-04-26.md` for detailed corrections and verification results.
+---
+
+### REQUIRED BEFORE ADDING NEW MUSIC - COMPLETED
+
+**Status: ✓ COMPLETE**
+
+Blocking conditions that had to be met before proceeding with new music integration:
+
+- [x] Apply all 80 corrections identified in dry run (27 tag fixes, 46 folder moves, 8 source validations)
+- [x] Use Sonnet + /dev-session to identify and fix issues causing LibChecker errors
+- [x] Run analysis via AudioManager to verify LibChecker runs clean
+- [x] Verify integration script runs without errors
+- [x] Verify program commits results to AudioMirror repo
+- [x] Confirm library reports 0 LibChecker issues (clean state)
+
+**All changes integrated to AudioMirror:** Commit `4077088d36992d527b7eea9f3b7ba3a5d` (2026-04-27)
+
+**Result:** Library now clean and ready for new music integration.
+
+---
 
 ### STAGE 3 SUBSTEP B: Review New Music - Listen & Verify
 
@@ -75,18 +93,13 @@ Listen to and verify all tracks in `C:\Users\David\Downloads\NewMusic\`:
 
 **Important:** Don't skip this step. Sometimes whole albums get added but may have tracks you don't want. Better to remove unwanted songs now than after integration.
 
+---
+
 ### STAGE 3 SUBSTEP C: Prepare for Integration - Real Integration Run
 
 **Status: ✓ READY - Library Clean**
 
-Library is now in clean state (Stage 3A complete). Library cleanup has been committed (4077088).
-
-**Required before adding new music - COMPLETED:**
-- [x] Use Sonnet + /dev-session to identify and fix issues causing LibChecker errors
-- [x] Run analysis via AudioManager to verify LibChecker runs clean
-- [x] Verify integration script runs without errors
-- [x] Verify program commits results to AudioMirror repo
-- [x] Confirm library reports 0 LibChecker issues (clean state)
+Library is now in clean state. All blocking conditions met.
 
 **Next: Execute real integration of 126 new tracks:**
 
