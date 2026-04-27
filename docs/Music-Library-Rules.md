@@ -36,9 +36,14 @@ Audio/
   - If no album exists, use the track Title as the Album value
 - Featured artists semicolon-separated in TPE1, primary artist first: `MainArtist;FeatArtist`
   - **AutoFixed:** TagFixer ensures all featured artists are in TPE1, primary first
-- Remove from ALL tag fields: `feat.`, `ft.`, `Edit`, `Version`, `Original`, `Soundtrack`, `Explicit`, `(Album Version)`, `(Radio Edit)`
-  - "feat." info belongs in TPE1 only, not in TIT2 or TALB
-  - **AutoFixed:** TagFixer strips these from Title and Album tags
+- **Remove entire parenthetical phrases from Title and Album tags** (NOT just substrings):
+  - ❌ Wrong: Remove substring "feat." → leaves `(Akon)`
+  - ✅ Right: Remove entire phrase `(feat. Akon)` → clean title
+  - Phrases to remove: `(feat. ...)`, `(ft. ...)`, `(Album Version)`, `(Explicit)`, `(Edit)`, `(Radio Edit)`, `(Original)`, `(Remix)`, `(Version)` 
+  - Example: `"Cool Song (feat. Akon)"` → `"Cool Song"` (entire `(feat. Akon)` removed)
+  - **CRITICAL:** Never strip just "feat." or "ft." - they may be part of other words (e.g., "LEFT" contains "ft.", "Safety" contains "feat.")
+  - Move featured artist info to TPE1 tag instead: extract artist name from parenthetical and add to artist field as semicolon-separated
+  - **AutoFixed:** TagFixer removes full phrases from Title and Album tags, moves featured artists to TPE1
 - Genre must match folder for Musivation/Motivation tracks
   - **AutoFixed:** TagFixer sets genre for Musivation/Motivation tracks if not already set
 
