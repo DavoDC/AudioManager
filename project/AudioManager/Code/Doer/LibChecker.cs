@@ -576,7 +576,9 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Check the Sources folder: Films must have OST in Album, Shows should have OST in Album.
+        /// Check the Sources folder: smart folder-to-album matching for Films/Shows.
+        /// Rule: If album contains the source folder name, require "OST" at end. Otherwise, allow original album name.
+        /// Example: Sources/Shows/Peacemaker/ + album "Peacemaker OST" ✓, but album "We Are the Ones" ✗ (featured track with original album).
         /// </summary>
         private void CheckSourcesFolder()
         {
@@ -587,28 +589,27 @@ namespace AudioManager
 
             foreach (TrackTag tag in sourcesTags)
             {
-                // Get subfolder (Films, Shows, Anime) from path position 2
+                // Get subfolder (Films, Shows, Anime) from path position 2, and source folder from position 3
                 string[] pathParts = GetPathParts(tag);
-                if (pathParts.Length < 3) continue;
+                if (pathParts.Length < 4) continue;
                 string subFolder = pathParts[2];
+                string sourceFolder = pathParts[3];  // e.g., "Peacemaker", "The Super Mario Bros. Movie"
 
-                if (subFolder.Equals("Films", StringComparison.OrdinalIgnoreCase))
+                if (subFolder.Equals("Films", StringComparison.OrdinalIgnoreCase) ||
+                    subFolder.Equals("Shows", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Films rule: Album must contain "OST"
-                    if (!tag.Album.Contains("OST"))
+                    // Smart rule: If album contains source folder name, require "OST"
+                    // Otherwise, allow original album name (featured track use case)
+                    if (tag.Album.Contains(sourceFolder))
                     {
-                        Console.WriteLine($"  - '{tag.RelPath}' is in Films but Album has no 'OST': '{tag.Album}'");
-                        totalHits++;
+                        // Album mentions the source, so require OST at end
+                        if (!tag.Album.Contains("OST"))
+                        {
+                            Console.WriteLine($"  - '{tag.RelPath}' album mentions '{sourceFolder}' but has no 'OST': '{tag.Album}'");
+                            totalHits++;
+                        }
                     }
-                }
-                else if (subFolder.Equals("Shows", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Shows rule: Album should be "{Show Name} OST"
-                    if (!tag.Album.Contains("OST"))
-                    {
-                        Console.WriteLine($"  - '{tag.RelPath}' is in Shows but Album has no 'OST': '{tag.Album}'");
-                        totalHits++;
-                    }
+                    // If album doesn't contain source folder name, it's a featured track with original album - allowed
                 }
                 // Anime: no strict Album rule enforced by LibChecker
             }
