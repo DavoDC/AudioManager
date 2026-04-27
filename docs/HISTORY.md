@@ -4,6 +4,12 @@ Completed features, settled design decisions, and resolved tasks.
 
 ---
 
+## 2026-04-27 - Fixed build script for VS2026 (MSBuild path update)
+
+Visual Studio 2022 Community updated to the 2026 version (VS 18). The old MSBuild path `C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe` was no longer valid. Updated `scripts/build.bat` to use the new path: `C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe`. Build now succeeds with MSBuild 18.5.4. Verified by running build script end-to-end - AudioManager.exe compiles cleanly.
+
+---
+
 ## 2026-04-26 - Pre-integration gate: verify AudioMirror fresh and LibChecker clean
 
 Implemented mandatory safety gate before integration runs. When user invokes `integrate` mode:
