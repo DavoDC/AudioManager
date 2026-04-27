@@ -20,7 +20,7 @@ namespace AudioManager
         public static void Save(string reportContent, bool libCheckerClean)
         {
             DateTime now = DateTime.Now;
-            string filename = now.ToString("yyyy-MM-dd") + " - AudioReport.txt";
+            string filename = now.ToString("yyyy-MM-dd") + " - AudioReport.md";
 
             // Determine save location based on LibChecker status
             string folder;
@@ -51,7 +51,7 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Builds the report file header with date, git commit hash and link.
+        /// Builds the report file header with date, git commit hash and link in markdown format.
         /// </summary>
         private static string BuildHeader(DateTime now)
         {
@@ -59,13 +59,12 @@ namespace AudioManager
             string commitHash = GetGitCommitHash();
             string commitLink = string.IsNullOrEmpty(commitHash)
                 ? "unavailable"
-                : $"https://github.com/DavoDC/AudioManager/commit/{commitHash}";
+                : $"[{commitHash}](https://github.com/DavoDC/AudioManager/commit/{commitHash})";
 
-            return "###### Audio Report ######\n" +
-                   $"Generated: {date}\n" +
-                   $"Commit:    {commitHash ?? "unknown"}\n" +
-                   $"Link:      {commitLink}\n" +
-                   "##########################\n\n";
+            return "# Audio Report\n\n" +
+                   $"**Generated:** {date}  \n" +
+                   $"**Commit:** {commitLink}\n\n" +
+                   "---\n\n";
         }
 
         /// <summary>
