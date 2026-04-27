@@ -44,12 +44,9 @@ namespace AudioManager
             }
 
             // Manual commit instructions
-            Console.WriteLine(" - AudioMirror has pending changes. When ready to commit:");
-            Console.WriteLine($"   cd {repoPath}");
-            Console.WriteLine($"   git add AUDIO_MIRROR/");
             string commitMsg = DateTime.Now.ToString("MMM d") + " Update";
-            Console.WriteLine($"   git commit -m \"{commitMsg}\"");
-            Console.WriteLine($"   git push");
+            Console.WriteLine($" - AudioMirror's changes are ready to be committed! ✅");
+            Console.WriteLine($" - Commit in GHD with the message: {commitMsg}");
 
             // DISABLED AUTO-COMMIT (see IDEAS.md TIER 3 to re-enable when stable)
             // OLD CODE BELOW - commented out for future re-enable:
