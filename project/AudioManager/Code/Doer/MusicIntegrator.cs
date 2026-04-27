@@ -86,6 +86,68 @@ namespace AudioManager
                         // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
                         string primaryArtist = track.PrimaryArtist;
 
+                        // Check for duplicate: same artist + title already in library
+                        string duplicatePath = FindDuplicateInMirror(track);
+                        if (!string.IsNullOrEmpty(duplicatePath))
+                        {
+                            // Clear and show the duplicate
+                            Console.Clear();
+                            Console.WriteLine("============================================================");
+                            Console.WriteLine("  DUPLICATE FOUND");
+                            Console.WriteLine("============================================================\n");
+                            Console.WriteLine($"  Already in library: {duplicatePath}");
+                            Console.WriteLine($"  New file:          {Path.GetFileName(sourcePath)}");
+                            Console.WriteLine($"\n  Track: {track.Artists} - {track.Title}");
+                            Console.WriteLine($"  Album: {track.Album}");
+                            Console.WriteLine("\n------------------------------------------------------------");
+                            Console.WriteLine("  [D] Delete from NewMusic   [K] Keep and continue   [Q] Quit");
+                            Console.WriteLine("------------------------------------------------------------");
+
+                            // Wait for input
+                            while (true)
+                            {
+                                var key = Console.ReadKey(intercept: true).Key;
+                                if (key == ConsoleKey.D)
+                                {
+                                    // Delete from NewMusic
+                                    if (dryRun)
+                                    {
+                                        Console.WriteLine($"  [DRY RUN] Would delete: {Path.GetFileName(sourcePath)}");
+                                        entry.Status = "would-delete";
+                                        entry.Detail = "duplicate (would delete)";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
+                                    else
+                                    {
+                                        File.Delete(sourcePath);
+                                        Console.WriteLine($"  Deleted: {Path.GetFileName(sourcePath)}");
+                                        entry.Status = "deleted";
+                                        entry.Detail = "duplicate (deleted)";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
+                                    Console.Clear();
+                                    break;
+                                }
+                                else if (key == ConsoleKey.K)
+                                {
+                                    // Keep and continue
+                                    Console.WriteLine($"  Keeping {Path.GetFileName(sourcePath)} - proceeding with integration");
+                                    break;
+                                }
+                                else if (key == ConsoleKey.Q)
+                                {
+                                    Console.WriteLine("\n - Quit. Remaining files left for next run.");
+                                    entry.Status = "quit"; logEntries.Add(entry);
+                                    return; // exits foreach, hits finally
+                                }
+                                // ignore other keys
+                            }
+
+                            // If we deleted, skip to next file
+                            if (entry.Status == "deleted" || entry.Status == "would-delete")
+                                continue;
+                        }
+
                         // Pre-process: apply tag fixes before routing/moving
                         entry.TagChanges = PreProcessTags(sourcePath, track);
 
@@ -534,6 +596,63 @@ namespace AudioManager
             {
                 Console.WriteLine($"  [WARN] Could not save integration log: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Searches AudioMirror XML files for an existing track with the same primary artist and title.
+        /// Returns the path to the matching track's XML file if found, null otherwise.
+        /// Search is case-insensitive and whitespace-trimmed.
+        /// </summary>
+        private string FindDuplicateInMirror(Track track)
+        {
+            try
+            {
+                string primaryArtist = track.PrimaryArtist;
+                if (string.IsNullOrEmpty(primaryArtist) || primaryArtist.Equals("Missing"))
+                    return null;
+
+                string title = track.Title;
+                if (string.IsNullOrEmpty(title) || title.Equals("Missing"))
+                    return null;
+
+                // Search all XML files in the mirror for a match
+                if (!Directory.Exists(Constants.MirrorFolderPath))
+                    return null;
+
+                foreach (var xmlFile in Directory.GetFiles(Constants.MirrorFolderPath, "*.xml", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var xmlDoc = new System.Xml.XmlDocument();
+                        xmlDoc.Load(xmlFile);
+
+                        var artistsEl = xmlDoc.SelectSingleNode("//Artists");
+                        var titleEl = xmlDoc.SelectSingleNode("//Title");
+
+                        if (artistsEl == null || titleEl == null)
+                            continue;
+
+                        // Extract primary artist from the XML (may have multiple artists)
+                        string mirrorArtistsRaw = artistsEl.InnerText;
+                        if (string.IsNullOrEmpty(mirrorArtistsRaw))
+                            continue;
+
+                        string mirrorPrimary = Track.ProcessProperty(mirrorArtistsRaw)[0].Trim();
+                        string mirrorTitle = titleEl.InnerText.Trim();
+
+                        // Case-insensitive, whitespace-trimmed comparison
+                        if (mirrorPrimary.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase) &&
+                            mirrorTitle.Equals(title, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return xmlFile;
+                        }
+                    }
+                    catch { /* skip malformed XML */ }
+                }
+            }
+            catch { /* skip errors */ }
+
+            return null;
         }
 
         /// <summary>
