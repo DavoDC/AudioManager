@@ -2,7 +2,9 @@
 
 Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
 
-> **WARNING (2026-04-26):** Visual Studio 2022 Community updated to the 2026 version. Build script and building may be broken - verify build process before running integration.
+> **WARNING (2026-04-26):** Visual Studio 2022 Community updated to the 2026 version. Build script and building may be broken - verify build process before running integration . HIGHEST PRIOIRTY 
+ive upgraded to vs2026,  building works in the IDE  , its located at , fix the launch script
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
 
 ## Organization: Tiered Priorities
 
