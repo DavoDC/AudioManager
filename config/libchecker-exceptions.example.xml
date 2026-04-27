@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LibChecker exceptions config - EXAMPLE TEMPLATE
+
+  Copy this file to libchecker-exceptions.xml and customize with your own exceptions.
+  This file demonstrates the format without including personal library exceptions.
+
+  Each <Exception> has an 'unwanted' attribute (or '*' to match all unwanted strings).
+  Child elements specify the matching condition (all must match = AND logic):
+    <Album equals="..." />
+    <Album contains="..." />
+    <Artists contains="..." />
+    <Title contains="..." />
+    <Title equals="..." />
+  Comparisons are case-sensitive to match tag values exactly.
+
+  UNWANTED STRINGS that LibChecker flags:
+    - feat., ft. (featured artists)
+    - edit, bonus (edit versions)
+    - original (original versions)
+    - soundtrack (soundtrack compilations)
+    - version (remix/version labels)
+    - explicit (explicit content)
+
+  WHEN TO ADD EXCEPTIONS:
+    1. Album legitimately contains unwanted word (e.g., "Original Rappers" album has "original")
+    2. Artist name contains unwanted word (e.g., "featuring" contains "feat.")
+    3. Track title is legitimate (e.g., "Soundtrack 2 My Life" by Kid Cudi)
+    4. Entire artist/track is exempt (use unwanted="*")
+-->
+<Exceptions>
+
+  <!-- EXAMPLE 1: Album name legitimately contains 'original' -->
+  <Exception unwanted="original">
+    <Album equals="Original Rappers" />
+  </Exception>
+
+  <!-- EXAMPLE 2: Artist name contains unwanted substring -->
+  <Exception unwanted="original">
+    <Artists contains="KRS-One" />
+  </Exception>
+
+  <!-- EXAMPLE 3: Specific track with 'edit' in title (intentional) -->
+  <Exception unwanted="edit">
+    <Title contains="Medicine Man" />
+  </Exception>
+
+  <!-- EXAMPLE 4: Album series with edition variations (Anniversary Edition, etc.) -->
+  <Exception unwanted="edit">
+    <Album contains="Edition" />
+  </Exception>
+
+  <!-- EXAMPLE 5: Track title happens to contain 'soundtrack' -->
+  <Exception unwanted="soundtrack">
+    <Title equals="Soundtrack 2 My Life" />
+  </Exception>
+
+  <!-- EXAMPLE 6: Exempt entire artist/track combination -->
+  <Exception unwanted="*">
+    <Artists contains="TV Cast Recording" />
+  </Exception>
+
+  <!-- EXAMPLE 7: Exempt specific bonus content (multiple conditions = AND) -->
+  <Exception unwanted="*">
+    <Artists contains="Motivational Speaker" />
+    <Title contains="BONUS INTERVIEW" />
+  </Exception>
+
+</Exceptions>
