@@ -43,25 +43,70 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 **Input:** MP3 files in `C:\Users\David\Downloads\NewMusic\`, library ready for integration  
 **Output:** Tagged, named, and organized files integrated into library; AudioMirror updated
 
-### Integration Launcher
-Run the AudioManager launcher: `scripts/launch.bat`
-- Choose `3. Integration (Dry Run)` - preview all planned changes
-- Choose `4. Integration (Real)` - execute the integration
+### Critical Design: Tag Fixing is Separate from Integration
 
-### Currently Implemented (TIER 0/1)
-- ✓ **Filename renaming:** Per naming convention
-- ✓ **Routing:** Artist songs to existing folders or with 3+ threshold scan-ahead. Falls to Misc for unknown artists. Sources/Films/Shows/Anime: interactive folder-picker when needed.
-- ✓ **File movement:** Integrates into library folder structure
-- ✓ **Post-integration validation:** Run LibChecker to verify clean state
-- ✓ **Commit:** Results to AudioMirror repo
+**Two distinct steps (in order):**
+
+1. **TagFixer** (automatic tag cleanup) - reads raw NewMusic files, cleans all tags, renames files
+   - Removes unwanted words from Title/Album tags: "(feat. ...)", "(Album Version)", "(Explicit)", etc.
+   - Ensures featured artists are in TPE1 tag as semicolon-separated list
+   - Renames files to `{artist} - {title}.mp3` format
+   - Sets TCMP=1 on all files
+   - Sets genre for Musivation/Motivation tracks
+   - **Result:** clean, ready-to-route files
+
+2. **Integration** (routing only) - moves cleaned files to correct library folders
+   - Assumes all tags are already clean
+   - Purely routes: artist songs to Artists/, genre songs to Musivation/Motivation/Compilations/, everything else to Misc
+   - Should NEVER touch tags - only move files
+
+**Why this separation?** Integration is simple, safe, and testable when it only does routing. All tag work is isolated in TagFixer. If integration fails, it's a routing issue, not a tag issue.
+
+### Full Pipeline Sequence
+
+1. **Tag cleanup:** Run TagFixer (not yet implemented - see IDEAS.md TIER 0)
+2. **Dry run:** Run Integration (Dry Run) to preview all routing decisions
+3. **Real integration:** Run Integration (Real) to move files
+4. **Validation:** Post-integration LibChecker validation runs automatically
+5. **Commit:** Manually commit AudioMirror changes in GitHub Desktop
+
+### Integration Launcher (when TagFixer exists)
+
+```bash
+# Step 1: Clean tags on all NewMusic files (not yet implemented)
+AudioManager tagfix
+
+# Step 2: Preview all routing decisions
+C:\Users\David\GitHubRepos\AudioManager\scripts\launch.bat
+# Choose: 3. Integration (Dry Run)
+
+# Step 3: Execute real integration
+# Choose: 4. Integration (Real)
+
+# Step 4: Commit results (manual for now)
+# GitHub Desktop: Stage AUDIO_MIRROR changes, commit "Apr 27 Update"
+```
+
+### Currently Implemented
+
+**TagFixer (tag cleanup step):**
+- ❌ **NOT YET IMPLEMENTED** - Currently you must clean tags manually in MP3Tag before integration (TIER 0 BLOCKER)
+
+**Integration (routing step):**
+- ✓ **Routing logic:** Artist songs to existing folders or with 3+ threshold scan-ahead. Falls to Misc for unknown artists. Sources/Films/Shows/Anime: interactive folder-picker when needed.
+- ✓ **File movement:** Moves cleaned files into library folder structure
+- ✓ **Pre-integration gate:** Checks library is clean and AudioMirror is fresh before allowing integration
 - ✓ **Pre-integration duplicate check:** Warns if song already in library (TIER 0)
+- ✓ **Post-integration validation:** Auto-runs LibChecker to verify clean state
+- ✓ **Dry-run mode:** Preview all routing decisions without moving files
+- ✓ **Commit instructions:** Shows manual commit instructions (auto-commit disabled for safety)
 
-### Planned/In Progress (TIER 1)
-- 🔄 **Tag cleanup auto-removal:** Strip unwanted text (feat., version, explicit) from tags before integration (TIER 1, currently manual via Mp3tag)
-- 🔄 **Pre-integration LibChecker gate:** Check library is clean before allowing integration (TIER 0 blocking)
+### Planned/In Progress (TIER 0-1)
+- 🔄 **TagFixer module:** Strip unwanted text from tags, rename files, ensure clean tags before integration (TIER 0 BLOCKER - blocking real integration)
+- 🔄 **Full pipeline:** Once TagFixer implemented, full automated pipeline: user runs TagFixer → Integration → validation, all tags/routing automated
 
-### Full Pipeline Vision
-Once all features complete: one command (`AudioManager --integrate`), zero manual Mp3tag or separate analysis steps.
+### Full Pipeline Vision (when TagFixer implemented)
+Once TagFixer is complete: one command sequence (`AudioManager tagfix` → `AudioManager integrate`), zero manual MP3Tag work. Integration will assume clean tags and purely route.
 
 ## Stage 4: Sync to Device
 
