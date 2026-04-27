@@ -15,11 +15,19 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 
 **Goal: ensure integration cannot corrupt the library.** These items must be in place before any real integration run.
 
-- [ ] **CRITICAL: Commit AudioMirror changes, then run real integration with NewMusic batch** - AudioMirror is currently out of sync (98 file changes pending). (1) Commit the mirror changes to git in AudioMirror repo. (2) Run `AudioManager integrate --dry-run` to preview all routing decisions. (3) If routing looks correct, run `AudioManager integrate` (no dry-run) to move files into the library. (4) Post-integration validation will auto-run LibChecker - verify it reports CLEAN. This is the first empirical proof that the integration pipeline works on real data. **NewMusic folder contains ~40 songs across multiple artists/albums - good sample for validation.** Once complete, move this item to HISTORY and proceed to TIER 1.
+- [ ] **CRITICAL: First real integration run (after TagFixer prep)** - Prerequisites met: TagFixer module now available. Sequence:
+  1. **Tag cleaning:** Run `AudioManager tagfix --dry-run` to preview tag cleanup (removes parentheticals, fixes featured artists, renames files)
+  2. **Tag fix (real):** Run `AudioManager tagfix` to clean NewMusic files
+  3. **Integration dry-run:** Run `AudioManager integrate --dry-run` to preview routing decisions into library
+  4. **Integration (real):** Run `AudioManager integrate` to move files (note: THIS SESSION only do dry-run and analysis, no real integrate)
+  5. **Post-validation:** LibChecker auto-runs after integration; verify it reports CLEAN
+  6. **Commit:** If CLEAN, commit AudioMirror changes to git
+  - **NewMusic folder contains ~40 songs across multiple artists/albums - good sample for validation.**
+  - **This is the first empirical proof that the integration pipeline works on real data. Once complete, move this item to HISTORY and proceed to TIER 1.**
 
 - [ ] **CRITICAL DESIGN: Separate tag fixing from integration (integration = routing only)** - The program must have clear separation of concerns: (1) **Tag Fixing** happens AUTOMATICALLY as a pre-integration step (during analysis or before integration starts), and (2) **Integration** purely routes files to destination folders based on clean tags. Integration should NEVER touch tags - it assumes all input files are already cleaned. This keeps integration simple, safe, and testable. Currently PreProcessTags() in MusicIntegrator.cs only sets TCMP=1 and Musivation genre, but it should NOT be expanded with full tag cleanup. Instead, create a separate **TagFixer** module that: (1) reads raw MP3s from Downloads/NewMusic, (2) applies all tag cleanup rules (remove unwanted words, ensure featured artists in TPE1, rename files per naming convention), (3) reports what was fixed, (4) saves back to disk. Then Integration reads the cleaned files and routes them. **Why:** integration failures should never be "tags were wrong", only "routing decision was wrong". Separate tool = separate responsibility = easier to test and debug.
 
-- [ ] **HIGHEST PRIORITY (TIER 0 BLOCKER): Auto tag fixer before integration** - Create a new **TagFixer** module/command that runs BEFORE integration. Purpose: clean raw NewMusic files so integration only has to route, never fix. Cleanup rules (per Music-Library-Rules.md): 
+- [x] **HIGHEST PRIORITY (TIER 0 BLOCKER): Auto tag fixer before integration** (COMPLETED 2026-04-27) - Created **TagFixer** module/command that runs BEFORE integration. Cleans raw NewMusic files so integration only routes, never fixes. Cleanup rules (per Music-Library-Rules.md): 
   - (1) **Remove entire parenthetical phrases from Title/Album tags** (NOT just substrings):
     - `"Cool Song (feat. Akon)"` → `"Cool Song"` (remove the ENTIRE `(feat. Akon)` phrase)
     - `"Track (Album Version)"` → `"Track"` (remove entire phrase, not just the word "Version")
