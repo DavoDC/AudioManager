@@ -11,8 +11,9 @@ namespace AudioManager
     internal static class AudioMirrorCommitter
     {
         /// <summary>
-        /// Attempts to commit and push the AudioMirror repo.
-        /// Skips silently if LibChecker had issues or nothing changed.
+        /// Manual commit instructions for AudioMirror after analysis.
+        /// Auto-commit is disabled until program is more stable and trusted.
+        /// See IDEAS.md TIER 3 for future re-enable.
         /// </summary>
         /// <param name="libCheckerClean">Whether LibChecker reported zero issues.</param>
         public static void TryCommit(bool libCheckerClean)
@@ -20,17 +21,17 @@ namespace AudioManager
             string repoPath = Path.GetFullPath(Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory, Constants.MirrorRepoPath));
 
-            Console.WriteLine("\nAudioMirror auto-commit...");
+            Console.WriteLine("\nAudioMirror commit instructions:");
 
             if (!libCheckerClean)
             {
-                Console.WriteLine(" - Skipped: LibChecker reported issues. Fix them first.");
+                Console.WriteLine(" - DO NOT COMMIT: LibChecker reported issues. Fix them first, then re-run analysis.");
                 return;
             }
 
             if (!Directory.Exists(repoPath))
             {
-                Console.WriteLine($" - Skipped: AudioMirror repo not found at: {repoPath}");
+                Console.WriteLine($" - ERROR: AudioMirror repo not found at: {repoPath}");
                 return;
             }
 
@@ -38,30 +39,17 @@ namespace AudioManager
             string statusOutput = RunGit(repoPath, "status --porcelain");
             if (string.IsNullOrWhiteSpace(statusOutput))
             {
-                Console.WriteLine(" - Nothing to commit (AudioMirror unchanged).");
+                Console.WriteLine(" - AudioMirror is clean (no changes to commit).");
                 return;
             }
 
-            // Stage AUDIO_MIRROR folder
-            RunGit(repoPath, "add AUDIO_MIRROR/");
-
-            // Build commit message: "Apr 9 Update"
+            // Manual commit instructions
+            Console.WriteLine(" - AudioMirror has pending changes. When ready to commit:");
+            Console.WriteLine($"   cd {repoPath}");
+            Console.WriteLine($"   git add AUDIO_MIRROR/");
             string commitMsg = DateTime.Now.ToString("MMM d") + " Update";
-            string commitResult = RunGit(repoPath, $"commit -m \"{commitMsg}\"");
-            if (string.IsNullOrWhiteSpace(commitResult) || commitResult.Contains("nothing to commit"))
-            {
-                Console.WriteLine(" - Nothing staged to commit.");
-                return;
-            }
-
-            Console.WriteLine($" - Committed: {commitMsg}");
-
-            // Push
-            string pushResult = RunGit(repoPath, "push");
-            bool pushOk = !pushResult.Contains("error") && !pushResult.Contains("fatal");
-            Console.WriteLine(pushOk
-                ? " - Pushed to remote."
-                : $" - Push may have failed. Check output: {pushResult}");
+            Console.WriteLine($"   git commit -m \"{commitMsg}\"");
+            Console.WriteLine($"   git push");
         }
 
         /// <summary>
