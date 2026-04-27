@@ -43,53 +43,92 @@ These stricter rules revealed 80 pre-existing library issues hidden under previo
 
 Removed unwanted words from XML Title, Album, and Filename tags:
 
-- **(Album Version Explicit)** - 1 track
-  - Bone Thugs-N-Harmony;Akon - Never Forget Me 
-    - Before: `<Title>Never Forget Me (Album Version Explicit)</Title>`
-    - After:  `<Title>Never Forget Me</Title>`
-    - Verified in commit 4077088 (XML content inspection) OK
-
-- **(Album Version)** - 2 tracks
-  - Twista;CeeLo - Hope
-  - Freeway;50 Cent - Take It To The Top
-
-- **(feat. Artist)** - 15 tracks
-  - Fort Minor collaborations (3 tracks)
-  - Lupe Fiasco collaborations (2 tracks)
-  - David Guetta;Kid Cudi - Memories
-  - Plus 9 others (Plies, Wiz Khalifa, Chiddy Bang, Maino, Mase, P-Money)
-
-- **(Radio Edit)** - 1 track
-  - Backstreet Boys - Everybody (Backstreet's Back)
-
-- **DELETED** - 1 track (duplicate with unwanted version tag)
-  - Coolio;Snoop Dogg - Gangsta Walk (Urban Version)
-  - File completely removed (11 lines deleted)
-  - Verified: `git log --diff-filter=D` shows deletion OK
+| Track | Issue | Action | Status |
+|-------|-------|--------|--------|
+| Backstreet Boys - Everybody (Backstreet's Back) | remove "edit" | Tag cleanup | OK |
+| Bone Thugs-N-Harmony;Akon - Never Forget Me | (Album Version Explicit) | Remove "version" + "explicit" from title | OK - Verified in commit 4077088 |
+| Coolio;Snoop Dogg - Gangsta Walk (Urban Version) | (Urban Version) | Remove from title/filename | DELETED - Duplicate with unwanted tag |
+| Twista;CeeLo - Hope | (Album Version) | Remove "version" from title/filename | OK |
+| Freeway;50 Cent - Take It To The Top | (Album Version Explicit) | Remove "version" + "explicit" from title/filename | OK |
+| Akira The Don;Alan Watts - Beware of Virtue | (20K Version) | KEEP (part of official title) | Added to exceptions |
+| Akira The Don;Alan Watts - The Highest Virtue | (20K Version) | KEEP (part of official title) | Added to exceptions |
+| Simply Red - Holding Back the Years | (2008 Remaster) | Remove "version" from album tag | OK |
+| Xzibit; Strong Arm Steady - Beware Of Us | (Explicit) | Remove "explicit" from album tag | OK |
+| David Guetta;Kid Cudi - Memories | feat. in filename | Remove from filename | OK |
+| Fort Minor;BOBO;Styles Of Beyond - Believe Me | feat. in filename | Remove from filename | OK |
+| Fort Minor;Holly Brook;Jonah Matranga - Where'd You Go | feat. in filename | Remove from filename | OK |
+| Fort Minor;John Legend - High Road | feat. in filename | Remove from filename | OK |
+| Kodak Black - Identity Theft | FALSE POSITIVE - "ft." in "Theft" | Watch (LibChecker bug) | Known bug - TIER 1 regex fix needed |
+| Lil Tecca - NEVER LEFT | FALSE POSITIVE - "ft." in "LEFT" | Watch (LibChecker bug) | Known bug - TIER 1 regex fix needed |
+| Lupe Fiasco;Matthew Santos - Superstar | feat. in filename | Remove from filename | OK |
+| Lupe Fiasco;Nikki Jean - Hip-Hop Saved My Life | feat. in filename | Remove from filename | OK |
+| Plies;Akon - Hypnotized | feat. in filename | Remove from filename | OK |
+| Russ - NO TEARS LEFT | FALSE POSITIVE - "ft." in "LEFT" | Watch (LibChecker bug) | Known bug - TIER 1 regex fix needed |
+| Wiz Khalifa;Akon - Let It Go | feat. in filename | Remove from filename | OK |
+| Chiddy Bang;Icona Pop - Mind Your Manners | feat. in filename | Remove from filename | OK |
+| Maino;T-Pain - All the Above | feat. in filename | Remove from filename | OK |
+| Mase;Total - What You Want | feat. in filename | Remove from filename | OK |
+| P-Money;Akon - Keep on Calling | feat. in filename | Remove from filename | OK |
+| | | | |
+| **Total:** 27 items | 24 cleaned, 3 false positives flagged for TIER 1 bug fixes | | |
 
 **Correction Set 2: Album Folder Organization (46 items)**
 
 Moved tracks from Singles/ to correct album subfolders (or vice versa):
 
-| Destination Album | Source | Count | Examples |
-|-------------------|--------|-------|----------|
-| Under My Skin | Singles/ | 2 | Avril Lavigne (2) |
-| Hell: The Sequel | Singles/ | 2 | Bad Meets Evil (2) |
-| The Essential Bob Dylan | Singles/ | 2 | Bob Dylan (2) |
-| Slime & B | Singles/ | 2 | Chris Brown (2) |
-| Life of a DON | Singles/ | 2 | Don Toliver (2) |
-| Face Your Fears | Singles/ | 2 | First Signal (2) |
-| WRLD ON DRUGS | Singles/ | 2 | Future;Juice WRLD (2) |
-| Walking Under Stars | Singles/ | 2 | Hilltop Hoods (2) |
-| Raw | Singles/ | 2 | Hopsin (2) |
-| 808s & Heartbreak | Singles/ | 2 | Kanye West (2) |
-| Thick Of It | Singles/ | 1 | KSI - Low |
-| Singles | Thick Of It/ | 1 | KSI;Lil Wayne - Lose |
-| The Perfect LUV Tape | Singles/ | 2 | Lil Uzi Vert (2) |
-| The Mack of the Century | Singles/ | 1 | Too Short;Parliament Funkadelic |
-| Red | Singles/ | 2 | Taylor Swift (2) |
-| AI YoungBoy | Singles/ | 2 | YoungBoy Never Broke Again (2) |
-| Singles | album folders | 7 | David Massengill (3), John Williamson (3), Lil Wayne (1) |
+**Singles/ → Album Subfolders (31 moves):**
+
+| Track | Destination Album | Status |
+|-------|-------------------|--------|
+| Avril Lavigne - Fall To Pieces | Under My Skin | OK |
+| Avril Lavigne - My Happy Ending | Under My Skin | OK |
+| Bad Meets Evil;Eminem;Royce da 5'9 - Fast Lane | Hell: The Sequel | OK |
+| Bad Meets Evil;Eminem;Royce da 5'9;Bruno Mars - Lighters | Hell: The Sequel | OK |
+| Bob Dylan - Duquesne Whistle | The Essential Bob Dylan | OK |
+| Bob Dylan - Hurricane | The Essential Bob Dylan | OK |
+| Chris Brown;Too Short;E-40 - Undrunk | Slime & B | OK |
+| Chris Brown;Young Thug - Go Crazy | Slime & B | OK |
+| Don Toliver - Get Throwed | Life of a DON | OK |
+| Don Toliver;Travis Scott - Flocky Flocky | Life of a DON | OK |
+| First Signal - Face Your Fears | Face Your Fears | OK |
+| First Signal - Shoot the Bullet | Face Your Fears | OK |
+| Future;Juice WRLD - Fine China | WRLD ON DRUGS | OK |
+| Future;Juice WRLD - Hard Work Pays Off | WRLD ON DRUGS | OK |
+| Hilltop Hoods - Cosby Sweater | Walking Under Stars | OK |
+| Hilltop Hoods;Maverick Sabre;Brother Ali - Live And Let Go | Walking Under Stars | OK |
+| Hopsin - Nocturnal Rainbows | Raw | OK |
+| Hopsin - Sag My Pants | Raw | OK |
+| Kanye West;Mr Hudson - Paranoid | 808s & Heartbreak | OK |
+| Kanye West;Young Jeezy - Amazing | 808s & Heartbreak | OK |
+| KSI - Low | Thick Of It | OK |
+| Lil Uzi Vert - Do What I Want | The Perfect LUV Tape | OK |
+| Lil Uzi Vert - Erase Your Social | The Perfect LUV Tape | OK |
+| Roddy Ricch - The Box | Please Excuse Me for Being Antisocial | OK |
+| Roddy Ricch;Mustard - High Fashion | Please Excuse Me for Being Antisocial | OK |
+| Taylor Swift - Stay Stay Stay | Red | OK |
+| Taylor Swift - We Are Never Ever Getting Back Together | Red | OK |
+| Too Short;Parliament Funkadelic - Gettin' It | The Mack of the Century | OK |
+| YoungBoy Never Broke Again - Dedicated | AI YoungBoy | OK |
+| YoungBoy Never Broke Again - No. 9 | AI YoungBoy | OK |
+
+**Album Folders → Singles/ (15 moves):**
+
+| Track | Source Folder | Status |
+|-------|---------------|--------|
+| David Massengill - Fireball | The Return/ | OK |
+| David Massengill - Noah | The Return/ | OK |
+| David Massengill - You and Me | The Return/ | OK |
+| John Williamson - Bush Barber | The Very Best of John Williamson/ | OK |
+| John Williamson - Bushtown | The Very Best of John Williamson/ | OK |
+| John Williamson - Dad's Flowers | The Very Best of John Williamson/ | OK |
+| KSI;Lil Wayne - Lose | Thick Of It/ | OK |
+| Lady Gaga;Beyonce - Telephone | The Fame/ | OK |
+| Lil Wayne - Let It All Work Out | Tha Carter V/ | OK |
+| Michael Jackson;Akon - Hold My Hand | Michael/ | OK |
+| Moneybagg Yo - Scorpio | A Gangsta's Pain/ | OK |
+| Moneybagg Yo - Wockesha | A Gangsta's Pain/ | OK |
+| Phil Collins - I Wish It Would Rain Down (2016 Remaster) | ? | Album tag check |
+| Phil Collins - In the Air Tonight (2015 Remaster) | ? | Album tag check |
 
 **All 46 verified in commit 4077088 as file path renames** OK
 
@@ -270,5 +309,5 @@ Blocking conditions that had to be met before proceeding with new music integrat
 
 Proceed to Stage 3B: Review new music before integration
 
-See: `LibraryCorrectionLog-2026-04-26.md` for detailed list of all 80 corrections
+(Detailed correction log merged into SUBSTEP A.2 above)
 

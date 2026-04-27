@@ -57,15 +57,34 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 
 ### DECISION GATE: Python Rewrite vs .NET 8 Migration
 
-**Evaluate** - before starting any work below, decide the implementation path:
+**Status:** Pending evaluation (David's strategic call)
 
-**Option A (current plan):** survey .NET 8 blockers, then migrate to SDK-style csproj.
+**The Fork:** Current plan (Option A) surveys .NET 8 migration blockers, then migrates to SDK-style csproj. Alternative (Option B): rewrite the console app in Python instead of migrating .NET.
 
-**Option B (alternative):** rewrite in Python instead.
-- No build step (lightweight), no VS2022 dev dependency, modern Python audio metadata ecosystem
-- **Decision criteria:** token cost comparison (Opus planning + Haiku execution for Python vs straightforward .NET migration)
-- **Gate:** confirm Python has required dependency (TagLib equivalent - likely `mutagen` or `tinytag` for metadata reading)
-- **Owner:** David (strategic call). **Status:** pending evaluation.
+## Why Python is Being Considered
+
+- **No build step** - Python script runs directly, no compilation dependency
+- **No VS2022 dev dependency** - lighter development environment
+- **Lightweight dependencies** - modern Python audio metadata libs (`mutagen`, `tinytag`) vs .NET/TagLib#
+- **ROI question** - which approach costs fewer tokens and yields better dev experience?
+
+**Why this matters:** David prefers lightweight languages and no-build tooling. C# and C++ aren't readable during Claude sessions. Python would be simpler to maintain and extend.
+
+## Decision Criteria
+
+1. **Token cost:** Opus planning + Haiku execution for Python rewrite vs straight .NET 8 migration
+2. **Dependency check:** confirm Python has audio metadata equivalent (expect `mutagen` to cover TagLib# use cases)
+3. **Scope match:** ensure Python can handle the integration/analysis workload (it can - it's not CPU-bound, just file I/O and XML generation)
+
+## Next Steps (for David)
+
+1. Decide whether to evaluate Python rewrite (2-3 hour planning + evaluation)
+2. If yes: `Opus` plans Python approach, `Haiku` implements it
+3. If no: proceed with TIER 2 .NET migration as written
+
+**DO NOT start TIER 2 until this decision is made.**
+
+---
 
 **If Python:** TIER 2 becomes Python rewrite + tests. **If .NET:** proceed with items below as written.
 
