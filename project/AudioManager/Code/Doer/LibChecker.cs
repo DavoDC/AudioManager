@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace AudioManager
@@ -250,8 +251,23 @@ namespace AudioManager
                 // If an exception to rules, skip
                 if (IsExceptionToRules(tag, unwanted)) { return 0; }
 
-                // If property's value contains unwanted string, print message
-                if (propExt(tag).ToLower().Contains(unwanted.ToLower()))
+                string propValue = propExt(tag).ToLower();
+                bool foundUnwanted = false;
+
+                // For "feat." and "ft.", require whitespace/punctuation before the abbreviation
+                // to avoid false positives like "ft." in "LEFT" or "Theft"
+                if (unwanted.ToLower() == "feat." || unwanted.ToLower() == "ft.")
+                {
+                    string pattern = @"(?:^|[\s\-\(\)\[\]\/,])" + Regex.Escape(unwanted.ToLower());
+                    foundUnwanted = Regex.IsMatch(propValue, pattern);
+                }
+                else
+                {
+                    // For other unwanted strings, use simple Contains check
+                    foundUnwanted = propValue.Contains(unwanted.ToLower());
+                }
+
+                if (foundUnwanted)
                 {
                     Console.WriteLine($"  - Found '{unwanted}' in {propertyName} of '{tag}'");
                     return 1;
