@@ -213,13 +213,16 @@ namespace AudioManager
             // Combine and format info
             string nonMP3infoStr = $"{extList.Count} ({(allExpected ? "all expected" : "UNEXPECTED!")})";
 
-            // Format extension list
-            string extListInfo = string.Join(", ", extList.Distinct().OrderBy(e => e));
+            // Format extension list (only if unexpected)
+            string extListInfo = null;
 
             // If extensions were unexpected, build details string
             string detailedInfo = null;
             if (!allExpected)
             {
+                // Only show extension list if there are unexpected ones
+                extListInfo = string.Join(", ", extList.Distinct().OrderBy(e => e));
+
                 // Group files by extension, filter to only unexpected ones
                 var unexpectedByExt = nonMP3Files
                     .GroupBy(file => Path.GetExtension(file))
