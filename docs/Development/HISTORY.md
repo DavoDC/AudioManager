@@ -4,7 +4,11 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
-## 2026-04-28 Session 2 - Routing logic fixes: album subfolder holistic count, Akira The Don People folders, 3+ artist rule
+## 2026-04-28 Session 2 - Routing logic fixes: album subfolder, Akira The Don detection, universal confirmation gates
+
+**PRINCIPLE APPLIED - Universal confirmation gates (user control in early stages):** Changed real integration to require user confirmation for ALL routing decisions (not just Misc/ambiguous routes). Every file now prompts: `[Y] Accept | [N] Choose folder | [Q] Quit`. Gives user full control to verify routing, propose alternatives, or stop and review. This matches the principle: "give user more control in early stages of program, later on can automate when stabilised, heavily tested, etc." Dry-run mode unaffected (still just displays proposals).
+
+**CRITICAL BUG FIX - Akira The Don artist name detection:** Fixed ATD not routing to Musivation in dry-run. Root cause: dry-run mode doesn't modify files, so genre=Musivation tag hasn't been set yet when MusicIntegrator reads for routing. Changed detection to check primary artist name directly (Akira The Don detection now happens before genre check), so it works in both dry-run and real mode.
 
 **CRITICAL BUG FIX - Album subfolder logic (holistic counting):** Implemented correct album subfolder routing that counts songs holistically (library + new batch combined). Rule: if 2+ songs from album exist total, route to album folder; <2 songs -> Singles/ folder. Added `CountAlbumSongs()` method that scans both library (filesystem) and NewMusic (tag reading) to determine final album song count.
 
