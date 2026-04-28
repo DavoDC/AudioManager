@@ -49,6 +49,13 @@ AudioManager/
 
 ## Build and Run
 
+**IMPORTANT - Claude building the program:**
+```powershell
+cd "C:\Users\David\GitHubRepos\AudioManager"
+.\scripts\build.bat
+```
+**NEVER use Bash for .bat files** - Windows batch scripts only work in PowerShell. Always use PowerShell tool.
+
 **Primary workflow:** Always use `scripts/launch.bat` - interactive menu with built-in build.
 
 Menu options:
