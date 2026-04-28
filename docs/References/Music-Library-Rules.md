@@ -69,10 +69,14 @@ Audio/
 6. 3+ songs same artist accumulate in Misc -> move all to new `Artists/{artist}/` folder
 7. Otherwise -> `Miscellaneous Songs/`
 
-## Album Subfolder Rule
-- 2+ songs from same album -> create/use album subfolder
-- Only 1 song from an album -> put in `Singles/`, don't create album folder
-- No loose files directly in an artist folder
+## Album Subfolder Rule (CRITICAL for routing logic)
+**Holistic count: library + integration batch combined**
+- Count all songs from this album: existing library copies + new songs being integrated
+- **If total is 2+ songs** → create/use album subfolder: `{artist}/{Album Name}/`
+- **If total is only 1 song** → put in `Singles/` subfolder: `{artist}/Singles/`
+- Example: "Evergreen Nights" (Dylan Owen) has 1 in library + 1 in NewMusic = 2 total → album folder
+- Example: Album has 0 in library + 1 in NewMusic = 1 total → Singles folder
+- No loose files directly in an artist folder - all files must be in album subfolder or Singles/
 
 ---
 
