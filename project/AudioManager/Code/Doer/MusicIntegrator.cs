@@ -87,6 +87,9 @@ namespace AudioManager
                         // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
                         string primaryArtist = track.PrimaryArtist;
 
+                        // Note: All tag fixes (TCMP, genre, parentheticals) are handled by TagFixer before integration.
+                        // Integration assumes all input files are already cleaned and only handles routing.
+
                         // Check for duplicate: same artist + title already in library
                         string duplicatePath = FindDuplicateInMirror(track);
                         if (!string.IsNullOrEmpty(duplicatePath))
@@ -149,10 +152,7 @@ namespace AudioManager
                                 continue;
                         }
 
-                        // Pre-process: apply tag fixes before routing/moving
-                        entry.TagChanges = PreProcessTags(sourcePath, track);
-
-                        // Skip if un-routable
+                        // Skip if un-routable (tags are already clean from TagFixer)
                         if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
                         {
                             Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': missing required tag");
@@ -427,57 +427,6 @@ namespace AudioManager
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Applies required tag fixes to an incoming file before routing.
-        /// In dry-run mode, logs what would change without writing.
-        /// Rules applied:
-        ///   - TCMP (IsCompilation) must be True on every track
-        ///   - Akira The Don tracks must have genre = Musivation
-        /// </summary>
-        /// <returns>List of changes made (or would be made in dry-run).</returns>
-        private List<string> PreProcessTags(string sourcePath, Track track)
-        {
-            var changes = new List<string>();
-            TagLib.File tagFile = null;
-            bool anyChange = false;
-
-            try
-            {
-                tagFile = TagLib.File.Create(sourcePath);
-                var id3 = (TagLib.Id3v2.Tag)tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
-
-                // Check TCMP - must be True on every track
-                if (!id3.IsCompilation)
-                {
-                    changes.Add("Set TCMP=True");
-                    track.Compilation = "True";
-                    if (!dryRun) { id3.IsCompilation = true; anyChange = true; }
-                    Console.WriteLine($"  [{(dryRun ? "DRY RUN" : "TAG FIX")}] {changes.Last()} on '{Path.GetFileName(sourcePath)}'");
-                }
-
-                // Akira The Don: genre must be Musivation
-                if (track.Artists.Contains("Akira The Don") && !track.Genres.Contains(Constants.MusivDir))
-                {
-                    changes.Add("Set Genre=Musivation");
-                    track.Genres = Constants.MusivDir;
-                    if (!dryRun) { tagFile.Tag.Genres = new[] { Constants.MusivDir }; anyChange = true; }
-                    Console.WriteLine($"  [{(dryRun ? "DRY RUN" : "TAG FIX")}] {changes.Last()} on '{Path.GetFileName(sourcePath)}'");
-                }
-
-                if (anyChange) tagFile.Save();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"  [WARN] Tag pre-processing failed for '{Path.GetFileName(sourcePath)}': {ex.Message}");
-            }
-            finally
-            {
-                tagFile?.Dispose();
-            }
-
-            return changes;
         }
 
         /// <summary>
