@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-04-28 - Comprehensive logging + fix skip error + fix Unicode output (TIER 0/1)
+
+**P0 Bug Fix - Skip error crash:** Fixed `startIndex cannot be larger than length of string` exception in MusicIntegrator when processing skipped files. Added bounds checking to all Substring() calls that compute lengths from path operations.
+
+**P1 Comprehensive Logging:** Extended TeeWriter to support dual console + file output. Wired up timestamped log files for all modes (analysis, integrate, tagfix) in `logs/` directory. All operations now logged to file automatically - users can scan log files for errors, patterns, and auditing after integration runs. Reused existing TeeWriter instead of creating duplicate LogWriter.
+
+**P1 Unicode Fix:** Replaced non-ASCII Unicode rightwards arrows (→) with ASCII ` ->` in TagFixer output for proper console rendering. Fixed display issues showing delta character (␦) in tag comparison output.
+
+---
+
 ## Settled / Not Doing
 
 These were considered but explicitly deprioritized or deemed not worth implementing:
