@@ -43,6 +43,7 @@ namespace AudioManager
             int movedCount = 0;
             int skippedCount = 0;
             var logEntries = new List<LogEntry>();
+            var decisionLog = new DecisionLog(dryRun);
             int totalFiles = 0;
 
             try
@@ -207,6 +208,8 @@ namespace AudioManager
                             // Dry run: print planned action, no file move
                             Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
                             entry.Status = "would-move";
+                            // Log the routing decision (even in dry-run, marked as such)
+                            decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
                             logEntries.Add(entry); movedCount++;
                         }
                         else if (isStandardRoute)
@@ -224,6 +227,8 @@ namespace AudioManager
                                 File.Move(sourcePath, destPath);
                                 movedCount++;
                                 Console.WriteLine($"  [AUTO] Moved to: {relativeDest}");
+                                // Log the routing decision
+                                decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
                                 Console.Clear();
                                 entry.Status = "moved";
                                 logEntries.Add(entry);
@@ -254,6 +259,8 @@ namespace AudioManager
                                         File.Move(sourcePath, destPath);
                                         movedCount++;
                                         Console.WriteLine($"  Moved to: {relativeDest}");
+                                        // Log the routing decision
+                                        decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
                                         Console.Clear();
                                         entry.Status = "moved";
                                         logEntries.Add(entry);
@@ -297,6 +304,8 @@ namespace AudioManager
                                             if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
                                         }
                                         Console.WriteLine($"  Moved to: {rel}");
+                                        // Log the routing decision (user manually selected folder)
+                                        decisionLog.LogDecision(track, Path.GetFileName(sourcePath), rel, "User manual folder selection");
                                         Console.Clear();
                                         entry.Destination = rel;
                                         entry.Status = "moved";
@@ -328,6 +337,9 @@ namespace AudioManager
                 // Print confidence report to console + save to log file
                 PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
                 SaveLog(logEntries, totalFiles, movedCount, skippedCount);
+
+                // Save routing decisions to XML for pattern analysis and audit trail
+                decisionLog.Save();
             }
             finally
             {
