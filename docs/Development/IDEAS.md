@@ -135,14 +135,6 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 
 ---
 
-## Settled / not doing
-
-- **AudioMirror as primary scan target** - already implemented and correct. AudioMirror XML is the source of truth for all analysis and LibChecker runs. The actual audio files are never touched during analysis. Safer, faster, version-controlled. Any future analysis tools should read from AudioMirror XML, not audio files directly.
-- **Full LibChecker unit test suite** - ROI not worth it (~400+ lines, 6-12 month payback). Add tests incrementally when rules change.
-- **Full integration test with fake MP3s** - too heavy, dry-run already covers this.
-
----
-
 ## See Also
 
 - `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
