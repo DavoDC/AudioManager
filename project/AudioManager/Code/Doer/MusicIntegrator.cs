@@ -220,8 +220,8 @@ namespace AudioManager
                                 // ignore other keys
                             }
 
-                            // If we deleted from NewMusic, skip to next file
-                            if (entry.Status == "deleted" || entry.Status == "would-delete")
+                            // If we deleted from NewMusic, or dry-run chose [L] (would-replace), skip to next file
+                            if (entry.Status == "deleted" || entry.Status == "would-delete" || entry.Status == "would-replace")
                                 continue;
 
                             // If duplicate error, skip to next file
