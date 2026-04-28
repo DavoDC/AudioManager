@@ -99,17 +99,6 @@ This keeps the argument interface in ONE place (C# Program.cs) and documentation
 
 **Applies to:** All integration-related operations, dry-run or not.
 
-## Build Scripts - IMPORTANT
-
-**.bat files MUST be run with PowerShell, never Bash.** Windows batch scripts (.bat) don't work in Unix shells. Always use:
-```powershell
-.\scripts\build.bat
-```
-NOT:
-```bash
-bash scripts/build.bat  # WRONG - will fail
-```
-
 ## Current Focus
 
 See `docs/IDEAS.md` for the full priority list. Integration pipeline complete. Next: first real integration run using the program, then a clean LibChecker run to validate full library state.
