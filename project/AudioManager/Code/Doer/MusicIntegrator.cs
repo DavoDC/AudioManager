@@ -228,10 +228,14 @@ namespace AudioManager
                         string relativeDest = destPath;
                         if (destPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
                         {
-                            relativeDest = destPath.Substring(Constants.AudioFolderPath.Length);
-                            if (relativeDest.StartsWith("\\") || relativeDest.StartsWith("/"))
+                            int startIndex = Constants.AudioFolderPath.Length;
+                            if (startIndex <= destPath.Length)
                             {
-                                relativeDest = relativeDest.Substring(1);
+                                relativeDest = destPath.Substring(startIndex);
+                                if (relativeDest.StartsWith("\\") || relativeDest.StartsWith("/"))
+                                {
+                                    relativeDest = relativeDest.Substring(1);
+                                }
                             }
                         }
 
@@ -352,8 +356,12 @@ namespace AudioManager
                                         string rel = newDestPath;
                                         if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
                                         {
-                                            rel = newDestPath.Substring(Constants.AudioFolderPath.Length);
-                                            if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                                            int startIdx = Constants.AudioFolderPath.Length;
+                                            if (startIdx <= newDestPath.Length)
+                                            {
+                                                rel = newDestPath.Substring(startIdx);
+                                                if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                                            }
                                         }
                                         Console.WriteLine($"  Moved to: {rel}");
                                         // Log the routing decision (user manually selected folder)
@@ -784,8 +792,13 @@ namespace AudioManager
             var display = new System.Collections.Generic.List<string>();
             foreach (var d in dirs)
             {
-                string rel = d.Substring(Constants.AudioFolderPath.Length);
-                if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                string rel = d;
+                int startIdx = Constants.AudioFolderPath.Length;
+                if (startIdx <= d.Length && d.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    rel = d.Substring(startIdx);
+                    if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                }
                 display.Add(rel);
             }
 

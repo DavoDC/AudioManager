@@ -107,14 +107,14 @@ namespace AudioManager
                         }
 
                         // Record what will change
-                        if (titleChanged) log.Changes.Add($"Title: \"{title}\" → \"{cleanTitle}\"");
-                        if (albumChanged) log.Changes.Add($"Album: \"{album}\" → \"{cleanAlbum}\"");
-                        if (artistsChanged) log.Changes.Add($"Artists: \"{artists}\" → \"{cleanArtists}\"");
-                        if (tcmpNeeded) log.Changes.Add("TCMP: False → True");
+                        if (titleChanged) log.Changes.Add($"Title: \"{title}\"  -> \"{cleanTitle}\"");
+                        if (albumChanged) log.Changes.Add($"Album: \"{album}\"  -> \"{cleanAlbum}\"");
+                        if (artistsChanged) log.Changes.Add($"Artists: \"{artists}\"  -> \"{cleanArtists}\"");
+                        if (tcmpNeeded) log.Changes.Add("TCMP: False  -> True");
                         if (genreNeeded)
                         {
                             string newGenre = DetermineGenre(cleanArtists);
-                            log.Changes.Add($"Genre: \"{genres}\" → \"{newGenre}\"");
+                            log.Changes.Add($"Genre: \"{genres}\"  -> \"{newGenre}\"");
                         }
 
                         // Apply changes (write tags + rename file)
@@ -137,7 +137,7 @@ namespace AudioManager
                             if (newPath != sourcePath && !File.Exists(newPath))
                             {
                                 File.Move(sourcePath, newPath);
-                                log.Changes.Add($"Filename: \"{Path.GetFileName(sourcePath)}\" → \"{newFilename}\"");
+                                log.Changes.Add($"Filename: \"{Path.GetFileName(sourcePath)}\"  -> \"{newFilename}\"");
                             }
 
                             log.Filename = newFilename;
@@ -197,7 +197,7 @@ namespace AudioManager
                         }
                         if (!string.IsNullOrEmpty(log.Filename) && log.Filename != log.OriginalFilename)
                         {
-                            Console.WriteLine($"    - Filename: {log.OriginalFilename} → {log.Filename}");
+                            Console.WriteLine($"    - Filename: {log.OriginalFilename}  -> {log.Filename}");
                         }
                     }
                 }
