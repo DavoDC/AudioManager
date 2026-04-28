@@ -752,41 +752,41 @@ namespace AudioManager
         /// <returns>The full destination directory path.</returns>
         private string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason)
         {
-            // Genres-based rules (highest priority)
-            if (!track.Genres.Equals("Missing") && track.Genres.IndexOf(Constants.MusivDir, StringComparison.OrdinalIgnoreCase) >= 0)
+            // Special case: Akira The Don (check by artist name, not genre, since genre may not be set in dry-run)
+            string primaryArtist = track.PrimaryArtist;
+            if (primaryArtist.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                // Special case: Akira The Don -> Musivation/Akira The Don/People/{sampled person}/ or Singles/
-                string primaryArtist = track.PrimaryArtist;
-                if (primaryArtist.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0)
+                // Extract sampled person from secondary artist (after first semicolon)
+                var artists = Track.ProcessProperty(track.Artists).ToList();
+                if (artists.Count > 1)
                 {
-                    // Extract sampled person from secondary artist (after first semicolon)
-                    var artists = Track.ProcessProperty(track.Artists).ToList();
-                    if (artists.Count > 1)
-                    {
-                        string sampledPerson = artists[1]; // Second artist is the sampled person
+                    string sampledPerson = artists[1]; // Second artist is the sampled person
 
-                        // Count songs for this sampled person (3+ gets own folder, <3 goes to Singles)
-                        int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson);
-                        if (personSongCount >= 3)
-                        {
-                            string peopleFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson);
-                            reason = $"Akira The Don -> People/{sampledPerson} ({personSongCount} songs)";
-                            return peopleFolder;
-                        }
-                        else
-                        {
-                            reason = $"Akira The Don -> Singles ({personSongCount} songs from {sampledPerson})";
-                            return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
-                        }
+                    // Count songs for this sampled person (3+ gets own folder, <3 goes to Singles)
+                    int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson);
+                    if (personSongCount >= 3)
+                    {
+                        string peopleFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson);
+                        reason = $"Akira The Don -> People/{sampledPerson} ({personSongCount} songs)";
+                        return peopleFolder;
                     }
                     else
                     {
-                        // No sampled person listed, use Singles
-                        reason = "Akira The Don -> Singles (no sampled person)";
+                        reason = $"Akira The Don -> Singles ({personSongCount} songs from {sampledPerson})";
                         return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
                     }
                 }
+                else
+                {
+                    // No sampled person listed, use Singles
+                    reason = "Akira The Don -> Singles (no sampled person)";
+                    return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
+                }
+            }
 
+            // Genres-based rules (after artist checks)
+            if (!track.Genres.Equals("Missing") && track.Genres.IndexOf(Constants.MusivDir, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
                 reason = "Genre is Musivation";
                 return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir);
             }
