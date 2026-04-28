@@ -98,17 +98,23 @@ namespace AudioManager
                         string duplicatePath = FindDuplicateInMirror(track);
                         if (!string.IsNullOrEmpty(duplicatePath))
                         {
+                            // Derive actual library file path from AudioMirror XML path
+                            // AudioMirror: C:\...\AudioMirror\AUDIO_MIRROR\Artist\Album\Track.xml
+                            // Library:     C:\Users\David\Audio\Artist\Album\Track.mp3
+                            string libraryFilePath = DeriveLibraryPathFromMirrorPath(duplicatePath);
+
                             // Clear and show the duplicate
                             Console.Clear();
                             Console.WriteLine("============================================================");
                             Console.WriteLine("  DUPLICATE FOUND");
                             Console.WriteLine("============================================================\n");
-                            Console.WriteLine($"  Already in library: {duplicatePath}");
-                            Console.WriteLine($"  New file:          {Path.GetFileName(sourcePath)}");
+                            Console.WriteLine($"  In library: {libraryFilePath}");
+                            Console.WriteLine($"  New file:   {sourcePath}");
                             Console.WriteLine($"\n  Track: {track.Artists} - {track.Title}");
                             Console.WriteLine($"  Album: {track.Album}");
                             Console.WriteLine("\n------------------------------------------------------------");
-                            Console.WriteLine("  [D] Delete from NewMusic   [K] Keep and continue   [Q] Quit");
+                            Console.WriteLine("  [D] Delete from NewMusic   [L] Delete from Library");
+                            Console.WriteLine("  [K] Keep both             [Q] Quit");
                             Console.WriteLine("------------------------------------------------------------");
 
                             // Wait for input
@@ -136,10 +142,48 @@ namespace AudioManager
                                     Console.Clear();
                                     break;
                                 }
+                                else if (key == ConsoleKey.L)
+                                {
+                                    // Delete from Library (replace old with new album version)
+                                    if (dryRun)
+                                    {
+                                        Console.WriteLine($"  [DRY RUN] Would delete from library: {libraryFilePath}");
+                                        Console.WriteLine($"  [DRY RUN] Would keep new file: {Path.GetFileName(sourcePath)}");
+                                        entry.Status = "would-replace";
+                                        entry.Detail = "duplicate (would replace)";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
+                                    else
+                                    {
+                                        if (File.Exists(libraryFilePath))
+                                        {
+                                            File.Delete(libraryFilePath);
+                                            Console.WriteLine($"  Deleted from library: {libraryFilePath}");
+                                            Console.WriteLine($"  Integrating new version: {Path.GetFileName(sourcePath)}");
+                                            entry.Status = "replaced";
+                                            entry.Detail = "duplicate (library replaced)";
+                                            // Fall through to integration
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"  [WARN] Library file not found: {libraryFilePath}");
+                                            entry.Status = "error";
+                                            entry.Detail = "duplicate (library file not found)";
+                                            logEntries.Add(entry); skippedCount++;
+                                        }
+                                    }
+                                    if (dryRun || entry.Status == "error")
+                                    {
+                                        Console.Clear();
+                                        break;
+                                    }
+                                    // If real run and successful delete, continue to integration
+                                    break;
+                                }
                                 else if (key == ConsoleKey.K)
                                 {
                                     // Keep and continue
-                                    Console.WriteLine($"  Keeping {Path.GetFileName(sourcePath)} - proceeding with integration");
+                                    Console.WriteLine($"  Keeping both - proceeding with integration");
                                     break;
                                 }
                                 else if (key == ConsoleKey.Q)
@@ -151,8 +195,12 @@ namespace AudioManager
                                 // ignore other keys
                             }
 
-                            // If we deleted, skip to next file
+                            // If we deleted from NewMusic, skip to next file
                             if (entry.Status == "deleted" || entry.Status == "would-delete")
+                                continue;
+
+                            // If duplicate error, skip to next file
+                            if (entry.Status == "error")
                                 continue;
                         }
 
@@ -642,6 +690,36 @@ namespace AudioManager
             catch { /* skip errors */ }
 
             return null;
+        }
+
+        /// <summary>
+        /// Derives the actual library file path from an AudioMirror XML path.
+        /// AudioMirror: C:\...\AudioMirror\AUDIO_MIRROR\Artist\Album\Track.xml
+        /// Library:     C:\Users\David\Audio\Artist\Album\Track.mp3
+        /// </summary>
+        private string DeriveLibraryPathFromMirrorPath(string mirrorXmlPath)
+        {
+            try
+            {
+                // Extract relative path from AUDIO_MIRROR folder
+                string mirrorBaseFolder = Path.Combine(Constants.MirrorFolderPath, "AUDIO_MIRROR");
+                if (!mirrorXmlPath.StartsWith(mirrorBaseFolder, StringComparison.OrdinalIgnoreCase))
+                    return mirrorXmlPath; // fallback: return as-is
+
+                // Remove AUDIO_MIRROR prefix to get relative path
+                string relativePath = mirrorXmlPath.Substring(mirrorBaseFolder.Length).TrimStart(Path.DirectorySeparatorChar);
+
+                // Replace .xml with .mp3
+                if (relativePath.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+                    relativePath = relativePath.Substring(0, relativePath.Length - 4) + ".mp3";
+
+                // Construct full library path
+                return Path.Combine(Constants.AudioFolderPath, relativePath);
+            }
+            catch
+            {
+                return mirrorXmlPath; // fallback
+            }
         }
 
         /// <summary>
