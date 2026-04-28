@@ -380,9 +380,22 @@ namespace AudioManager
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': error reading file ({ex.Message})");
-                        entry.Status = "error"; entry.Detail = ex.Message;
-                        logEntries.Add(entry); skippedCount++;
+                        // Fail fast on integration errors - do not silently skip files
+                        // Silent skips could mask data corruption or library corruption
+                        Console.Clear();
+                        Console.WriteLine("\n============================================================");
+                        Console.WriteLine("  INTEGRATION FAILED");
+                        Console.WriteLine("============================================================\n");
+                        Console.WriteLine($"Error processing file: {Path.GetFileName(sourcePath)}");
+                        Console.WriteLine($"Full path: {sourcePath}");
+                        Console.WriteLine($"\nError details: {ex.Message}");
+                        if (!string.IsNullOrEmpty(ex.StackTrace))
+                            Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
+                        Console.WriteLine("\n============================================================");
+                        Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
+                        Console.WriteLine("Press any key to exit...");
+                        Console.ReadKey();
+                        throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sourcePath)}': {ex.Message}", ex);
                     }
                 }
 
