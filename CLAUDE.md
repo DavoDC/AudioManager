@@ -93,6 +93,12 @@ This keeps the argument interface in ONE place (C# Program.cs) and documentation
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
 
+## Critical Safety Rule
+
+**Only the user (David) can execute integration commands.** Claude implements features and prepares workflows, but stops before running any integration step (including `tagfix`, `integrate`, or `analysis` even in dry-run mode). These commands touch real files in the AudioMirror repo and NewMusic folder - user must manually trigger them from their terminal for data safety and auditability.
+
+**Applies to:** All integration-related operations, dry-run or not.
+
 ## Current Focus
 
 See `docs/IDEAS.md` for the full priority list. Integration pipeline complete. Next: first real integration run using the program, then a clean LibChecker run to validate full library state.
