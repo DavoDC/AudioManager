@@ -1,6 +1,17 @@
 # History
 
-Completed features, settled design decisions, and resolved tasks.
+Completed features, settled design decisions, resolved tasks, and decisions explicitly not implemented.
+
+---
+
+## Settled / Not Doing
+
+These were considered but explicitly deprioritized or deemed not worth implementing:
+
+- **AudioMirror as primary scan target** - already implemented and correct. AudioMirror XML is the source of truth for all analysis and LibChecker runs. The actual audio files are never touched during analysis. Safer, faster, version-controlled. Any future analysis tools should read from AudioMirror XML, not audio files directly.
+- **Full LibChecker unit test suite** - ROI not worth it (~400+ lines, 6-12 month payback). Add tests incrementally when rules change.
+- **Full integration test with fake MP3s** - too heavy, dry-run already covers this.
+- **Run-state tracking** - idea to track "did I already integrate this batch?" with state.json. Deprioritized because routing decisions.xml (TIER 1) provides batch-level summary implicitly (batch timestamp, file count, outcome via entry count).
 
 ---
 
