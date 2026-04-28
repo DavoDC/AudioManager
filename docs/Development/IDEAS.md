@@ -25,19 +25,12 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 **Goal: ensure integration cannot corrupt the library.** These items must be in place before any real integration run.
 
 
-- [ ] **BUG: Console.Clear() wipes routing decisions - user can't see/audit what's routing where** - Dry-run 2026-04-28 showed integration proceeding but routing decisions vanished from terminal as soon as they were printed (line 251 calls Console.Clear()). This blocks user from auditing the routing and confirming decisions. Root cause: line 251 `Console.Clear()` clears the output after showing each track's routing decision. Solution: (1) Remove Console.Clear() calls during routing (lines 251, 369, 389); (2) Instead, use blank lines (Console.WriteLine()) to separate sections; (3) Add timestamps to show when each decision is logged (see item below). Result: user can scroll back and see all routing decisions that were made.
-
-- [ ] **UX: Add timestamped log entries during routing** - Dry-run 2026-04-28 showed routing decisions being made but user couldn't see progress timing - no indication of how fast files were being processed. Add `Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Processing: {track.Artists} - {track.Title}")` at key points: (1) before tag fixing starts, (2) after each track's tags are fixed, (3) after each routing decision is logged. This gives visibility into progress and helps debug slow operations. Wire into TeeWriter so timestamps appear in both console and log file.
-
-
-- [ ] **UNBLOCKED: Real integration run - now ready after P0 fixes** - P0 bugs fixed (2026-04-28): "startIndex" substring bounds-checking (DecisionLog.cs) + fail-fast error handling. Dry-run completed successfully on full NewMusic batch. BUT: Critical routing bug + UX issues must be fixed first:
-  - [ ] **BLOCKING:** Remove Console.Clear() and add timestamped logging (see items above) so user can audit routing decisions
-  - [ ] **BLOCKING:** Add confirmation gates so user can control when integration proceeds
-  - **Once UX issues fixed,** sequence for real integration run:
+- [ ] **READY: Real integration run - all TIER 0 UX fixes complete** - All blocking items resolved (2026-04-28): (1) Universal confirmation gates for ALL routes (Session 2), (2) Dry-run now shows same prompts as real mode - Session 3, (3) Console.Clear() removed + replaced with blank lines (Session 3), (4) Timestamped log entries added via PrintTimestamped() helper (Session 3). User can now validate routing decisions interactively before running real integration.
+  - **Sequence for real integration run:**
     1. **Tag cleaning:** Run `AudioManager tagfix --dry-run` to preview tag cleanup
     2. **Tag fix (real):** Run `AudioManager tagfix` to clean NewMusic files
     3. **Integration dry-run:** Run `AudioManager integrate --dry-run` to preview routing with timestamps + confirmations
-    4. **Integration (real):** Run `AudioManager integrate` to move files (after user approves)
+    4. **Integration (real):** Run `AudioManager integrate` to move files (after user approves each file)
     5. **Post-validation:** LibChecker auto-runs; verify CLEAN
     6. **Commit:** If CLEAN, commit AudioMirror changes to git
 
