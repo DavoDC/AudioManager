@@ -4,7 +4,7 @@
 
 C# console app for managing a personal music library. Two modes:
 - **Analysis** - full pipeline: regenerate AudioMirror XML (Reflector), parse metadata (Parser), generate stats report (Analyser), validate library (LibChecker), save report (ReportWriter), auto-commit AudioMirror if clean (AudioMirrorCommitter)
-- **Integrate** - scans `Downloads/NewMusic/`, pre-processes tags, routes files into the library, saves integration log
+- **Integrate** - scans `Downloads/NewMusic/`, fixes tags (TCMP, genres, parentheticals, featured artists), routes files into the library, logs routing decisions to XML for audit trail
 
 ## Tech Stack
 
@@ -34,11 +34,13 @@ AudioManager/
           Analyser/            # statistics generation
           AgeChecker.cs        # checks age of mirror, triggers regen if stale
           AudioMirrorCommitter.cs  # auto-commits AudioMirror after clean LibChecker run
+          DecisionLog.cs       # logs routing decisions to XML for audit trail
           LibChecker.cs        # library validation rules
-          MusicIntegrator.cs   # staging folder scan, tag pre-processing, file routing
+          MusicIntegrator.cs   # staging folder scan, calls TagFixer, routes files, logs decisions
           Parser.cs            # parses XML mirror into tag list
           Reflector.cs         # XML mirror creation
           ReportWriter.cs      # timestamped report output
+          TagFixer.cs          # comprehensive tag cleanup (TCMP, genres, parentheticals, featured artists, file renames)
         Track/                 # data models: Track, TrackTag, TrackXML
   reports/                     # auto-generated timestamped reports (gitignored, written by C# app)
     YYYY/
@@ -47,24 +49,21 @@ AudioManager/
 
 ## Build and Run
 
-**For humans:** Use `scripts/launch.bat` for interactive menu with built-in build.
+**Primary workflow:** Always use `scripts/launch.bat` - interactive menu with built-in build.
 
-**For Claude:** Call the exe directly (build.bat handles compilation):
+Menu options:
+- 1: Analysis (No Force Regen)
+- 2: Analysis (Force Regen)
+- 3: Integration (Dry Run) - shows tag fixes + routing decisions preview
+- 4: Integration (Real) - applies tag fixes, shows routing decisions preview
 
-1. Build first (one-time or before running):
-```
-scripts/build.bat
-```
-
-2. Run exe with arguments (no interactive prompts):
+**For scripted/CLI use:**
 ```
 project\AudioManager\bin\Release\AudioManager.exe analysis
 project\AudioManager\bin\Release\AudioManager.exe analysis --force-regen
 project\AudioManager\bin\Release\AudioManager.exe integrate --dry-run
 project\AudioManager\bin\Release\AudioManager.exe integrate
 ```
-
-This keeps the argument interface in ONE place (C# Program.cs) and documentation in CLAUDE.md, avoiding duplication in scripts. Humans use launch.bat for menus; Claude calls the exe directly and reads invocation from this doc.
 
 **CRITICAL: old-style csproj requires manual file registration.** This is a .NET Framework 4.8 project with the legacy csproj format. New `.cs` files are NOT auto-included - you MUST add a `<Compile Include="Code\...\NewFile.cs" />` entry to `project\AudioManager\AudioManager.csproj` whenever you create a new source file, or the build will fail with `CS0103: The name '...' does not exist in the current context`. Always verify the csproj was updated after adding a file.
 
@@ -95,9 +94,15 @@ This keeps the argument interface in ONE place (C# Program.cs) and documentation
 
 ## Critical Safety Rule
 
-**Only the user (David) can execute integration commands.** Claude implements features and prepares workflows, but stops before running any integration step (including `tagfix`, `integrate`, or `analysis` even in dry-run mode). These commands touch real files in the AudioMirror repo and NewMusic folder - user must manually trigger them from their terminal for data safety and auditability.
+**Only the user (David) executes integration.** Claude implements features and prepares workflows, but stops before running any integration. Integration commands touch real files in AudioMirror repo and NewMusic folder - user must manually trigger via `launch.bat` for data safety and auditability. No exceptions, even for dry-run.
 
-**Applies to:** All integration-related operations, dry-run or not.
+**User workflow:** 
+```
+.\scripts\launch.bat
+→ Select option 3 (Dry Run) or 4 (Real)
+```
+
+**Never:** Claude runs `integrate`, `analysis`, or moves files.
 
 ## Build Scripts - IMPORTANT
 
@@ -112,4 +117,4 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-See `docs/IDEAS.md` for the full priority list. Integration pipeline complete. Next: first real integration run using the program, then a clean LibChecker run to validate full library state.
+See `docs/Development/IDEAS.md` for the full priority list. TIER 0 (safety prerequisites) + TIER 1 (decision logging) complete. Tag fixing and routing decision logging integrated. Next: first real integration run via launch.bat to validate the complete pipeline, then extract routing patterns from decision.xml.
