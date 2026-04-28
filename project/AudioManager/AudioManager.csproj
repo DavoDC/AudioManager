@@ -71,6 +71,7 @@
     <Compile Include="Code\Doer\Doer.cs" />
     <Compile Include="Code\Doer\MusicIntegrator.cs" />
     <Compile Include="Code\Doer\TagFixer.cs" />
+    <Compile Include="Code\Doer\DecisionLog.cs" />
     <Compile Include="Code\Doer\Reflector.cs" />
     <Compile Include="Code\Doer\ReportWriter.cs" />
     <Compile Include="Code\TeeWriter.cs" />
