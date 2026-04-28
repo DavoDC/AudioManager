@@ -241,12 +241,6 @@ namespace AudioManager
 
                         entry.Destination = relativeDest;
 
-                        // Standard routes are auto-accepted (no prompt needed).
-                        // Only Misc routing requires confirmation - it's ambiguous.
-                        bool isStandardRoute = !destDir.StartsWith(
-                            Path.Combine(Constants.AudioFolderPath, Constants.MiscDir),
-                            StringComparison.OrdinalIgnoreCase);
-
                         // Print track header
                         Console.Clear();
                         Console.WriteLine("============================================================");
@@ -261,39 +255,17 @@ namespace AudioManager
 
                         if (dryRun)
                         {
-                            // Dry run: print planned action, no file move
+                            // Dry run: print planned action, no file move, no confirmation needed
                             Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
                             entry.Status = "would-move";
                             // Log the routing decision (even in dry-run, marked as such)
                             decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
                             logEntries.Add(entry); movedCount++;
                         }
-                        else if (isStandardRoute)
-                        {
-                            // Standard route: auto-accept
-                            if (File.Exists(destPath))
-                            {
-                                Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
-                                entry.Status = "skipped"; entry.Detail = "already exists at destination";
-                                logEntries.Add(entry); skippedCount++;
-                            }
-                            else
-                            {
-                                Directory.CreateDirectory(destDir);
-                                File.Move(sourcePath, destPath);
-                                movedCount++;
-                                Console.WriteLine($"  [AUTO] Moved to: {relativeDest}");
-                                // Log the routing decision
-                                decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
-                                Console.Clear();
-                                entry.Status = "moved";
-                                logEntries.Add(entry);
-                            }
-                        }
                         else
                         {
-                            // Misc route: confirm with user
-                            Console.WriteLine("  [Y] Accept (Misc)   [N] Choose folder   [Q] Quit");
+                            // Real integration: confirm ALL routes with user (gives user full control in early stages)
+                            Console.WriteLine("  [Y] Accept   [N] Choose folder   [Q] Quit");
                             Console.WriteLine("------------------------------------------------------------");
 
                             // Wait for input
@@ -302,7 +274,7 @@ namespace AudioManager
                                 var key = Console.ReadKey(intercept: true).Key;
                                 if (key == ConsoleKey.Y)
                                 {
-                                    // Accept: move
+                                    // Accept proposed destination
                                     if (File.Exists(destPath))
                                     {
                                         Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
@@ -331,7 +303,7 @@ namespace AudioManager
                                 }
                                 else if (key == ConsoleKey.N)
                                 {
-                                    // Folder picker
+                                    // Choose alternative folder
                                     string chosen = PickFolder();
                                     if (string.IsNullOrEmpty(chosen))
                                     {
