@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-04-28 Session 3 - UX polish: dry-run parity, Console.Clear removal, timestamped logging
+
+**UX FIX - Dry-run mode now shows confirmation prompts:** Previously, dry-run would auto-accept all routes without prompting user. Now both dry-run and real mode show `[Y] Accept | [N] Choose folder | [Q] Quit` prompts for every file. Dry-run only differs in action: logs what would happen without moving files. Real mode actually moves files after user approval. This ensures user can validate routing decisions before running real integration.
+
+**UX FIX - Console.Clear() removal:** Removed all 4 `Console.Clear()` calls from routing output that were wiping routing decisions from terminal. Replaced with blank lines (Console.WriteLine()) for visual separation. Users can now scroll back and see all routing decisions that were made during dry-run and real integration.
+
+**UX ENHANCEMENT - Timestamped log entries:** Added timestamps to all routing decision outputs using new `PrintTimestamped()` helper method. Shows exact timing of each file processing (HH:mm:ss format). Reduces duplication and improves code maintainability - previously each output line had `$"[{DateTime.Now:HH:mm:ss}]"` repeated; now uses single helper. Timestamps logged to both console and file via TeeWriter.
+
+**Code refactoring - PrintTimestamped() helper:** Created private method to avoid duplication of timestamp boilerplate. All routing output (proposals, confirmations, moves, errors) now calls PrintTimestamped() instead of repeating `$"[{DateTime.Now:HH:mm:ss}] {message}"`. Makes code cleaner and easier to maintain. Build verified - no compilation errors.
+
+**Result:** All TIER 0 UX prerequisites complete. Ready for user to run real integration via launch.bat with full visibility and control.
+
+---
+
 ## 2026-04-28 Session 2 - Routing logic fixes: album subfolder, Akira The Don detection, universal confirmation gates
 
 **PRINCIPLE APPLIED - Universal confirmation gates (user control in early stages):** Changed real integration to require user confirmation for ALL routing decisions (not just Misc/ambiguous routes). Every file now prompts: `[Y] Accept | [N] Choose folder | [Q] Quit`. Gives user full control to verify routing, propose alternatives, or stop and review. This matches the principle: "give user more control in early stages of program, later on can automate when stabilised, heavily tested, etc." Dry-run mode unaffected (still just displays proposals).
