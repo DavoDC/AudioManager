@@ -137,12 +137,6 @@ namespace AudioManager
                         }
 
                         fixLogs.Add(log);
-
-                        // Print per-file summary
-                        foreach (var change in log.Changes)
-                        {
-                            Console.WriteLine($"  [{(dryRun ? "DRY RUN" : "FIXED")}] {Path.GetFileName(sourcePath)}: {change}");
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -184,7 +178,7 @@ namespace AudioManager
                         }
                         if (!string.IsNullOrEmpty(log.Filename) && log.Filename != log.OriginalFilename)
                         {
-                            Console.WriteLine($"    → {log.Filename}");
+                            Console.WriteLine($"    - Filename: {log.OriginalFilename} → {log.Filename}");
                         }
                     }
                 }
