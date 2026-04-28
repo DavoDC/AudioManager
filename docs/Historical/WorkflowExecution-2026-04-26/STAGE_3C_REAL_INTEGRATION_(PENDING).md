@@ -43,8 +43,8 @@ Run the dry-run integration to validate routing decisions before moving files:
 - Which Misc songs need manual migration (if any)
 
 **Expected output:**
-- `logs/integration-2026-04-28-dryrun.md` - integration log
-- `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml` - routing decisions (marked dryRun: true)
+- `logs/integration-2026-04-28-HHMMSS-dryrun.md` - integration log (timestamped for multiple runs)
+- `logs/decisions-2026-04-28-HHMMSS.xml` - routing decisions (marked dryRun: true, timestamped)
 
 **After dry-run:** Review both files, verify routing looks correct. Then proceed to real integration.
 
@@ -86,7 +86,7 @@ After dry-run completes, review the outputs:
 - Verify confidence report (new folders, destination sanity check, errors)
 - Any files routed to Misc that should go elsewhere?
 
-**File 2:** `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml`
+**File 2:** `logs/decisions-2026-04-28-HHMMSS.xml`
 - Sample the routing decisions (artist → destination → reason)
 - Verify track metadata is being logged correctly
 - Check timestamp and dryRun: true flag
@@ -126,7 +126,7 @@ After integration completes successfully:
   - Push to origin (auto-commit is disabled for safety)
 
 - [ ] **Extract routing patterns** (TIER 1 analysis)
-  - Review `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml`
+  - Review `logs/decisions-2026-04-28-HHMMSS.xml` (most recent run)
   - Identify patterns: "Akira The Don → 100% Musivation", "New artist with 3+ tracks → new Artists folder", etc.
   - Document at least 3 patterns in HISTORY.md for future optimization
 
