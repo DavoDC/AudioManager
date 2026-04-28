@@ -93,7 +93,13 @@ namespace AudioManager
             if (string.IsNullOrEmpty(text))
                 return text;
             var doc = new XDocument(new XElement("temp", text));
-            return doc.Root.FirstNode.ToString().Substring(5); // Strip <temp> tags
+            string encoded = doc.Root.FirstNode.ToString();
+            // Strip <temp> and </temp> tags (6 + 7 = 13 chars minimum)
+            if (encoded.Length >= 13 && encoded.StartsWith("<temp>") && encoded.EndsWith("</temp>"))
+            {
+                return encoded.Substring(6, encoded.Length - 13);
+            }
+            return encoded; // fallback if format is unexpected
         }
 
         /// <summary>
