@@ -17,8 +17,12 @@ echo [BUILD] Compiling AudioManager...
 
 if errorlevel 1 (
     echo [ERROR] Build failed.
+    echo.
+    echo Build log:
+    type "%LOG%"
+    pause
     exit /b 1
 )
 
 echo [BUILD] Done. Exe: %EXE%
-exit /b 0
+pause
