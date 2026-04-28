@@ -1,0 +1,309 @@
+###############FEEDBACK:
+HIGHEST PRIORITY = WHERE IS LOGGING, Every shown in terminal sjoulde be logged to a file! then u can scan for issues ,
+NEED DATE AND TIMESTAMPED LOGS OF EVERYTHING IN TERMINAL TO C:\Users\David\GitHubRepos\AudioManager\logs
+
+###############FEEDBACK:
+MAJOR BUG = EVERY SONG SKIPPED WENT THRU EVERY SONG = showed this error!
+------------------------------------------------------------
+  [DRY RUN] Would move to: Miscellaneous Songs\Guy Sebastian; Lupe Fiasco - Battle Scars (feat. Lupe Fiasco).mp3
+ - Skipped 'Guy Sebastian - Battle Scars (feat. Lupe Fiasco).mp3': error reading file (startIndex cannot be larger than length of string.
+Parameter name: startIndex)
+
+###############FEEDBACK:
+REMOVE ALL ␦ (backwards ?)  in output!!! must be emoji or something  
+  --- Per-file results ---
+  [WOULD FIX] 05 - Sail Up The Sun.mp3
+    - TCMP: False ␦ True
+    - Filename: 05 - Sail Up The Sun.mp3 ␦ Dylan Owen - Sail Up The Sun.mp3
+  [WOULD FIX] 08 - There's More To Life.mp3
+    - TCMP: False ␦ True
+    - Filename: 08 - There's More To Life.mp3 ␦ Dylan Owen - There's More To Life.mp3
+  [WOULD FIX] Akira The Don - UNSTOPPABLE.mp3
+
+###############FEEDBACK:
+SHORTEN PATHS IN DUPE FOUND DIALOGE
+CURRENT STATE:
+============================================================
+  DUPLICATE FOUND
+============================================================
+
+  In library: C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don;Rupert Spira - INTO THE INFINITE.xml
+  New file:   C:\Users\David\Downloads\NewMusic\PROCESSED\Akira The Don - THE SHINING OF BEING\03 - INTO THE INFINITE.mp3
+
+  Track: Akira The Don; Rupert Spira - INTO THE INFINITE
+  Album: THE SHINING OF BEING
+
+------------------------------------------------------------
+  [D] Delete from NewMusic   [L] Delete from Library
+  [K] Keep both             [Q] Quit
+------------------------------------------------------------
+
+
+DESIRED PATHS:
+  In library: \Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don;Rupert Spira - INTO THE INFINITE.xml
+  New file:   \NewMusic\PROCESSED\Akira The Don - THE SHINING OF BEING\03 - INTO THE INFINITE.mp3
+
+
+###############FEEDBACK:
+
+CHECK FULL OUTPUT for futher issues
+============================================================
+AudioManager Launcher
+============================================================
+
+[BUILD] Compiling AudioManager...
+[BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\..\project\AudioManager\bin\Release\AudioManager.exe
+Press any key to continue . . .
+
+Select mode:
+  1. Analysis (No Force Regen)
+  2. Analysis (Force Regen)
+  3. Integration (Dry Run)
+  4. Integration (Real)
+
+Enter choice (1-4):3
+
+[RUN] Integration (Dry Run)
+============================================================
+
+
+###### Audio Manager ######
+
+Pre-integration validation...
+ - Regenerating AudioMirror XMLs...
+
+Creating mirror of 'C:\Users\David\Audio'...
+ - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
+ - MP3 file count: 5490
+ - Non-MP3 files found: 18 (all expected)
+ - MP3 filenames sanitised: 83
+ - Recreated: False
+ - Time taken: 0.591 seconds
+
+Parsing audio metadata...
+ - Tags parsed: 5490
+ - Time taken: 0.923 seconds
+ - Checking if AudioMirror is fresh...
+ - Running library validation...
+
+Checking library...
+ - Checking all tags against filenames..
+ - Checking all tags for unwanted/missing info...
+ - Checking all tags for duplicates...
+ - Checking Artists folder...
+ - Checking Artists album subfolder rules...
+ - Checking Miscellaneous Songs folder...
+ - Checking Musivation folder...
+ - Checking Motivation folder...
+ - Checking for 'Musivation' genre outside Musivation/...
+ - Checking for 'Motivation' genre outside Motivation/...
+ - Checking Sources folder...
+ - LibChecker: Clean
+
+ - Time taken: 0.465 seconds
+ - Pre-integration validation passed.
+
+
+Integrating new music... [DRY RUN - no files will be moved]
+
+[Step 1/2] Fixing tags...
+
+Fixing music tags... [DRY RUN - no files will be modified]
+
+============================================================
+  Tag Fix Summary (Dry Run)
+============================================================
+  Files processed: 51
+  Fixed: 50  |  Skipped: 1
+
+  --- Per-file results ---
+  [WOULD FIX] 05 - Sail Up The Sun.mp3
+    - TCMP: False ␦ True
+    - Filename: 05 - Sail Up The Sun.mp3 ␦ Dylan Owen - Sail Up The Sun.mp3
+  [WOULD FIX] 08 - There's More To Life.mp3
+    - TCMP: False ␦ True
+    - Filename: 08 - There's More To Life.mp3 ␦ Dylan Owen - There's More To Life.mp3
+  [WOULD FIX] Akira The Don - UNSTOPPABLE.mp3
+    - Artists: "Akira The Don; Brian Tracy" ␦ "Akira The Don;Brian Tracy"
+    - TCMP: False ␦ True
+    - Genre: "Alternative;Indie Pop" ␦ "Musivation"
+    - Filename: Akira The Don - UNSTOPPABLE.mp3 ␦ Akira The Don;Brian Tracy - UNSTOPPABLE.mp3
+  [WOULD FIX] cafune - Tek It.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Dizzy Wright - Loophole (feat. Nowdaze).mp3
+    - Title: "Loophole (feat. Nowdaze)" ␦ "Loophole"
+    - Artists: "Dizzy Wright; Nowdaze" ␦ "Dizzy Wright;Nowdaze"
+    - TCMP: False ␦ True
+    - Filename: Dizzy Wright - Loophole (feat. Nowdaze).mp3 ␦ Dizzy Wright;Nowdaze - Loophole.mp3
+  [WOULD FIX] Dylan Owen - Evergreen Nights.mp3
+    - Artists: "Dylan Owen; Watsky; SOL; Harrison Sands" ␦ "Dylan Owen;Watsky;SOL;Harrison Sands"
+    - TCMP: False ␦ True
+    - Filename: Dylan Owen - Evergreen Nights.mp3 ␦ Dylan Owen;Watsky;SOL;Harrison Sands - Evergreen Nights.mp3
+  [WOULD FIX] Dylan Owen - The Window Seat.mp3
+    - TCMP: False ␦ True
+  [SKIPPED] Eels - Mighty Fine Blues.mp3 (no fixes needed)
+  [WOULD FIX] Eyedress - Something About You.mp3
+    - TCMP: False ␦ True
+    - Filename: Eyedress - Something About You.mp3 ␦ Eyedress;Dent May - Something About You.mp3
+  [WOULD FIX] Guy Sebastian - Battle Scars (feat. Lupe Fiasco).mp3
+    - Title: "Battle Scars (feat. Lupe Fiasco)" ␦ "Battle Scars"
+    - Artists: "Guy Sebastian; Lupe Fiasco" ␦ "Guy Sebastian;Lupe Fiasco"
+    - TCMP: False ␦ True
+    - Filename: Guy Sebastian - Battle Scars (feat. Lupe Fiasco).mp3 ␦ Guy Sebastian;Lupe Fiasco - Battle Scars.mp3
+  [WOULD FIX] Joshua Golden - 143.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Joshua Golden - heaven come.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Joshua Golden - used to.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Lupe Fiasco - Dots & Lines.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] mike. - play my hand.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] mike. - real things.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Ravyn Lenae - Love Me Not.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Shaggy - Keep'n It Real.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Sig Roy - Don't Let Me Down.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Sig Roy - Together.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Surf Mesa - Another Life.mp3
+    - Artists: "Surf Mesa; FLETCHER; Joshua Golden" ␦ "Surf Mesa;FLETCHER;Joshua Golden"
+    - TCMP: False ␦ True
+    - Filename: Surf Mesa - Another Life.mp3 ␦ Surf Mesa;FLETCHER;Joshua Golden - Another Life.mp3
+  [WOULD FIX] Temper City - Self Aware.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] The Marías - No One Noticed.mp3
+    - TCMP: False ␦ True
+    - Filename: The Marías - No One Noticed.mp3 ␦ The Marias - No One Noticed.mp3
+  [WOULD FIX] Victoria Justice - RAW.mp3
+    - TCMP: False ␦ True
+  [WOULD FIX] Witt Lowry - Put Me First (feat. Joshua Golden).mp3
+    - Title: "Put Me First (feat. Joshua Golden)" ␦ "Put Me First"
+    - Album: "Put Me First (feat. Joshua Golden)" ␦ "Put Me First"
+    - Artists: "Witt Lowry; Joshua Golden" ␦ "Witt Lowry;Joshua Golden"
+    - TCMP: False ␦ True
+    - Filename: Witt Lowry - Put Me First (feat. Joshua Golden).mp3 ␦ Witt Lowry;Joshua Golden - Put Me First.mp3
+  [WOULD FIX] 01 - THE SHINING OF BEING.mp3
+    - Artists: "Akira The Don; Rupert Spira" ␦ "Akira The Don;Rupert Spira"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 01 - THE SHINING OF BEING.mp3 ␦ Akira The Don;Rupert Spira - THE SHINING OF BEING.mp3
+  [WOULD FIX] 02 - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE.mp3
+    - Artists: "Akira The Don; Rupert Spira" ␦ "Akira The Don;Rupert Spira"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 02 - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE.mp3 ␦ Akira The Don;Rupert Spira - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE.mp3
+  [WOULD FIX] 03 - INTO THE INFINITE.mp3
+    - Artists: "Akira The Don; Rupert Spira" ␦ "Akira The Don;Rupert Spira"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 03 - INTO THE INFINITE.mp3 ␦ Akira The Don;Rupert Spira - INTO THE INFINITE.mp3
+  [WOULD FIX] 04 - I Had to Become Like You.mp3
+    - Artists: "Akira The Don; Rupert Spira" ␦ "Akira The Don;Rupert Spira"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 04 - I Had to Become Like You.mp3 ␦ Akira The Don;Rupert Spira - I Had to Become Like You.mp3
+  [WOULD FIX] 05 - Loving Indifference.mp3
+    - Artists: "Akira The Don; Rupert Spira" ␦ "Akira The Don;Rupert Spira"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 05 - Loving Indifference.mp3 ␦ Akira The Don;Rupert Spira - Loving Indifference.mp3
+  [WOULD FIX] 01 - WHAT IF_.mp3
+    - Artists: "Akira The Don; Scott adams" ␦ "Akira The Don;Scott adams"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 01 - WHAT IF_.mp3 ␦ Akira The Don;Scott adams - WHAT IF_.mp3
+  [WOULD FIX] 02 - AUTHOR YOURSELF.mp3
+    - Artists: "Akira The Don; Scott adams" ␦ "Akira The Don;Scott adams"
+    - TCMP: False ␦ True
+    - Genre: "Rap; Hip Hop" ␦ "Musivation"
+    - Filename: 02 - AUTHOR YOURSELF.mp3 ␦ Akira The Don;Scott adams - AUTHOR YOURSELF.mp3
+  [WOULD FIX] 01 - Beauty & the Beast (Intro).mp3
+    - TCMP: False ␦ True
+    - Filename: 01 - Beauty & the Beast (Intro).mp3 ␦ Kings Dead - Beauty & the Beast (Intro).mp3
+  [WOULD FIX] 02 - My New Shit (feat. Alexus Lee).mp3
+    - Title: "My New Shit (feat. Alexus Lee)" ␦ "My New Shit"
+    - Artists: "Kings Dead" ␦ "Kings Dead;Alexus Lee"
+    - TCMP: False ␦ True
+    - Filename: 02 - My New Shit (feat. Alexus Lee).mp3 ␦ Kings Dead;Alexus Lee - My New Shit.mp3
+  [WOULD FIX] 04 - The Reunion (feat. Sebastian Mikael).mp3
+    - Title: "The Reunion (feat. Sebastian Mikael)" ␦ "The Reunion"
+    - Artists: "Kings Dead" ␦ "Kings Dead;Sebastian Mikael"
+    - TCMP: False ␦ True
+    - Filename: 04 - The Reunion (feat. Sebastian Mikael).mp3 ␦ Kings Dead;Sebastian Mikael - The Reunion.mp3
+  [WOULD FIX] 06 - Proud of Me (feat. on Cue).mp3
+    - Title: "Proud of Me (feat. on Cue)" ␦ "Proud of Me"
+    - Artists: "Kings Dead" ␦ "Kings Dead;on Cue"
+    - TCMP: False ␦ True
+    - Filename: 06 - Proud of Me (feat. on Cue).mp3 ␦ Kings Dead;on Cue - Proud of Me.mp3
+  [WOULD FIX] 11 - Good Rebels (feat. Moonflwr).mp3
+    - Title: "Good Rebels (feat. Moonflwr)" ␦ "Good Rebels"
+    - Artists: "Kings Dead" ␦ "Kings Dead;Moonflwr"
+    - TCMP: False ␦ True
+    - Filename: 11 - Good Rebels (feat. Moonflwr).mp3 ␦ Kings Dead;Moonflwr - Good Rebels.mp3
+  [WOULD FIX] 03 - Till I Get There.mp3
+    - TCMP: False ␦ True
+    - Filename: 03 - Till I Get There.mp3 ␦ Lupe Fiasco - Till I Get There.mp3
+  [WOULD FIX] 06 - The Show Goes On.mp3
+    - TCMP: False ␦ True
+    - Filename: 06 - The Show Goes On.mp3 ␦ Lupe Fiasco - The Show Goes On.mp3
+  [WOULD FIX] 07 - Beautiful Lasers (2 Ways) [feat. MDMA].mp3
+    - Artists: "Lupe Fiasco; MDMA" ␦ "Lupe Fiasco;MDMA"
+    - TCMP: False ␦ True
+    - Filename: 07 - Beautiful Lasers (2 Ways) [feat. MDMA].mp3 ␦ Lupe Fiasco;MDMA - Beautiful Lasers (2 Ways) [feat. MDMA].mp3
+  [WOULD FIX] 12 - Never Forget You (feat. John Legend).mp3
+    - Title: "Never Forget You (feat. John Legend)" ␦ "Never Forget You"
+    - Artists: "Lupe Fiasco; John Legend" ␦ "Lupe Fiasco;John Legend"
+    - TCMP: False ␦ True
+    - Filename: 12 - Never Forget You (feat. John Legend).mp3 ␦ Lupe Fiasco;John Legend - Never Forget You.mp3
+  [WOULD FIX] 06 - The Instrumental (feat. Jonah Matranga).mp3
+    - Title: "The Instrumental (feat. Jonah Matranga)" ␦ "The Instrumental"
+    - Artists: "Lupe Fiasco; Jonah Matranga" ␦ "Lupe Fiasco;Jonah Matranga"
+    - TCMP: False ␦ True
+    - Filename: 06 - The Instrumental (feat. Jonah Matranga).mp3 ␦ Lupe Fiasco;Jonah Matranga - The Instrumental.mp3
+  [WOULD FIX] 09 - Daydreamin' (feat. Jill Scott).mp3
+    - Title: "Daydreamin' (feat. Jill Scott)" ␦ "Daydreamin'"
+    - Artists: "Lupe Fiasco; Jill Scott" ␦ "Lupe Fiasco;Jill Scott"
+    - TCMP: False ␦ True
+    - Filename: 09 - Daydreamin' (feat. Jill Scott).mp3 ␦ Lupe Fiasco;Jill Scott - Daydreamin'.mp3
+  [WOULD FIX] 10 - The Cool.mp3
+    - TCMP: False ␦ True
+    - Filename: 10 - The Cool.mp3 ␦ Lupe Fiasco - The Cool.mp3
+  [WOULD FIX] 05 - Superstar (feat. Matthew Santos).mp3
+    - Title: "Superstar (feat. Matthew Santos)" ␦ "Superstar"
+    - Artists: "Lupe Fiasco; Matthew Santos" ␦ "Lupe Fiasco;Matthew Santos"
+============================================================
+  DUPLICATE FOUND
+============================================================
+
+  In library: C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don;Rupert Spira - INTO THE INFINITE.xml
+  New file:   C:\Users\David\Downloads\NewMusic\PROCESSED\Akira The Don - THE SHINING OF BEING\03 - INTO THE INFINITE.mp3
+
+  Track: Akira The Don; Rupert Spira - INTO THE INFINITE
+  Album: THE SHINING OF BEING
+
+------------------------------------------------------------
+  [D] Delete from NewMusic   [L] Delete from Library
+  [K] Keep both             [Q] Quit
+------------------------------------------------------------
+
+ - Quit. Remaining files left for next run.
+ - Time taken: 258.071 seconds
+
+Total time taken: 260.093 seconds
+
+Finished!
+
+
+============================================================
+[DONE] Start: 15:25:39.32  End: 15:30:04.94
+============================================================
+
+C:\Users\David\GitHubRepos\AudioManager\scripts>
+
+
+
