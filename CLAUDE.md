@@ -66,11 +66,13 @@ launch.bat handles build internally, no separate build step needed.
 
 ### Claude: Building the Program
 
-**Always use PowerShell (never Bash) for .bat files:**
+**Always use PowerShell (never Bash) for .bat files. Always pipe input to skip interactive pause:**
 ```powershell
 cd "C:\Users\David\GitHubRepos\AudioManager"
-.\scripts\build.bat
+echo "" | .\scripts\build.bat
 ```
+
+The `echo "" |` pipes input to skip the "Press any key..." pause. Build completes in ~2-3 seconds without blocking.
 
 **Success looks like:**
 ```
@@ -81,11 +83,6 @@ cd "C:\Users\David\GitHubRepos\AudioManager"
 **If build fails:**
 - Check `logs\build.log` for full MSBuild output and error details
 - Common errors: missing csproj file registration (see CRITICAL below), platform mismatch
-
-**To skip interactive pause (for automation):**
-```powershell
-echo "" | .\scripts\build.bat
-```
 
 ### For Scripted/CLI Use
 
