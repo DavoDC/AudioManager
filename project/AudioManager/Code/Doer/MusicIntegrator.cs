@@ -48,6 +48,13 @@ namespace AudioManager
 
             try
             {
+                // Step 1: Fix tags in NewMusic folder (comprehensive tag cleanup via TagFixer)
+                Console.WriteLine("\n[Step 1/2] Fixing tags...");
+                new TagFixer(dryRun);
+
+                // Step 2: Route files into library (after tags are clean)
+                Console.WriteLine("\n[Step 2/2] Routing files...");
+
                 var files = Directory.Exists(Constants.NewMusicPath)
                     ? Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories)
                     : Array.Empty<string>();
@@ -86,9 +93,6 @@ namespace AudioManager
 
                         // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
                         string primaryArtist = track.PrimaryArtist;
-
-                        // Note: All tag fixes (TCMP, genre, parentheticals) are handled by TagFixer before integration.
-                        // Integration assumes all input files are already cleaned and only handles routing.
 
                         // Check for duplicate: same artist + title already in library
                         string duplicatePath = FindDuplicateInMirror(track);
