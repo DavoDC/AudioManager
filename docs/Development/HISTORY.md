@@ -4,13 +4,17 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
-## 2026-04-28 - Comprehensive logging + fix skip error + fix Unicode output (TIER 0/1)
+## 2026-04-28 - Pre-integration fix suite: logging, skip error, Unicode, and separate tag fixing (TIER 0/1)
 
 **P0 Bug Fix - Skip error crash:** Fixed `startIndex cannot be larger than length of string` exception in MusicIntegrator when processing skipped files. Added bounds checking to all Substring() calls that compute lengths from path operations.
 
 **P1 Comprehensive Logging:** Extended TeeWriter to support dual console + file output. Wired up timestamped log files for all modes (analysis, integrate, tagfix) in `logs/` directory. All operations now logged to file automatically - users can scan log files for errors, patterns, and auditing after integration runs. Reused existing TeeWriter instead of creating duplicate LogWriter.
 
 **P1 Unicode Fix:** Replaced non-ASCII Unicode rightwards arrows (→) with ASCII ` ->` in TagFixer output for proper console rendering. Fixed display issues showing delta character (␦) in tag comparison output.
+
+**TIER 0 - Separate tag fixing from integration:** Confirmed TagFixer module runs as separate pre-integration step (line 53 of MusicIntegrator.cs). Integration assumes all input files have clean tags and focuses purely on routing decisions. Separation of concerns complete.
+
+**TIER 1 - Auto-log routing decisions to XML:** Confirmed DecisionLog class implemented and wired into MusicIntegrator. Logs all routing decisions (auto-route, manual selection, etc.) to `decisions.xml` with full track metadata, destination path, routing reason, and dryRun flag. Decision logging at lines 268/287/319/368, saved at line 402. Ready for first real integration run with full audit trail.
 
 ---
 
