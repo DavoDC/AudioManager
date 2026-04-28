@@ -36,6 +36,9 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 
 
+- [ ] **HIGH PRIORITY - UX: Replace [N] Choose folder with [N] Decline** - When user presses [N] on a routing proposal, instead of a folder picker, simply decline and leave the file in NewMusic for the next run (once routing logic has improved enough to handle that case). Cleaner than a folder picker since most [N] cases are "program doesn't know the right rule yet, not just a wrong path". Current flow: [Y] Accept / [N] Choose folder / [Q] Quit. New flow: [Y] Accept / [N] Decline (leave in NewMusic) / [Q] Quit. Remove PickFolder() entirely. Declined files should log status as "declined" in decisions.xml and the MD report. NEED TO BE ABLE TO EASILY SAY NO WHERE ROUTING FAILS!!!!!!!!!!!  pick folder menu (PickFolder() ) very bad jsut remove it!
+
+
 
 
 ---
@@ -60,6 +63,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 **PRIORITY: Fix before real integration run**
 
 - [ ] **UX: Shorten file paths in duplicate dialogs** - When duplicate detection dialog is shown, displays full absolute paths (e.g., `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don;Rupert Spira - INTO THE INFINITE.xml`). These are impossible to compare at a glance. Improve readability by showing relative paths from library root. Example: show `Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\...` instead of full C:\Users\... path. Implementation: in duplicate dialogs and error messages, extract and display only the portion after `AUDIO_MIRROR\` or `Downloads\NewMusic\` prefix. Affects: MusicIntegrator.cs duplicate dialog, DeriveLibraryPathFromMirrorPath output.
+
+
 
 - [ ] **UX: Add blank lines between tag fixing output blocks** - TagFixer output shows "WOULD FIX" blocks back-to-back with no visual separation, making it hard to scan. Add blank line (Console.WriteLine()) between each track's fixes. Makes dry-run output more readable.
 
