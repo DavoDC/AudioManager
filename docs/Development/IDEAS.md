@@ -42,6 +42,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 - [x] **HIGH PRIORITY: Improve TagFixer output readability** - Removed noisy per-file quick-scan logs that repeated filenames for each change. Now shows only the summary section with per-file changes grouped clearly. Explicitly labels filename changes as `Filename: OldName -> NewName` instead of just arrow. Output is now scannable and clear enough for dry-run validation. Implemented in TagFixer.cs (commit 414cf62): removed lines 141-145 (quick log), modified line 181 to explicitly label filename renames. **DONE (2026-04-28).**
 
+- [ ] **BUG FIX: Skip error on file read (startIndex)** - During integration dry-run, when a file is skipped, an exception is thrown: `startIndex cannot be larger than length of string`. Error is shown in skip message for file "Guy Sebastian; Lupe Fiasco - Battle Scars (feat. Lupe Fiasco).mp3". Root cause: likely a string bounds issue when processing the skip message or file metadata. Check error handling in MusicIntegrator or SkipHandler when building skip error messages - ensure all string operations (Substring, IndexOf) have bounds validation. Dry-run should not crash on skipped files; it should report the skip cleanly and continue.
+
 
 ---
 
@@ -60,6 +62,10 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 ## TIER 2 - QUALITY (Robustness & Test Coverage)
 
 **Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths. Also investigate performance bottlenecks.**
+
+- [ ] **Add comprehensive logging to file** - Every operation shown in terminal should be logged to timestamped files in `logs/` directory. Implement: (1) Create `LogWriter` class that writes to `logs/YYYY-MM-DD_HHmmss.log` with timestamps. (2) Wrap all major operations (tag fix, integration step, validation, routing decision, skip, error) so they log both to terminal AND file. (3) Format: timestamp, operation type, status, details. (4) User can then scan log files for issues, patterns, and auditing. **Why:** Dry-run and real-run output is long; users want to save it for later analysis and troubleshooting. Terminal scrollback is limited; log files are permanent. Implement before first real integration run so all decisions are captured.
+
+- [ ] **Fix Unicode character rendering in output** - Output shows `␦` (delta character) instead of comparison operators, appearing in Tag Fix summary where changes are shown (e.g., `TCMP: False ␦ True`). Root cause: likely using a Unicode dash or comparison operator in code that doesn't render properly in the console. Fix: replace all non-ASCII operators with ASCII equivalents. Use ` -> ` for before/after comparisons instead of Unicode arrows or delta symbols. Audit all output formatting code in TagFixer.cs and ReportWriter.cs for non-ASCII characters. Test output in terminal to verify readability.
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
   - **Loot Bryon Smith** → Genre = "Musivation" (per Music-Library-Rules.md spec)
@@ -80,6 +86,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 ## TIER 3 - POLISH (Structural Alignment & Nice-to-Have)
 
 **Goal: close structural gaps and improve developer experience.** Non-blocking enhancements.
+
+- [ ] **Shorten file paths in duplicate dialogs** - When duplicate detection dialog is shown, it displays full absolute paths (e.g., `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\Musivation\Akira The Don\...`). These are hard to parse at a glance. Improve readability by showing relative paths from the library root or a shortened format. Example: show `\Musivation\Akira The Don\...` instead of the full C:\Users\... path. Update DuplicateHandler dialog output formatting to extract and display only the relevant portion of the path after the library/downloads folder prefix.
 
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
   - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.
