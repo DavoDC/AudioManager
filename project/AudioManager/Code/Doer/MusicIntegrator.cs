@@ -108,19 +108,40 @@ namespace AudioManager
                             // Library:     C:\Users\David\Audio\Artist\Album\Track.mp3
                             string libraryFilePath = DeriveLibraryPathFromMirrorPath(duplicatePath);
 
-                            // Clear and show the duplicate
-                            Console.Clear();
-                            Console.WriteLine("============================================================");
-                            Console.WriteLine("  DUPLICATE FOUND");
-                            Console.WriteLine("============================================================\n");
-                            Console.WriteLine($"  In library: {libraryFilePath}");
-                            Console.WriteLine($"  New file:   {sourcePath}");
-                            Console.WriteLine($"\n  Track: {track.Artists} - {track.Title}");
-                            Console.WriteLine($"  Album: {track.Album}");
-                            Console.WriteLine("\n------------------------------------------------------------");
-                            Console.WriteLine("  [D] Delete from NewMusic   [L] Delete from Library");
-                            Console.WriteLine("  [K] Keep both             [Q] Quit");
-                            Console.WriteLine("------------------------------------------------------------");
+                            // Show duplicate - same style as routing proposals (no Console.Clear, timestamps, relative paths)
+                            string relLibraryPath = libraryFilePath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
+                                ? libraryFilePath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
+                                : libraryFilePath;
+                            string relNewPath = Path.GetFileName(sourcePath);
+
+                            // Recommendation: if library has a single but new file is from an album, prefer album
+                            bool libraryIsSingle = relLibraryPath.IndexOf("\\Singles\\", StringComparison.OrdinalIgnoreCase) >= 0
+                                                || relLibraryPath.StartsWith("Singles\\", StringComparison.OrdinalIgnoreCase);
+                            bool newIsAlbum = !string.IsNullOrEmpty(track.Album)
+                                           && !track.Album.Equals(track.Title, StringComparison.OrdinalIgnoreCase);
+                            string recommendation = (libraryIsSingle && newIsAlbum)
+                                ? "[RECOMMENDED: L - Album version replaces Single]"
+                                : "";
+
+                            Console.WriteLine();
+                            PrintTimestamped("============================================================");
+                            PrintTimestamped("  DUPLICATE FOUND");
+                            PrintTimestamped("============================================================");
+                            Console.WriteLine();
+                            PrintTimestamped($"  In library: {relLibraryPath}");
+                            PrintTimestamped($"  New file:   {relNewPath}");
+                            Console.WriteLine();
+                            PrintTimestamped($"  Track: {track.Artists} - {track.Title}");
+                            PrintTimestamped($"  Album: {track.Album}");
+                            if (!string.IsNullOrEmpty(recommendation))
+                            {
+                                Console.WriteLine();
+                                PrintTimestamped($"  {recommendation}");
+                            }
+                            Console.WriteLine();
+                            PrintTimestamped("  [D] Delete from NewMusic   [L] Delete from Library");
+                            PrintTimestamped("  [K] Keep both              [Q] Quit");
+                            PrintTimestamped("------------------------------------------------------------");
 
                             // Wait for input
                             while (true)
@@ -131,7 +152,7 @@ namespace AudioManager
                                     // Delete from NewMusic
                                     if (dryRun)
                                     {
-                                        Console.WriteLine($"  [DRY RUN] Would delete: {Path.GetFileName(sourcePath)}");
+                                        PrintTimestamped($"  [DRY RUN] Would delete from NewMusic: {relNewPath}");
                                         entry.Status = "would-delete";
                                         entry.Detail = "duplicate (would delete)";
                                         logEntries.Add(entry); skippedCount++;
@@ -139,12 +160,12 @@ namespace AudioManager
                                     else
                                     {
                                         File.Delete(sourcePath);
-                                        Console.WriteLine($"  Deleted: {Path.GetFileName(sourcePath)}");
+                                        PrintTimestamped($"  Deleted from NewMusic: {relNewPath}");
                                         entry.Status = "deleted";
                                         entry.Detail = "duplicate (deleted)";
                                         logEntries.Add(entry); skippedCount++;
                                     }
-                                    Console.Clear();
+                                    Console.WriteLine();
                                     break;
                                 }
                                 else if (key == ConsoleKey.L)
@@ -152,48 +173,47 @@ namespace AudioManager
                                     // Delete from Library (replace old with new album version)
                                     if (dryRun)
                                     {
-                                        Console.WriteLine($"  [DRY RUN] Would delete from library: {libraryFilePath}");
-                                        Console.WriteLine($"  [DRY RUN] Would keep new file: {Path.GetFileName(sourcePath)}");
+                                        PrintTimestamped($"  [DRY RUN] Would delete from library: {relLibraryPath}");
+                                        PrintTimestamped($"  [DRY RUN] Would keep new file: {relNewPath}");
                                         entry.Status = "would-replace";
                                         entry.Detail = "duplicate (would replace)";
                                         logEntries.Add(entry); skippedCount++;
+                                        Console.WriteLine();
+                                        break;
                                     }
                                     else
                                     {
                                         if (File.Exists(libraryFilePath))
                                         {
                                             File.Delete(libraryFilePath);
-                                            Console.WriteLine($"  Deleted from library: {libraryFilePath}");
-                                            Console.WriteLine($"  Integrating new version: {Path.GetFileName(sourcePath)}");
+                                            PrintTimestamped($"  Deleted from library: {relLibraryPath}");
+                                            PrintTimestamped($"  Integrating new version: {relNewPath}");
                                             entry.Status = "replaced";
                                             entry.Detail = "duplicate (library replaced)";
+                                            Console.WriteLine();
                                             // Fall through to integration
                                         }
                                         else
                                         {
-                                            Console.WriteLine($"  [WARN] Library file not found: {libraryFilePath}");
+                                            PrintTimestamped($"  [WARN] Library file not found: {relLibraryPath}");
                                             entry.Status = "error";
                                             entry.Detail = "duplicate (library file not found)";
                                             logEntries.Add(entry); skippedCount++;
+                                            Console.WriteLine();
                                         }
-                                    }
-                                    if (dryRun || entry.Status == "error")
-                                    {
-                                        Console.Clear();
                                         break;
                                     }
-                                    // If real run and successful delete, continue to integration
-                                    break;
                                 }
                                 else if (key == ConsoleKey.K)
                                 {
                                     // Keep and continue
-                                    Console.WriteLine($"  Keeping both - proceeding with integration");
+                                    PrintTimestamped("  Keeping both - proceeding with integration");
+                                    Console.WriteLine();
                                     break;
                                 }
                                 else if (key == ConsoleKey.Q)
                                 {
-                                    Console.WriteLine("\n - Quit. Remaining files left for next run.");
+                                    PrintTimestamped("  Quit. Remaining files left for next run.");
                                     entry.Status = "quit"; logEntries.Add(entry);
                                     return; // exits foreach, hits finally
                                 }
@@ -261,14 +281,25 @@ namespace AudioManager
                         Console.WriteLine();
                         PrintTimestamped("------------------------------------------------------------");
 
-                        // Both dry-run and real mode: show confirmation prompts to user
-                        PrintTimestamped("  [Y] Accept   [N] Choose folder   [Q] Quit");
-                        PrintTimestamped("------------------------------------------------------------");
+                        // Misc routes auto-accept (no decision needed - user can correct via [N] in real runs if needed)
+                        bool isMiscRoute = relativeDest.StartsWith(Constants.MiscDir, StringComparison.OrdinalIgnoreCase);
+                        if (isMiscRoute)
+                        {
+                            PrintTimestamped("  [AUTO] Miscellaneous Songs - auto-accepted");
+                        }
+                        else
+                        {
+                            // All other routes: show confirmation prompts
+                            PrintTimestamped("  [Y] Accept   [N] Choose folder   [Q] Quit");
+                            PrintTimestamped("------------------------------------------------------------");
+                        }
 
-                        // Wait for input
+                        // Wait for input (skipped for misc auto-accept)
+                        ConsoleKey autoKey = isMiscRoute ? ConsoleKey.Y : ConsoleKey.NoName;
                         while (true)
                         {
-                            var key = Console.ReadKey(intercept: true).Key;
+                            var key = isMiscRoute ? autoKey : Console.ReadKey(intercept: true).Key;
+                            isMiscRoute = false; // only auto-accept once
                             if (key == ConsoleKey.Y)
                             {
                                 // Accept proposed destination
@@ -765,11 +796,26 @@ namespace AudioManager
                 {
                     string sampledPerson = artists[1]; // Second artist is the sampled person
 
+                    // Use existing library folder casing if one already exists (e.g. "Scott Adams" not "Scott adams")
+                    string peopleParent = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People");
+                    if (Directory.Exists(peopleParent))
+                    {
+                        foreach (var dir in Directory.GetDirectories(peopleParent))
+                        {
+                            string dirName = Path.GetFileName(dir);
+                            if (dirName.Equals(sampledPerson, StringComparison.OrdinalIgnoreCase))
+                            {
+                                sampledPerson = dirName; // match library casing
+                                break;
+                            }
+                        }
+                    }
+
                     // Count songs for this sampled person (3+ gets own folder, <3 goes to Singles)
                     int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson);
                     if (personSongCount >= 3)
                     {
-                        string peopleFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson);
+                        string peopleFolder = Path.Combine(peopleParent, sampledPerson);
                         reason = $"Akira The Don -> People/{sampledPerson} ({personSongCount} songs)";
                         return peopleFolder;
                     }
@@ -937,11 +983,11 @@ namespace AudioManager
                         {
                             var tag = tagFile.Tag;
                             string fileArtists = tag.JoinedPerformers ?? "";
-                            string genres = tag.JoinedGenres ?? "";
 
-                            // Check if file is Akira The Don + has matching sampled person
-                            if (fileArtists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                                genres.IndexOf(Constants.MusivDir, StringComparison.OrdinalIgnoreCase) >= 0)
+                            // Check if file is Akira The Don + has matching sampled person.
+                            // Don't require Musivation genre - genre isn't set yet in dry-run (TagFixer hasn't run).
+                            // Artist name check is sufficient for batch holistic counting.
+                            if (fileArtists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
                                 var artistList = Track.ProcessProperty(fileArtists).ToList();
                                 if (artistList.Count > 1 && artistList[1].Equals(sampledPerson, StringComparison.OrdinalIgnoreCase))
@@ -968,95 +1014,33 @@ namespace AudioManager
         /// </summary>
         private string PickFolder()
         {
-            // Get all directories under AudioFolderPath
-            var dirs = Directory.Exists(Constants.AudioFolderPath)
-                ? Directory.GetDirectories(Constants.AudioFolderPath, "*", SearchOption.AllDirectories).ToList()
-                : new System.Collections.Generic.List<string>();
+            // User types the destination path directly.
+            // Accepts relative paths (under AudioFolderPath) or full absolute paths.
+            // Empty input = cancel.
+            Console.WriteLine();
+            PrintTimestamped($"  Audio library root: {Constants.AudioFolderPath}");
+            PrintTimestamped("  Enter destination folder path (relative or absolute), or leave empty to cancel:");
+            Console.Write("  > ");
+            string input = Console.ReadLine()?.Trim();
 
-            // Prepare display names (relative to AudioFolderPath)
-            var display = new System.Collections.Generic.List<string>();
-            foreach (var d in dirs)
+            if (string.IsNullOrEmpty(input))
+                return null;
+
+            // If not absolute, treat as relative to AudioFolderPath
+            string fullPath = Path.IsPathRooted(input)
+                ? input
+                : Path.Combine(Constants.AudioFolderPath, input);
+
+            // Validate it doesn't escape the audio library (safety check)
+            string canonical = Path.GetFullPath(fullPath);
+            string libraryRoot = Path.GetFullPath(Constants.AudioFolderPath);
+            if (!canonical.StartsWith(libraryRoot, StringComparison.OrdinalIgnoreCase))
             {
-                string rel = d;
-                int startIdx = Constants.AudioFolderPath.Length;
-                if (startIdx <= d.Length && d.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    rel = d.Substring(startIdx);
-                    if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
-                }
-                display.Add(rel);
+                PrintTimestamped($"  Path '{fullPath}' is outside the audio library. Cancelled.");
+                return null;
             }
 
-            // Add New folder option
-            display.Add("[New folder]");
-
-            // Arrow-key menu selection
-            int selected = 0;
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("Select destination folder (use arrows, Enter to choose):\n");
-                for (int i = 0; i < display.Count; i++)
-                {
-                    Console.WriteLine(i == selected ? $"  > {display[i]}" : $"    {display[i]}");
-                }
-
-                var key = Console.ReadKey(intercept: true).Key;
-                if (key == ConsoleKey.UpArrow) selected = (selected == 0) ? display.Count - 1 : selected - 1;
-                if (key == ConsoleKey.DownArrow) selected = (selected == display.Count - 1) ? 0 : selected + 1;
-                if (key == ConsoleKey.Enter)
-                {
-                    // New folder selected
-                    if (selected == display.Count - 1)
-                    {
-                        // Choose parent
-                        int parentSelected = 0;
-                        var parentDisplay = new System.Collections.Generic.List<string>(display);
-                        parentDisplay.RemoveAt(parentDisplay.Count - 1); // remove New folder
-                        parentDisplay.Insert(0, "[Root]");
-
-                        while (true)
-                        {
-                            Console.Clear();
-                            Console.WriteLine("Select parent folder for new folder (Enter to choose):\n");
-                            for (int j = 0; j < parentDisplay.Count; j++)
-                            {
-                                Console.WriteLine(j == parentSelected ? $"  > {parentDisplay[j]}" : $"    {parentDisplay[j]}");
-                            }
-                            var pk = Console.ReadKey(intercept: true).Key;
-                            if (pk == ConsoleKey.UpArrow) parentSelected = (parentSelected == 0) ? parentDisplay.Count - 1 : parentSelected - 1;
-                            if (pk == ConsoleKey.DownArrow) parentSelected = (parentSelected == parentDisplay.Count - 1) ? 0 : parentSelected + 1;
-                            if (pk == ConsoleKey.Enter)
-                            {
-                                string parentPath;
-                                if (parentSelected == 0)
-                                {
-                                    parentPath = Constants.AudioFolderPath;
-                                }
-                                else
-                                {
-                                    parentPath = Path.Combine(Constants.AudioFolderPath, parentDisplay[parentSelected]);
-                                }
-
-                                Console.WriteLine("\nEnter new folder name:");
-                                string newName = Console.ReadLine()?.Trim();
-                                if (string.IsNullOrEmpty(newName))
-                                {
-                                    return null; // cancel
-                                }
-                                string newPath = Path.Combine(parentPath, newName);
-                                Directory.CreateDirectory(newPath);
-                                return newPath;
-                            }
-                        }
-                    }
-
-                    // Existing folder selected
-                    string chosenRel = display[selected];
-                    string chosenFull = Path.Combine(Constants.AudioFolderPath, chosenRel);
-                    return chosenFull;
-                }
-            }
+            return fullPath;
         }
     }
 }
