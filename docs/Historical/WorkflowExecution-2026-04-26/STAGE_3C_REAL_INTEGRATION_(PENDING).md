@@ -1,97 +1,134 @@
 # STAGE 3C: Real Integration - Execute
 
 **Date:** 2026-04-28  
-**Status:** BLOCKED - Prerequisites not met (awaiting decision logging implementation)  
+**Status:** ✓ READY FOR DRY-RUN - All prerequisites complete  
 **Approved tracks:** 51 tracks staged in `C:\Users\David\Downloads\NewMusic\PROCESSED\`
 
 ---
 
-## Current Blockers
+## Prerequisites Complete ✓
 
-Before Stage 3C can proceed, one TIER 1 prerequisite must be implemented:
+### Decision Logging - IMPLEMENTED (2026-04-28)
 
-### ⚠️ CRITICAL: Decision Logging Not Implemented
+✓ `DecisionLog` class captures all routing decisions with full track metadata  
+✓ Integrated into `MusicIntegrator` - logs at routing points (auto-route, manual selection, dry-run)  
+✓ Output to `docs/Historical/WorkflowExecution-YYYY-MM-DD/decisions.xml` with dryRun flag  
+✓ Tested: build succeeds, ready for dry-run validation  
 
-**Requirement:** Integrator must log all routing decisions to XML BEFORE files are moved. Once integration completes, this metadata is lost forever.
-
-**What must happen:**
-1. Implement `DecisionLog` class in AudioManager to capture routing decisions
-2. Integrate logging into `MusicIntegrator.GetDestDir()` and `FolderPickerHandler`
-3. Each decision must record: artist, album, track, sourceFile, destinationPath, routingReason, timestamp
-4. Output to `docs/Historical/WorkflowExecution-YYYY-MM-DD/decisions.xml`
-5. Test with `--dry-run` mode to ensure logging works without moving files
-
-**Why this matters:** This integration batch is the first real test of the routing pipeline. The decisions made will reveal patterns (which routing rules fire for which tracks, edge cases). These patterns improve the integrator's logic for future batches. Without logging, that knowledge is lost.
-
-**Next step:** `/dev-session` to implement TIER 1 decision logging, then Stage 3C can proceed.
-
-See `IDEAS.md` TIER 1 section for full specification.
+**What it logs:**
+- Full track metadata (artist, primaryArtist, title, album, year, genres, compilation)
+- Routing decision (destination path, routing reason)
+- Execution context (dryRun: true/false, timestamp)
+- Enables pattern extraction and audit trail for this batch
 
 ---
 
-## Prerequisites (After Decision Logging Implemented)
+## Next Steps - Immediate Actions
 
-Before executing Stage 3C:
+**Status:** Ready for dry-run testing. All prerequisites met.
 
-### Pre-Flight Checks
+### Immediate Action: Test Dry-Run (2026-04-28)
 
-- [ ] **Decision logging feature implemented and tested** (TIER 1 complete)
-- [ ] **AudioMirror fresh** - library snapshot captured (integration gate checks this)
-- [ ] **LibChecker clean** - no violations in current library (integration gate checks this)
-- [ ] **51 tracks staged** - all approved music in `C:\Users\David\Downloads\NewMusic\PROCESSED\`
+Run the dry-run integration to validate routing decisions before moving files:
+
+```powershell
+.\scripts\launch.bat
+→ Select Option 3 (Integration - Dry Run)
+```
+
+**This will show:**
+- Tag fixes preview (TCMP, genres, parentheticals, file renames)
+- Routing decisions for all 51 tracks (where each will go, why)
+- New folders that will be created
+- Which Misc songs need manual migration (if any)
+
+**Expected output:**
+- `logs/integration-2026-04-28-dryrun.md` - integration log
+- `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml` - routing decisions (marked dryRun: true)
+
+**After dry-run:** Review both files, verify routing looks correct. Then proceed to real integration.
 
 ---
 
-## Stage 3C Workflow (Once Unblocked)
+## Stage 3C Workflow - Ready Now
 
-### Step 1: Dry-Run Preview
+### Step 1: Dry-Run (Validation Phase)
 
-**Launch:** `scripts/launch.bat` → Select **"3. Integration (dry-run)"**
+**Command:** `.\scripts\launch.bat` → Option 3 (Integration - Dry Run)
 
-This shows:
-- Where each track will be routed (Artists/Musivation/Motivation/Misc)
-- Reasoning for each decision (artist auto-route, genre rule, scan-ahead threshold, manual folder-picker)
-- Folder structure that will be created
-- Which existing Misc songs require manual migration (if any)
+**What happens (no files moved, just preview):**
+1. **Tag Fixing Preview** - Shows what would be fixed in each file
+   - TCMP set to True
+   - Genres corrected (Musivation for Akira The Don, etc.)
+   - Parentheticals removed
+   - Featured artists moved to TPE1 tag
+   - File renames per convention
 
-**Action:** Review the preview. If routing looks wrong, this is the time to spot issues.
+2. **Routing Preview** - Shows where each track will go
+   - Decision for each of 51 tracks (Artists/Musivation/Motivation/Misc)
+   - Reasoning (artist auto-route, genre rule, scan-ahead, manual)
+   - Existing Misc songs flagged if they need manual migration
+   - Folder structure that will be created
 
-### Step 2: Manual Decisions (During Dry-Run Review)
+3. **Decision Log** - Routes logged to `decisions.xml` (marked dryRun: true)
+   - Audit trail of all routing decisions
+   - Full track metadata captured
+   - Can extract patterns after this batch
 
-For any tracks routed to **Misc**, review:
-- Is this a one-off single or a new artist?
-- Should it go to Artists folder if future batches have more tracks?
+**Action:** Review both `integration-2026-04-28-dryrun.md` and `decisions.xml`. If routing looks wrong, fix library and re-test. If OK, proceed to Step 2.
 
-For any tracks with **manual folder-picker prompt**, you'll be asked during the real run:
-- Is this a Sources/Films, Sources/Shows, Sources/Anime track?
-- Override routing destination if needed
+### Step 2: Review Dry-Run Decisions
 
-### Step 3: Execute Integration
+After dry-run completes, review the outputs:
 
-**Launch:** `scripts/launch.bat` → Select **"4. Integration (real)"**
+**File 1:** `logs/integration-2026-04-28-dryrun.md`
+- Check per-file routing decisions
+- Verify confidence report (new folders, destination sanity check, errors)
+- Any files routed to Misc that should go elsewhere?
 
-This executes the actual file movements:
-- Moves 51 tracks from `C:\Users\David\Downloads\NewMusic\PROCESSED\` to `C:\Users\David\Audio\` subfolders
-- Logs all decisions to `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml`
-- Regenerates AudioMirror XMLs to reflect new files
-- Runs LibChecker validation post-integration
-- Reports result: CLEAN (expected) or ISSUES FOUND (fix first)
+**File 2:** `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml`
+- Sample the routing decisions (artist → destination → reason)
+- Verify track metadata is being logged correctly
+- Check timestamp and dryRun: true flag
 
-**Expected outcome:** All 51 tracks moved, AudioMirror updated, decision log populated, library passes LibChecker.
+**Possible actions:**
+- If routing looks correct → go to Step 3 (real integration)
+- If routing looks wrong → pause, fix the library or routing rules, re-test with another dry-run
+- If tag fixes look wrong → fix TagFixer rules, rebuild, re-test
 
-### Step 4: Post-Integration Actions
+### Step 3: Execute Real Integration
 
-- [ ] **Verify LibChecker result** - should be CLEAN
-  - If CLEAN: proceed to Step 5
-  - If issues: fix library and re-run `scripts/launch.bat` → **"1. Analysis"**
-- [ ] **Commit AudioMirror changes** - manually in GitHub Desktop (auto-commit is disabled)
-  - Stage `AudioMirror/AUDIO_MIRROR/` folder
-  - Commit with message like "2026-04-28 Batch integration (51 tracks)"
-  - Push to origin
-- [ ] **Review decision log** - examine `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml`
-  - Extract routing patterns: which rules fired, for which tracks
-  - Document findings (e.g. "Lupe Fiasco always routed to Artists", "Akira Don tracks always Musivation")
-  - Update integrator heuristics if patterns suggest improvements
+**Command:** `.\scripts\launch.bat` → Option 4 (Integration - Real)
+
+**What happens (files actually moved):**
+1. **Tag Fixing** - Applies all tag fixes to NewMusic files (TCMP, genres, etc.)
+2. **Routing** - Moves files to destinations (Artists/Musivation/Motivation/Misc)
+3. **AudioMirror Update** - Regenerates XML snapshot to reflect new files
+4. **LibChecker Validation** - Runs library checks (expected: CLEAN)
+5. **Decision Logging** - Routes logged to `decisions.xml` (marked dryRun: false)
+
+**Expected outcome:** All 51 tracks moved, AudioMirror updated, library CLEAN, decisions logged.
+
+**Confirmation prompt:** You'll be asked "Type YES to confirm" before files are moved. This is your last chance to abort.
+
+### Step 4: Post-Integration Validation & Cleanup
+
+After integration completes successfully:
+
+- [ ] **Verify LibChecker result** - Check console output
+  - Expected: "Post-integration validation: CLEAN"
+  - If ISSUES FOUND: Fix library and re-run `.\scripts\launch.bat` → Option 1 (Analysis)
+
+- [ ] **Commit AudioMirror changes**
+  - Open GitHub Desktop
+  - Stage `AudioMirror/AUDIO_MIRROR/` folder (files that changed)
+  - Commit with message: "2026-04-28 Batch integration (51 tracks)"
+  - Push to origin (auto-commit is disabled for safety)
+
+- [ ] **Extract routing patterns** (TIER 1 analysis)
+  - Review `docs/Historical/WorkflowExecution-2026-04-28/decisions.xml`
+  - Identify patterns: "Akira The Don → 100% Musivation", "New artist with 3+ tracks → new Artists folder", etc.
+  - Document at least 3 patterns in HISTORY.md for future optimization
 
 ---
 
