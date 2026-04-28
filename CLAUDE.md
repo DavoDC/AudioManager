@@ -49,14 +49,12 @@ AudioManager/
 
 ## Build and Run
 
-**IMPORTANT - Claude building the program:**
-```powershell
-cd "C:\Users\David\GitHubRepos\AudioManager"
-.\scripts\build.bat
-```
-**NEVER use Bash for .bat files** - Windows batch scripts only work in PowerShell. Always use PowerShell tool.
+### User Workflow (launch.bat)
 
-**Primary workflow:** Always use `scripts/launch.bat` - interactive menu with built-in build.
+**Primary:** Always run via interactive menu:
+```powershell
+.\scripts\launch.bat
+```
 
 Menu options:
 - 1: Analysis (No Force Regen)
@@ -64,7 +62,39 @@ Menu options:
 - 3: Integration (Dry Run) - shows tag fixes + routing decisions preview
 - 4: Integration (Real) - applies tag fixes, shows routing decisions preview
 
-**For scripted/CLI use:**
+launch.bat handles build internally, no separate build step needed.
+
+### Claude: Building the Program
+
+**Always use PowerShell (never Bash) for .bat files:**
+```powershell
+cd "C:\Users\David\GitHubRepos\AudioManager"
+.\scripts\build.bat
+```
+
+**Success looks like:**
+```
+[BUILD] Compiling AudioManager...
+[BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\..\project\AudioManager\bin\Release\AudioManager.exe
+```
+
+**If build fails:**
+- Check `logs\build.log` for full MSBuild output and error details
+- Common errors: missing csproj file registration (see CRITICAL below), platform mismatch
+
+**To skip interactive pause (for automation):**
+```powershell
+echo "" | .\scripts\build.bat
+```
+
+### For Scripted/CLI Use
+
+After successful build, exe is at:
+```
+project\AudioManager\bin\Release\AudioManager.exe
+```
+
+Direct CLI:
 ```
 project\AudioManager\bin\Release\AudioManager.exe analysis
 project\AudioManager\bin\Release\AudioManager.exe analysis --force-regen
@@ -72,9 +102,19 @@ project\AudioManager\bin\Release\AudioManager.exe integrate --dry-run
 project\AudioManager\bin\Release\AudioManager.exe integrate
 ```
 
-**CRITICAL: old-style csproj requires manual file registration.** This is a .NET Framework 4.8 project with the legacy csproj format. New `.cs` files are NOT auto-included - you MUST add a `<Compile Include="Code\...\NewFile.cs" />` entry to `project\AudioManager\AudioManager.csproj` whenever you create a new source file, or the build will fail with `CS0103: The name '...' does not exist in the current context`. Always verify the csproj was updated after adding a file.
+**CRITICAL: Legacy csproj format - manual file registration required.**
 
-**Solution only defines `Any CPU` platform.** Never pass `-p:Platform=x86` to MSBuild - it will fail with `MSB4126: The specified solution configuration "Release|x86" is invalid`. Use `-p:Platform="Any CPU"`.
+This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs` files are NOT auto-included in the build.
+
+**Every new file must be manually registered:**
+1. Create the `.cs` file in the appropriate folder
+2. Open `project\AudioManager\AudioManager.csproj`
+3. Add a `<Compile Include="Code\...\NewFile.cs" />` entry in the correct section (e.g., after similar files in Doer/ or Track/)
+4. Build to verify: `.\scripts\build.bat`
+
+**If you forget:** Build fails with `CS0103: The name '...' does not exist in the current context`
+
+**Platform constraint:** Solution only defines `Any CPU`. Never pass `-p:Platform=x86` to MSBuild - it will fail with `MSB4126: The specified solution configuration "Release|x86" is invalid`. Always use `-p:Platform="Any CPU"` (which is the default in build.bat).
 
 ## Key Paths (from Constants.cs)
 
