@@ -224,6 +224,8 @@ namespace AudioManager
             {
                 @"\s*\(feat\.\s+[^)]+\)", // (feat. Artist)
                 @"\s*\(ft\.\s+[^)]+\)",   // (ft. Artist)
+                @"\s*\[feat\.\s+[^\]]+\]", // [feat. Artist]
+                @"\s*\[ft\.\s+[^\]]+\]",   // [ft. Artist]
                 @"\s*\(Album\s+Version\)", // (Album Version)
                 @"\s*\(Explicit\)",       // (Explicit)
                 @"\s*\(Radio\s+Edit\)",  // (Radio Edit)
@@ -263,6 +265,8 @@ namespace AudioManager
             {
                 @"\(feat\.\s+([^)]+)\)",  // (feat. Artist)
                 @"\(ft\.\s+([^)]+)\)",    // (ft. Artist)
+                @"\[feat\.\s+([^\]]+)\]", // [feat. Artist]
+                @"\[ft\.\s+([^\]]+)\]",   // [ft. Artist]
             };
 
             foreach (var pattern in featPatterns)
