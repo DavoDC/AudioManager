@@ -20,7 +20,7 @@ namespace AudioManager
         public DecisionLog(bool dryRun)
         {
             this.dryRun = dryRun;
-            this.sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
+            this.sessionDate = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Save all logged decisions to an XML file in docs/Historical/WorkflowExecution-YYYY-MM-DD/.
+        /// Save all logged decisions to an XML file in logs/decisions-YYYY-MM-DD.xml.
         /// </summary>
         public void Save()
         {
@@ -59,12 +59,12 @@ namespace AudioManager
                 if (decisions.Count == 0)
                     return;
 
-                // Determine output path: docs/Historical/WorkflowExecution-YYYY-MM-DD/decisions.xml
+                // Determine output path: logs/decisions-YYYY-MM-DD.xml
                 string repoRoot = FindRepoRoot();
-                string workflowDir = Path.Combine(repoRoot, "docs", "Historical", $"WorkflowExecution-{sessionDate}");
-                Directory.CreateDirectory(workflowDir);
+                string logsDir = Path.Combine(repoRoot, "logs");
+                Directory.CreateDirectory(logsDir);
 
-                string outputPath = Path.Combine(workflowDir, "decisions.xml");
+                string outputPath = Path.Combine(logsDir, $"decisions-{sessionDate}.xml");
 
                 // Create root element
                 var root = new XElement("decisions",
@@ -77,7 +77,7 @@ namespace AudioManager
                 var doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
                 doc.Save(outputPath, SaveOptions.None);
 
-                Console.WriteLine($"\nDecision log saved: docs\\Historical\\WorkflowExecution-{sessionDate}\\decisions.xml");
+                Console.WriteLine($"\nDecision log saved: logs\\decisions-{sessionDate}.xml");
             }
             catch (Exception ex)
             {

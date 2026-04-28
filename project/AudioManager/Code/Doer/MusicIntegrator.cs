@@ -548,9 +548,9 @@ namespace AudioManager
                 string logsDir = Constants.LogsPath;
                 Directory.CreateDirectory(logsDir);
 
-                string date = DateTime.Now.ToString("yyyy-MM-dd");
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
                 string suffix = dryRun ? "-dryrun" : "";
-                string logPath = Path.Combine(logsDir, $"integration-{date}{suffix}.md");
+                string logPath = Path.Combine(logsDir, $"integration-{timestamp}{suffix}.md");
 
                 var sb = new StringBuilder();
                 sb.AppendLine($"# {(dryRun ? "Integration Dry Run" : "Integration Log")}");
@@ -579,7 +579,7 @@ namespace AudioManager
                 }
 
                 File.WriteAllText(logPath, sb.ToString());
-                Console.WriteLine($"\nLog saved: logs\\integration-{date}{suffix}.md");
+                Console.WriteLine($"\nLog saved: logs\\integration-{timestamp}{suffix}.md");
             }
             catch (Exception ex)
             {
