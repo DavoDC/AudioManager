@@ -65,6 +65,25 @@ namespace AudioManager
                         string album = tag.Album ?? "";
                         string genres = tag.JoinedGenres ?? "";
 
+                        // AUTO-DELETE: Akira The Don instrumentals (Rule from STAGE_3B)
+                        // Delete if: artist = "Akira The Don" AND title contains/ends with "Instrumental"
+                        if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                            (title.IndexOf("Instrumental", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             title.EndsWith("(Instrumental)", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            if (!dryRun && File.Exists(sourcePath))
+                            {
+                                File.Delete(sourcePath);
+                                Console.WriteLine($"  [AUTO-DELETED] {Path.GetFileName(sourcePath)} (Akira The Don instrumental)");
+                            }
+                            else if (dryRun)
+                            {
+                                Console.WriteLine($"  [WOULD AUTO-DELETE] {Path.GetFileName(sourcePath)} (Akira The Don instrumental)");
+                            }
+                            skippedCount++;
+                            continue;
+                        }
+
                         // Apply tag cleanup rules
                         string cleanTitle = RemoveParentheticals(title);
                         string cleanAlbum = RemoveParentheticals(album);
