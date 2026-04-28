@@ -53,6 +53,11 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 **Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths. Also investigate performance bottlenecks.**
 
+- [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
+  - **Loot Bryon Smith** → Genre = "Musivation" (per Music-Library-Rules.md spec)
+  - **Generic "Motivation" tracks** → Genre = "Motivation" (currently not handled)
+  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Once implemented, TagFixer will be 100% comprehensive.
+
 - [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
 
 ### DECISION GATE: Python Rewrite vs .NET 8 Migration
@@ -126,10 +131,6 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 **Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
 
-- **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
-  - **Loot Bryon Smith** → Genre = "Musivation" (per Music-Library-Rules.md spec)
-  - **Generic "Motivation" tracks** → Genre = "Motivation" (currently not handled)
-  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Low priority - for now, manually set genre in MP3Tag if you have Loot Bryon Smith or other Motivation-tagged tracks before running tagfix. Once implemented, TagFixer will be 100% comprehensive.
 - **"My Edits" tracking** - detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
 - **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
