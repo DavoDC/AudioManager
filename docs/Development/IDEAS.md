@@ -24,23 +24,23 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 **Goal: ensure integration cannot corrupt the library.** These items must be in place before any real integration run.
 
-- [ ] **CRITICAL BUG: "startIndex cannot be larger than length" error - EVERY file during routing phase** - Dry-run 2026-04-28 shows: (1) Tag-fix phase (Step 1/2) succeeds - reads all 5490 tags, fixes 50 of 51 files. (2) Routing phase (Step 2/2) crashes on EVERY file with "startIndex cannot be larger than length of string" error. Commit 2b75f5ee was supposed to fix this but it's completely broken for the routing code path. Root cause is NOT in TagFixer (that works). It's in the routing/display logic when trying to read file info for the decision UI. Likely cause: substring extraction from a tag field (artist, album, title) without bounds-checking. CRITICAL: blocking all real integration runs. Investigation: (1) grep MusicIntegrator.cs and DuplicateHandler.cs for all string.Substring() calls - EVERY one needs bounds-checking; (2) test with the NewMusic batch (51 files, all hit the error); (3) verify fix by re-running dry-run. (2026-04-28 feedback: "it looks LIKE EVERY Mp3 file is causing issue")
 
-- [ ] **UX/Safety: Error handling - fail fast instead of skip** - Currently when file-read error occurs, program skips the file and continues. David's feedback: should END THE PROGRAM on any integration error instead of silently skipping. Rationale: silent skips could mask data corruption or corrupt the library silently. Change error handling to: (1) detect integration error, (2) stop processing, (3) require explicit user retry or abort. This is a safety requirement before any real integration run.
+- [ ] **BUG: Console.Clear() wipes routing decisions - user can't see/audit what's routing where** - Dry-run 2026-04-28 showed integration proceeding but routing decisions vanished from terminal as soon as they were printed (line 251 calls Console.Clear()). This blocks user from auditing the routing and confirming decisions. Root cause: line 251 `Console.Clear()` clears the output after showing each track's routing decision. Solution: (1) Remove Console.Clear() calls during routing (lines 251, 369, 389); (2) Instead, use blank lines (Console.WriteLine()) to separate sections; (3) Add timestamps to show when each decision is logged (see item below). Result: user can scroll back and see all routing decisions that were made.
 
-- [ ] **UX: Add confirmation gates between every logical section** - Dry-run shows validation passes, but user never gets to confirm before integration starts. Requirement: (1) After "Pre-integration validation passed", pause and show "Proceed? (Y/N)" prompt. (2) After user confirms, clear the prompt and show "Integrating new music... [DRY RUN]". (3) Before "[Step 2/2] Routing files", add another pause/check so user can review the tag fixes from Step 1. Implementation: add ReadLine() confirmation gates in Program.cs between major phases. User must explicitly type Y to continue (not just Enter). This makes dry-run auditable and gives user control.
+- [ ] **UX: Add timestamped log entries during routing** - Dry-run 2026-04-28 showed routing decisions being made but user couldn't see progress timing - no indication of how fast files were being processed. Add `Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Processing: {track.Artists} - {track.Title}")` at key points: (1) before tag fixing starts, (2) after each track's tags are fixed, (3) after each routing decision is logged. This gives visibility into progress and helps debug slow operations. Wire into TeeWriter so timestamps appear in both console and log file.
 
-- [ ] **BUG: Terminal output clearing - scan-ahead info invisible to user** - Dry-run shows scan-ahead data in the log file: "Scan-ahead: 4 artist(s) will hit 3-song threshold..." but user NEVER sees this in terminal. Output is being cleared or swallowed somewhere. This matters because user needs to see routing decisions being made. Root cause investigation: check if Console.Clear() is being called unexpectedly, or if output is buffered and not flushed before the next section. May be related to the confirmation prompt feature - if prompts are added, ensure scan-ahead output is visible before the prompt appears.
+- [ ] **UX: Add confirmation gates between every logical section** - Dry-run shows integration running but user never gets to confirm before major operations. Requirement: (1) After "Pre-integration validation passed", pause and show "Proceed? (Y/N)" prompt; (2) After routing completes, pause before "Integration complete" so user can review decisions. Implementation: add ReadLine() confirmation gates in Program.cs at major decision points. User must explicitly type Y (or other option) to continue. This makes dry-run auditable and gives user control over when integration proceeds.
 
-- [ ] **CRITICAL: First real integration run (after TagFixer prep)** - Prerequisites met: TagFixer module now available. Sequence:
-  1. **Tag cleaning:** Run `AudioManager tagfix --dry-run` to preview tag cleanup (removes parentheticals, fixes featured artists, renames files)
-  2. **Tag fix (real):** Run `AudioManager tagfix` to clean NewMusic files
-  3. **Integration dry-run:** Run `AudioManager integrate --dry-run` to preview routing decisions into library
-  4. **Integration (real):** Run `AudioManager integrate` to move files (note: THIS SESSION only do dry-run and analysis, no real integrate)
-  5. **Post-validation:** LibChecker auto-runs after integration; verify it reports CLEAN
-  6. **Commit:** If CLEAN, commit AudioMirror changes to git
-  - **NewMusic folder contains ~40 songs across multiple artists/albums - good sample for validation.**
-  - **This is the first empirical proof that the integration pipeline works on real data. Once complete, move this item to HISTORY and proceed to TIER 1.**
+- [ ] **UNBLOCKED: Real integration run - now ready after P0 fixes** - P0 bugs fixed (2026-04-28): "startIndex" substring bounds-checking (DecisionLog.cs) + fail-fast error handling. Dry-run completed successfully on full NewMusic batch. BUT: UX issues must be fixed first before real integration:
+  - [ ] **BLOCKING:** Remove Console.Clear() and add timestamped logging (see items above) so user can audit routing decisions
+  - [ ] **BLOCKING:** Add confirmation gates so user can control when integration proceeds
+  - **Once UX issues fixed,** sequence for real integration run:
+    1. **Tag cleaning:** Run `AudioManager tagfix --dry-run` to preview tag cleanup
+    2. **Tag fix (real):** Run `AudioManager tagfix` to clean NewMusic files
+    3. **Integration dry-run:** Run `AudioManager integrate --dry-run` to preview routing with timestamps + confirmations
+    4. **Integration (real):** Run `AudioManager integrate` to move files (after user approves)
+    5. **Post-validation:** LibChecker auto-runs; verify CLEAN
+    6. **Commit:** If CLEAN, commit AudioMirror changes to git
 
 
 
@@ -61,11 +61,15 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 ---
 
-## TIER 2 - QUALITY (Robustness & Test Coverage)
+## TIER 2 - QUALITY (Robustness & UX Polish)
 
-**Goal: eliminate the whole class of build-break bug that cost us Phase 0 time, and pin down the highest-risk code paths. Also investigate performance bottlenecks.**
+**Goal: improve user experience for real integration (visibility, readability, control) and add minimal test coverage for high-risk code paths.**
 
-- [ ] **Shorten file paths in duplicate dialogs** - When duplicate detection dialog is shown, it displays full absolute paths (e.g., `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\Musivation\Akira The Don\...`). These are hard to parse at a glance. Improve readability by showing relative paths from the library root or a shortened format. Example: show `\Musivation\Akira The Don\...` instead of the full C:\Users\... path. Update DuplicateHandler dialog output formatting to extract and display only the relevant portion of the path after the library/downloads folder prefix.
+**PRIORITY: Fix before real integration run**
+
+- [ ] **UX: Shorten file paths in duplicate dialogs** - When duplicate detection dialog is shown, displays full absolute paths (e.g., `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don;Rupert Spira - INTO THE INFINITE.xml`). These are impossible to compare at a glance. Improve readability by showing relative paths from library root. Example: show `Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\...` instead of full C:\Users\... path. Implementation: in duplicate dialogs and error messages, extract and display only the portion after `AUDIO_MIRROR\` or `Downloads\NewMusic\` prefix. Affects: MusicIntegrator.cs duplicate dialog, DeriveLibraryPathFromMirrorPath output.
+
+- [ ] **UX: Add blank lines between tag fixing output blocks** - TagFixer output shows "WOULD FIX" blocks back-to-back with no visual separation, making it hard to scan. Add blank line (Console.WriteLine()) between each track's fixes. Makes dry-run output more readable.
 
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
