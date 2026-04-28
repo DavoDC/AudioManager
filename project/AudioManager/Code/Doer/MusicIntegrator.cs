@@ -30,6 +30,11 @@ namespace AudioManager
             public string Detail; // reason or error message
         }
 
+        private void PrintTimestamped(string message)
+        {
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
+        }
+
         /// <summary>
         /// Construct and run the music integrator
         /// </summary>
@@ -207,7 +212,7 @@ namespace AudioManager
                         // Skip if un-routable (tags are already clean from TagFixer)
                         if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
                         {
-                            Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': missing required tag");
+                            PrintTimestamped($"- Skipped '{Path.GetFileName(sourcePath)}': missing required tag");
                             entry.Status = "skipped"; entry.Detail = "missing required tag";
                             logEntries.Add(entry); skippedCount++;
                             continue;
@@ -242,125 +247,151 @@ namespace AudioManager
                         entry.Destination = relativeDest;
 
                         // Print track header
-                        Console.Clear();
-                        Console.WriteLine("============================================================");
-                        Console.WriteLine($"  {track.Artists} - {track.Title}");
-                        Console.WriteLine("============================================================\n");
-                        Console.WriteLine($"  Album:   {track.Album}");
-                        Console.WriteLine($"  Year:    {track.Year}");
-                        Console.WriteLine($"  Genres:  {track.Genres}");
-                        Console.WriteLine($"\n  Proposed: {relativeDest}");
-                        Console.WriteLine($"  Reason:   {reason}");
-                        Console.WriteLine("\n------------------------------------------------------------");
+                        Console.WriteLine();
+                        PrintTimestamped("============================================================");
+                        PrintTimestamped($"  {track.Artists} - {track.Title}");
+                        PrintTimestamped("============================================================");
+                        Console.WriteLine();
+                        PrintTimestamped($"  Album:   {track.Album}");
+                        PrintTimestamped($"  Year:    {track.Year}");
+                        PrintTimestamped($"  Genres:  {track.Genres}");
+                        Console.WriteLine();
+                        PrintTimestamped($"  Proposed: {relativeDest}");
+                        PrintTimestamped($"  Reason:   {reason}");
+                        Console.WriteLine();
+                        PrintTimestamped("------------------------------------------------------------");
 
-                        if (dryRun)
-                        {
-                            // Dry run: print planned action, no file move, no confirmation needed
-                            Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
-                            entry.Status = "would-move";
-                            // Log the routing decision (even in dry-run, marked as such)
-                            decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
-                            logEntries.Add(entry); movedCount++;
-                        }
-                        else
-                        {
-                            // Real integration: confirm ALL routes with user (gives user full control in early stages)
-                            Console.WriteLine("  [Y] Accept   [N] Choose folder   [Q] Quit");
-                            Console.WriteLine("------------------------------------------------------------");
+                        // Both dry-run and real mode: show confirmation prompts to user
+                        PrintTimestamped("  [Y] Accept   [N] Choose folder   [Q] Quit");
+                        PrintTimestamped("------------------------------------------------------------");
 
-                            // Wait for input
-                            while (true)
+                        // Wait for input
+                        while (true)
+                        {
+                            var key = Console.ReadKey(intercept: true).Key;
+                            if (key == ConsoleKey.Y)
                             {
-                                var key = Console.ReadKey(intercept: true).Key;
-                                if (key == ConsoleKey.Y)
+                                // Accept proposed destination
+                                if (!dryRun && File.Exists(destPath))
                                 {
-                                    // Accept proposed destination
-                                    if (File.Exists(destPath))
-                                    {
-                                        Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
-                                        entry.Status = "skipped"; entry.Detail = "already exists at destination";
-                                        logEntries.Add(entry); skippedCount++;
-                                    }
-                                    else
-                                    {
-                                        Directory.CreateDirectory(destDir);
-                                        File.Move(sourcePath, destPath);
-                                        movedCount++;
-                                        Console.WriteLine($"  Moved to: {relativeDest}");
-                                        // Log the routing decision
-                                        decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
-                                        Console.Clear();
-                                        entry.Status = "moved";
-                                        logEntries.Add(entry);
-                                    }
-                                    break;
+                                    PrintTimestamped($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
+                                    entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                    logEntries.Add(entry); skippedCount++;
                                 }
-                                else if (key == ConsoleKey.Q)
+                                else if (dryRun)
                                 {
-                                    Console.WriteLine("\n - Quit. Remaining files left for next run.");
-                                    entry.Status = "quit"; logEntries.Add(entry);
-                                    return; // exits foreach, hits finally
+                                    // Dry run: log what would happen without moving
+                                    PrintTimestamped($"  [DRY RUN] Would move to: {relativeDest}");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
+                                    entry.Status = "would-move";
+                                    logEntries.Add(entry); movedCount++;
                                 }
-                                else if (key == ConsoleKey.N)
+                                else
                                 {
-                                    // Choose alternative folder
-                                    string chosen = PickFolder();
-                                    if (string.IsNullOrEmpty(chosen))
-                                    {
-                                        // cancelled selection, redisplay prompt
-                                        Console.WriteLine("  Folder selection cancelled.");
-                                        continue;
-                                    }
-
-                                    string newDestDir = chosen;
-                                    string newDestPath = Path.Combine(newDestDir, destFilename);
-                                    Directory.CreateDirectory(newDestDir);
-                                    if (File.Exists(newDestPath))
-                                    {
-                                        Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
-                                        entry.Status = "skipped"; entry.Detail = "already exists at destination";
-                                        logEntries.Add(entry); skippedCount++;
-                                    }
-                                    else
-                                    {
-                                        File.Move(sourcePath, newDestPath);
-                                        movedCount++;
-                                        string rel = newDestPath;
-                                        if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            int startIdx = Constants.AudioFolderPath.Length;
-                                            if (startIdx <= newDestPath.Length)
-                                            {
-                                                rel = newDestPath.Substring(startIdx);
-                                                if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
-                                            }
-                                        }
-                                        Console.WriteLine($"  Moved to: {rel}");
-                                        // Log the routing decision (user manually selected folder)
-                                        decisionLog.LogDecision(track, Path.GetFileName(sourcePath), rel, "User manual folder selection");
-                                        Console.Clear();
-                                        entry.Destination = rel;
-                                        entry.Status = "moved";
-                                        logEntries.Add(entry);
-                                    }
-
-                                    break;
+                                    // Real integration: actually move the file
+                                    Directory.CreateDirectory(destDir);
+                                    File.Move(sourcePath, destPath);
+                                    movedCount++;
+                                    PrintTimestamped($"  Moved to: {relativeDest}");
+                                    // Log the routing decision
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
+                                    Console.WriteLine();
+                                    entry.Status = "moved";
+                                    logEntries.Add(entry);
                                 }
-                                // ignore other keys
+                                break;
                             }
+                            else if (key == ConsoleKey.Q)
+                            {
+                                Console.WriteLine("\n - Quit. Remaining files left for next run.");
+                                entry.Status = "quit"; logEntries.Add(entry);
+                                return; // exits foreach, hits finally
+                            }
+                            else if (key == ConsoleKey.N)
+                            {
+                                // Choose alternative folder
+                                string chosen = PickFolder();
+                                if (string.IsNullOrEmpty(chosen))
+                                {
+                                    // cancelled selection, redisplay prompt
+                                    Console.WriteLine("  Folder selection cancelled.");
+                                    continue;
+                                }
+
+                                string newDestDir = chosen;
+                                string newDestPath = Path.Combine(newDestDir, destFilename);
+                                if (!dryRun)
+                                {
+                                    Directory.CreateDirectory(newDestDir);
+                                }
+
+                                if (!dryRun && File.Exists(newDestPath))
+                                {
+                                    Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
+                                    entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                    logEntries.Add(entry); skippedCount++;
+                                }
+                                else if (dryRun)
+                                {
+                                    // Dry run: log user's manual selection without moving
+                                    string rel = newDestPath;
+                                    if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        int startIdx = Constants.AudioFolderPath.Length;
+                                        if (startIdx <= newDestPath.Length)
+                                        {
+                                            rel = newDestPath.Substring(startIdx);
+                                            if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                                        }
+                                    }
+                                    PrintTimestamped($"  [DRY RUN] Would move to: {rel}");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), rel, "User manual folder selection");
+                                    entry.Destination = rel;
+                                    entry.Status = "would-move";
+                                    logEntries.Add(entry); movedCount++;
+                                }
+                                else
+                                {
+                                    // Real integration: actually move to user's chosen folder
+                                    File.Move(sourcePath, newDestPath);
+                                    movedCount++;
+                                    string rel = newDestPath;
+                                    if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        int startIdx = Constants.AudioFolderPath.Length;
+                                        if (startIdx <= newDestPath.Length)
+                                        {
+                                            rel = newDestPath.Substring(startIdx);
+                                            if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
+                                        }
+                                    }
+                                    PrintTimestamped($"  Moved to: {rel}");
+                                    // Log the routing decision (user manually selected folder)
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), rel, "User manual folder selection");
+                                    Console.WriteLine();
+                                    entry.Destination = rel;
+                                    entry.Status = "moved";
+                                    logEntries.Add(entry);
+                                }
+
+                                break;
+                            }
+                            // ignore other keys
                         }
                     }
                     catch (Exception ex)
                     {
                         // Fail fast on integration errors - do not silently skip files
                         // Silent skips could mask data corruption or library corruption
-                        Console.Clear();
-                        Console.WriteLine("\n============================================================");
-                        Console.WriteLine("  INTEGRATION FAILED");
-                        Console.WriteLine("============================================================\n");
-                        Console.WriteLine($"Error processing file: {Path.GetFileName(sourcePath)}");
-                        Console.WriteLine($"Full path: {sourcePath}");
-                        Console.WriteLine($"\nError details: {ex.Message}");
+                        Console.WriteLine();
+                        PrintTimestamped("============================================================");
+                        PrintTimestamped("INTEGRATION FAILED");
+                        PrintTimestamped("============================================================");
+                        Console.WriteLine();
+                        PrintTimestamped($"Error processing file: {Path.GetFileName(sourcePath)}");
+                        PrintTimestamped($"Full path: {sourcePath}");
+                        Console.WriteLine();
+                        PrintTimestamped($"Error details: {ex.Message}");
                         if (!string.IsNullOrEmpty(ex.StackTrace))
                             Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
                         Console.WriteLine("\n============================================================");
@@ -568,12 +599,12 @@ namespace AudioManager
             var errors = entries.Where(e => e.Status == "error").ToList();
             if (errors.Count > 0)
             {
-                Console.WriteLine($"\n  [ERRORS: {errors.Count}]");
-                foreach (var e in errors) Console.WriteLine($"  - {e.Filename}: {e.Detail}");
+                PrintTimestamped($"[ERRORS: {errors.Count}]");
+                foreach (var e in errors) PrintTimestamped($"- {e.Filename}: {e.Detail}");
             }
             else
             {
-                Console.WriteLine("\n  No errors.");
+                PrintTimestamped("No errors.");
             }
 
             Console.WriteLine("\n============================================================");
