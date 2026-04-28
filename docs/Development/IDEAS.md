@@ -4,10 +4,19 @@ Single source of truth for all pending work. Settled decisions and completed fea
 
 ## Organization: Tiered Priorities
 
-Work is grouped by safety tier. Items within a tier can be done in any order or in parallel.
+Work is grouped by safety tier and milestone. Items within a tier can be done in any order or in parallel.
 **Do NOT move to the next tier until the current tier is verified working on real data.**
 
-**Why tiers?** AudioManager moves real files. Safety is non-negotiable. Tiers make blocking items explicit (TIER 0: safety prerequisites), then MVP (does it work?), then quality/polish (nice-to-have). This matches how a solo developer actually reasons about work.
+**Why tiers?** AudioManager moves real files. Safety is non-negotiable. Tiers make blocking items explicit. TIER 0 and TIER 1 together form the "First Real Integration" milestone - all items must be complete before doing the real integration run. TIER 0 ensures safety (no data corruption), TIER 1 ensures we capture routing data and can validate the run worked. Then TIER 2+ for quality/polish. This matches how a solo developer actually reasons about work.
+
+---
+
+# MILESTONE: First Real Integration Run
+
+**Combined TIER 0 + TIER 1 prerequisites.** All items below must be complete before doing Stage 3C integration.
+- TIER 0 ensures safety (no corruption, all validations in place)
+- TIER 1 ensures decision logging (routing decisions captured, patterns extractable, audit trail preserved)
+- Success = first real integration runs clean, all decisions logged, at least 3 routing patterns extracted
 
 ---
 
