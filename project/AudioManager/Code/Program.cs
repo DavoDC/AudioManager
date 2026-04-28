@@ -62,17 +62,19 @@ namespace AudioManager
                     forceMirrorRegen = (mode == 1) ? PromptForceMirrorRegen() : false;
                 }
 
-                if (mode == 1)
+                // Set up file logging for all modes (console output tee'd to file + console simultaneously)
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+                string modeLabel = (mode == 1) ? "analysis" : (mode == 2) ? "integrate" : "tagfix";
+                string logFilePath = Path.Combine(Constants.LogsPath, $"{modeLabel}-{timestamp}.log");
+                StringWriter captureWriter = (mode == 1) ? new StringWriter() : null;
+                TeeWriter teeWriter = new TeeWriter(Console.Out, logFilePath, captureWriter);
+                Console.SetOut(teeWriter);
+
+                try
                 {
-                    // Analysis mode
-
-                    // Start capturing console output for report
-                    StringWriter captureWriter = new StringWriter();
-                    TeeWriter teeWriter = new TeeWriter(Console.Out, captureWriter);
-                    Console.SetOut(teeWriter);
-
-                    try
+                    if (mode == 1)
                     {
+                        // Analysis mode
                         // 1) Check the age of the mirror
                         AgeChecker ac = new AgeChecker(forceMirrorRegen);
 
@@ -92,86 +94,88 @@ namespace AudioManager
 
                         // Print total time taken (captured into report)
                         Doer.PrintTotalTimeTaken();
+
+                        // 6) Auto-commit AudioMirror if LibChecker was clean
+                        // Check this before saving report so ReportWriter knows where to save it.
+                        // LibChecker prints "LibChecker: Clean" to the captured stream when zero issues found.
+                        bool libCheckerClean = captureWriter.ToString().Contains("LibChecker: Clean");
+
+                        // Save report (reports with issues go to gitignored folder to avoid cluttering diffs)
+                        ReportWriter.Save(captureWriter.ToString(), libCheckerClean);
+
+                        // Auto-commit AudioMirror after report save
+                        // Runs after report save so the commit output is not captured into the report.
+                        AudioMirrorCommitter.TryCommit(libCheckerClean);
+
+                        // Finish message
+                        Console.WriteLine("\nFinished!\n");
+
+                        // Analysis mode complete
+                        return;
                     }
-                    finally
+                    else if (mode == 2)
                     {
-                        // Restore real console output
-                        Console.SetOut(teeWriter.ConsoleWriter);
-                    }
-
-                    // 6) Auto-commit AudioMirror if LibChecker was clean
-                    // Check this before saving report so ReportWriter knows where to save it.
-                    // LibChecker prints "LibChecker: Clean" to the captured stream when zero issues found.
-                    bool libCheckerClean = captureWriter.ToString().Contains("LibChecker: Clean");
-
-                    // Save report (reports with issues go to gitignored folder to avoid cluttering diffs)
-                    ReportWriter.Save(captureWriter.ToString(), libCheckerClean);
-
-                    // Auto-commit AudioMirror after report save
-                    // Runs after report save so the commit output is not captured into the report.
-                    AudioMirrorCommitter.TryCommit(libCheckerClean);
-
-                    // Finish message
-                    Console.WriteLine("\nFinished!\n");
-
-                    // Analysis mode complete
-                    return;
-                }
-                else if (mode == 2)
-                {
-                    // Integrate mode - run pre-integration gate first
-                    if (!RunPreIntegrationGate(mirrorPath))
-                    {
-                        Console.WriteLine("\nFix library issues before adding new songs.\n");
-                        Environment.Exit(1);
-                    }
-
-                    // Gate passed - proceed with integration
-                    MusicIntegrator mi = new MusicIntegrator(dryRun);
-
-                    // Post-integration validation: regenerate mirror and run LibChecker
-                    if (!dryRun)
-                    {
-                        Console.WriteLine("\nPost-integration validation...");
-                        try
+                        // Integrate mode - run pre-integration gate first
+                        if (!RunPreIntegrationGate(mirrorPath))
                         {
-                            // Regenerate mirror to reflect newly integrated files
-                            Console.WriteLine(" - Regenerating AudioMirror XMLs...");
-                            Reflector r = new Reflector(mirrorPath);
-                            Parser p = new Parser(mirrorPath);
+                            Console.WriteLine("\nFix library issues before adding new songs.\n");
+                            Environment.Exit(1);
+                        }
 
-                            // Run LibChecker to validate the updated library
-                            Console.WriteLine(" - Running library validation...");
-                            LibChecker lc = new LibChecker(p.audioTags);
+                        // Gate passed - proceed with integration
+                        MusicIntegrator mi = new MusicIntegrator(dryRun);
 
-                            if (lc.IsClean)
+                        // Post-integration validation: regenerate mirror and run LibChecker
+                        if (!dryRun)
+                        {
+                            Console.WriteLine("\nPost-integration validation...");
+                            try
                             {
-                                Console.WriteLine(" - Post-integration validation: CLEAN (no issues found)\n");
+                                // Regenerate mirror to reflect newly integrated files
+                                Console.WriteLine(" - Regenerating AudioMirror XMLs...");
+                                Reflector r = new Reflector(mirrorPath);
+                                Parser p = new Parser(mirrorPath);
+
+                                // Run LibChecker to validate the updated library
+                                Console.WriteLine(" - Running library validation...");
+                                LibChecker lc = new LibChecker(p.audioTags);
+
+                                if (lc.IsClean)
+                                {
+                                    Console.WriteLine(" - Post-integration validation: CLEAN (no issues found)\n");
+                                }
+                                else
+                                {
+                                    Console.WriteLine(" - Post-integration validation: ISSUES FOUND (see above)\n");
+                                }
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                Console.WriteLine(" - Post-integration validation: ISSUES FOUND (see above)\n");
+                                Console.WriteLine($" - WARNING: Could not run post-integration validation: {ex.Message}\n");
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($" - WARNING: Could not run post-integration validation: {ex.Message}\n");
-                        }
+                    }
+                    else if (mode == 3)
+                    {
+                        // TagFix mode - clean tags in NewMusic folder
+                        TagFixer tf = new TagFixer(dryRun);
+                    }
+
+                    // Print total time taken (Integrate and TagFix modes only)
+                    if (mode == 2 || mode == 3)
+                    {
+                        Doer.PrintTotalTimeTaken();
+
+                        // Finish message (Integrate and TagFix modes only)
+                        Console.WriteLine("\nFinished!\n");
                     }
                 }
-                else if (mode == 3)
+                finally
                 {
-                    // TagFix mode - clean tags in NewMusic folder
-                    TagFixer tf = new TagFixer(dryRun);
-                }
-
-                // Print total time taken (Integrate and TagFix modes only)
-                if (mode == 2 || mode == 3)
-                {
-                    Doer.PrintTotalTimeTaken();
-
-                    // Finish message (Integrate and TagFix modes only)
-                    Console.WriteLine("\nFinished!\n");
+                    // Restore real console output and close file logger
+                    teeWriter?.CloseLogFile();
+                    Console.SetOut(teeWriter.ConsoleWriter);
+                    Console.WriteLine($"Log file saved: logs/{modeLabel}-{timestamp}.log");
                 }
             }
             catch (Exception ex)
