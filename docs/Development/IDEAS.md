@@ -87,6 +87,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 - [ ] **Re-enable AudioMirrorCommitter auto-commit** - currently disabled (shows manual instructions instead). Re-enable when program is more mature and proven stable on real library operations. Auto-commit was too risky during active development. Prerequisites: (1) TIER 1 all verified, (2) several weeks of stable runs with zero accidental data loss, (3) both safety checks above in place. Low priority - manual commits are safe and auditable.
   - **Note:** Old auto-commit logic is commented out in `AudioMirrorCommitter.TryCommit()` (lines ~60-85) for easy re-enable. Uncomment when prerequisites met.
 
+- [ ] **Fix report table formatting - markdown tables instead of plain text** - Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as plain text with no formatting. Example: "% Decade Occurrences" section shows numbered rows without table structure. Modify `ReportWriter.cs` (and/or `Analyser.cs` if it generates the data) to emit proper markdown tables with pipe-delimited columns and header separators. Affects readability and consistency with GitHub markdown rendering. **Why:** Reports are committed to AudioMirror repo and viewed on GitHub; plain text looks unprofessional, markdown tables are readable and well-formatted.
+
 ---
 
 ## TIER 4 - FUTURE (Lower Priority / Nice-to-Have)
