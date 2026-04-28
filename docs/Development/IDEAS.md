@@ -31,7 +31,13 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 - [ ] **UX: Add confirmation gates between every logical section** - Dry-run shows integration running but user never gets to confirm before major operations. Requirement: (1) After "Pre-integration validation passed", pause and show "Proceed? (Y/N)" prompt; (2) After routing completes, pause before "Integration complete" so user can review decisions. Implementation: add ReadLine() confirmation gates in Program.cs at major decision points. User must explicitly type Y (or other option) to continue. This makes dry-run auditable and gives user control over when integration proceeds.
 
-- [ ] **UNBLOCKED: Real integration run - now ready after P0 fixes** - P0 bugs fixed (2026-04-28): "startIndex" substring bounds-checking (DecisionLog.cs) + fail-fast error handling. Dry-run completed successfully on full NewMusic batch. BUT: UX issues must be fixed first before real integration:
+- [ ] **CRITICAL BUG: Wrong routing for Akira The Don - routes to Artists instead of Musivation** - Dry-run 2026-04-28 shows UNSTOPPABLE routed to `Artists\Akira The Don\UNSTOPPABLE\` but should route to `Musivation\Akira The Don\People\Brian Tracy\UNSTOPPABLE\`. Root cause: GetDestDir() doesn't recognize Akira The Don as a special artist requiring Musivation folder + People subfolder for collaborations. Organization rule (from scanning C:\Users\David\Audio\Musivation\Akira The Don\): 
+  - Main albums go to: Musivation/Akira The Don/[Album Name]/
+  - Collaborations with people go to: Musivation/Akira The Don/People/[Person]/[Album]/
+  - One-off tracks go to: Musivation/Akira The Don/Singles/
+  **This must be fixed BEFORE any real integration** - wrong routing = files moved to wrong location. Fix: Update GetDestDir() to detect Akira The Don and apply Musivation rules. Also update Music-Library-Rules.md to document this structure.
+
+- [ ] **UNBLOCKED: Real integration run - now ready after P0 fixes** - P0 bugs fixed (2026-04-28): "startIndex" substring bounds-checking (DecisionLog.cs) + fail-fast error handling. Dry-run completed successfully on full NewMusic batch. BUT: Critical routing bug + UX issues must be fixed first:
   - [ ] **BLOCKING:** Remove Console.Clear() and add timestamped logging (see items above) so user can audit routing decisions
   - [ ] **BLOCKING:** Add confirmation gates so user can control when integration proceeds
   - **Once UX issues fixed,** sequence for real integration run:
