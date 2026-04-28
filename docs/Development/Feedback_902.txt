@@ -1,0 +1,17 @@
+DRY INTEGRATON RUN, see logs e.g. C:\Users\David\GitHubRepos\AudioManager\logs\integrate-2026-04-28_205804.log
+
+" - Skipped 'x.mp3': error reading file (startIndex cannot be larger than length of string.
+Parameter name: startIndex)"  
+2b75f5ee2bdc96ee4fcff3132e6fb156044a1f2f was supposed to fix this but it didnt! you were confident! be careful about this one, bit of aristotle thinking !
+INSTEAD OF SKIPPING HERE, END THE PROGRAM IF THERE IS AN ERROR !
+
+FEEDBACK: BETWEEN  " - Pre-integration validation passed. " and  "Integrating new music... [DRY RUN - no files will be moved]", 
+there should be a pause, then a "Proceed? (Y/N) prompt, then it clears that, then moves onto the next part.  EVERY logical seciton should have this !
+BEFORE [Step 2/2] Routing files..., should be a anothr pause/cehck  to cehck over tag fixes! 
+
+In terminal, i never got to see this part , scan ahead etc "[Step 2/2] Routing files...
+Scan-ahead: 4 artist(s) will hit 3-song threshold:
+  - 4 in batch = 4 total -> new Artists/Dylan Owen/
+  - 8 in batch = 8 total -> new Artists/Akira The Don/
+  - 3 in batch = 3 total -> new Artists/Joshua Golden/
+  - 5 in batch = 5 total -> new Artists/Kings Dead/" , because it got cleared!
