@@ -4,7 +4,30 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
-## 2026-04-28 - Pre-integration fix suite: logging, skip error, Unicode, and separate tag fixing (TIER 0/1)
+## 2026-04-28 Session 2 - Routing logic fixes: album subfolder holistic count, Akira The Don People folders, 3+ artist rule
+
+**CRITICAL BUG FIX - Album subfolder logic (holistic counting):** Implemented correct album subfolder routing that counts songs holistically (library + new batch combined). Rule: if 2+ songs from album exist total, route to album folder; <2 songs -> Singles/ folder. Added `CountAlbumSongs()` method that scans both library (filesystem) and NewMusic (tag reading) to determine final album song count.
+
+**CRITICAL BUG FIX - Akira The Don routing to Musivation/People subfolder:** Implemented special routing for Akira The Don tracks: genre=Musivation triggers detection of sampled person from secondary artist. Routes to `Musivation/Akira The Don/People/{person}/` if 3+ songs exist for that person (holistic count); otherwise -> `Musivation/Akira The Don/Singles/`. Added `CountAkiraTheDonPersonSongs()` helper that counts across library People folders, Singles, and NewMusic batch. Sampled person detection via secondary artist (after first semicolon in TPE1).
+
+**ENHANCEMENT - 3+ song rule for Akira The Don People folders:** Implemented scan-ahead-style rule for Akira The Don sampled persons, matching the Artists folder logic: 3+ songs from same person creates dedicated folder, <3 songs go to Singles. This prevents scattered single songs while ensuring organizational consistency.
+
+**VERIFICATION - Filename regeneration:** Confirmed TagFixer already handles filename regeneration correctly. Files are renamed during tag fixing step (`newFilename = {cleanedArtists} - {cleanedTitle}.mp3`), so filenames always match final tag values by the time integration routing begins.
+
+**Documentation updated:**
+- Music-Library-Rules.md: Updated Akira The Don section with 3+ person rule and holistic counting explanation
+- Both rules now reference the holistic count principle (library + batch combined, not batch-only)
+
+**Code changes:**
+- MusicIntegrator.cs: Modified `GetDestDir()` to detect Akira The Don and handle People subfolder routing with 3+ count
+- Added two helper methods: `CountAlbumSongs()` and `CountAkiraTheDonPersonSongs()` for holistic counting
+- Build verified - no compilation errors
+
+**Ready for testing:** All three routing logic bugs fixed. Now ready for user to run dry-run integration to verify routing decisions match expected patterns before real integration.
+
+---
+
+## 2026-04-28 Session 1 - Pre-integration fix suite: logging, skip error, Unicode, and separate tag fixing (TIER 0/1)
 
 **P0 Bug Fix - Skip error crash:** Fixed `startIndex cannot be larger than length of string` exception in MusicIntegrator when processing skipped files. Added bounds checking to all Substring() calls that compute lengths from path operations.
 

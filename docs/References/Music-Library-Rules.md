@@ -127,10 +127,11 @@ Tracks discovered through a specific form of media. **CRITICAL DISTINCTION:**
 ## Akira The Don (Musivation)
 - All ATD tracks: genre = `Musivation`, destination = `Musivation/Akira The Don/`
 - TPE1 = `Akira The Don;{Sampled Person}` (sampled person MUST be listed as co-artist)
-- Routing within ATD folder:
-  - `People/{person}/` folder exists -> route there (may have album subfolders inside)
-  - No People subfolder -> `Singles/`
-- Example: "NO SMARTER THAN YOU" (Steve Jobs) -> no `People/Steve Jobs/` -> `Singles/`
+- Routing within ATD folder (holistic count: library + batch combined):
+  - **3+ songs from sampled person** -> `People/{person}/` folder (creates folder if needed)
+  - **Fewer than 3 songs from sampled person** -> `Singles/` folder
+- Example: "NO SMARTER THAN YOU" (Steve Jobs) -> 1-2 songs total from Steve Jobs -> `Singles/`
+- Example: "INTO THE INFINITE" (Brian Tracy) -> 3+ songs total from Brian Tracy -> `People/Brian Tracy/`
 
 ## Loot Bryon Smith
 - Lives in `Musivation/Loot Bryon Smith/` (NOT Artists)
