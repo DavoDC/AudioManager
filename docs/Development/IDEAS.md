@@ -117,6 +117,10 @@ Work is grouped by safety tier. Items within a tier can be done in any order or 
 
 **Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
 
+- **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
+  - **Loot Bryon Smith** → Genre = "Musivation" (per Music-Library-Rules.md spec)
+  - **Generic "Motivation" tracks** → Genre = "Motivation" (currently not handled)
+  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Low priority - for now, manually set genre in MP3Tag if you have Loot Bryon Smith or other Motivation-tagged tracks before running tagfix. Once implemented, TagFixer will be 100% comprehensive.
 - **Review mode - library pruning / song-by-song decision tracking** - the library only grows; it needs a structured way to shrink. Add a new `review` mode that walks every song one by one, shows context (tags, folder, optional play count / popularity / lyrics), and asks: keep / remove / defer. Every decision is persisted to a config file (e.g. `config/review-decisions.xml` or similar) with: song fingerprint (artist + title or file hash), decision, date, reason. Old decisions are re-surfaced periodically (e.g. after 12 months) so the review is not one-shot - tastes change, a "keep" today may be a "remove" next year.
   - **Removal candidate signals** (surfaced in review mode to guide decisions, not auto-removed):
     - **Low play count** - cross-reference against iTunes, Last.fm, and/or Spotify listening history. A song never played in 2+ years is a prime candidate.

@@ -1,45 +1,37 @@
-# Stage 3C Integration Status: Blocking Issue + Readiness Assessment
-**Date:** 2026-04-27  
-**Status:** 🛑 **BLOCKED - TagFixer Required Before Real Integration**
+# Stage 3C Integration Status: Readiness Assessment
+**Date:** 2026-04-27 (Updated 2026-04-28)  
+**Status:** ✅ **READY - TagFixer Implemented, Integration Ready**
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-**Blocking Status:** 🛑 TagFixer module is MISSING - critical prerequisite  
+**TagFixer Status:** ✅ TagFixer module IMPLEMENTED (commit 3d2eb34f)  
 **Code Status:** ✅ Integration code is sound, routing logic is correct  
-**Verdict:** Do NOT proceed with real integration until tags are cleaned
+**Verdict:** READY FOR REAL INTEGRATION - clean NewMusic tags first with `audioManager tagfix`, then run integration
 
-Your 126 NewMusic tracks have **untouched tags**. Integration will move files with dirty tags and LibChecker will fail post-integration. Fix this first.
+TagFixer handles all required tag cleanup: removes parentheticals, extracts featured artists, renames files, sets TCMP. Post-integration validation will verify the library is clean.
 
 ---
 
-## CRITICAL BLOCKING ISSUE: TagFixer Missing
+## CRITICAL ISSUE RESOLVED: TagFixer Now Implemented ✅
 
-### The Problem
+### The Solution
 
-AudioManager integration is split into two steps:
-1. **TagFixer** (tag cleanup) - **MISSING**
+AudioManager integration is now split into two clean steps:
+1. **TagFixer** (tag cleanup) - **IMPLEMENTED** (commit 3d2eb34f)
 2. **Integration** (routing only) - **READY**
 
-Current integration code PreProcessTags() only does:
-- ✅ Set TCMP=1
-- ✅ Set Akira The Don genre to Musivation
-- ❌ Does NOT remove unwanted parenthetical phrases from tags
-- ❌ Does NOT move featured artists to artist tag
-- ❌ Does NOT rename files
+TagFixer now handles all cleanup:
+- ✅ Removes entire parenthetical phrases from Title/Album tags (using regex, not substring)
+- ✅ Extracts featured artists from parentheticals and adds to artist tag
+- ✅ Renames files to {artists} - {title}.mp3 format
+- ✅ Sets TCMP=1 (compilation flag)
+- ✅ Sets Akira The Don genre to Musivation
+- ✅ Full per-file logging and summary report
+- ✅ Supports --dry-run mode for preview
 
-**Current flow (broken):**
-```
-126 raw files (dirty tags) 
-  -> Integration (assumes clean) 
-  -> Files moved to library 
-  -> Post-integration LibChecker 
-  -> ISSUES FOUND (tags were dirty)
-  -> X FAIL
-```
-
-**Expected flow (when TagFixer exists):**
+**Expected flow (now working):**
 ```
 126 raw files (dirty tags) 
   -> TagFixer (cleans all tags) 
@@ -50,62 +42,66 @@ Current integration code PreProcessTags() only does:
   -> X PASS
 ```
 
-### What TagFixer Must Do
+### What TagFixer Does ✅
 
-**1. Remove entire parenthetical phrases from Title/Album tags (NOT substrings):**
-- ✅ **CORRECT:** "Cool Song (feat. Akon)" -> "Cool Song" (entire phrase removed)
-- ❌ **WRONG:** Remove just "feat." -> would leave "Cool Song (Akon)"
+**1. Removes entire parenthetical phrases from Title/Album tags (safe regex-based):**
+- ✅ **IMPLEMENTED:** "Cool Song (feat. Akon)" -> "Cool Song" (entire phrase removed)
+- ✅ **SAFE:** Uses regex `\(feat\.\s+[^)]+\)` to match complete phrases, never substring removal
+- Phrases removed: (feat. ...), (ft. ...), (Album Version), (Explicit), (Edit), (Radio Edit), (Original), (Remix), (Version)
+- **Code:** TagFixer.RemoveParentheticals() lines 204-231
 
-**Phrases to remove:**
-- (feat. ...), (ft. ...), (Album Version), (Explicit), (Edit), (Radio Edit), (Original), (Remix), (Version)
+**2. Ensures featured artists in TPE1 (artist tag):**
+- ✅ Extracts artist names from removed parentheticals via regex capture groups
+- ✅ Combines with existing artists and deduplicates
+- ✅ Returns semicolon-separated list with primary artist first
+- **Code:** TagFixer.ExtractAndFixArtists() lines 237-272
 
-**Examples:**
-- "Cool Song (feat. Akon)" -> "Cool Song"
-- "Track (Album Version)" -> "Track"
-- "Song (Explicit)" -> "Song"
-- "Name (Radio Edit)" -> "Name"
+**3. Renames files to standard convention:**
+- ✅ Format: {all-artists-semicolon-separated} - {title}.mp3
+- ✅ Sanitises artist/title via Reflector.SanitiseFilename() (handles Windows limitations)
+- **Code:** TagFixer lines 112-122
 
-**CRITICAL SAFETY:** Never strip just "feat." or "ft." as substrings - they're part of legitimate words:
-- "LEFT" contains "ft." -> would corrupt to "LE"
-- "Safety" contains "feat." -> would corrupt
+**4. Sets TCMP = 1 (compilation flag):**
+- ✅ Applied to every track via `id3.IsCompilation = true`
+- **Code:** TagFixer line 107
 
-**2. Ensure featured artists in TPE1 (artist tag):**
-- Extract artist names from removed parentheticals
-- Add to TPE1 as semicolon-separated list, primary first
-- Example: "Chiddy Bang;Icona Pop" (semicolon between artists)
+**5. Sets genre for Musivation tracks:**
+- ✅ Akira The Don -> Genre = "Musivation"
+- ⚠️ **CAVEAT:** Code does NOT yet handle:
+  - Loot Bryon Smith -> Genre = "Musivation" (specified in doc but not implemented)
+  - Generic "Motivation" tracks (specified in doc but not implemented)
+- **Code:** TagFixer.ShouldFixGenre() & DetermineGenre() lines 277-301
+- **Action:** If you have Loot Bryon Smith or other Motivation tracks, either manually set genre in MP3Tag first, or create a GitHub issue to extend TagFixer
 
-**3. Rename files to standard convention:**
-- Format: {all-artists-semicolon-separated} - {title}.mp3
-- Example: Chiddy Bang;Icona Pop - Mind Your Manners.mp3
-- NOT: Chiddy Bang - Mind Your Manners (feat. Icona Pop).mp3
-
-**4. Set TCMP = 1:**
-- Compilation flag on every track (prevents iTunes from treating each song as separate album)
-
-**5. Set genre for Musivation/Motivation tracks:**
-- If artist is Akira The Don or Loot Bryon Smith -> Genre = "Musivation"
-- Any other Motivation-tagged tracks -> Genre = "Motivation"
-
-**6. Report what was fixed:**
-- Per-file log: filename, what was changed, any errors
-- Summary: total files, fixes applied, errors encountered
+**6. Reports what was fixed:**
+- ✅ Per-file logging with detailed change tracking (FixLog class)
+- ✅ Summary: total files processed, fixed, skipped, errors
+- ✅ Dry-run mode available for preview
+- **Code:** TagFixer lines 24-192
 
 ### What You Must Do Before Stage 3C
 
-**Option A: Implement TagFixer (proper fix)**
-- Create TagFixer module per IDEAS.md TIER 0 BLOCKER spec
-- Run: AudioManager tagfix on NewMusic folder
-- Then: AudioManager integrate will work cleanly
-- **Payoff:** Fully automated pipeline for future batches
+**OPTION A: Use TagFixer (automated, recommended)**
+- ✅ TagFixer is implemented and ready to use
+- Run: `audioManager tagfix` to preview all fixes (dry-run mode)
+- Run: `audioManager tagfix --dry-run` to see what will change without applying it
+- Run: `audioManager tagfix` (no flag) to apply all fixes
+- Then: `audioManager integrate` will work cleanly
+- **Payoff:** Fully automated pipeline for future batches, detailed logging of all changes
 
-**Option B: Manual MP3Tag cleanup (one-time workaround)**
-- Open all 126 NewMusic files in MP3Tag
+**OPTION B: Manual MP3Tag cleanup (fallback)**
+- Open NewMusic files in MP3Tag
 - Apply Music-Library-Rules.md tag cleanup rules manually
 - Estimate: 30-60 minutes for 126 tracks
-- Then: AudioManager integrate will work
-- **Payoff:** Can proceed NOW without implementing code
+- Then: `audioManager integrate` will work
+- **ONLY if:** TagFixer has issues or you prefer manual control
 
-**Either way: this MUST happen first.** Do not skip this step.
+**Recommended workflow:**
+1. Run `audioManager tagfix --dry-run` to preview all changes
+2. Review the output to ensure fixes are correct
+3. Run `audioManager tagfix` to apply fixes
+4. Run `audioManager integrate --dry-run` to preview file movements
+5. Run `audioManager integrate` to execute integration
 
 ---
 
@@ -219,11 +215,12 @@ This is expected (auto-commit disabled for safety). See AudioMirrorCommitter.cs 
 
 ## INTEGRATION EXECUTION CHECKLIST
 
-### Pre-Execution (BLOCKING GATE)
-- [ ] **CRITICAL:** TagFixer step complete (either implement module OR manually clean tags in MP3Tag)
-  - [ ] Verify all parenthetical phrases removed from Title/Album tags
-  - [ ] Verify featured artists are in artist field (semicolon-separated)
-  - [ ] Verify filenames follow {artist} - {title}.mp3 format
+### Pre-Execution (PRE-FLIGHT)
+- [ ] **CRITICAL:** Run TagFixer to clean NewMusic tags
+  - [ ] Run `audioManager tagfix --dry-run` to preview changes
+  - [ ] Review output for correctness (especially featured artist extraction)
+  - [ ] Run `audioManager tagfix` to apply all fixes
+  - [ ] Verify parenthetical phrases removed, artists in tag, filenames updated
 - [ ] Verify AudioMirror is committed (commit 4077088)
 - [ ] Verify LibChecker is clean (Stage 3A verified)
 
@@ -259,13 +256,14 @@ This is expected (auto-commit disabled for safety). See AudioMirrorCommitter.cs 
 
 ---
 
-## NEXT STEPS
+## NEXT STEPS (INTEGRATION IS GO)
 
-1. **Decide:** Implement TagFixer or manually clean tags?
-2. **If TagFixer:** See IDEAS.md TIER 0 BLOCKER for implementation spec
-3. **If manual:** Open NewMusic files in MP3Tag, apply rules from Music-Library-Rules.md
-4. **Execute:** Once tags are clean, run integration
+1. **Run TagFixer:** `audioManager tagfix --dry-run` to preview
+2. **Apply TagFixer:** `audioManager tagfix` to clean all tags
+3. **Preview Integration:** `audioManager integrate --dry-run` to see file movements
+4. **Execute Integration:** `audioManager integrate` to move files to library
 5. **Verify:** Post-integration LibChecker should report CLEAN
+6. **Commit:** Manually stage and commit AudioMirror changes in GitHub Desktop
 
 ---
 
