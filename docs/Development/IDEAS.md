@@ -60,44 +60,6 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 - [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
 
-### DECISION GATE: Python Rewrite vs .NET 8 Migration
-
-**Status:** Pending evaluation (David's strategic call)
-
-**The Fork:** Current plan (Option A) surveys .NET 8 migration blockers, then migrates to SDK-style csproj. Alternative (Option B): rewrite the console app in Python instead of migrating .NET.
-
-## Why Python is Being Considered
-
-- **No build step** - Python script runs directly, no compilation dependency
-- **No VS2022 dev dependency** - lighter development environment
-- **Lightweight dependencies** - modern Python audio metadata libs (`mutagen`, `tinytag`) vs .NET/TagLib#
-- **ROI question** - which approach costs fewer tokens and yields better dev experience?
-
-**Why this matters:** David prefers lightweight languages and no-build tooling. C# and C++ aren't readable during Claude sessions. Python would be simpler to maintain and extend.
-
-## Decision Criteria
-
-1. **Token cost:** Opus planning + Haiku execution for Python rewrite vs straight .NET 8 migration
-2. **Dependency check:** confirm Python has audio metadata equivalent (expect `mutagen` to cover TagLib# use cases)
-3. **Scope match:** ensure Python can handle the integration/analysis workload (it can - it's not CPU-bound, just file I/O and XML generation)
-
-## Next Steps (for David)
-
-1. Decide whether to evaluate Python rewrite (2-3 hour planning + evaluation)
-2. If yes: `Opus` plans Python approach, `Haiku` implements it
-3. If no: proceed with TIER 2 .NET migration as written
-
-**DO NOT start TIER 2 until this decision is made.**
-
----
-
-**If Python:** TIER 2 becomes Python rewrite + tests. **If .NET:** proceed with items below as written.
-
----
-
-- [ ] **Survey: confirm .NET 8 migration has no blockers** - grep for `ConfigurationManager`, `AppDomain`, `System.Web`, `System.ServiceModel`, `Remoting`. Check `App.config` contents. Confirm TagLib# is the only NuGet dep. Expect no blockers - this is a console app.
-- [ ] **Migrate project to .NET 8 (SDK-style csproj)** - replace old-style csproj with ~15-line SDK-style (`<Project Sdk="Microsoft.NET.Sdk">` + `TargetFramework` + `PackageReference`). Delete `packages/` folder + `packages.config`. Delete or trim `Properties/AssemblyInfo.cs`. Update `launch.bat` exe path (`bin\Release\net8.0\AudioManager.exe`). Claude to test-build both modes himself before committing.
-  - **Why:** SDK-style csproj auto-includes all `.cs` files. The `AudioMirrorCommitter.cs` bug that broke Phase 0 cannot happen in SDK-style. Also: faster builds, no `packages/` folder, PackageReference instead of packages.config, LTS until Nov 2026.
 - [ ] **Add minimal automated tests (scoped down from kitchen-sink)** - ROI analysis showed full test suite not worth it; these three are.
   - **Smoke build test** (~50 lines): MSBuild builds cleanly; exe runs with `--help` without crashing. Catches today's class of bug. Payback in weeks.
   - **`GetDestDir()` routing tests** (~150 lines): fixed inputs (artist, album, scan-ahead set) -> fixed destinations. Routing is the most dangerous code path - wrong dest = real files moved wrong. Payback in 1-2 months.
@@ -140,6 +102,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 ---
 
 ## Parked / Deprioritized
+
+- **DECISION GATE: Python Rewrite vs .NET 8 Migration** - AudioManager is .NET Framework; could migrate to .NET 8 SDK-style (lower cost, same language, taglib#-compatible) or rewrite in Python (no build step, lightweight deps via `mutagen`). **Status:** Parked. Program works well; no immediate need to decide. Revisit only if .NET becomes a blocker or if Python advantages outweigh rewrite cost. Decision factors: token cost estimate, confirm Python libs cover TagLib# use cases, ensure file I/O scope is matched.
 
 - **Review mode - library pruning / song-by-song decision tracking** - Add a new `review` mode that walks every song one by one, shows context (tags, folder, optional play count / popularity / lyrics), and asks: keep / remove / defer. Every decision is persisted to a config file (e.g. `config/review-decisions.xml` or similar) with: song fingerprint (artist + title or file hash), decision, date, reason. Old decisions are re-surfaced periodically (e.g. after 12 months) so the review is not one-shot - tastes change, a "keep" today may be a "remove" next year.
   - **Removal candidate signals** (surfaced in review mode to guide decisions, not auto-removed):
