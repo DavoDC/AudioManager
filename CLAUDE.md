@@ -66,10 +66,9 @@ launch.bat handles build internally, no separate build step needed.
 
 ### Claude: Building the Program
 
-**Always use PowerShell (never Bash) for .bat files. Always pipe input to skip interactive pause:**
+**Always use PowerShell (never Bash) for .bat files. Do NOT use && operator (doesn't work in PS 5.1). Use semicolon instead:**
 ```powershell
-cd "C:\Users\David\GitHubRepos\AudioManager"
-echo "" | .\scripts\build.bat
+cd "C:\Users\David\GitHubRepos\AudioManager"; echo "" | .\scripts\build.bat
 ```
 
 The `echo "" |` pipes input to skip the "Press any key..." pause. Build completes in ~2-3 seconds without blocking.

@@ -4,6 +4,22 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-04-29 Session 1 - UX: Remove folder picker, add Decline option
+
+**UX FIX - Replace [N] Choose folder with [N] Decline:** Removed folder picker entirely. Previously, pressing [N] on routing proposal opened PickFolder() prompting user to type a destination path. This was "very bad" (user feedback) - most [N] presses mean "routing logic is wrong, not this specific folder." New flow: [N] simply declines file and leaves it in NewMusic for next run. Cleaner, faster, eliminates unnecessary user prompts. User can now say "no" without being forced to pick a folder.
+
+**Code changes:**
+- MusicIntegrator.cs line 293: Changed prompt from `[Y] Accept [N] Choose folder [Q] Quit` to `[Y] Accept [N] Decline [Q] Quit`
+- Lines 341-354: Rewrote [N] handler to simply log decline and continue (removed 60+ lines of PickFolder call logic)
+- Removed PickFolder() method entirely (was only called from [N] handler)
+- Decision log now records declined files with status="declined" and reason="User declined routing" for audit trail
+
+**UX ALREADY IMPLEMENTED - Relative paths in duplicate dialogs:** Item #2 (Shorten file paths in duplicate dialogs) was already implemented. Code analysis shows: duplicatePath from AudioMirror XML is converted to libraryFilePath via DeriveLibraryPathFromMirrorPath(), then shortened to relative path (lines 112-114) before display. Duplicate dialog shows `Musivation\Akira The Don\...` not full C:\Users\... path. No additional work needed.
+
+**Result:** Routing proposals are now faster and less intrusive. User can accept, decline, or quit. No folder picker friction. Duplicate detection shows concise relative paths for easy comparison.
+
+---
+
 ## 2026-04-28 Session 3 - UX polish: dry-run parity, Console.Clear removal, timestamped logging
 
 **UX FIX - Dry-run mode now shows confirmation prompts:** Previously, dry-run would auto-accept all routes without prompting user. Now both dry-run and real mode show `[Y] Accept | [N] Choose folder | [Q] Quit` prompts for every file. Dry-run only differs in action: logs what would happen without moving files. Real mode actually moves files after user approval. This ensures user can validate routing decisions before running real integration.
