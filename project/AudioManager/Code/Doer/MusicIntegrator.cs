@@ -290,7 +290,7 @@ namespace AudioManager
                         else
                         {
                             // All other routes: show confirmation prompts
-                            PrintTimestamped("  [Y] Accept   [N] Choose folder   [Q] Quit");
+                            PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
                             PrintTimestamped("------------------------------------------------------------");
                         }
 
@@ -340,71 +340,24 @@ namespace AudioManager
                             }
                             else if (key == ConsoleKey.N)
                             {
-                                // Choose alternative folder
-                                string chosen = PickFolder();
-                                if (string.IsNullOrEmpty(chosen))
+                                // Decline this file - leave in NewMusic for next run
+                                if (dryRun)
                                 {
-                                    // cancelled selection, redisplay prompt
-                                    Console.WriteLine("  Folder selection cancelled.");
-                                    continue;
-                                }
-
-                                string newDestDir = chosen;
-                                string newDestPath = Path.Combine(newDestDir, destFilename);
-                                if (!dryRun)
-                                {
-                                    Directory.CreateDirectory(newDestDir);
-                                }
-
-                                if (!dryRun && File.Exists(newDestPath))
-                                {
-                                    Console.WriteLine($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
-                                    entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                    PrintTimestamped("  [DRY RUN] Would decline (leave in NewMusic)");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "declined", "User declined routing");
+                                    entry.Status = "would-decline";
+                                    entry.Detail = "user declined";
                                     logEntries.Add(entry); skippedCount++;
-                                }
-                                else if (dryRun)
-                                {
-                                    // Dry run: log user's manual selection without moving
-                                    string rel = newDestPath;
-                                    if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        int startIdx = Constants.AudioFolderPath.Length;
-                                        if (startIdx <= newDestPath.Length)
-                                        {
-                                            rel = newDestPath.Substring(startIdx);
-                                            if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
-                                        }
-                                    }
-                                    PrintTimestamped($"  [DRY RUN] Would move to: {rel}");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), rel, "User manual folder selection");
-                                    entry.Destination = rel;
-                                    entry.Status = "would-move";
-                                    logEntries.Add(entry); movedCount++;
                                 }
                                 else
                                 {
-                                    // Real integration: actually move to user's chosen folder
-                                    File.Move(sourcePath, newDestPath);
-                                    movedCount++;
-                                    string rel = newDestPath;
-                                    if (newDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        int startIdx = Constants.AudioFolderPath.Length;
-                                        if (startIdx <= newDestPath.Length)
-                                        {
-                                            rel = newDestPath.Substring(startIdx);
-                                            if (rel.StartsWith("\\") || rel.StartsWith("/")) rel = rel.Substring(1);
-                                        }
-                                    }
-                                    PrintTimestamped($"  Moved to: {rel}");
-                                    // Log the routing decision (user manually selected folder)
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), rel, "User manual folder selection");
-                                    Console.WriteLine();
-                                    entry.Destination = rel;
-                                    entry.Status = "moved";
-                                    logEntries.Add(entry);
+                                    PrintTimestamped("  Declined. File left in NewMusic for next run.");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "declined", "User declined routing");
+                                    entry.Status = "declined";
+                                    entry.Detail = "user declined";
+                                    logEntries.Add(entry); skippedCount++;
                                 }
-
+                                Console.WriteLine();
                                 break;
                             }
                             // ignore other keys
@@ -1007,40 +960,5 @@ namespace AudioManager
             return count;
         }
 
-        /// <summary>
-        /// Presents a navigable list of folders under the Audio library and allows the user to pick one.
-        /// Includes a "New folder" option which creates a new folder under a chosen parent.
-        /// Returns the chosen folder full path, or null/empty if selection cancelled.
-        /// </summary>
-        private string PickFolder()
-        {
-            // User types the destination path directly.
-            // Accepts relative paths (under AudioFolderPath) or full absolute paths.
-            // Empty input = cancel.
-            Console.WriteLine();
-            PrintTimestamped($"  Audio library root: {Constants.AudioFolderPath}");
-            PrintTimestamped("  Enter destination folder path (relative or absolute), or leave empty to cancel:");
-            Console.Write("  > ");
-            string input = Console.ReadLine()?.Trim();
-
-            if (string.IsNullOrEmpty(input))
-                return null;
-
-            // If not absolute, treat as relative to AudioFolderPath
-            string fullPath = Path.IsPathRooted(input)
-                ? input
-                : Path.Combine(Constants.AudioFolderPath, input);
-
-            // Validate it doesn't escape the audio library (safety check)
-            string canonical = Path.GetFullPath(fullPath);
-            string libraryRoot = Path.GetFullPath(Constants.AudioFolderPath);
-            if (!canonical.StartsWith(libraryRoot, StringComparison.OrdinalIgnoreCase))
-            {
-                PrintTimestamped($"  Path '{fullPath}' is outside the audio library. Cancelled.");
-                return null;
-            }
-
-            return fullPath;
-        }
     }
 }
