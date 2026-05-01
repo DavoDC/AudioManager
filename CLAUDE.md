@@ -66,9 +66,9 @@ launch.bat handles build internally, no separate build step needed.
 
 ### Claude: Building the Program
 
-**Always use PowerShell (never Bash) for .bat files. Do NOT use && operator (doesn't work in PS 5.1). Use semicolon instead:**
+**Always use PowerShell (never Bash) for .bat files. Use full absolute path with --no-pause flag (no cd needed - build.bat uses %~dp0 internally):**
 ```powershell
-cd "C:\Users\David\GitHubRepos\AudioManager"; echo "" | .\scripts\build.bat
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
 ```
 
 The `echo "" |` pipes input to skip the "Press any key..." pause. Build completes in ~2-3 seconds without blocking.
