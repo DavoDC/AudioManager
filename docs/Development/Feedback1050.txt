@@ -1,0 +1,120 @@
+The song title extends beyond the "=" make it longer for all,  about 25% longer???  also make accept/decline quit --- things longer!
+
+[22:49:07] ============================================================
+[22:49:07]   Akira The Don; Rupert Spira - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE
+[22:49:07] ============================================================
+
+[22:49:07]   Album:   THE SHINING OF BEING
+[22:49:07]   Year:    2026
+[22:49:07]   Genres:  Rap; Hip Hop
+
+[22:49:07]   Proposed: Musivation\Akira The Don\People\Rupert Spira\Akira The Don; Rupert Spira - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE.mp3
+[22:49:07]   Reason:   Akira The Don -> People/Rupert Spira (5 songs)
+
+[22:49:07] ------------------------------------------------------------
+[22:49:07]   [Y] Accept   [N] Decline   [Q] Quit
+[22:49:07] ------------------------------------------------------------
+
+
+
+Duplicate proposals should also have a proposed and reason section!!
+ tpyically the recommendation is deleting the song that is NOT from an Album with many songs from it  i/.e. deleting the single, we prefer albums , this is tricky case coz its a  compilation album vs an arist album, but i prfer artist album over cmpilation albuim.  but single vs album is really clear.  ! the album one is uperioer!
+[22:49:09] ============================================================
+[22:49:09]   DUPLICATE FOUND
+[22:49:09] ============================================================
+
+[22:49:09]   In AudioMirror: Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don;Rupert Spira - INTO THE INFINITE.xml
+[22:49:09]   New file:   03 - INTO THE INFINITE.mp3
+
+[22:49:09]   Track: Akira The Don; Rupert Spira - INTO THE INFINITE
+[22:49:09]   Album: THE SHINING OF BEING
+
+[22:49:09]   [D] Delete NewMusic copy (keep library)   [L] Delete library copy (keep new file)   [K] Keep both   [Q] Quit
+[22:49:09] ------------------------------------------------------------
+             >
+
+
+HIGH PRIOEIRT FIX  = Corect Scott adams to Adams!!!
+  [WOULD FIX] 02 - AUTHOR YOURSELF.mp3
+    - Artists: "Akira The Don; Scott adams"  -> "Akira The Don;Scott adams"
+    - TCMP: False  -> True
+    - Genre: "Rap; Hip Hop"  -> "Musivation"
+    - Filename: 02 - AUTHOR YOURSELF.mp3  -> Akira The Don;Scott adams - AUTHOR YOURSELF.mp3
+
+
+HIGH PRIORITY = COMBINE ROUTING + TAG FIX REVIEWS . if the routing previews showed the correct tags (in dry run), then i could review both at same time, are tags good and is routing good. then u donjt even need tag fix output!  but TCMP stuff u can leave out coz i trust youll do right thing coz its so easy!   make sure there is enougn info in thise routing decisions for me to identify tag issues! but ive already been noticing tag isues in routing decision blocks!
+
+[22:53:49] ============================================================
+[22:53:49]   Akira The Don; Scott adams - WHAT IF?
+[22:53:49] ============================================================
+
+[22:53:49]   Album:   WHAT IF?
+[22:53:49]   Year:    2026
+[22:53:49]   Genres:  Rap; Hip Hop
+
+[22:53:49]   Proposed: Musivation\Akira The Don\People\Scott Adams\Akira The Don; Scott adams - WHAT IF_.mp3
+[22:53:49]   Reason:   Akira The Don -> People/Scott Adams (33 songs)
+
+[22:53:49] ------------------------------------------------------------
+[22:53:49]   [Y] Accept   [N] Decline   [Q] Quit
+[22:53:49] ------------------------------------------------------------
+             >
+
+
+ROUTING BUG  = ALWAYS RMB AND UPDATE MUSIC RULES = ARTISTS FOLDER IN ATD PEOPLE FOLDER FOLLOW SAME RULES AS ARISTS FOLDER in higher level dir.  So should never be Scott \ song . should be afolder before the song! either singles or ALBUM . MAX PRIROTIY FIX! cannot integrate these songs without this fixed!  needs scan ahead applied. code should be factored out so can be applied to both 
+[22:57:20] ============================================================
+[22:57:20]   Akira The Don; Scott adams - AUTHOR YOURSELF
+[22:57:20] ============================================================
+
+[22:57:20]   Album:   WHAT IF?
+[22:57:20]   Year:    2026
+[22:57:20]   Genres:  Rap; Hip Hop
+
+[22:57:20]   Proposed: Musivation\Akira The Don\People\Scott Adams\Akira The Don; Scott adams - AUTHOR YOURSELF.mp3
+[22:57:20]   Reason:   Akira The Don -> People/Scott Adams (33 songs)
+
+[22:57:20] ------------------------------------------------------------
+[22:57:20]   [Y] Accept   [N] Decline   [Q] Quit
+[22:57:20] ------------------------------------------------------------
+             >
+
+
+UI inconsistnency = nEEd " ------------------------------------------------------------" line above duplication deicisons just like routing!  LEARNING = UI CONSISTENCY! 
+
+[22:59:46] ============================================================
+[22:59:46]   DUPLICATE FOUND
+[22:59:46] ============================================================
+
+[22:59:46]   In AudioMirror: Artists\Lupe Fiasco\Singles\Lupe Fiasco - The Show Goes On.xml
+[22:59:46]   New file:   06 - The Show Goes On.mp3
+
+[22:59:46]   Track: Lupe Fiasco - The Show Goes On
+[22:59:46]   Album: Lasers
+
+[22:59:46]   [L] Delete library copy (keep new file) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+[22:59:46] ------------------------------------------------------------
+             >
+
+
+SPECIAL CASE = these are literally the same song ,  should prompt special message to say these ARE EXACTLAY THE SAEM SO it doesn't matter which you delete !  recommendation / reason etc should say 
+[23:01:47] ============================================================
+[23:01:47]   DUPLICATE FOUND
+[23:01:47] ============================================================
+
+[23:01:47]   In AudioMirror: Artists\Shaggy\The Boombastic Collection - Best Of Shaggy (International Version)\Shaggy - Boombastic.xml
+[23:01:47]   New file:   01 - Boombastic.mp3
+
+[23:01:47]   Track: Shaggy - Boombastic
+[23:01:47]   Album: The Boombastic Collection - Best Of Shaggy (International Version)
+
+[23:01:47]   [D] Delete NewMusic copy (keep library)   [L] Delete library copy (keep new file)   [K] Keep both   [Q] Quit
+[23:01:47] ------------------------------------------------------------
+             >
+
+
+"C:\Users\David\GitHubRepos\AudioManager\logs\integration-2026-05-01-230350-dryrun.md" files kkind of duplicate decision XMLs!    maybe just keep XMLs 
+
+Low p idea = Add New mode for analysing routing decisions and checking against routing + libchecker code , pairs well with Rules concept refactor!
+
+
+
