@@ -146,7 +146,7 @@ namespace AudioManager
                             // Wait for input
                             while (true)
                             {
-                                var key = Console.ReadKey(intercept: true).Key;
+                                var key = ReadMenuKey();
                                 if (key == ConsoleKey.D)
                                 {
                                     // Delete from NewMusic
@@ -298,7 +298,7 @@ namespace AudioManager
                         ConsoleKey autoKey = isMiscRoute ? ConsoleKey.Y : ConsoleKey.NoName;
                         while (true)
                         {
-                            var key = isMiscRoute ? autoKey : Console.ReadKey(intercept: true).Key;
+                            var key = isMiscRoute ? autoKey : ReadMenuKey();
                             isMiscRoute = false; // only auto-accept once
                             if (key == ConsoleKey.Y)
                             {
@@ -958,6 +958,28 @@ namespace AudioManager
             }
 
             return count;
+        }
+
+        /// <summary>
+        /// Reads a menu key using ReadLine so the user must press Enter to confirm.
+        /// Prevents right-click paste in Windows Terminal from silently triggering actions.
+        /// </summary>
+        private ConsoleKey ReadMenuKey()
+        {
+            while (true)
+            {
+                Console.Write("  > ");
+                string input = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
+                switch (input)
+                {
+                    case "Y": return ConsoleKey.Y;
+                    case "N": return ConsoleKey.N;
+                    case "D": return ConsoleKey.D;
+                    case "L": return ConsoleKey.L;
+                    case "K": return ConsoleKey.K;
+                    case "Q": return ConsoleKey.Q;
+                }
+            }
         }
 
     }
