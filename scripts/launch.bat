@@ -66,8 +66,8 @@ goto done
 :integrate_real
 echo.
 echo [WARNING] Real integration will move files. Make sure Dry Run passed first.
-set /p CONFIRM=Type YES to confirm:
-if /I not "%CONFIRM%"=="YES" (
+set /p CONFIRM=Are you sure? (Y/N):
+if /I not "%CONFIRM%"=="Y" (
     echo Cancelled.
     pause
     cmd /k
