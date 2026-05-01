@@ -1,6 +1,6 @@
 # Ideas & Future Work
 
-Single source of truth for all pending work. Settled decisions and completed features -> `HISTORY.md`.
+Single source of truth for all pending work. **This file covers CLI only.** GUI planning is in `GUI-ROADMAP.md`. Settled decisions and completed features -> `HISTORY.md`.
 
 ## Organization: Tiered Priorities
 
@@ -86,6 +86,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
   - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.
 
+- [ ] **Centralise rules - one system for both integration routing and LibChecker** - currently routing rules (artist -> folder mapping, genre overrides, special cases like ATD) and LibChecker validation rules live in separate places. Refactor into a single `RulesEngine` concept: rules defined once, consumed by both MusicIntegrator (routing decisions) and LibChecker (validation). Benefits: add one rule, both systems honour it; no risk of the two diverging. Also: audit for missing ATD (Akira The Don) rules - suspected gap between what TagFixer sets and what LibChecker checks.
+
 - [ ] **Simplify launch.bat - move menu logic into Program.cs** - RivalsVidMaker's `run.bat` is 2 lines; all menu/mode logic lives in Python. AudioManager's `launch.bat` is 91 lines with its own menu, duplicating CLI arg logic already in `Program.cs`. Refactor: `launch.bat` becomes a ~5-line wrapper that just builds + runs `AudioManager.exe` with no args; all menu logic lives in Program.cs where it's testable and debuggable.
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 - [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate). 
@@ -129,8 +131,9 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 ## See Also
 
-- `docs/HISTORY.md` - completed features, settled design decisions, parked ideas
-- `docs/Music-Library-Rules.md` - canonical rules for library structure
-- `docs/NewMusic-Integration-Plan-20260308.md` - past batch integration (March 2026 batch A)
-- `docs/NewMusic-Integration-Plan-20260407.md` - past batch integration (April 2026)
-- `docs/AudioMirror-Format.md` - AudioMirror XML format and repo info
+- `docs/Development/HISTORY.md` - completed features, settled design decisions, parked ideas
+- `docs/Development/GUI-ROADMAP.md` - GUI planning: webapp, tabs, Sonarr/Radarr vision, far-future integrations
+- `docs/References/Music-Library-Rules.md` - canonical rules for library structure
+- `docs/Historical/NewMusic-Integration-Plan-20260308.md` - past batch integration (March 2026 batch A)
+- `docs/Historical/NewMusic-Integration-Plan-20260407.md` - past batch integration (April 2026)
+- `docs/References/AudioMirror-Format.md` - AudioMirror XML format and repo info
