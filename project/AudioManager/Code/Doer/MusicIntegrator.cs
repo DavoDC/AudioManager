@@ -968,7 +968,7 @@ namespace AudioManager
         {
             while (true)
             {
-                Console.Write("  > ");
+                Console.Write("             > ");
                 string input = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
                 switch (input)
                 {
