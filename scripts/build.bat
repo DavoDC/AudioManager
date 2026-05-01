@@ -20,9 +20,9 @@ if errorlevel 1 (
     echo.
     echo Build log:
     type "%LOG%"
-    pause
+    if not "%1"=="--no-pause" pause
     exit /b 1
 )
 
 echo [BUILD] Done. Exe: %EXE%
-pause
+if not "%1"=="--no-pause" pause
