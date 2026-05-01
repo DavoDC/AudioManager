@@ -24,7 +24,6 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 **Goal: ensure integration cannot corrupt the library.** These items must be in place before any real integration run.
 
-
 - [ ] **READY: Real integration run - all TIER 0 UX fixes complete** - All blocking items resolved (2026-04-29): (1) Universal confirmation gates for ALL routes (Session 2), (2) Dry-run now shows same prompts as real mode (Session 3), (3) Console.Clear() removed + replaced with blank lines (Session 3), (4) Timestamped log entries added via PrintTimestamped() helper (Session 3), (5) Folder picker removed, [N] now simply declines file (Session 4). User can now validate routing decisions interactively with clean yes/no/quit flow before running real integration.
   - **Sequence for real integration run:**
     1. **Tag cleaning:** Run `AudioManager tagfix --dry-run` to preview tag cleanup
