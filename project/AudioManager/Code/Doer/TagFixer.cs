@@ -199,6 +199,7 @@ namespace AudioManager
                         {
                             Console.WriteLine($"    - Filename: {log.OriginalFilename}  -> {log.Filename}");
                         }
+                        Console.WriteLine();
                     }
                 }
 
