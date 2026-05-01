@@ -58,8 +58,6 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 **PRIORITY: Fix before real integration run**
 
-- [ ] **UX: Add blank lines between tag fixing output blocks** - TagFixer output shows "WOULD FIX" blocks back-to-back with no visual separation, making it hard to scan. Add blank line (Console.WriteLine()) between each track's fixes. Makes dry-run output more readable.
-
 - [ ] **DRY RUN: Simulate tag changes in-memory for accurate routing preview** - Current dry-run limitation: TagFixer doesn't modify files in dry-run mode, so MusicIntegrator reads original (unmodified) tags. This causes two issues: (a) Featured artists still show "(feat. ...)" in filenames, (b) Genres aren't set yet, so special routing (Akira The Don, Musivation) can't be tested in dry-run. **Fix approach:** Apply tag modifications in-memory as files are read (simulate what TagFixer would do), so routing decisions use cleaned tags. Could use temporary Track objects with simulated tag values, or extend Tag reading to apply RemoveParentheticals/ExtractArtists logic in-memory. Refactoring required but improves dry-run accuracy. **Low priority:** Current workaround is to trust real integration, but accurate dry-run would improve user confidence.
 
 
@@ -82,6 +80,8 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 ## TIER 3 - POLISH (Structural Alignment & Nice-to-Have)
 
 **Goal: close structural gaps and improve developer experience.** Non-blocking enhancements.
+
+- [ ] **Fix plural "songs" when count is 1** - e.g. "Singles (1 songs from Brian Tracy)" should say "1 song". Grep for the format string generating this output and add a ternary for singular/plural. Low priority.
 
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
   - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.

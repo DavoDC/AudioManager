@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-01 - UX: Blank lines between TagFixer output blocks
+
+Added `Console.WriteLine()` after each `[WOULD FIX]` / `[FIXED]` block in the per-file results loop (`TagFixer.cs` lines ~192-203). Previously blocks printed back-to-back with no separation, making dry-run output hard to scan across 20+ files. One line change, confirmed working by user on real dry-run.
+
+---
+
 ## 2026-04-29 Session 1 - UX: Remove folder picker, add Decline option
 
 **UX FIX - Replace [N] Choose folder with [N] Decline:** Removed folder picker entirely. Previously, pressing [N] on routing proposal opened PickFolder() prompting user to type a destination path. This was "very bad" (user feedback) - most [N] presses mean "routing logic is wrong, not this specific folder." New flow: [N] simply declines file and leaves it in NewMusic for next run. Cleaner, faster, eliminates unnecessary user prompts. User can now say "no" without being forced to pick a folder.
