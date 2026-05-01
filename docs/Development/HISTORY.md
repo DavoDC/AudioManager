@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-01 - Fix: Right-click in terminal no longer triggers Decline
+
+Root cause: `Console.ReadKey(intercept: true)` immediately consumes any char arriving in stdin, including characters pasted by right-click in Windows Terminal. A clipboard containing "n" would silently fire the [N] Decline handler mid-routing - a data-safety bug.
+
+Fix: replaced both `Console.ReadKey()` call sites in `MusicIntegrator.cs` with a new `ReadMenuKey()` helper that uses `Console.ReadLine()`. User must now type the key AND press Enter. Paste events appear visibly on screen and can be backspaced before submitting. Invalid input silently re-prompts with `> `.
+
+Affected: duplicate resolution loop (D/L/K/Q) and routing confirmation loop (Y/N/Q).
+
+---
+
 ## 2026-05-01 - UX: Blank lines between TagFixer output blocks
 
 Added `Console.WriteLine()` after each `[WOULD FIX]` / `[FIXED]` block in the per-file results loop (`TagFixer.cs` lines ~192-203). Previously blocks printed back-to-back with no separation, making dry-run output hard to scan across 20+ files. One line change, confirmed working by user on real dry-run.
