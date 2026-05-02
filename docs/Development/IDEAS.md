@@ -40,24 +40,9 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 **Goal: prove the completed integration pipeline works on real data.** All features are built; this is the validation phase.
 
-
-
-
-
-
-**Note:** TagFixer requirement already specified in TIER 0 "CRITICAL DESIGN: Separate tag fixing from integration". Integration pipeline sequence: NewMusic → TagFixer (clean tags, auto-delete instrumentals) → Integrator (route files, handle duplicates with [L] option) → Analyzer (report). All prerequisites defined in TIER 0.
-
----
-
-## TIER 2 - QUALITY (Robustness & UX Polish)
-
-**Goal: improve user experience for real integration (visibility, readability, control) and add minimal test coverage for high-risk code paths.**
-
-**PRIORITY: Fix before real integration run**
+**PRIORITY: Duplicate detection UX batch - 7 interrelated items, high impact on integration workflow**
 
 - [ ] **UX: Add succinct routing summary line for quick decision-making** - Currently the routing proposal shows the full destination path + reason, which is good for diagnostics but slow to scan. Add a short one-liner above the full path that gives just the key routing decision (e.g. `-> Dizzy Wright / Singles`). User checks the summary for quick Y/N, reads the full path only when something looks wrong. Both lines shown always - summary for speed, path for diagnostics.
-
-- [ ] **UX: Make separator bars longer (~25%) to prevent title overflow** - Long song titles (e.g. "WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE") extend past the `====` separator. Increase separator length from 60 chars to ~75 chars. Apply consistently to both the `====` header separator and the `----` divider before options. Both bars must be the same length.
 
 - [ ] **UX: Add Proposed/Reason section to duplicate detection display** - Routing proposals show "Proposed:" and "Reason:" lines. Duplicate detection shows neither - user only sees raw file paths and option buttons. Add equivalent lines: "Proposed:" describing what will happen given the recommended action (e.g. "Delete single from NewMusic, keep album version in library"), and "Reason:" explaining the basis (e.g. "Library has single; new file is from artist album - artist album preferred"). This gives the user the same quality of context for duplicate decisions as for routing decisions.
 
@@ -71,7 +56,21 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 - [ ] **UX: Detect "same song, same album" duplicate and label it specially** - When the new file is from the exact same album as the library copy (track.Album equals the album in the mirror XML), both versions are equivalent - no quality preference. Current display shows a generic duplicate prompt. Add detection: if albums match, show "Same song from same album - either version is equivalent, choice does not matter" in the display. The options remain unchanged; the framing helps the user decide instantly.
 
-- [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Currently `[AUTO] Miscellaneous Songs - auto-accepted` silently moves files to Misc with no user confirmation. When multiple Misc files appear in a batch they scroll past quickly and are hard to distinguish, which feels risky. Short-term option: remove auto-accept and require Y/N like all other routes. Better long-term option: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file.
+
+
+**Note:** TagFixer requirement already specified in TIER 0 "CRITICAL DESIGN: Separate tag fixing from integration". Integration pipeline sequence: NewMusic → TagFixer (clean tags, auto-delete instrumentals) → Integrator (route files, handle duplicates with [L] option) → Analyzer (report). All prerequisites defined in TIER 0.
+
+---
+
+## TIER 2 - QUALITY (Robustness & UX Polish)
+
+**Goal: improve user experience for real integration (visibility, readability, control) and add minimal test coverage for high-risk code paths.**
+
+**PRIORITY: Fix before real integration run**
+
+- [ ] **UX: Make separator bars longer (~25%) to prevent title overflow** - Long song titles (e.g. "WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE") extend past the `====` separator. Increase separator length from 60 chars to ~75 chars. Apply consistently to both the `====` header separator and the `----` divider before options. Both bars must be the same length.
+
+- [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Auto-accept has been turned off (user now confirms Y/N like all other routes). Still need: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file. Needs investigation of current state + implementation of batch review at end.
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
   - **Loot Bryon Smith** → Genre = "Musivation" (per Music-Library-Rules.md spec)
