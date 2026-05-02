@@ -145,9 +145,19 @@ namespace AudioManager
                                            && !track.Album.Equals("Missing", StringComparison.OrdinalIgnoreCase)
                                            && !track.Album.Equals(track.Title, StringComparison.OrdinalIgnoreCase);
 
+                            // Priority 0: same song from same album - definitely keep library copy
+                            string libraryAlbum = Path.GetFileName(Path.GetDirectoryName(duplicatePath));
+                            bool sameAlbum = newIsAlbum
+                                && libraryAlbum.Equals(track.Album, StringComparison.OrdinalIgnoreCase);
+
                             string dupReason = "";
                             char recommendedKey = '\0';
-                            if (libraryIsSingle && newIsAlbum)
+                            if (sameAlbum)
+                            {
+                                recommendedKey = 'D';
+                                dupReason = $"Same song from same album - already in library";
+                            }
+                            else if (libraryIsSingle && newIsAlbum)
                             {
                                 recommendedKey = 'L';
                                 dupReason = $"Library has single; new file is from album '{track.Album}' - album preferred";
@@ -173,11 +183,13 @@ namespace AudioManager
                             string displayNewFilename = $"{track.Artists} - {track.Title}.mp3";
 
                             // Proposed action summary based on recommendation
-                            string dupProposed = recommendedKey == 'L'
-                                ? "Delete library copy, keep new file (album version preferred)"
-                                : recommendedKey == 'D'
-                                    ? "Delete NewMusic copy, keep library version"
-                                    : "No version preference - choose D or L based on quality";
+                            string dupProposed = sameAlbum
+                                ? $"Delete NewMusic copy - already have this from '{track.Album}'"
+                                : recommendedKey == 'L'
+                                    ? "Delete library copy, keep new file (album version preferred)"
+                                    : recommendedKey == 'D'
+                                        ? "Delete NewMusic copy, keep library version"
+                                        : "No version preference - choose D or L based on quality";
 
                             Console.WriteLine();
                             PrintTimestamped("============================================================");
