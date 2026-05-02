@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - Feat: Album preference rules in duplicate detection + DecisionLog logging
+
+Extended duplicate detection with two album preference rules and decision logging.
+
+**Rule 1 (existing, formalized):** Library has single + new file has real album -> recommend [L] (replace with album version). Was already in code but undocumented. Now has explicit reason string: "Library has single; new file is from album X - album preferred".
+
+**Rule 2 (new):** Library has compilation track + new file has artist album -> recommend [L]. Detected via mirror path: if `relMirrorPath.StartsWith("Compilations\")`, the library copy is from a compilation. Artist albums are the definitive release. Example: library has "Changes" from a Various Artists compilation; new file is from 2Pac's Greatest Hits - recommend replace.
+
+**newIsAlbum detection tightened:** Added `!track.Album.Equals("Missing")` guard to prevent false positives on tracks with no album tag.
+
+**DecisionLog logging:** Duplicate decisions (D and L choices) are now logged to DecisionLog XML with reason. D logs "User kept library copy" (plus note if overriding a recommendation). L logs the preference rule reason, or "User chose to replace library copy" if no recommendation applied. K (keep both) is not separately logged - the downstream routing log entry is sufficient.
+
+---
+
 ## 2026-05-02 - Fix: Dry-run now shows post-TagFixer (simulated) tags in routing blocks
 
 Dry-run routing blocks were showing raw tags from disk, so `(feat. Artist)` would appear in the title, artist casing was uncorrected, and genre was unset - all misleading since real integration never sees these values (TagFixer cleans them first).
