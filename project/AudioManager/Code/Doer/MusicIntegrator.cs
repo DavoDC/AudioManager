@@ -134,12 +134,29 @@ namespace AudioManager
                                 : Path.GetFileName(duplicatePath);
                             string relNewPath = Path.GetFileName(sourcePath);
 
-                            // Recommendation: library in Singles/ + new file has a real album = prefer album (replace with [L])
+                            // Album preference rules - recommend [L] (replace library) when:
+                            // 1. Library has single + new file has real album (album version preferred over single)
+                            // 2. Library has compilation track + new file has artist album (artist album preferred over compilation)
                             bool libraryIsSingle = relLibraryPath.IndexOf("\\Singles\\", StringComparison.OrdinalIgnoreCase) >= 0
                                                 || relLibraryPath.StartsWith("Singles\\", StringComparison.OrdinalIgnoreCase);
+                            bool libraryIsCompilation = relMirrorPath.StartsWith("Compilations\\", StringComparison.OrdinalIgnoreCase)
+                                                     || relMirrorPath.StartsWith("Compilations/", StringComparison.OrdinalIgnoreCase);
                             bool newIsAlbum = !string.IsNullOrEmpty(track.Album)
+                                           && !track.Album.Equals("Missing", StringComparison.OrdinalIgnoreCase)
                                            && !track.Album.Equals(track.Title, StringComparison.OrdinalIgnoreCase);
-                            char recommendedKey = (libraryIsSingle && newIsAlbum) ? 'L' : '\0';
+
+                            string dupReason = "";
+                            char recommendedKey = '\0';
+                            if (libraryIsSingle && newIsAlbum)
+                            {
+                                recommendedKey = 'L';
+                                dupReason = $"Library has single; new file is from album '{track.Album}' - album preferred";
+                            }
+                            else if (libraryIsCompilation && newIsAlbum)
+                            {
+                                recommendedKey = 'L';
+                                dupReason = $"Library has compilation track; new file is from artist album '{track.Album}' - artist album preferred";
+                            }
 
                             // Build options line: recommended option is leftmost with "(recommended)" label
                             string optD = "[D] Delete NewMusic copy (keep library)";
@@ -173,6 +190,8 @@ namespace AudioManager
                                 if (key == ConsoleKey.D)
                                 {
                                     // Delete from NewMusic
+                                    string dReason = "User kept library copy" + (recommendedKey == 'L' ? $" (overrode [L]: {dupReason})" : "");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "duplicate-kept-library", dReason);
                                     if (dryRun)
                                     {
                                         PrintTimestamped($"  [DRY RUN] Would delete from NewMusic: {relNewPath}");
@@ -194,6 +213,8 @@ namespace AudioManager
                                 else if (key == ConsoleKey.L)
                                 {
                                     // Delete from Library (replace old with new album version)
+                                    string lReason = !string.IsNullOrEmpty(dupReason) ? dupReason : "User chose to replace library copy";
+                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "duplicate-replaced-library", lReason);
                                     if (dryRun)
                                     {
                                         PrintTimestamped($"  [DRY RUN] Would delete from library: {relLibraryPath}");
