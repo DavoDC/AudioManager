@@ -52,7 +52,7 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 - [ ] **UX: Consolidate duplicate decisions together in output** - Currently routing decisions and duplicate decisions are interspersed, making it hard to review all duplicates together. Group all duplicate detection decisions together (before or after routing decisions) so users can context-switch once instead of repeatedly alternating between duplicate and routing reviews.
 
-- [ ] **UX: Detect "same song, same album" duplicate and label it specially** - When the new file is from the exact same album as the library copy (track.Album equals the album in the mirror XML), both versions are equivalent - no quality preference. Current display shows a generic duplicate prompt. Add detection: if albums match, show "Same song from same album - either version is equivalent, choice does not matter" in the display. The options remain unchanged; the framing helps the user decide instantly.
+- [ ] **UX: Separate Proposed (action) from Reason (justification) - no overlap** - Currently `Proposed` bleeds into justification territory (e.g. "Delete NewMusic copy - already have this from 'Album'") while `Reason` restates the same idea ("Same song from same album - already in library"). Proposed should be a pure action statement (what will happen: "Delete NewMusic copy, keep library"), Reason should be a pure justification (why: "Same song from same album ('Lupe Fiasco's The Cool')"). Apply this separation consistently across all recommendation cases: same-album, single-vs-album, compilation-vs-album, and no-preference.
 
 
 
