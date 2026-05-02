@@ -130,6 +130,13 @@ This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs`
 - Never delete source files without confirming the destination write succeeded
 - When in doubt, do nothing and ask
 
+## Display Conventions
+
+- **"In AudioMirror"** = the XML entry in AudioMirror repo (`C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\...xml`)
+- **"In library"** = the MP3 file in the Audio folder (`C:\Users\David\Audio\...mp3`)
+- Never say "In library" with an XML path, or "In AudioMirror" with an MP3 path. Match label to file type.
+- Duplicate detection surfaces AudioMirror XML paths - display as "In AudioMirror" so the user knows where the detection came from.
+
 ## Workflow Rules
 
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
