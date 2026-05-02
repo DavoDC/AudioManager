@@ -12,8 +12,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **PRIORITY: Duplicate detection UX batch - interrelated items, high impact on integration workflow**
 
-- [ ] **UX: Add succinct routing summary line for quick decision-making** - Currently the routing proposal shows the full destination path + reason, which is good for diagnostics but slow to scan. Add a short one-liner above the full path that gives just the key routing decision (e.g. `-> Dizzy Wright / Singles`). User checks the summary for quick Y/N, reads the full path only when something looks wrong. Both lines shown always - summary for speed, path for diagnostics.
-
 - [ ] **UX: Detect compilation vs artist album for smarter [L] recommendation** - Current logic only recommends [L] when `relMirrorPath` starts with `Compilations\` (root folder only). Misses: library track in a named compilation series that lives elsewhere (e.g. `Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\`). Better approach: derive the album folder from `duplicatePath` (`Path.GetDirectoryName(duplicatePath)`), then read ALL XML files in that folder and collect the full `Artists` field from each (not just primary artist - use the whole field). If many distinct artists appear across the tracks, it is a compilation. If the same artist appears on every track, it is an artist album. Rule: if library album is detected as compilation AND new file has a named artist album (`newIsAlbum`), recommend [L] with reason "Library copy is from a compilation; new file is from artist album". No keyword lists - ground truth from the mirror data.
 
 - [ ] **UX: Consolidate duplicate decisions together in output** - Currently routing decisions and duplicate decisions are interspersed, making it hard to review all duplicates together. Group all duplicate detection decisions together (before or after routing decisions) so users can context-switch once instead of repeatedly alternating between duplicate and routing reviews.
@@ -23,6 +21,10 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 ## TIER 2 - QUALITY
 
 **Goal: improve user experience for real integration and add minimal test coverage for high-risk code paths.**
+
+- [ ] **Fix plural "songs" when count is 1** - e.g. "Singles (1 songs from Brian Tracy)" should say "1 song". Grep for the format string generating this output and add a ternary for singular/plural. Quick win.
+
+- [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 
 - [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Auto-accept has been turned off (user now confirms Y/N like all other routes). Still need: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file. Needs investigation of current state + implementation of batch review at end.
 
@@ -46,16 +48,12 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: close structural gaps and improve developer experience. Non-blocking.**
 
-- [ ] **Fix plural "songs" when count is 1** - e.g. "Singles (1 songs from Brian Tracy)" should say "1 song". Grep for the format string generating this output and add a ternary for singular/plural. Low priority.
-
 - [ ] **Deep dive: audit full library against Music-Library-Rules.md** - scan AudioMirror XMLs, cross-reference every track against the rules doc, produce a violations/gaps report. Then confirm LibChecker catches everything the doc mandates. Goal: a clean LibChecker run means full conformance.
   - *Partial progress (2026-04-09)*: rules gap analysis done. Added `CheckAlbumSubfolderRule()` and `CheckGenreVsFolder()`. Remaining: run LibChecker on the full library, scan AudioMirror XMLs for violations not caught by LibChecker.
 
 - [ ] **Centralise rules - one system for both integration routing and LibChecker** - currently routing rules (artist -> folder mapping, genre overrides, special cases like ATD) and LibChecker validation rules live in separate places. Refactor into a single `RulesEngine` concept: rules defined once, consumed by both MusicIntegrator (routing decisions) and LibChecker (validation). Benefits: add one rule, both systems honour it; no risk of the two diverging. Also: audit for missing ATD (Akira The Don) rules - suspected gap between what TagFixer sets and what LibChecker checks.
 
 - [ ] **Simplify launch.bat - move menu logic into Program.cs** - RivalsVidMaker's `run.bat` is 2 lines; all menu/mode logic lives in Python. AudioManager's `launch.bat` is 91 lines with its own menu, duplicating CLI arg logic already in `Program.cs`. Refactor: `launch.bat` becomes a ~5-line wrapper that just builds + runs `AudioManager.exe` with no args; all menu logic lives in Program.cs where it's testable and debuggable.
-
-- [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 
 - [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate).
   - **Challenge:** Automating this is difficult - metadata alone rarely indicates source type. Current approach: if `Album` contains "OST" or "Soundtrack", prompt user for subfolder choice rather than defaulting to Misc.

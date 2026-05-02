@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - UX: Add succinct routing summary line
+
+Added `-> Artist / Folder` summary line above the full `Proposed:` path in the routing display block. `GetRouteSummary()` strips the top-level category folder (Artists, Musivation, etc.) and filename, then formats the remaining path as `A / B / C`. Special case: "Miscellaneous Songs" abbreviates to "Misc". User can scan the arrow line for quick Y/N; full path stays for diagnostics.
+
+---
+
 ## 2026-05-02 - UX: Separator bars widened from 60 to 75 chars
 
 `====` and `----` bars in MusicIntegrator.cs and TagFixer.cs extended from 60 to 75 characters. Long song titles (e.g. "WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE") were overflowing the 60-char bars. Both bar types updated consistently via replace_all.
