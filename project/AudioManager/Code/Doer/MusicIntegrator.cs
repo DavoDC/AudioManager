@@ -169,17 +169,32 @@ namespace AudioManager
                                 ? $"  {optL}   {optD}   {optK}   {optQ}"
                                 : $"  {optD}   {optL}   {optK}   {optQ}";
 
+                            // Corrected display filename from cleaned tags (tags already cleaned by TagFixer or dry-run simulation)
+                            string displayNewFilename = $"{track.Artists} - {track.Title}.mp3";
+
+                            // Proposed action summary based on recommendation
+                            string dupProposed = recommendedKey == 'L'
+                                ? "Delete library copy, keep new file (album version preferred)"
+                                : recommendedKey == 'D'
+                                    ? "Delete NewMusic copy, keep library version"
+                                    : "No version preference - choose D or L based on quality";
+
                             Console.WriteLine();
                             PrintTimestamped("============================================================");
                             PrintTimestamped("  DUPLICATE FOUND");
                             PrintTimestamped("============================================================");
                             Console.WriteLine();
                             PrintTimestamped($"  In AudioMirror: {relMirrorPath}");
-                            PrintTimestamped($"  New file:   {relNewPath}");
                             Console.WriteLine();
-                            PrintTimestamped($"  Track: {track.Artists} - {track.Title}");
-                            PrintTimestamped($"  Album: {track.Album}");
+                            PrintTimestamped($"  New file:   {displayNewFilename}");
+                            PrintTimestamped($"  Track:      {track.Artists} - {track.Title}");
+                            PrintTimestamped($"  Album:      {track.Album}");
                             Console.WriteLine();
+                            PrintTimestamped($"  Proposed:   {dupProposed}");
+                            if (!string.IsNullOrEmpty(dupReason))
+                                PrintTimestamped($"  Reason:     {dupReason}");
+                            Console.WriteLine();
+                            PrintTimestamped("------------------------------------------------------------");
                             PrintTimestamped(optionsLine);
                             PrintTimestamped("------------------------------------------------------------");
 
