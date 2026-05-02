@@ -233,7 +233,7 @@ namespace AudioManager
                                     if (dryRun)
                                     {
                                         PrintTimestamped($"  [DRY RUN] Would delete from library: {relLibraryPath}");
-                                        PrintTimestamped($"  [DRY RUN] Would keep new file: {relNewPath}");
+                                        PrintTimestamped($"  [DRY RUN] Would keep new file: {displayNewFilename}");
                                         entry.Status = "would-replace";
                                         entry.Detail = "duplicate (would replace)";
                                         logEntries.Add(entry); skippedCount++;
