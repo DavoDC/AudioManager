@@ -1,78 +1,34 @@
 # Ideas & Future Work
 
-Single source of truth for all pending work. **This file covers CLI only.** GUI planning is in `GUI-ROADMAP.md`. Settled decisions and completed features -> `HISTORY.md`.
+Single source of truth for all pending work. **CLI only.** GUI planning: `GUI-ROADMAP.md`. Completed items -> `HISTORY.md`.
 
-## Organization: Tiered Priorities
-
-Work is grouped by safety tier and milestone. Items within a tier can be done in any order or in parallel.
-**Do NOT move to the next tier until the current tier is verified working on real data.**
-
-**Why tiers?** AudioManager moves real files. Safety is non-negotiable. Tiers make blocking items explicit. TIER 0 and TIER 1 together form the "First Real Integration" milestone - all items must be complete before doing the real integration run. TIER 0 ensures safety (no data corruption), TIER 1 ensures we capture routing data and can validate the run worked. Then TIER 2+ for quality/polish. This matches how a solo developer actually reasons about work.
+Items are tiered by priority. Do not advance to the next tier until the current tier is verified on real data.
 
 ---
 
-# MILESTONE: First Real Integration Run
+## TIER 1 - MVP
 
-**Combined TIER 0 + TIER 1 prerequisites.** All items below must be complete before doing Stage 3C integration.
-- TIER 0 ensures safety (no corruption, all validations in place)
-- TIER 1 ensures decision logging (routing decisions captured, patterns extractable, audit trail preserved)
-- Success = first real integration runs clean, all decisions logged, at least 3 routing patterns extracted
+**Goal: validate the integration pipeline on real data.** All safety prerequisites are in place. These items improve the duplicate detection and routing workflow before the first real integration run.
 
----
-
-## TIER 0 - BLOCKING (Safety Prerequisites)
-
-**Goal: ensure integration cannot corrupt the library.** These items must be in place before any real integration run.
-
-- [ ] **READY: Real integration run - all TIER 0 UX fixes complete** - All blocking items resolved (2026-04-29): (1) Universal confirmation gates for ALL routes (Session 2), (2) Dry-run now shows same prompts as real mode (Session 3), (3) Console.Clear() removed + replaced with blank lines (Session 3), (4) Timestamped log entries added via PrintTimestamped() helper (Session 3), (5) Folder picker removed, [N] now simply declines file (Session 4). User can now validate routing decisions interactively with clean yes/no/quit flow before running real integration.
-  - **Sequence for real integration run:**
-    1. **Tag cleaning:** Run `AudioManager tagfix --dry-run` to preview tag cleanup
-    2. **Tag fix (real):** Run `AudioManager tagfix` to clean NewMusic files
-    3. **Integration dry-run:** Run `AudioManager integrate --dry-run` to preview routing with timestamps + confirmations
-    4. **Integration (real):** Run `AudioManager integrate` to move files (after user approves each file or declines)
-    5. **Post-validation:** LibChecker auto-runs; verify CLEAN
-    6. **Commit:** If CLEAN, commit AudioMirror changes to git
-
-
----
-
-## TIER 1 - MVP (Core Pipeline Works)
-
-**Goal: prove the completed integration pipeline works on real data.** All features are built; this is the validation phase.
-
-**PRIORITY: Duplicate detection UX batch - 7 interrelated items, high impact on integration workflow**
+**PRIORITY: Duplicate detection UX batch - interrelated items, high impact on integration workflow**
 
 - [ ] **UX: Add succinct routing summary line for quick decision-making** - Currently the routing proposal shows the full destination path + reason, which is good for diagnostics but slow to scan. Add a short one-liner above the full path that gives just the key routing decision (e.g. `-> Dizzy Wright / Singles`). User checks the summary for quick Y/N, reads the full path only when something looks wrong. Both lines shown always - summary for speed, path for diagnostics.
-
-- [ ] **UX: Remove redundant Track line from New file block** - The `New file: Artist - Title.mp3` filename already conveys artist and title. The `Track: Artist - Title` line below it repeats that information. Remove the Track line from the new file block - the filename is sufficient.
-
-- [ ] **UX: Add Track + Album lines under In AudioMirror entry** - Currently the library entry only shows the XML path (e.g. `Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Artist - Title.xml`). User has to parse the folder path to find the album. Add explicit `Track:` and `Album:` lines below the path - either extracted from the path segments or read from the XML. Library context block should match the new file block in information density.
 
 - [ ] **UX: Detect compilation vs artist album for smarter [L] recommendation** - Current logic only recommends [L] when `relMirrorPath` starts with `Compilations\` (root folder only). Misses: library track in a named compilation series that lives elsewhere (e.g. `Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\`). Better approach: derive the album folder from `duplicatePath` (`Path.GetDirectoryName(duplicatePath)`), then read ALL XML files in that folder and collect the full `Artists` field from each (not just primary artist - use the whole field). If many distinct artists appear across the tracks, it is a compilation. If the same artist appears on every track, it is an artist album. Rule: if library album is detected as compilation AND new file has a named artist album (`newIsAlbum`), recommend [L] with reason "Library copy is from a compilation; new file is from artist album". No keyword lists - ground truth from the mirror data.
 
 - [ ] **UX: Consolidate duplicate decisions together in output** - Currently routing decisions and duplicate decisions are interspersed, making it hard to review all duplicates together. Group all duplicate detection decisions together (before or after routing decisions) so users can context-switch once instead of repeatedly alternating between duplicate and routing reviews.
 
-- [ ] **UX: Separate Proposed (action) from Reason (justification) - no overlap** - Currently `Proposed` bleeds into justification territory (e.g. "Delete NewMusic copy - already have this from 'Album'") while `Reason` restates the same idea ("Same song from same album - already in library"). Proposed should be a pure action statement (what will happen: "Delete NewMusic copy, keep library"), Reason should be a pure justification (why: "Same song from same album ('Lupe Fiasco's The Cool')"). Apply this separation consistently across all recommendation cases: same-album, single-vs-album, compilation-vs-album, and no-preference.
-
-
-
-**Note:** TagFixer requirement already specified in TIER 0 "CRITICAL DESIGN: Separate tag fixing from integration". Integration pipeline sequence: NewMusic → TagFixer (clean tags, auto-delete instrumentals) → Integrator (route files, handle duplicates with [L] option) → Analyzer (report). All prerequisites defined in TIER 0.
-
 ---
 
-## TIER 2 - QUALITY (Robustness & UX Polish)
+## TIER 2 - QUALITY
 
-**Goal: improve user experience for real integration (visibility, readability, control) and add minimal test coverage for high-risk code paths.**
-
-**PRIORITY: Fix before real integration run**
-
-- [ ] **UX: Make separator bars longer (~25%) to prevent title overflow** - Long song titles (e.g. "WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE") extend past the `====` separator. Increase separator length from 60 chars to ~75 chars. Apply consistently to both the `====` header separator and the `----` divider before options. Both bars must be the same length.
+**Goal: improve user experience for real integration and add minimal test coverage for high-risk code paths.**
 
 - [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Auto-accept has been turned off (user now confirms Y/N like all other routes). Still need: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file. Needs investigation of current state + implementation of batch review at end.
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
-  - **Loot Bryon Smith** → Genre = "Musivation" (per Music-Library-Rules.md spec)
-  - **Generic "Motivation" tracks** → Genre = "Motivation" (currently not handled)
+  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec)
+  - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Once implemented, TagFixer will be 100% comprehensive.
 
 - [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
@@ -86,9 +42,9 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 ---
 
-## TIER 3 - POLISH (Structural Alignment & Nice-to-Have)
+## TIER 3 - POLISH
 
-**Goal: close structural gaps and improve developer experience.** Non-blocking enhancements.
+**Goal: close structural gaps and improve developer experience. Non-blocking.**
 
 - [ ] **Fix plural "songs" when count is 1** - e.g. "Singles (1 songs from Brian Tracy)" should say "1 song". Grep for the format string generating this output and add a ternary for singular/plural. Low priority.
 
@@ -98,25 +54,30 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 - [ ] **Centralise rules - one system for both integration routing and LibChecker** - currently routing rules (artist -> folder mapping, genre overrides, special cases like ATD) and LibChecker validation rules live in separate places. Refactor into a single `RulesEngine` concept: rules defined once, consumed by both MusicIntegrator (routing decisions) and LibChecker (validation). Benefits: add one rule, both systems honour it; no risk of the two diverging. Also: audit for missing ATD (Akira The Don) rules - suspected gap between what TagFixer sets and what LibChecker checks.
 
 - [ ] **Simplify launch.bat - move menu logic into Program.cs** - RivalsVidMaker's `run.bat` is 2 lines; all menu/mode logic lives in Python. AudioManager's `launch.bat` is 91 lines with its own menu, duplicating CLI arg logic already in `Program.cs`. Refactor: `launch.bat` becomes a ~5-line wrapper that just builds + runs `AudioManager.exe` with no args; all menu logic lives in Program.cs where it's testable and debuggable.
+
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
-- [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate). 
+
+- [ ] **Sources/ routing not implemented in GetDestDir()** - `Constants.SourcesDir` exists but `MusicIntegrator.GetDestDir()` has no routing logic for Sources/Films, Sources/Shows, or Sources/Anime. Films/Shows/Anime tracks currently fall to Misc and require manual folder-picker redirection. `Music-Library-Rules.md` documents the expected routing rules (Films subfolder = film name, Shows subfolder = show name, Anime = separate).
   - **Challenge:** Automating this is difficult - metadata alone rarely indicates source type. Current approach: if `Album` contains "OST" or "Soundtrack", prompt user for subfolder choice rather than defaulting to Misc.
   - **Alternative approach:** Study existing Sources/Films, Sources/Shows, Sources/Anime tracks for metadata patterns (album names, artist names, genre, etc.) that distinguish them. May reveal rough heuristics for auto-detection, or may confirm that folder-picker prompt is the only reliable option.
   - **Recommendation:** TIER 4 exploratory task - audit existing metadata patterns before deciding if automation is feasible. May need to accept manual folder-picker as permanent solution.
-- [ ] **Audit libchecker-exceptions.xml - distinguish bug fixes from genuine exceptions** - review all exceptions to identify which are workarounds for LibChecker regex bugs (e.g., "version" in legitimate titles like Alan Watts tracks) vs. genuine tracks that need exemption (e.g., Eric Thomas bonus content). For each regex-bug workaround, ensure there's a corresponding TIER 1 code improvement in IDEAS. Goal: exceptions.xml contains only track-specific needs, not rule improvements. Low priority - documents intent rather than changing behaviour.
+
+- [ ] **Audit libchecker-exceptions.xml - distinguish bug fixes from genuine exceptions** - review all exceptions to identify which are workarounds for LibChecker regex bugs (e.g., "version" in legitimate titles like Alan Watts tracks) vs. genuine tracks that need exemption (e.g., Eric Thomas bonus content). For each regex-bug workaround, ensure there's a corresponding TIER 1 code improvement in IDEAS. Goal: exceptions.xml contains only track-specific needs, not rule improvements. Low priority.
+
 - [ ] **AudioMirrorCommitter safety check - prevent commit on ANY issues, not just LibChecker** - currently skips auto-commit only if LibChecker reported hits, but doesn't account for other issues like unexpected file extensions (discovered during Reflector mirror phase). Update check: if Reflector found unexpected extensions OR LibChecker reported hits, skip commit and notify user. Goal: auto-commit only runs when entire pipeline is completely clean.
-- [ ] **Re-enable AudioMirrorCommitter auto-commit** - currently disabled (shows manual instructions instead). Re-enable when program is more mature and proven stable on real library operations. Auto-commit was too risky during active development. Prerequisites: (1) TIER 1 all verified, (2) several weeks of stable runs with zero accidental data loss, (3) both safety checks above in place. Low priority - manual commits are safe and auditable.
-  - **Note:** Old auto-commit logic is commented out in `AudioMirrorCommitter.TryCommit()` (lines ~60-85) for easy re-enable. Uncomment when prerequisites met.
 
-- [ ] **Fix report table formatting - markdown tables instead of plain text** - Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as plain text with no formatting. Example: "% Decade Occurrences" section shows numbered rows without table structure. Modify `ReportWriter.cs` (and/or `Analyser.cs` if it generates the data) to emit proper markdown tables with pipe-delimited columns and header separators. Affects readability and consistency with GitHub markdown rendering. **Why:** Reports are committed to AudioMirror repo and viewed on GitHub; plain text looks unprofessional, markdown tables are readable and well-formatted.
+- [ ] **Re-enable AudioMirrorCommitter auto-commit** - currently disabled (shows manual instructions instead). Re-enable when program is more mature and proven stable on real library operations. Prerequisites: (1) TIER 1 all verified, (2) several weeks of stable runs with zero accidental data loss, (3) both safety checks above in place. Low priority - manual commits are safe and auditable.
+  - **Note:** Old auto-commit logic is commented out in `AudioMirrorCommitter.TryCommit()` (lines ~60-85) for easy re-enable.
 
-- [ ] **Low priority: Evaluate removing .md integration logs in favour of decision XMLs** - Integration logs (`logs/integration-*.md`) and decision XMLs overlap in content. If XMLs contain all routing information, the .md logs may be redundant. Evaluate what .md logs have that XMLs don't (human-readable narrative vs structured data). If XMLs are sufficient for audit and analysis, remove .md logs to simplify the output. Note: XMLs are machine-queryable; .md logs are human-readable - decide which matters more before removing.
+- [ ] **Fix report table formatting - markdown tables instead of plain text** - Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as plain text with no formatting. Modify `ReportWriter.cs` (and/or `Analyser.cs` if it generates the data) to emit proper markdown tables with pipe-delimited columns and header separators. Affects readability and consistency with GitHub markdown rendering.
 
-- [ ] **Low priority idea: Routing decision analysis mode** - Add a mode that reads decision XMLs, cross-references routing decisions against routing rules code and LibChecker rules, and flags inconsistencies. Produces a report: "these N files were routed to X but LibChecker would flag them as Y". Pairs well with the "Centralise rules" refactor (TIER 3). Exploratory - assess value after the first real integration run produces decision XML data to analyse.
+- [ ] **Low priority: Evaluate removing .md integration logs in favour of decision XMLs** - Integration logs (`logs/integration-*.md`) and decision XMLs overlap in content. If XMLs contain all routing information, the .md logs may be redundant. Evaluate what .md logs have that XMLs don't (human-readable narrative vs structured data). If XMLs are sufficient for audit and analysis, remove .md logs to simplify the output.
+
+- [ ] **Low priority idea: Routing decision analysis mode** - Add a mode that reads decision XMLs, cross-references routing decisions against routing rules code and LibChecker rules, and flags inconsistencies. Produces a report: "these N files were routed to X but LibChecker would flag them as Y". Pairs well with the "Centralise rules" refactor. Exploratory - assess value after the first real integration run produces decision XML data to analyse.
 
 ---
 
-## TIER 4 - FUTURE (Lower Priority / Nice-to-Have)
+## TIER 4 - FUTURE
 
 **Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
 
@@ -124,7 +85,7 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
 - **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
 - **Fuzzy artist name matching** - handle artist name variations during routing ("The Beatles" vs "Beatles", featured artist formatting differences). Only matters at scale.
-- **Fuzzy duplicate title matching** - extend the pre-integration duplicate check to catch near-matches (e.g. "Song (feat. X)" vs "Song", "Song - Remix" vs "Song"). Approach: normalise both sides before comparison by stripping featured artist parentheticals, stripping remix/edit/version suffixes, collapsing whitespace. Blocked by: the exact-match duplicate check (TIER 0) must be in place first.
+- **Fuzzy duplicate title matching** - extend the pre-integration duplicate check to catch near-matches (e.g. "Song (feat. X)" vs "Song", "Song - Remix" vs "Song"). Approach: normalise both sides before comparison by stripping featured artist parentheticals, stripping remix/edit/version suffixes, collapsing whitespace. Blocked by: the exact-match duplicate check must be in place first.
 
 ---
 
@@ -137,8 +98,7 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
     - **Low play count** - cross-reference against iTunes, Last.fm, and/or Spotify listening history. A song never played in 2+ years is a prime candidate.
     - **Negative lyrical/emotional tone** - screen lyrics (via a lyrics API or local cache) and flag songs with heavily negative/depressive/aggressive content on the theory that repeated subconscious exposure shapes mood. This is subjective and must stay advisory, not automated.
   - **Auditable, reversible:** decisions live in a committed config file; a "remove" decision is the review-mode verdict, not an immediate file delete. Actual removal is a separate explicit step after review is complete, with dry-run first.
-  - **Integrates with existing infra:** can read from AudioMirror XML (existing scan target), reuse LibChecker exception pattern (external XML config), reuse dry-run pattern from MusicIntegrator.
-  - **Status:** Deprioritized. NewMusic decision logging (TIER 1) is higher priority. Revisit after core integration pipeline is stable and you have operational experience with large libraries. Currently: if library needs pruning, do it ad-hoc or manually via existing tools.
+  - **Status:** Deprioritized. Revisit after core integration pipeline is stable and you have operational experience with large libraries.
 
 ---
 

@@ -4,6 +4,28 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - UX: Separator bars widened from 60 to 75 chars
+
+`====` and `----` bars in MusicIntegrator.cs and TagFixer.cs extended from 60 to 75 characters. Long song titles (e.g. "WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE") were overflowing the 60-char bars. Both bar types updated consistently via replace_all.
+
+---
+
+## 2026-05-02 - UX: Add Track + Album lines under In AudioMirror entry
+
+Added `Track:` and `Album:` lines below the "In AudioMirror:" path in the duplicate detection block. Previously the library entry showed only the XML path; user had to parse folder segments to find the album. Now `ReadMirrorTrackInfo(xmlPath)` reads the XML directly and surfaces the same fields shown in the new file block. Both blocks now have matching information density. Falls back gracefully (lines omitted) if XML is unreadable.
+
+---
+
+## 2026-05-02 - UX: Remove redundant Track line + Separate Proposed from Reason
+
+Two duplicate detection display cleanups in `MusicIntegrator.cs`.
+
+**Remove redundant Track line:** The `Track: Artist - Title` line in the new file block was a repeat of what the `New file: Artist - Title.mp3` filename already showed. Removed the Track line. Album remains (it adds context the filename doesn't have).
+
+**Separate Proposed from Reason:** `dupProposed` was bleeding justification into the action statement (e.g. "Delete NewMusic copy - already have this from 'Album'"). Now `Proposed` is a pure action ("Delete NewMusic copy, keep library" / "Delete library copy, keep new file" / "No version preference") and `Reason` carries the full justification. For the same-album case, the album name moved from Proposed into the Reason string so no context is lost.
+
+---
+
 ## 2026-05-02 - UX: Same-song/same-album duplicate detection
 
 When the new file is from the same album as the library copy, `MusicIntegrator` now detects this and immediately recommends [D] (keep library, delete NewMusic copy). Detection: `Path.GetFileName(Path.GetDirectoryName(duplicatePath))` gives the library album folder name; compared case-insensitively against `track.Album`. `dupProposed` shows the specific album name ("Delete NewMusic copy - already have this from 'Album'"). Takes priority over all other recommendation rules (single vs album, compilation vs album).
