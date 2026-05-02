@@ -215,7 +215,7 @@ namespace AudioManager
         /// Removes entire parenthetical phrases from a string.
         /// Patterns: (feat. X), (ft. X), (Album Version), (Explicit), (Edit), (Radio Edit), (Original), (Remix), (Version)
         /// </summary>
-        private string RemoveParentheticals(string input)
+        internal static string RemoveParentheticals(string input)
         {
             if (string.IsNullOrEmpty(input)) return input;
 
@@ -250,7 +250,7 @@ namespace AudioManager
         /// Extracts featured artists from title parentheticals and combines with existing artists.
         /// Returns a list of artists with primary artist first, others semicolon-separated.
         /// </summary>
-        private List<string> ExtractAndFixArtists(string title, string currentArtists)
+        internal static List<string> ExtractAndFixArtists(string title, string currentArtists)
         {
             var artists = new List<string>();
 
@@ -297,7 +297,7 @@ namespace AudioManager
         /// <summary>
         /// Checks if genre needs to be fixed (special handling for Akira The Don and genre "Motivation").
         /// </summary>
-        private bool ShouldFixGenre(string artists, string currentGenres)
+        internal static bool ShouldFixGenre(string artists, string currentGenres)
         {
             if (string.IsNullOrEmpty(artists)) return false;
 
@@ -313,7 +313,7 @@ namespace AudioManager
         /// <summary>
         /// Determines what genre should be set for a track based on artist/album.
         /// </summary>
-        private string DetermineGenre(string artists)
+        internal static string DetermineGenre(string artists)
         {
             if (string.IsNullOrEmpty(artists)) return "";
 
