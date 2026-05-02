@@ -705,8 +705,8 @@ namespace AudioManager
         {
             try
             {
-                // Extract relative path from AUDIO_MIRROR folder
-                string mirrorBaseFolder = Path.Combine(Constants.MirrorFolderPath, "AUDIO_MIRROR");
+                // Extract relative path from AUDIO_MIRROR folder (MirrorFolderPath already points to AUDIO_MIRROR)
+                string mirrorBaseFolder = Constants.MirrorFolderPath;
                 if (!mirrorXmlPath.StartsWith(mirrorBaseFolder, StringComparison.OrdinalIgnoreCase))
                     return mirrorXmlPath; // fallback: return as-is
 
