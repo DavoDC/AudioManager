@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - Fix: plural "songs" when count is 1
+
+Two reason strings in `MusicIntegrator.GetDestDir()` could produce "1 songs": the ATD Singles branch (`personSongCount < 3`, can be 1 or 2) and the Artists Singles branch (`albumCount < 2`, already had a `song(s)` workaround). Both fixed with inline ternary. All other count strings in the same method are guarded by `>= 2` or `>= 3` checks and were already correct.
+
+---
+
 ## 2026-05-02 - UX: Add succinct routing summary line
 
 Added `-> Artist / Folder` summary line above the full `Proposed:` path in the routing display block. `GetRouteSummary()` strips the top-level category folder (Artists, Musivation, etc.) and filename, then formats the remaining path as `A / B / C`. Special case: "Miscellaneous Songs" abbreviates to "Misc". User can scan the arrow line for quick Y/N; full path stays for diagnostics.
