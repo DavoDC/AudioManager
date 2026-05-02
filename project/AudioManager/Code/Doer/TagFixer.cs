@@ -286,7 +286,12 @@ namespace AudioManager
                 }
             }
 
-            return artists.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            // Fix casing: "Scott adams" -> "Scott Adams" (each artist part independently title-cased)
+            var textInfo = System.Globalization.CultureInfo.InvariantCulture.TextInfo;
+            return artists
+                .Select(a => textInfo.ToTitleCase(a.ToLower()))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         /// <summary>
