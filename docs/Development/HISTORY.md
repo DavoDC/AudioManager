@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - Fix: Dry-run now shows post-TagFixer (simulated) tags in routing blocks
+
+Dry-run routing blocks were showing raw tags from disk, so `(feat. Artist)` would appear in the title, artist casing was uncorrected, and genre was unset - all misleading since real integration never sees these values (TagFixer cleans them first).
+
+Fix: after reading raw tags in dry-run mode, MusicIntegrator now applies the same in-memory transformations as TagFixer before routing and display: `ExtractAndFixArtists` (feat. extraction + casing), `RemoveParentheticals` on title and album, genre assignment if needed. TCMP excluded (user trusts it). The simulation uses the original title for feat. extraction (correct order), then overwrites with cleaned values.
+
+Result: dry-run is now a faithful preview of real integration. Routing proposals show the cleaned artist, cleaned title (no `feat.`), cleaned album, and correct genre - the same values that will be on disk when real integration runs. User can confirm tags and routing in one pass without cross-referencing the TagFixer output section.
+
+Implementation: TagFixer helper methods (`RemoveParentheticals`, `ExtractAndFixArtists`, `ShouldFixGenre`, `DetermineGenre`) promoted from `private` to `internal static` so MusicIntegrator can call them directly.
+
+---
+
 ## 2026-05-02 - Fix: ATD People/ routing now uses Singles/Album subfolder structure + artist casing fix
 
 Two causally linked fixes applied together (ATD routing correctness depends on correct artist casing).
