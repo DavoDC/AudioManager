@@ -44,7 +44,6 @@ Work is grouped by safety tier and milestone. Items within a tier can be done in
 
 
 
-- [ ] **Formalize album vs single preference rule in routing** - Implement the album-preference rule from STAGE_3B as part of duplicate detection: "If singles exist in library + full album version is available, DELETE singles and KEEP ALBUM." Currently integrator offers user choice per duplicate. Expand to: (1) Detect when new file is part of an album (has album metadata + multiple tracks from same album in NewMusic). (2) When duplicate found: check if old version is a single AND new version is from an album. (3) If yes, recommend [L] (delete from library, keep album) as the default choice. (4) Log this decision pattern to DecisionLog so we can extract "album preference pattern" as a routing insight. **Why:** album versions are musically superior to singles (same tracks, album context), so library should prefer albums. Rule discovered through manual review (54.5% of incoming tracks were rejected singles). **Also:** prefer artist album over compilation album - same principle, artist album is the definitive release.
 
 **Note:** TagFixer requirement already specified in TIER 0 "CRITICAL DESIGN: Separate tag fixing from integration". Integration pipeline sequence: NewMusic → TagFixer (clean tags, auto-delete instrumentals) → Integrator (route files, handle duplicates with [L] option) → Analyzer (report). All prerequisites defined in TIER 0.
 
