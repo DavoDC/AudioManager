@@ -130,6 +130,26 @@ This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs`
 - Never delete source files without confirming the destination write succeeded
 - When in doubt, do nothing and ask
 
+## AudioMirror as Classification Oracle
+
+**The AudioMirror is the source of truth for facts about the library. Use it to answer classification questions - not name heuristics.**
+
+When you need to determine what something IS (compilation? artist album? genre folder?), read the actual data in AudioMirror rather than pattern-matching names or paths.
+
+**Examples:**
+- **Is this album a compilation?** -> Read all XML files in the album folder, collect the full `Artists` field from each track. If many distinct artists appear across tracks = compilation. If the same artist appears on every track = artist album. This works on any album name, including unusual ones like "MEANINGWAVE MASTERPIECES V" that keyword lists would miss.
+- **Does an artist have a folder?** -> Check `Directory.Exists(artistFolder)` against the library, not string matching.
+- **Is this a Singles folder?** -> Check the path component, not the album tag.
+
+**Why this is better than heuristics:**
+- Names drift: compilations aren't always called "Best Of" or "Greatest Hits"
+- Heuristics have edge cases: "Volume V" could be an artist's studio album
+- Data doesn't lie: if 10 tracks in a folder have 10 different Artists fields, it IS a compilation - no keyword needed
+
+**Applying this principle:** Before writing any keyword list, regex, or name-pattern check, ask: "Does the AudioMirror data already answer this question more reliably?" In most cases, it does. Read the XMLs.
+
+---
+
 ## Display Conventions
 
 - **"In AudioMirror"** = the XML entry in AudioMirror repo (`C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\...xml`)
