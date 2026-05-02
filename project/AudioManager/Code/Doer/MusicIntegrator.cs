@@ -92,6 +92,21 @@ namespace AudioManager
                             track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
                         }
 
+                        // Dry-run: simulate post-TagFixer state so routing and display use cleaned tags.
+                        // In real mode TagFixer has already written to disk; in dry-run it hasn't,
+                        // so we apply the same transforms in-memory (feat. removal, casing, genre).
+                        if (dryRun && !track.Title.Equals("Missing") && !track.Artists.Equals("Missing"))
+                        {
+                            string rawTitle = track.Title; // keep for feat. extraction before title is cleaned
+                            var simArtistList = TagFixer.ExtractAndFixArtists(rawTitle, track.Artists);
+                            track.Title = TagFixer.RemoveParentheticals(rawTitle);
+                            track.Artists = string.Join(";", simArtistList);
+                            if (!track.Album.Equals("Missing"))
+                                track.Album = TagFixer.RemoveParentheticals(track.Album);
+                            if (TagFixer.ShouldFixGenre(track.Artists, track.Genres))
+                                track.Genres = TagFixer.DetermineGenre(track.Artists);
+                        }
+
                         entry.Title = track.Title;
                         entry.Artists = track.Artists;
                         entry.Album = track.Album;
