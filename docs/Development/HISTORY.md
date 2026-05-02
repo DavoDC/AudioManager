@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - UX: Same-song/same-album duplicate detection
+
+When the new file is from the same album as the library copy, `MusicIntegrator` now detects this and immediately recommends [D] (keep library, delete NewMusic copy). Detection: `Path.GetFileName(Path.GetDirectoryName(duplicatePath))` gives the library album folder name; compared case-insensitively against `track.Album`. `dupProposed` shows the specific album name ("Delete NewMusic copy - already have this from 'Album'"). Takes priority over all other recommendation rules (single vs album, compilation vs album).
+
+---
+
 ## 2026-05-02 - UX: Duplicate detection display overhaul (4 items)
 
 Reworked the duplicate detection display block in `MusicIntegrator.cs` to match routing display quality.
