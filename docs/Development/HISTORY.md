@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - UX: Duplicate detection display overhaul (4 items)
+
+Reworked the duplicate detection display block in `MusicIntegrator.cs` to match routing display quality.
+
+**Layout (item 4):** Library context (AudioMirror path) comes first, then a blank line, then new file info as a grouped unit. User no longer has to mentally separate scattered fields.
+
+**Corrected filename (item 5):** New file now shows the cleaned tag name (`Artist - Title.mp3`) instead of the raw original filename. Tags are already cleaned by TagFixer (real mode) or the dry-run simulation at this point, so this shows what will actually be stored.
+
+**Proposed/Reason (item 2):** Added `Proposed:` line describing the recommended action (e.g. "Delete library copy, keep new file (album version preferred)") and `Reason:` line showing the rule that triggered it. Matches the context quality of routing proposals.
+
+**Separator above options (item 3):** Added `----` separator line above the options line. Routing display always has `----` before and after options; duplicate display now matches.
+
+---
+
 ## 2026-05-02 - Feat: Album preference rules in duplicate detection + DecisionLog logging
 
 Extended duplicate detection with two album preference rules and decision logging.
