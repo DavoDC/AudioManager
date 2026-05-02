@@ -169,9 +169,9 @@ namespace AudioManager
 
                 // Summary
                 Console.WriteLine();
-                Console.WriteLine("============================================================");
+                Console.WriteLine("===========================================================================");
                 Console.WriteLine(dryRun ? "  Tag Fix Summary (Dry Run)" : "  Tag Fix Summary");
-                Console.WriteLine("============================================================");
+                Console.WriteLine("===========================================================================");
                 Console.WriteLine($"  Files processed: {files.Length}");
                 Console.WriteLine($"  Fixed: {fixedCount}  |  Skipped: {skippedCount}");
 
@@ -203,7 +203,7 @@ namespace AudioManager
                     }
                 }
 
-                Console.WriteLine("\n============================================================");
+                Console.WriteLine("\n===========================================================================");
             }
             finally
             {

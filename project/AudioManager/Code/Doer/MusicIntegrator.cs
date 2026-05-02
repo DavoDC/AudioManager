@@ -155,7 +155,7 @@ namespace AudioManager
                             if (sameAlbum)
                             {
                                 recommendedKey = 'D';
-                                dupReason = $"Same song from same album - already in library";
+                                dupReason = $"Same song from same album ('{track.Album}') - already in library";
                             }
                             else if (libraryIsSingle && newIsAlbum)
                             {
@@ -182,33 +182,37 @@ namespace AudioManager
                             // Corrected display filename from cleaned tags (tags already cleaned by TagFixer or dry-run simulation)
                             string displayNewFilename = $"{track.Artists} - {track.Title}.mp3";
 
+                            // Read library entry details from XML for display
+                            ReadMirrorTrackInfo(duplicatePath, out string mirrorTrack, out string mirrorAlbum);
+
                             // Proposed action summary based on recommendation
-                            string dupProposed = sameAlbum
-                                ? $"Delete NewMusic copy - already have this from '{track.Album}'"
-                                : recommendedKey == 'L'
-                                    ? "Delete library copy, keep new file (album version preferred)"
-                                    : recommendedKey == 'D'
-                                        ? "Delete NewMusic copy, keep library version"
-                                        : "No version preference - choose D or L based on quality";
+                            string dupProposed = recommendedKey == 'L'
+                                ? "Delete library copy, keep new file"
+                                : recommendedKey == 'D'
+                                    ? "Delete NewMusic copy, keep library"
+                                    : "No version preference";
 
                             Console.WriteLine();
-                            PrintTimestamped("============================================================");
+                            PrintTimestamped("===========================================================================");
                             PrintTimestamped("  DUPLICATE FOUND");
-                            PrintTimestamped("============================================================");
+                            PrintTimestamped("===========================================================================");
                             Console.WriteLine();
                             PrintTimestamped($"  In AudioMirror: {relMirrorPath}");
+                            if (!string.IsNullOrEmpty(mirrorTrack))
+                                PrintTimestamped($"  Track:          {mirrorTrack}");
+                            if (!string.IsNullOrEmpty(mirrorAlbum))
+                                PrintTimestamped($"  Album:          {mirrorAlbum}");
                             Console.WriteLine();
                             PrintTimestamped($"  New file:   {displayNewFilename}");
-                            PrintTimestamped($"  Track:      {track.Artists} - {track.Title}");
                             PrintTimestamped($"  Album:      {track.Album}");
                             Console.WriteLine();
                             PrintTimestamped($"  Proposed:   {dupProposed}");
                             if (!string.IsNullOrEmpty(dupReason))
                                 PrintTimestamped($"  Reason:     {dupReason}");
                             Console.WriteLine();
-                            PrintTimestamped("------------------------------------------------------------");
+                            PrintTimestamped("---------------------------------------------------------------------------");
                             PrintTimestamped(optionsLine);
-                            PrintTimestamped("------------------------------------------------------------");
+                            PrintTimestamped("---------------------------------------------------------------------------");
 
                             // Wait for input
                             while (true)
@@ -339,9 +343,9 @@ namespace AudioManager
 
                         // Print track header
                         Console.WriteLine();
-                        PrintTimestamped("============================================================");
+                        PrintTimestamped("===========================================================================");
                         PrintTimestamped($"  {track.Artists} - {track.Title}");
-                        PrintTimestamped("============================================================");
+                        PrintTimestamped("===========================================================================");
                         Console.WriteLine();
                         PrintTimestamped($"  Album:   {track.Album}");
                         PrintTimestamped($"  Year:    {track.Year}");
@@ -350,11 +354,11 @@ namespace AudioManager
                         PrintTimestamped($"  Proposed: {relativeDest}");
                         PrintTimestamped($"  Reason:   {reason}");
                         Console.WriteLine();
-                        PrintTimestamped("------------------------------------------------------------");
+                        PrintTimestamped("---------------------------------------------------------------------------");
 
                         // All routes require confirmation
                         PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
-                        PrintTimestamped("------------------------------------------------------------");
+                        PrintTimestamped("---------------------------------------------------------------------------");
 
                         while (true)
                         {
@@ -427,9 +431,9 @@ namespace AudioManager
                         // Fail fast on integration errors - do not silently skip files
                         // Silent skips could mask data corruption or library corruption
                         Console.WriteLine();
-                        PrintTimestamped("============================================================");
+                        PrintTimestamped("===========================================================================");
                         PrintTimestamped("INTEGRATION FAILED");
-                        PrintTimestamped("============================================================");
+                        PrintTimestamped("===========================================================================");
                         Console.WriteLine();
                         PrintTimestamped($"Error processing file: {Path.GetFileName(sourcePath)}");
                         PrintTimestamped($"Full path: {sourcePath}");
@@ -437,7 +441,7 @@ namespace AudioManager
                         PrintTimestamped($"Error details: {ex.Message}");
                         if (!string.IsNullOrEmpty(ex.StackTrace))
                             Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
-                        Console.WriteLine("\n============================================================");
+                        Console.WriteLine("\n===========================================================================");
                         Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
                         Console.WriteLine("Press any key to exit...");
                         Console.ReadKey();
@@ -446,12 +450,12 @@ namespace AudioManager
                 }
 
                 Console.Clear();
-                Console.WriteLine("============================================================");
+                Console.WriteLine("===========================================================================");
                 Console.WriteLine(dryRun ? "  Dry Run complete (no files moved)" : "  Integration complete");
-                Console.WriteLine("============================================================\n");
+                Console.WriteLine("===========================================================================\n");
                 Console.WriteLine(dryRun ? $"  Would move: {movedCount}" : $"  Moved:   {movedCount}");
                 Console.WriteLine($"  Skipped: {skippedCount}");
-                Console.WriteLine("\n------------------------------------------------------------");
+                Console.WriteLine("\n---------------------------------------------------------------------------");
 
                 // Print confidence report to console + save to log file
                 PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
@@ -554,9 +558,9 @@ namespace AudioManager
         /// </summary>
         private void PrintConfidenceReport(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
         {
-            Console.WriteLine("\n============================================================");
+            Console.WriteLine("\n===========================================================================");
             Console.WriteLine(dryRun ? "  CONFIDENCE REPORT (Dry Run)" : "  CONFIDENCE REPORT");
-            Console.WriteLine("============================================================\n");
+            Console.WriteLine("===========================================================================\n");
 
             // 1. Count check
             int expectedMoved = totalFiles - skippedCount;
@@ -650,7 +654,7 @@ namespace AudioManager
                 PrintTimestamped("No errors.");
             }
 
-            Console.WriteLine("\n============================================================");
+            Console.WriteLine("\n===========================================================================");
         }
 
         /// <summary>
@@ -787,6 +791,29 @@ namespace AudioManager
             {
                 return mirrorXmlPath; // fallback
             }
+        }
+
+        /// <summary>
+        /// Reads Track and Album fields from an AudioMirror XML file for display purposes.
+        /// Falls back to null on any failure.
+        /// </summary>
+        private void ReadMirrorTrackInfo(string xmlPath, out string trackDisplay, out string album)
+        {
+            trackDisplay = null;
+            album = null;
+            try
+            {
+                var xmlDoc = new System.Xml.XmlDocument();
+                xmlDoc.Load(xmlPath);
+                string title = xmlDoc.SelectSingleNode("//Title")?.InnerText?.Trim();
+                string artists = xmlDoc.SelectSingleNode("//Artists")?.InnerText?.Trim();
+                string albumStr = xmlDoc.SelectSingleNode("//Album")?.InnerText?.Trim();
+                if (!string.IsNullOrEmpty(title) && !string.IsNullOrEmpty(artists))
+                    trackDisplay = $"{Track.ProcessProperty(artists)[0].Trim()} - {title}";
+                if (!string.IsNullOrEmpty(albumStr))
+                    album = albumStr;
+            }
+            catch { /* fall through to null */ }
         }
 
         /// <summary>
