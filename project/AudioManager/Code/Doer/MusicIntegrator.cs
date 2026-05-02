@@ -760,18 +760,37 @@ namespace AudioManager
                         }
                     }
 
-                    // Count songs for this sampled person (3+ gets own folder, <3 goes to Singles)
+                    // Count songs for this sampled person (3+ gets own People/ folder, <3 goes to ATD Singles)
                     int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson);
                     if (personSongCount >= 3)
                     {
                         string peopleFolder = Path.Combine(peopleParent, sampledPerson);
-                        reason = $"Akira The Don -> People/{sampledPerson} ({personSongCount} songs)";
-                        return peopleFolder;
+
+                        // Within People/{person}/, apply same album-vs-singles rule as Artists/ routing
+                        if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase))
+                        {
+                            int albumCount = CountAkiraTheDonPersonAlbumSongs(sampledPerson, track.Album);
+                            if (albumCount >= 2)
+                            {
+                                reason = $"Akira The Don -> People/{sampledPerson}/{track.Album} ({albumCount} songs from album)";
+                                return Path.Combine(peopleFolder, track.Album);
+                            }
+                            else
+                            {
+                                reason = $"Akira The Don -> People/{sampledPerson}/{Constants.SinglesDir} ({personSongCount} songs, only {albumCount} from album)";
+                                return Path.Combine(peopleFolder, Constants.SinglesDir);
+                            }
+                        }
+                        else
+                        {
+                            reason = $"Akira The Don -> People/{sampledPerson}/{Constants.SinglesDir} ({personSongCount} songs, no distinct album)";
+                            return Path.Combine(peopleFolder, Constants.SinglesDir);
+                        }
                     }
                     else
                     {
                         reason = $"Akira The Don -> Singles ({personSongCount} songs from {sampledPerson})";
-                        return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
+                        return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
                     }
                 }
                 else
@@ -950,6 +969,52 @@ namespace AudioManager
                     {
                         // Skip files that can't be read
                     }
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Count songs from a specific album for a sampled person in People/{sampledPerson}/{album}/ (library + batch).
+        /// Mirrors CountAlbumSongs but for the ATD People/ folder structure.
+        /// Used to decide: People/{person}/{album}/ if 2+ songs, else People/{person}/Singles/.
+        /// </summary>
+        private int CountAkiraTheDonPersonAlbumSongs(string sampledPerson, string album)
+        {
+            int count = 0;
+
+            // Count in library: Musivation/Akira The Don/People/{sampledPerson}/{album}/
+            string albumFolder = Path.Combine(
+                Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson, album);
+            if (Directory.Exists(albumFolder))
+            {
+                count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
+            }
+
+            // Count in new batch: ATD songs with matching sampled person + same album
+            if (Directory.Exists(Constants.NewMusicPath))
+            {
+                foreach (var filePath in Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        using (TagLib.File tagFile = TagLib.File.Create(filePath))
+                        {
+                            var tag = tagFile.Tag;
+                            string fileArtists = tag.JoinedPerformers ?? "";
+                            string fileAlbum = tag.Album ?? "";
+
+                            if (fileArtists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                                fileAlbum.Equals(album, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var artistList = Track.ProcessProperty(fileArtists).ToList();
+                                if (artistList.Count > 1 && artistList[1].Equals(sampledPerson, StringComparison.OrdinalIgnoreCase))
+                                    count++;
+                            }
+                        }
+                    }
+                    catch { /* skip unreadable files */ }
                 }
             }
 

@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-02 - Fix: ATD People/ routing now uses Singles/Album subfolder structure + artist casing fix
+
+Two causally linked fixes applied together (ATD routing correctness depends on correct artist casing).
+
+**Fix 1 - ATD People/ subfolder routing (TIER 0 BLOCKING):**
+`GetDestDir()` was routing Akira The Don tracks directly to `People/{Person}/Song.mp3`, violating the Music-Library-Rules.md requirement for a subfolder before any song file. Fixed: when a person qualifies for their own People/ folder (3+ songs), the same album-vs-singles threshold logic used in the Artists/ path now also applies - if 2+ songs from the same album exist, routes to `People/{Person}/{Album}/`, otherwise routes to `People/{Person}/Singles/`. New private method `CountAkiraTheDonPersonAlbumSongs` counts songs for a given person+album combination (library + batch), mirroring the existing `CountAlbumSongs` method for the Artists/ path. Before this fix, all ATD tracks with 3+ person songs would land at wrong paths (missing the required subfolder level).
+
+**Fix 2 - TagFixer compound artist name capitalization (TIER 1):**
+`ExtractAndFixArtists()` was returning artist names without casing normalization. Example from real dry-run: "Akira The Don; Scott adams" where "adams" remained lowercase, producing wrong filenames and wrong People/ folder names in ATD routing (the two fixes are directly linked). Fix: added title-case normalization via `TextInfo.ToTitleCase(a.ToLower())` applied to each artist part independently before the `Distinct` call. Input "Akira The Don; Scott adams" now produces "Akira The Don; Scott Adams". Already-correct casing is preserved unchanged.
+
+Both changes build cleanly.
+
+---
+
 ## 2026-05-01 - Fix: Right-click in terminal no longer triggers Decline
 
 Root cause: `Console.ReadKey(intercept: true)` immediately consumes any char arriving in stdin, including characters pasted by right-click in Windows Terminal. A clipboard containing "n" would silently fire the [N] Decline handler mid-routing - a data-safety bug.
