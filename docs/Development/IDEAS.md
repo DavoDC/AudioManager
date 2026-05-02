@@ -22,8 +22,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve user experience for real integration and add minimal test coverage for high-risk code paths.**
 
-- [ ] **Fix plural "songs" when count is 1** - e.g. "Singles (1 songs from Brian Tracy)" should say "1 song". Grep for the format string generating this output and add a ternary for singular/plural. Quick win.
-
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 
 - [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Auto-accept has been turned off (user now confirms Y/N like all other routes). Still need: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file. Needs investigation of current state + implementation of batch review at end.

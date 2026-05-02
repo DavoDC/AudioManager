@@ -899,7 +899,7 @@ namespace AudioManager
                     }
                     else
                     {
-                        reason = $"Akira The Don -> Singles ({personSongCount} songs from {sampledPerson})";
+                        reason = $"Akira The Don -> Singles ({personSongCount} {(personSongCount == 1 ? "song" : "songs")} from {sampledPerson})";
                         return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
                     }
                 }
@@ -943,7 +943,7 @@ namespace AudioManager
                     }
                     else
                     {
-                        reason = $"Artist folder{scanNote}; only {albumCount} song(s) from album -> Singles/";
+                        reason = $"Artist folder{scanNote}; only {albumCount} {(albumCount == 1 ? "song" : "songs")} from album -> Singles/";
                         return Path.Combine(artistFolder, "Singles");
                     }
                 }
