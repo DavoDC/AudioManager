@@ -340,6 +340,7 @@ namespace AudioManager
                         }
 
                         entry.Destination = relativeDest;
+                        string routeSummary = GetRouteSummary(relativeDest);
 
                         // Print track header
                         Console.WriteLine();
@@ -351,6 +352,7 @@ namespace AudioManager
                         PrintTimestamped($"  Year:    {track.Year}");
                         PrintTimestamped($"  Genres:  {track.Genres}");
                         Console.WriteLine();
+                        PrintTimestamped($"  -> {routeSummary}");
                         PrintTimestamped($"  Proposed: {relativeDest}");
                         PrintTimestamped($"  Reason:   {reason}");
                         Console.WriteLine();
@@ -791,6 +793,24 @@ namespace AudioManager
             {
                 return mirrorXmlPath; // fallback
             }
+        }
+
+        /// <summary>
+        /// Derives a short routing summary from a relative destination path.
+        /// Strips the top-level category folder and filename; formats as "A / B / C".
+        /// E.g. "Artists\Dizzy Wright\Singles\Track.mp3" -> "Dizzy Wright / Singles"
+        /// </summary>
+        private string GetRouteSummary(string relativeDest)
+        {
+            string dirPath = Path.GetDirectoryName(relativeDest) ?? "";
+            if (string.IsNullOrEmpty(dirPath))
+                return relativeDest;
+            var parts = dirPath.Split(new[] { Path.DirectorySeparatorChar, '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return relativeDest;
+            if (parts.Length == 1)
+                return parts[0].Equals("Miscellaneous Songs", StringComparison.OrdinalIgnoreCase) ? "Misc" : parts[0];
+            return string.Join(" / ", parts.Skip(1));
         }
 
         /// <summary>
