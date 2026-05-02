@@ -109,38 +109,46 @@ namespace AudioManager
                             string libraryFilePath = DeriveLibraryPathFromMirrorPath(duplicatePath);
 
                             // Show duplicate - same style as routing proposals (no Console.Clear, timestamps, relative paths)
+                            // relLibraryPath: relative to Audio folder (for the MP3 in library)
+                            // relMirrorPath: relative to AUDIO_MIRROR (for the XML in AudioMirror)
                             string relLibraryPath = libraryFilePath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
                                 ? libraryFilePath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
                                 : libraryFilePath;
+                            string relMirrorPath = duplicatePath.StartsWith(Constants.MirrorFolderPath, StringComparison.OrdinalIgnoreCase)
+                                ? duplicatePath.Substring(Constants.MirrorFolderPath.Length).TrimStart('\\', '/')
+                                : Path.GetFileName(duplicatePath);
                             string relNewPath = Path.GetFileName(sourcePath);
 
-                            // Recommendation: if library has a single but new file is from an album, prefer album
+                            // Recommendation: library in Singles/ + new file has a real album = prefer album (replace with [L])
                             bool libraryIsSingle = relLibraryPath.IndexOf("\\Singles\\", StringComparison.OrdinalIgnoreCase) >= 0
                                                 || relLibraryPath.StartsWith("Singles\\", StringComparison.OrdinalIgnoreCase);
                             bool newIsAlbum = !string.IsNullOrEmpty(track.Album)
                                            && !track.Album.Equals(track.Title, StringComparison.OrdinalIgnoreCase);
-                            string recommendation = (libraryIsSingle && newIsAlbum)
-                                ? "[RECOMMENDED: L - Album version replaces Single]"
-                                : "";
+                            char recommendedKey = (libraryIsSingle && newIsAlbum) ? 'L' : '\0';
+
+                            // Build options line: recommended option is leftmost with "(recommended)" label
+                            string optD = "[D] Delete NewMusic copy (keep library)";
+                            string optL = "[L] Delete library copy (keep new file)";
+                            string optK = "[K] Keep both";
+                            string optQ = "[Q] Quit";
+                            if (recommendedKey == 'L') optL += " (recommended)";
+                            else if (recommendedKey == 'D') optD += " (recommended)";
+                            string optionsLine = recommendedKey == 'L'
+                                ? $"  {optL}   {optD}   {optK}   {optQ}"
+                                : $"  {optD}   {optL}   {optK}   {optQ}";
 
                             Console.WriteLine();
                             PrintTimestamped("============================================================");
                             PrintTimestamped("  DUPLICATE FOUND");
                             PrintTimestamped("============================================================");
                             Console.WriteLine();
-                            PrintTimestamped($"  In library: {relLibraryPath}");
+                            PrintTimestamped($"  In AudioMirror: {relMirrorPath}");
                             PrintTimestamped($"  New file:   {relNewPath}");
                             Console.WriteLine();
                             PrintTimestamped($"  Track: {track.Artists} - {track.Title}");
                             PrintTimestamped($"  Album: {track.Album}");
-                            if (!string.IsNullOrEmpty(recommendation))
-                            {
-                                Console.WriteLine();
-                                PrintTimestamped($"  {recommendation}");
-                            }
                             Console.WriteLine();
-                            PrintTimestamped("  [D] Delete from NewMusic   [L] Delete from Library");
-                            PrintTimestamped("  [K] Keep both              [Q] Quit");
+                            PrintTimestamped(optionsLine);
                             PrintTimestamped("------------------------------------------------------------");
 
                             // Wait for input
