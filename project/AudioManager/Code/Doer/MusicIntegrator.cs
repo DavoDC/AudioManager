@@ -289,25 +289,13 @@ namespace AudioManager
                         Console.WriteLine();
                         PrintTimestamped("------------------------------------------------------------");
 
-                        // Misc routes auto-accept (no decision needed - user can correct via [N] in real runs if needed)
-                        bool isMiscRoute = relativeDest.StartsWith(Constants.MiscDir, StringComparison.OrdinalIgnoreCase);
-                        if (isMiscRoute)
-                        {
-                            PrintTimestamped("  [AUTO] Miscellaneous Songs - auto-accepted");
-                        }
-                        else
-                        {
-                            // All other routes: show confirmation prompts
-                            PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
-                            PrintTimestamped("------------------------------------------------------------");
-                        }
+                        // All routes require confirmation
+                        PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
+                        PrintTimestamped("------------------------------------------------------------");
 
-                        // Wait for input (skipped for misc auto-accept)
-                        ConsoleKey autoKey = isMiscRoute ? ConsoleKey.Y : ConsoleKey.NoName;
                         while (true)
                         {
-                            var key = isMiscRoute ? autoKey : ReadMenuKey();
-                            isMiscRoute = false; // only auto-accept once
+                            var key = ReadMenuKey();
                             if (key == ConsoleKey.Y)
                             {
                                 // Accept proposed destination
