@@ -137,6 +137,14 @@ This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs`
 - Never say "In library" with an XML path, or "In AudioMirror" with an MP3 path. Match label to file type.
 - Duplicate detection surfaces AudioMirror XML paths - display as "In AudioMirror" so the user knows where the detection came from.
 
+## Library Routing Rules (read before touching GetDestDir or any routing code)
+
+These are invariants from Music-Library-Rules.md. Violating them causes files to land in wrong locations.
+
+- **Subfolder before song - at every level.** No song file ever sits directly in an artist folder. Always `Artist/Singles/song.mp3` or `Artist/AlbumName/song.mp3`. This applies at ALL nesting levels - including `Musivation/Akira The Don/People/{Person}/`. `People/Scott Adams/song.mp3` is wrong; `People/Scott Adams/Singles/song.mp3` is correct.
+- **Scan-ahead applies everywhere subfolder routing applies.** If you add a new routing path that picks Singles/ vs Album/, apply the same scan-ahead + album-threshold logic used in the Artists/ path. Factor it out - do not duplicate it.
+- **Before implementing any new routing path:** read `docs/References/Music-Library-Rules.md` and verify the expected folder structure. Then check whether the subfolder-before-song rule applies.
+
 ## Workflow Rules
 
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
