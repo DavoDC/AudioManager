@@ -33,6 +33,31 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
+## 🚨 POST-INTEGRATION LIBCHECKER FAILURES
+
+**After the partial real integration, Analysis + Force Regen was run and LibChecker reported errors. These indicate real integration quality failures - should not happen after a successful run.**
+
+**Failure 1: "soundtrack" in album tag - Eels - Mighty Fine Blues**
+```
+Found 'soundtrack' in album of 'Eels - Mighty Fine Blues'
+Total hits: 1
+```
+- TagFixer [SKIPPED] this file (no fixes needed) but the album tag contains "soundtrack" which LibChecker flags
+- Either TagFixer needs to catch and fix this, OR the LibChecker rule is too aggressive (the album may legitimately contain that word)
+- **Investigate:** Is "soundtrack" in the album name a real problem, or a false positive? If real, TagFixer must fix it. If false positive, add to exceptions.
+
+**Failure 2: Single-song album subfolder - Mike. - real things**
+```
+'\Artists\mike\the highs\Mike. - real things.xml': only 1 song from album 'the highs.' but in subfolder 'the highs/' (should be Singles/)
+```
+- Routing placed a single song in an album subfolder when the rule is: 1 song = Singles/, only 2+ songs from same album = album subfolder
+- **Investigate:** Was this an existing library issue (pre-integration) or caused by this batch? If pre-existing, it's a library hygiene issue. If caused by this integration, it's a routing bug.
+- Either way: routing logic must enforce the 1-song = Singles/ rule correctly for all cases.
+
+**Root cause investigation required before retrying integration.**
+
+---
+
 ## TIER 1 - MVP
 
 **Goal: validate the integration pipeline on real data.** SHOWSTOPPER issue must be fixed first. After fix: retry real integration.
@@ -51,6 +76,19 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). **Full reasoning:** ALL FILES in the Musivation folder must have the Musivation genre tag. Loot Byron Smith is a Musivation artist, so files are routed to the Musivation folder. Because they go to Musivation, they require the Musivation genre tag - it's a folder-level requirement enforced by LibChecker.
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Once implemented, TagFixer will be 100% comprehensive.
+
+- [ ] **Scan-ahead: show progress indicator during computation** - Scan-ahead calculation takes noticeably long (user thought it hung). Currently no output between "Scan-ahead: N artist(s) will hit 3-song threshold:" and the results. Fix: print a progress line while scanning, e.g. "Scanning batch... (checking N artists)" or a simple dot-tick per artist. Evidence from feedback: user saw scan-ahead output then silence for several seconds with no feedback.
+
+- [ ] **Routing proposal UX: split `Proposed:` into human-readable path + filesystem path** - Currently shows one long `Proposed: Musivation\Akira The Don\Singles\...` line that mixes logical path (for human review) and filesystem path (for execution). Suggested improvement: split into two lines:
+  - `Proposed: Akira The Don / Singles` (short, human-readable)
+  - `Path: Musivation\Akira The Don\Singles\Akira The Don;Brian Tracy - UNSTOPPABLE.mp3` (full filesystem path)
+  This makes the proposal easier to read at a glance before accepting.
+
+- [ ] **Routing proposal UX: `Reason` field should not duplicate the proposal** - Currently `Reason` sometimes restates what `Proposed:` already shows (e.g. "Akira The Don -> People/Rupert Spira/THE SHINING OF BEING (5 songs from album)" which mirrors the `->` line above it). Reason should explain WHY the routing was chosen, not restate the destination. Fix: audit Reason strings in routing logic; if a Reason just restates the destination path, replace with the actual decision logic (e.g. "5 songs from album -> album subfolder", "artist folder exists -> auto-route", etc.).
+
+- [ ] **Routing proposal UX: concise proposal positioning** - Concise proposal summary is showing in the wrong position relative to the `Proposed:` line. Needs investigation and discussion with David before implementing (user flagged: "not sure about best way to think about, ask me if needed").
+
+- [ ] **TagFixer output formatting: missing blank line between SKIPPED and FIXED entries** - Tag fixer output has inconsistent spacing. A blank line separates most [FIXED] entries but is missing between a [SKIPPED] line and the following [FIXED] line. Fix: ensure all consecutive [FIXED]/[SKIPPED] blocks are separated by a blank line for consistent readability.
 
 - [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
 
@@ -107,6 +145,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 ---
 
 ## Parked / Deprioritized
+
+- **Auto-routing for known routing cases** - When a routing decision is certain (perfect match for a known case), skip the human confirmation and route automatically. **EXPLICITLY GATED:** Do not implement until David says "I'm confident enough in the program." David's words: "WAIT until I explicitly say I'm confident enough." Only revisit after several real integration runs with zero incorrect routings and TIER 2 test coverage in place.
 
 - **DECISION GATE: Python Rewrite vs .NET 8 Migration** - AudioManager is .NET Framework; could migrate to .NET 8 SDK-style (lower cost, same language, taglib#-compatible) or rewrite in Python (no build step, lightweight deps via `mutagen`). **Status:** Parked. Program works well; no immediate need to decide. Revisit only if .NET becomes a blocker or if Python advantages outweigh rewrite cost. Decision factors: token cost estimate, confirm Python libs cover TagLib# use cases, ensure file I/O scope is matched.
 
