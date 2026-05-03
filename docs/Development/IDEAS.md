@@ -6,9 +6,36 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
+## 🚨 SHOWSTOPPER - MAX PRIORITY
+
+**REAL INTEGRATION FAILED (2026-05-03 23:30)** - Illegal characters in path preventing folder creation.
+
+**Issue:** Integration crashed on file `Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3` with album `WHAT IF?` (note the question mark). Error: `Illegal characters in path` when attempting to create destination folder.
+
+**Progress:** NewMusic batch contains 15 total songs. ~13-14 were successfully integrated before hitting this one. Only this single file caused the failure, blocking the final commit.
+
+**Root cause:** UNKNOWN - NEEDS INVESTIGATION. Other songs with semicolons in filenames were integrated fine, so it's likely NOT the semicolon. **Suspect: Question mark in album name "WHAT IF?" - question marks are illegal in Windows paths.** But verify this assumption first rather than guessing.
+
+**Investigation required (TIER 1 blocker):**
+1. **Identify the exact illegal character:** Examine the album name "WHAT IF?" and filename - which character is causing the error? Compare against other successfully-integrated files to isolate the culprit.
+2. **TagFixer enhancement:** Once identified, update filename/folder-name fixing to strip/replace illegal Windows characters: `< > : " / \ | ? *`. Current logic only handles parentheticals and basic renames.
+3. **Pre-integration validation:** Add a validation check before starting real integration: scan all NewMusic/PROCESSED files AND destination paths, flag any with illegal characters, ABORT if found (safer than crashing midway).
+4. **Retry mechanism:** After fix is deployed and verified, user must re-tag the files and attempt integration again.
+
+**Evidence:**
+```
+[23:30:10] Akira The Don; Scott Adams - AUTHOR YOURSELF
+[23:30:13] Error: Illegal characters in path.
+[23:30:13] Full path: C:\Users\David\Downloads\NewMusic\PROCESSED\Akira The Don - WHAT IF_\Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
+```
+
+**Blocks:** Real integration until fixed and tested on this batch.
+
+---
+
 ## TIER 1 - MVP
 
-**Goal: validate the integration pipeline on real data.** All safety prerequisites are in place. TIER 1 duplicate detection UX batch complete (2026-05-03). Ready for first real integration run.
+**Goal: validate the integration pipeline on real data.** SHOWSTOPPER issue must be fixed first. After fix: retry real integration.
 
 ---
 
@@ -21,7 +48,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Auto-accept has been turned off (user now confirms Y/N like all other routes). Still need: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file. Needs investigation of current state + implementation of batch review at end.
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
-  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec)
+  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). **Full reasoning:** ALL FILES in the Musivation folder must have the Musivation genre tag. Loot Byron Smith is a Musivation artist, so files are routed to the Musivation folder. Because they go to Musivation, they require the Musivation genre tag - it's a folder-level requirement enforced by LibChecker.
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Once implemented, TagFixer will be 100% comprehensive.
 

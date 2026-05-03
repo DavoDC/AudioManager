@@ -1,8 +1,76 @@
 # STAGE 3C: Real Integration - Execute
 
-**Date:** 2026-04-28  
-**Status:** ✓ READY FOR DRY-RUN - All prerequisites complete  
-**Approved tracks:** 51 tracks staged in `C:\Users\David\Downloads\NewMusic\PROCESSED\`
+**Date:** 2026-05-03  
+**Status:** ❌ FAILED MIDWAY (23:30) - Illegal characters in path error  
+**Batch:** 15 songs attempted, ~13-14 successfully integrated before failure
+**Blocker:** SHOWSTOPPER issue added to IDEAS.md - needs investigation & fix
+
+---
+
+## Iteration Summary (2026-04-28 → 2026-05-03)
+
+Over the past week, extensive development sessions were run using `/dev-session` skill to validate and refine the integration workflow. Key outcomes:
+
+**Development Sessions:** Multiple focused sessions with dry-run testing and iterative feedback  
+**Dry Runs:** Numerous preview runs to validate routing decisions, tag fixes, and UX/UI flows  
+**Improvements Delivered:**
+- Enhanced UX/UI: clearer prompts, better progress reporting, improved error messaging
+- Routing Logic: refined auto-route confidence, improved manual selection flow, better Misc categorization
+- Decision Logging: full audit trail now captures routing context and track metadata
+- Integration Preview: dry-run now shows all changes before execution, enabling confident real-run
+- Library Integration: seamless AudioMirror update and LibChecker validation in workflow
+
+**Confidence Level:** After extensive testing and iteration, ready to execute real integration with high confidence.
+
+See `ClaudeOnly/memory/session-history.md` for detailed session notes and feedback cycles.
+
+---
+
+## Execution Result (2026-05-03 23:30)
+
+### What Happened
+
+Real integration was launched on the NewMusic batch (15 songs total). Integration progressed through tag fixing and routing for approximately 13-14 songs before encountering a critical error.
+
+**Failure Point:**
+```
+[23:30:13] ===========================================================================
+[23:30:13] INTEGRATION FAILED
+[23:30:13] ===========================================================================
+
+[23:30:13] Error processing file: Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
+[23:30:13] Full path: C:\Users\David\Downloads\NewMusic\PROCESSED\Akira The Don - WHAT IF_\Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
+
+[23:30:13] Error details: Illegal characters in path.
+
+Stack trace:
+   at System.Security.Permissions.FileIOPermission.EmulateFileIOPermissionChecks(String fullPath)
+   at System.IO.Directory.InternalCreateDirectoryHelper(String path, Boolean checkHost)
+   at System.IO.Directory.CreateDirectory(String path)
+   at AudioManager.MusicIntegrator..ctor(Boolean dryRun) in C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\Code\Doer\MusicIntegrator.cs:line 314
+```
+
+**Status of successfully-integrated songs:** PARTIAL. ~13-14 of 15 files were moved to their destinations before the failure. The partial integration state was not rolled back (no transactional safety yet).
+
+**Post-integration commit:** NOT PERFORMED. AudioMirror was not updated and no commit was made due to the failure.
+
+### Root Cause Analysis
+
+**Unknown - Requires Investigation.** The error "Illegal characters in path" could be caused by:
+- **Question mark in album name:** The file belongs to album `WHAT IF?` - question marks are illegal in Windows filesystem paths. This is the primary suspect.
+- NOT the semicolon: Other songs with semicolons in featured-artist filenames (e.g., `Akira The Don;Rupert Spira - ...`) were successfully integrated, so the semicolon is not the culprit.
+
+**Next step:** Identify the exact illegal character (likely `?`) and trace where it appears (filename or destination path). See SHOWSTOPPER issue in `IDEAS.md`.
+
+### What Needs to Happen
+
+1. **Investigation (SHOWSTOPPER):** Confirm which character is illegal and where it appears
+2. **TagFixer fix:** Extend filename/folder-name fixing to strip/replace all illegal Windows characters (`< > : " / \ | ? *`)
+3. **Pre-integration validation:** Add check to scan files and paths BEFORE starting integration, abort if illegal characters found
+4. **Cleanup:** Decide whether to manually roll back the partial integration or accept the partial state
+5. **Retry:** After fix is deployed and verified, attempt integration again
+
+See `docs/Development/IDEAS.md` → SHOWSTOPPER section for full details.
 
 ---
 
@@ -23,95 +91,72 @@
 
 ---
 
-## Next Steps - Immediate Actions
+## Next Steps - BLOCKED Until Fix
 
-**Status:** Ready for dry-run testing. All prerequisites met.
+**Status:** Integration FAILED. SHOWSTOPPER issue blocking further progress.
 
-### Immediate Action: Test Dry-Run (2026-04-28)
+### Immediate Action: Fix SHOWSTOPPER (2026-05-03 onwards)
 
-Run the dry-run integration to validate routing decisions before moving files:
+Do NOT retry integration until the illegal-character issue is fixed.
 
-```powershell
-.\scripts\launch.bat
-→ Select Option 3 (Integration - Dry Run)
-```
+**Required steps (in order):**
 
-**This will show:**
-- Tag fixes preview (TCMP, genres, parentheticals, file renames)
-- Routing decisions for all 51 tracks (where each will go, why)
-- New folders that will be created
-- Which Misc songs need manual migration (if any)
+1. **Investigation:** Confirm the exact illegal character
+   - Likely culprit: Question mark in `WHAT IF?` album name
+   - Check TagFixer's filename-fixing logic - where are illegal chars being left un-stripped?
+   - Verify with a simple test: rename the file locally to remove `?` and see if it moves without error
 
-**Expected output:**
-- `logs/integration-2026-04-28-HHMMSS-dryrun.md` - integration log (timestamped for multiple runs)
-- `logs/decisions-2026-04-28-HHMMSS.xml` - routing decisions (marked dryRun: true, timestamped)
+2. **TagFixer Enhancement:** Strip/replace illegal Windows characters
+   - Current logic: handles parentheticals (`(feat. X)`) and basic renames
+   - Missing: illegal character handling for `< > : " / \ | ? *`
+   - Update `ShouldFixFilename()` and `DetermineFixedFilename()` in TagFixer.cs
+   - Test on the failing file to confirm fix
 
-**After dry-run:** Review both files, verify routing looks correct. Then proceed to real integration.
+3. **Pre-integration Validation:** Add safety gate
+   - Before launching real integration, scan all NewMusic/PROCESSED files
+   - Flag any with illegal characters in filename or that would create illegal paths
+   - ABORT if any found, display list for user to review
+
+4. **Retry Integration:**
+   - After fix is deployed and tested, re-tag the NewMusic files
+   - Run integration again (will need to clean up partially-integrated files first)
+
+See `docs/Development/IDEAS.md` → SHOWSTOPPER section for full technical details.
 
 ---
 
-## Stage 3C Workflow - Ready Now
+## Stage 3C Workflow - Execute Now
 
-### Step 1: Dry-Run (Validation Phase)
+### Step 1: Execute Real Integration
 
-**Command:** `.\scripts\launch.bat` → Option 3 (Integration - Dry Run)
+**Command:** `.\scripts\launch.bat` → Option 4 (Integration - Real)
 
-**What happens (no files moved, just preview):**
-1. **Tag Fixing Preview** - Shows what would be fixed in each file
+**What happens (files actually moved):**
+1. **Tag Fixing** - Applies all tag fixes to NewMusic files
    - TCMP set to True
    - Genres corrected (Musivation for Akira The Don, etc.)
    - Parentheticals removed
    - Featured artists moved to TPE1 tag
    - File renames per convention
 
-2. **Routing Preview** - Shows where each track will go
+2. **Routing** - Moves files to destinations
    - Decision for each of 51 tracks (Artists/Musivation/Motivation/Misc)
-   - Reasoning (artist auto-route, genre rule, scan-ahead, manual)
-   - Existing Misc songs flagged if they need manual migration
-   - Folder structure that will be created
+   - Full routing reasoning logged (artist auto-route, genre rule, scan-ahead, manual)
+   - Folder structure created automatically
 
-3. **Decision Log** - Routes logged to `decisions.xml` (marked dryRun: true)
-   - Audit trail of all routing decisions
-   - Full track metadata captured
-   - Can extract patterns after this batch
-
-**Action:** Review both `integration-2026-04-28-dryrun.md` and `decisions.xml`. If routing looks wrong, fix library and re-test. If OK, proceed to Step 2.
-
-### Step 2: Review Dry-Run Decisions
-
-After dry-run completes, review the outputs:
-
-**File 1:** `logs/integration-2026-04-28-dryrun.md`
-- Check per-file routing decisions
-- Verify confidence report (new folders, destination sanity check, errors)
-- Any files routed to Misc that should go elsewhere?
-
-**File 2:** `logs/decisions-2026-04-28-HHMMSS.xml`
-- Sample the routing decisions (artist → destination → reason)
-- Verify track metadata is being logged correctly
-- Check timestamp and dryRun: true flag
-
-**Possible actions:**
-- If routing looks correct → go to Step 3 (real integration)
-- If routing looks wrong → pause, fix the library or routing rules, re-test with another dry-run
-- If tag fixes look wrong → fix TagFixer rules, rebuild, re-test
-
-### Step 3: Execute Real Integration
-
-**Command:** `.\scripts\launch.bat` → Option 4 (Integration - Real)
-
-**What happens (files actually moved):**
-1. **Tag Fixing** - Applies all tag fixes to NewMusic files (TCMP, genres, etc.)
-2. **Routing** - Moves files to destinations (Artists/Musivation/Motivation/Misc)
 3. **AudioMirror Update** - Regenerates XML snapshot to reflect new files
+
 4. **LibChecker Validation** - Runs library checks (expected: CLEAN)
-5. **Decision Logging** - Routes logged to `decisions.xml` (marked dryRun: false)
+
+5. **Decision Logging** - Routes logged to `decisions.xml`
+   - Full audit trail with track metadata
+   - Marked dryRun: false with execution timestamp
 
 **Expected outcome:** All 51 tracks moved, AudioMirror updated, library CLEAN, decisions logged.
 
-**Confirmation prompt:** You'll be asked "Type YES to confirm" before files are moved. This is your last chance to abort.
+**Confirmation prompt:** You'll be asked "Type YES to confirm" before files are moved. This is your last safety checkpoint.
 
-### Step 4: Post-Integration Validation & Cleanup
+### Step 2: Post-Integration Validation & Cleanup
 
 After integration completes successfully:
 
@@ -122,11 +167,11 @@ After integration completes successfully:
 - [ ] **Commit AudioMirror changes**
   - Open GitHub Desktop
   - Stage `AudioMirror/AUDIO_MIRROR/` folder (files that changed)
-  - Commit with message: "2026-04-28 Batch integration (51 tracks)"
+  - Commit with message: "2026-05-03 Batch integration (51 tracks, after iteration)"
   - Push to origin (auto-commit is disabled for safety)
 
 - [ ] **Extract routing patterns** (TIER 1 analysis)
-  - Review `logs/decisions-2026-04-28-HHMMSS.xml` (most recent run)
+  - Review `logs/decisions-2026-05-03-HHMMSS.xml` (most recent run)
   - Identify patterns: "Akira The Don → 100% Musivation", "New artist with 3+ tracks → new Artists folder", etc.
   - Document at least 3 patterns in HISTORY.md for future optimization
 
