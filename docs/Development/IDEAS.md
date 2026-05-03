@@ -6,67 +6,56 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
-## 🚨 SHOWSTOPPER - MAX PRIORITY
+## TIER 1 - CURRENT BLOCKERS (fix before retrying integration)
 
-**REAL INTEGRATION FAILED (2026-05-03 23:30)** - Illegal characters in path preventing folder creation.
+**Goal: complete the first real integration cleanly.** LibChecker was clean before this run. All failures below were introduced by this integration and must be resolved before retry.
 
-**Issue:** Integration crashed on file `Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3` with album `WHAT IF?` (note the question mark). Error: `Illegal characters in path` when attempting to create destination folder.
+---
 
-**Progress:** NewMusic batch contains 15 total songs. ~13-14 were successfully integrated before hitting this one. Only this single file caused the failure, blocking the final commit.
+### Blocker A: Integration crash - illegal characters in path
 
-**Root cause:** UNKNOWN - NEEDS INVESTIGATION. Other songs with semicolons in filenames were integrated fine, so it's likely NOT the semicolon. **Suspect: Question mark in album name "WHAT IF?" - question marks are illegal in Windows paths.** But verify this assumption first rather than guessing.
-
-**Investigation required (TIER 1 blocker):**
-1. **Identify the exact illegal character:** Examine the album name "WHAT IF?" and filename - which character is causing the error? Compare against other successfully-integrated files to isolate the culprit.
-2. **TagFixer enhancement:** Once identified, update filename/folder-name fixing to strip/replace illegal Windows characters: `< > : " / \ | ? *`. Current logic only handles parentheticals and basic renames.
-3. **Pre-integration validation:** Add a validation check before starting real integration: scan all NewMusic/PROCESSED files AND destination paths, flag any with illegal characters, ABORT if found (safer than crashing midway).
-4. **Retry mechanism:** After fix is deployed and verified, user must re-tag the files and attempt integration again.
+**Integration failed midway (2026-05-03 23:30).** ~13-14 of 15 songs integrated successfully before crashing on this file.
 
 **Evidence:**
 ```
-[23:30:10] Akira The Don; Scott Adams - AUTHOR YOURSELF
-[23:30:13] Error: Illegal characters in path.
-[23:30:13] Full path: C:\Users\David\Downloads\NewMusic\PROCESSED\Akira The Don - WHAT IF_\Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
+[23:30:13] Error processing file: Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
+[23:30:13] Error details: Illegal characters in path.
+[23:30:13] Full path: ...\Akira The Don - WHAT IF_\Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
 ```
 
-**Blocks:** Real integration until fixed and tested on this batch.
+**Root cause:** UNKNOWN - investigate first. Other semicolon-filename songs integrated fine, so semicolon is NOT the culprit. **Primary suspect: question mark in album name "WHAT IF?"** - question marks are illegal in Windows paths. Verify before assuming.
+
+**Fix steps:**
+1. Identify the exact illegal character (compare against successfully-integrated files)
+2. Extend TagFixer to strip/replace illegal Windows characters (`< > : " / \ | ? *`) from filenames and folder names
+3. Add pre-integration validation: scan all files + destination paths before starting, abort if illegal characters found (fail fast, not midway)
+4. Re-tag files and retry
 
 ---
 
-## 🚨 POST-INTEGRATION LIBCHECKER FAILURES
+### Blocker B: Post-integration LibChecker failures
 
-**After the partial real integration, Analysis + Force Regen was run and LibChecker reported errors. These indicate real integration quality failures - should not happen after a successful run.**
+**After partial integration + force regen, LibChecker reported 2 errors. LibChecker was clean before this run - these were introduced by this integration.**
 
 **Failure 1: "soundtrack" in album tag - Eels - Mighty Fine Blues**
 ```
-Found 'soundtrack' in album of 'Eels - Mighty Fine Blues'
-Total hits: 1
+Found 'soundtrack' in album of 'Eels - Mighty Fine Blues'  (Total hits: 1)
 ```
-- TagFixer [SKIPPED] this file (no fixes needed) but the album tag contains "soundtrack" which LibChecker flags
-- Either TagFixer needs to catch and fix this, OR the LibChecker rule is too aggressive (the album may legitimately contain that word)
-- **Investigate:** Is "soundtrack" in the album name a real problem, or a false positive? If real, TagFixer must fix it. If false positive, add to exceptions.
+- TagFixer [SKIPPED] this file but the album name contains "soundtrack", which LibChecker flags
+- Investigate: is this a legitimate album name (false positive -> add to exceptions) or a tag that needs fixing (TagFixer gap)?
 
-**Failure 2: Single-song album subfolder - Mike. - real things**
+**Failure 2: Single-song routed to album subfolder - Mike. - real things**
 ```
 '\Artists\mike\the highs\Mike. - real things.xml': only 1 song from album 'the highs.' but in subfolder 'the highs/' (should be Singles/)
 ```
-- Routing placed a single song in an album subfolder when the rule is: 1 song = Singles/, only 2+ songs from same album = album subfolder
-- **Investigate:** Was this an existing library issue (pre-integration) or caused by this batch? If pre-existing, it's a library hygiene issue. If caused by this integration, it's a routing bug.
-- Either way: routing logic must enforce the 1-song = Singles/ rule correctly for all cases.
-
-**Root cause investigation required before retrying integration.**
-
----
-
-## TIER 1 - MVP
-
-**Goal: validate the integration pipeline on real data.** SHOWSTOPPER issue must be fixed first. After fix: retry real integration.
+- Rule: 1 song from an album -> Singles/; 2+ songs from same album -> album subfolder. This was violated.
+- Investigate: routing logic bug in `GetDestDir()` for this edge case, or a tag data issue that fooled the scan-ahead count?
 
 ---
 
 ## TIER 2 - QUALITY
 
-**Goal: improve user experience for real integration and add minimal test coverage for high-risk code paths.**
+**Goal: improve UX and add minimal test coverage. Start after first clean integration completes.**
 
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
 
