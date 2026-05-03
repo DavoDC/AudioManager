@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-03 - UX: Duplicate detection and output grouping (two interrelated items)
+
+**Item A - Smarter [L] recommendation for ATD-style compilations**
+
+`IsAlbumFolderCompilation()` previously collected only the primary artist from each XML, so ATD compilation albums (e.g. MEANINGWAVE MASTERPIECES V) were never detected - every track shares "Akira The Don" as primary. Changed to collect ALL artists from each XML (every semicolon-separated value), so the set now includes both ATD and the sampled person per track. For MEANINGWAVE V: ATD + 10+ different persons = 11+ distinct artists, easily crosses the threshold of 3. Traditional compilations (many different primary artists) still caught. The `libraryIsCompilation` flag in `BuildDupData()` was already wired to call `IsAlbumFolderCompilation()` - only the detection logic inside needed fixing. Updated dupReason text to match IDEAS.md spec.
+
+**Item B - Consolidated duplicate execution outputs grouped before routing**
+
+Step 3 (routing) previously executed D/L decisions inline within the routing loop, interleaving duplicate outcome messages with routing messages. User had to context-switch repeatedly. Refactored into two sub-passes: 3a iterates duplicate files and executes all D/L decisions (grouped output); 3b iterates all files and routes non-D/non-dry-run-L files. K files produce no output in 3a and fall through to routing in 3b. Real-mode L files have their library deletion executed in 3a (visible before routing begins) then are routed in 3b. Added `SkipRouting` flag to `DupData` to communicate 3a -> 3b. Both items compile and build clean.
+
+---
+
 ## 2026-05-02 - Fix: plural "songs" when count is 1
 
 Two reason strings in `MusicIntegrator.GetDestDir()` could produce "1 songs": the ATD Singles branch (`personSongCount < 3`, can be 1 or 2) and the Artists Singles branch (`albumCount < 2`, already had a `song(s)` workaround). Both fixed with inline ternary. All other count strings in the same method are guarded by `>= 2` or `>= 3` checks and were already correct.

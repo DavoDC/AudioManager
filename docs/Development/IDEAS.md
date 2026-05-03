@@ -8,13 +8,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 1 - MVP
 
-**Goal: validate the integration pipeline on real data.** All safety prerequisites are in place. These items improve the duplicate detection and routing workflow before the first real integration run.
-
-**PRIORITY: Duplicate detection UX batch - interrelated items, high impact on integration workflow**
-
-- [ ] **UX: Detect compilation vs artist album for smarter [L] recommendation** - Current logic only recommends [L] when `relMirrorPath` starts with `Compilations\` (root folder only). Misses: library track in a named compilation series that lives elsewhere (e.g. `Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\`). Better approach: derive the album folder from `duplicatePath` (`Path.GetDirectoryName(duplicatePath)`), then read ALL XML files in that folder and collect the full `Artists` field from each (not just primary artist - use the whole field). If many distinct artists appear across the tracks, it is a compilation. If the same artist appears on every track, it is an artist album. Rule: if library album is detected as compilation AND new file has a named artist album (`newIsAlbum`), recommend [L] with reason "Library copy is from a compilation; new file is from artist album". No keyword lists - ground truth from the mirror data.
-
-- [ ] **UX: Consolidate duplicate decisions together in output** - Currently routing decisions and duplicate decisions are interspersed, making it hard to review all duplicates together. Group all duplicate detection decisions together (before or after routing decisions) so users can context-switch once instead of repeatedly alternating between duplicate and routing reviews.
+**Goal: validate the integration pipeline on real data.** All safety prerequisites are in place. TIER 1 duplicate detection UX batch complete (2026-05-03). Ready for first real integration run.
 
 ---
 
