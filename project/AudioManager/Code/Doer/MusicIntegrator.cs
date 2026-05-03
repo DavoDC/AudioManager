@@ -1,4 +1,4 @@
-﻿using AudioManager.Code.Modules;
+using AudioManager.Code.Modules;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,6 +30,36 @@ namespace AudioManager
             public string Detail; // reason or error message
         }
 
+        /// <summary>Data about a duplicate found during pre-scan.</summary>
+        private class DupData
+        {
+            public string DuplicatePath;
+            public string LibraryFilePath;
+            public string RelLibraryPath;
+            public string RelMirrorPath;
+            public string RelNewPath;
+            public string DisplayNewFilename;
+            public string MirrorTrack;
+            public string MirrorAlbum;
+            public string DupReason;
+            public char RecommendedKey; // 'D', 'L', or '\0'
+            public string OptionsLine;
+            public char Decision; // set by PresentDuplicateAndDecide: 'D', 'L', 'K', 'Q'
+            public bool SkipRouting; // true for D-decided and dry-run L-decided duplicates
+        }
+
+        /// <summary>A file pre-scanned from NewMusic with its cleaned tags and duplicate data.</summary>
+        private class ScannedFile
+        {
+            public string SourcePath;
+            public Track Track;
+            public bool IsReadable;
+            public string ReadError;
+            public Exception ReadException;
+            public LogEntry LogEntry;
+            public DupData Duplicate; // null if no duplicate found
+        }
+
         private void PrintTimestamped(string message)
         {
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
@@ -53,12 +83,9 @@ namespace AudioManager
 
             try
             {
-                // Step 1: Fix tags in NewMusic folder (comprehensive tag cleanup via TagFixer)
-                Console.WriteLine("\n[Step 1/2] Fixing tags...");
+                // Step 1: Fix tags in NewMusic folder
+                Console.WriteLine("\n[Step 1] Fixing tags...");
                 new TagFixer(dryRun);
-
-                // Step 2: Route files into library (after tags are clean)
-                Console.WriteLine("\n[Step 2/2] Routing files...");
 
                 var files = Directory.Exists(Constants.NewMusicPath)
                     ? Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories)
@@ -75,239 +102,144 @@ namespace AudioManager
                 // Scan-ahead: identify artists that will hit 3+ threshold
                 var newArtistFolders = RunScanAhead(files);
 
-                foreach (var sourcePath in files)
+                // Pre-scan all files: read + clean tags, find duplicates (no UI)
+                var scannedFiles = PreScanFiles(files);
+
+                // Step 2: Batch duplicate review - all duplicates presented together before routing
+                var duplicateFiles = scannedFiles.Where(sf => sf.Duplicate != null).ToList();
+                if (duplicateFiles.Count > 0)
                 {
-                    var entry = new LogEntry { Filename = Path.GetFileName(sourcePath) };
+                    Console.WriteLine($"\n[Step 2] Reviewing {duplicateFiles.Count} duplicate(s)...");
+                    foreach (var sf in duplicateFiles)
+                    {
+                        if (!PresentDuplicateAndDecide(sf))
+                        {
+                            sf.LogEntry.Status = "quit";
+                            logEntries.Add(sf.LogEntry);
+                            return;
+                        }
+                    }
+                }
+
+                // Step 3: Route files (all duplicate decisions already made)
+                Console.WriteLine("\n[Step 3] Routing files...");
+
+                // 3a: Execute all duplicate decisions together so their outputs are grouped
+                //     before routing output begins. D/L outputs appear consecutively here;
+                //     K files produce no output and are routed normally in 3b.
+                foreach (var sf in scannedFiles.Where(sf2 => sf2.Duplicate != null))
+                {
+                    var entry = sf.LogEntry;
+                    var dup = sf.Duplicate;
+                    Track track = sf.Track;
+                    char decision = dup.Decision;
+
+                    // Safety net: Q in Step 2 already exits the constructor, but guard anyway
+                    if (decision == 'Q')
+                    {
+                        entry.Status = "quit";
+                        logEntries.Add(entry);
+                        return;
+                    }
+
+                    if (decision == 'D')
+                    {
+                        string dLogReason = "User kept library copy" + (dup.RecommendedKey == 'L' ? $" (overrode [L]: {dup.DupReason})" : "");
+                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "duplicate-kept-library", dLogReason);
+                        if (dryRun)
+                        {
+                            PrintTimestamped($"  [DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
+                            entry.Status = "would-delete";
+                            entry.Detail = "duplicate (would delete)";
+                        }
+                        else
+                        {
+                            File.Delete(sf.SourcePath);
+                            PrintTimestamped($"  Deleted from NewMusic: {dup.RelNewPath}");
+                            entry.Status = "deleted";
+                            entry.Detail = "duplicate (deleted)";
+                        }
+                        logEntries.Add(entry); skippedCount++;
+                        Console.WriteLine();
+                        dup.SkipRouting = true;
+                    }
+                    else if (decision == 'L')
+                    {
+                        string lLogReason = !string.IsNullOrEmpty(dup.DupReason) ? dup.DupReason : "User chose to replace library copy";
+                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "duplicate-replaced-library", lLogReason);
+                        if (dryRun)
+                        {
+                            PrintTimestamped($"  [DRY RUN] Would delete from library: {dup.RelLibraryPath}");
+                            PrintTimestamped($"  [DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
+                            entry.Status = "would-replace";
+                            entry.Detail = "duplicate (would replace)";
+                            logEntries.Add(entry); skippedCount++;
+                            Console.WriteLine();
+                            dup.SkipRouting = true;
+                        }
+                        else
+                        {
+                            if (File.Exists(dup.LibraryFilePath))
+                            {
+                                File.Delete(dup.LibraryFilePath);
+                                PrintTimestamped($"  Deleted from library: {dup.RelLibraryPath}");
+                                PrintTimestamped($"  Integrating replacement: {dup.RelNewPath}");
+                                entry.Detail = "duplicate (library replaced)";
+                                Console.WriteLine();
+                                // SkipRouting stays false: new file is routed in 3b
+                            }
+                            else
+                            {
+                                PrintTimestamped($"  [WARN] Library file not found: {dup.RelLibraryPath}");
+                                entry.Status = "error";
+                                entry.Detail = "duplicate (library file not found)";
+                                logEntries.Add(entry); skippedCount++;
+                                Console.WriteLine();
+                                dup.SkipRouting = true;
+                            }
+                        }
+                    }
+                    // K: no output in 3a; routed normally in 3b
+                }
+
+                // 3b: Route all files. D-decided and dry-run L-decided duplicates already handled
+                //     above; real-mode L files and K files fall through to routing here.
+                foreach (var sf in scannedFiles)
+                {
+                    var entry = sf.LogEntry;
+
+                    if (!sf.IsReadable)
+                    {
+                        Console.WriteLine();
+                        PrintTimestamped("===========================================================================");
+                        PrintTimestamped("INTEGRATION FAILED");
+                        PrintTimestamped("===========================================================================");
+                        Console.WriteLine();
+                        PrintTimestamped($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
+                        PrintTimestamped($"Full path: {sf.SourcePath}");
+                        Console.WriteLine();
+                        PrintTimestamped($"Error details: {sf.ReadError}");
+                        if (sf.ReadException != null && !string.IsNullOrEmpty(sf.ReadException.StackTrace))
+                            Console.WriteLine($"\nStack trace:\n{sf.ReadException.StackTrace}");
+                        Console.WriteLine("\n===========================================================================");
+                        Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
+                        Console.WriteLine("Press any key to exit...");
+                        Console.ReadKey();
+                        throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {sf.ReadError}", sf.ReadException);
+                    }
+
+                    // Skip files fully resolved during duplicate execution (3a)
+                    if (sf.Duplicate?.SkipRouting == true) continue;
+
                     try
                     {
-                        // Read tags directly from file
-                        Track track = new Track();
-                        using (TagLib.File tagFile = TagLib.File.Create(sourcePath))
-                        {
-                            Tag tag = tagFile.Tag;
-                            track.Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
-                            track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
-                            track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
-                            track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
-                            track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
-                        }
-
-                        // Dry-run: simulate post-TagFixer state so routing and display use cleaned tags.
-                        // In real mode TagFixer has already written to disk; in dry-run it hasn't,
-                        // so we apply the same transforms in-memory (feat. removal, casing, genre).
-                        if (dryRun && !track.Title.Equals("Missing") && !track.Artists.Equals("Missing"))
-                        {
-                            string rawTitle = track.Title; // keep for feat. extraction before title is cleaned
-                            var simArtistList = TagFixer.ExtractAndFixArtists(rawTitle, track.Artists);
-                            track.Title = TagFixer.RemoveParentheticals(rawTitle);
-                            track.Artists = string.Join(";", simArtistList);
-                            if (!track.Album.Equals("Missing"))
-                                track.Album = TagFixer.RemoveParentheticals(track.Album);
-                            if (TagFixer.ShouldFixGenre(track.Artists, track.Genres))
-                                track.Genres = TagFixer.DetermineGenre(track.Artists);
-                        }
-
-                        entry.Title = track.Title;
-                        entry.Artists = track.Artists;
-                        entry.Album = track.Album;
-
-                        // Determine primary artist via Track.ProcessProperty inside PrimaryArtist getter
+                        Track track = sf.Track;
                         string primaryArtist = track.PrimaryArtist;
-
-                        // Check for duplicate: same artist + title already in library
-                        string duplicatePath = FindDuplicateInMirror(track);
-                        if (!string.IsNullOrEmpty(duplicatePath))
-                        {
-                            // Derive actual library file path from AudioMirror XML path
-                            // AudioMirror: C:\...\AudioMirror\AUDIO_MIRROR\Artist\Album\Track.xml
-                            // Library:     C:\Users\David\Audio\Artist\Album\Track.mp3
-                            string libraryFilePath = DeriveLibraryPathFromMirrorPath(duplicatePath);
-
-                            // Show duplicate - same style as routing proposals (no Console.Clear, timestamps, relative paths)
-                            // relLibraryPath: relative to Audio folder (for the MP3 in library)
-                            // relMirrorPath: relative to AUDIO_MIRROR (for the XML in AudioMirror)
-                            string relLibraryPath = libraryFilePath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
-                                ? libraryFilePath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
-                                : libraryFilePath;
-                            string relMirrorPath = duplicatePath.StartsWith(Constants.MirrorFolderPath, StringComparison.OrdinalIgnoreCase)
-                                ? duplicatePath.Substring(Constants.MirrorFolderPath.Length).TrimStart('\\', '/')
-                                : Path.GetFileName(duplicatePath);
-                            string relNewPath = Path.GetFileName(sourcePath);
-
-                            // Album preference rules - recommend [L] (replace library) when:
-                            // 1. Library has single + new file has real album (album version preferred over single)
-                            // 2. Library has compilation track + new file has artist album (artist album preferred over compilation)
-                            bool libraryIsSingle = relLibraryPath.IndexOf("\\Singles\\", StringComparison.OrdinalIgnoreCase) >= 0
-                                                || relLibraryPath.StartsWith("Singles\\", StringComparison.OrdinalIgnoreCase);
-                            bool libraryIsCompilation = relMirrorPath.StartsWith("Compilations\\", StringComparison.OrdinalIgnoreCase)
-                                                     || relMirrorPath.StartsWith("Compilations/", StringComparison.OrdinalIgnoreCase);
-                            bool newIsAlbum = !string.IsNullOrEmpty(track.Album)
-                                           && !track.Album.Equals("Missing", StringComparison.OrdinalIgnoreCase)
-                                           && !track.Album.Equals(track.Title, StringComparison.OrdinalIgnoreCase);
-
-                            // Priority 0: same song from same album - definitely keep library copy
-                            string libraryAlbum = Path.GetFileName(Path.GetDirectoryName(duplicatePath));
-                            bool sameAlbum = newIsAlbum
-                                && libraryAlbum.Equals(track.Album, StringComparison.OrdinalIgnoreCase);
-
-                            string dupReason = "";
-                            char recommendedKey = '\0';
-                            if (sameAlbum)
-                            {
-                                recommendedKey = 'D';
-                                dupReason = $"Same song from same album ('{track.Album}') - already in library";
-                            }
-                            else if (libraryIsSingle && newIsAlbum)
-                            {
-                                recommendedKey = 'L';
-                                dupReason = $"Library has single; new file is from album '{track.Album}' - album preferred";
-                            }
-                            else if (libraryIsCompilation && newIsAlbum)
-                            {
-                                recommendedKey = 'L';
-                                dupReason = $"Library has compilation track; new file is from artist album '{track.Album}' - artist album preferred";
-                            }
-
-                            // Build options line: recommended option is leftmost with "(recommended)" label
-                            string optD = "[D] Delete NewMusic copy (keep library)";
-                            string optL = "[L] Delete library copy (keep new file)";
-                            string optK = "[K] Keep both";
-                            string optQ = "[Q] Quit";
-                            if (recommendedKey == 'L') optL += " (recommended)";
-                            else if (recommendedKey == 'D') optD += " (recommended)";
-                            string optionsLine = recommendedKey == 'L'
-                                ? $"  {optL}   {optD}   {optK}   {optQ}"
-                                : $"  {optD}   {optL}   {optK}   {optQ}";
-
-                            // Corrected display filename from cleaned tags (tags already cleaned by TagFixer or dry-run simulation)
-                            string displayNewFilename = $"{track.Artists} - {track.Title}.mp3";
-
-                            // Read library entry details from XML for display
-                            ReadMirrorTrackInfo(duplicatePath, out string mirrorTrack, out string mirrorAlbum);
-
-                            // Proposed action summary based on recommendation
-                            string dupProposed = recommendedKey == 'L'
-                                ? "Delete library copy, keep new file"
-                                : recommendedKey == 'D'
-                                    ? "Delete NewMusic copy, keep library"
-                                    : "No version preference";
-
-                            Console.WriteLine();
-                            PrintTimestamped("===========================================================================");
-                            PrintTimestamped("  DUPLICATE FOUND");
-                            PrintTimestamped("===========================================================================");
-                            Console.WriteLine();
-                            PrintTimestamped($"  In AudioMirror: {relMirrorPath}");
-                            if (!string.IsNullOrEmpty(mirrorTrack))
-                                PrintTimestamped($"  Track:          {mirrorTrack}");
-                            if (!string.IsNullOrEmpty(mirrorAlbum))
-                                PrintTimestamped($"  Album:          {mirrorAlbum}");
-                            Console.WriteLine();
-                            PrintTimestamped($"  New file:   {displayNewFilename}");
-                            PrintTimestamped($"  Album:      {track.Album}");
-                            Console.WriteLine();
-                            PrintTimestamped($"  Proposed:   {dupProposed}");
-                            if (!string.IsNullOrEmpty(dupReason))
-                                PrintTimestamped($"  Reason:     {dupReason}");
-                            Console.WriteLine();
-                            PrintTimestamped("---------------------------------------------------------------------------");
-                            PrintTimestamped(optionsLine);
-                            PrintTimestamped("---------------------------------------------------------------------------");
-
-                            // Wait for input
-                            while (true)
-                            {
-                                var key = ReadMenuKey();
-                                if (key == ConsoleKey.D)
-                                {
-                                    // Delete from NewMusic
-                                    string dReason = "User kept library copy" + (recommendedKey == 'L' ? $" (overrode [L]: {dupReason})" : "");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "duplicate-kept-library", dReason);
-                                    if (dryRun)
-                                    {
-                                        PrintTimestamped($"  [DRY RUN] Would delete from NewMusic: {relNewPath}");
-                                        entry.Status = "would-delete";
-                                        entry.Detail = "duplicate (would delete)";
-                                        logEntries.Add(entry); skippedCount++;
-                                    }
-                                    else
-                                    {
-                                        File.Delete(sourcePath);
-                                        PrintTimestamped($"  Deleted from NewMusic: {relNewPath}");
-                                        entry.Status = "deleted";
-                                        entry.Detail = "duplicate (deleted)";
-                                        logEntries.Add(entry); skippedCount++;
-                                    }
-                                    Console.WriteLine();
-                                    break;
-                                }
-                                else if (key == ConsoleKey.L)
-                                {
-                                    // Delete from Library (replace old with new album version)
-                                    string lReason = !string.IsNullOrEmpty(dupReason) ? dupReason : "User chose to replace library copy";
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "duplicate-replaced-library", lReason);
-                                    if (dryRun)
-                                    {
-                                        PrintTimestamped($"  [DRY RUN] Would delete from library: {relLibraryPath}");
-                                        PrintTimestamped($"  [DRY RUN] Would keep new file: {displayNewFilename}");
-                                        entry.Status = "would-replace";
-                                        entry.Detail = "duplicate (would replace)";
-                                        logEntries.Add(entry); skippedCount++;
-                                        Console.WriteLine();
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        if (File.Exists(libraryFilePath))
-                                        {
-                                            File.Delete(libraryFilePath);
-                                            PrintTimestamped($"  Deleted from library: {relLibraryPath}");
-                                            PrintTimestamped($"  Integrating new version: {relNewPath}");
-                                            entry.Status = "replaced";
-                                            entry.Detail = "duplicate (library replaced)";
-                                            Console.WriteLine();
-                                            // Fall through to integration
-                                        }
-                                        else
-                                        {
-                                            PrintTimestamped($"  [WARN] Library file not found: {relLibraryPath}");
-                                            entry.Status = "error";
-                                            entry.Detail = "duplicate (library file not found)";
-                                            logEntries.Add(entry); skippedCount++;
-                                            Console.WriteLine();
-                                        }
-                                        break;
-                                    }
-                                }
-                                else if (key == ConsoleKey.K)
-                                {
-                                    // Keep and continue
-                                    PrintTimestamped("  Keeping both - proceeding with integration");
-                                    Console.WriteLine();
-                                    break;
-                                }
-                                else if (key == ConsoleKey.Q)
-                                {
-                                    PrintTimestamped("  Quit. Remaining files left for next run.");
-                                    entry.Status = "quit"; logEntries.Add(entry);
-                                    return; // exits foreach, hits finally
-                                }
-                                // ignore other keys
-                            }
-
-                            // If we deleted from NewMusic, or dry-run chose [L] (would-replace), skip to next file
-                            if (entry.Status == "deleted" || entry.Status == "would-delete" || entry.Status == "would-replace")
-                                continue;
-
-                            // If duplicate error, skip to next file
-                            if (entry.Status == "error")
-                                continue;
-                        }
 
                         // Skip if un-routable (tags are already clean from TagFixer)
                         if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
                         {
-                            PrintTimestamped($"- Skipped '{Path.GetFileName(sourcePath)}': missing required tag");
+                            PrintTimestamped($"- Skipped '{Path.GetFileName(sf.SourcePath)}': missing required tag");
                             entry.Status = "skipped"; entry.Detail = "missing required tag";
                             logEntries.Add(entry); skippedCount++;
                             continue;
@@ -321,7 +253,6 @@ namespace AudioManager
                         // Determine destination directory and reason
                         string destDir = GetDestDir(track, newArtistFolders, out string reason);
 
-                        // Ensure destination directory exists for relative path computation
                         string destPath = Path.Combine(destDir, destFilename);
 
                         // Compute relative destination path for display
@@ -333,9 +264,7 @@ namespace AudioManager
                             {
                                 relativeDest = destPath.Substring(startIndex);
                                 if (relativeDest.StartsWith("\\") || relativeDest.StartsWith("/"))
-                                {
                                     relativeDest = relativeDest.Substring(1);
-                                }
                             }
                         }
 
@@ -367,30 +296,26 @@ namespace AudioManager
                             var key = ReadMenuKey();
                             if (key == ConsoleKey.Y)
                             {
-                                // Accept proposed destination
                                 if (!dryRun && File.Exists(destPath))
                                 {
-                                    PrintTimestamped($"  - Skipped '{Path.GetFileName(sourcePath)}': already exists at destination");
+                                    PrintTimestamped($"  - Skipped '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
                                     entry.Status = "skipped"; entry.Detail = "already exists at destination";
                                     logEntries.Add(entry); skippedCount++;
                                 }
                                 else if (dryRun)
                                 {
-                                    // Dry run: log what would happen without moving
                                     PrintTimestamped($"  [DRY RUN] Would move to: {relativeDest}");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
+                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                     entry.Status = "would-move";
                                     logEntries.Add(entry); movedCount++;
                                 }
                                 else
                                 {
-                                    // Real integration: actually move the file
                                     Directory.CreateDirectory(destDir);
-                                    File.Move(sourcePath, destPath);
+                                    File.Move(sf.SourcePath, destPath);
                                     movedCount++;
                                     PrintTimestamped($"  Moved to: {relativeDest}");
-                                    // Log the routing decision
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), relativeDest, reason);
+                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                     Console.WriteLine();
                                     entry.Status = "moved";
                                     logEntries.Add(entry);
@@ -401,15 +326,14 @@ namespace AudioManager
                             {
                                 Console.WriteLine("\n - Quit. Remaining files left for next run.");
                                 entry.Status = "quit"; logEntries.Add(entry);
-                                return; // exits foreach, hits finally
+                                return;
                             }
                             else if (key == ConsoleKey.N)
                             {
-                                // Decline this file - leave in NewMusic for next run
                                 if (dryRun)
                                 {
                                     PrintTimestamped("  [DRY RUN] Would decline (leave in NewMusic)");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "declined", "User declined routing");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                     entry.Status = "would-decline";
                                     entry.Detail = "user declined";
                                     logEntries.Add(entry); skippedCount++;
@@ -417,7 +341,7 @@ namespace AudioManager
                                 else
                                 {
                                     PrintTimestamped("  Declined. File left in NewMusic for next run.");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sourcePath), "declined", "User declined routing");
+                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                     entry.Status = "declined";
                                     entry.Detail = "user declined";
                                     logEntries.Add(entry); skippedCount++;
@@ -430,15 +354,13 @@ namespace AudioManager
                     }
                     catch (Exception ex)
                     {
-                        // Fail fast on integration errors - do not silently skip files
-                        // Silent skips could mask data corruption or library corruption
                         Console.WriteLine();
                         PrintTimestamped("===========================================================================");
                         PrintTimestamped("INTEGRATION FAILED");
                         PrintTimestamped("===========================================================================");
                         Console.WriteLine();
-                        PrintTimestamped($"Error processing file: {Path.GetFileName(sourcePath)}");
-                        PrintTimestamped($"Full path: {sourcePath}");
+                        PrintTimestamped($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
+                        PrintTimestamped($"Full path: {sf.SourcePath}");
                         Console.WriteLine();
                         PrintTimestamped($"Error details: {ex.Message}");
                         if (!string.IsNullOrEmpty(ex.StackTrace))
@@ -447,7 +369,7 @@ namespace AudioManager
                         Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
                         Console.WriteLine("Press any key to exit...");
                         Console.ReadKey();
-                        throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sourcePath)}': {ex.Message}", ex);
+                        throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {ex.Message}", ex);
                     }
                 }
 
@@ -459,11 +381,8 @@ namespace AudioManager
                 Console.WriteLine($"  Skipped: {skippedCount}");
                 Console.WriteLine("\n---------------------------------------------------------------------------");
 
-                // Print confidence report to console + save to log file
                 PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
                 SaveLog(logEntries, totalFiles, movedCount, skippedCount);
-
-                // Save routing decisions to XML for pattern analysis and audit trail
                 decisionLog.Save();
             }
             finally
@@ -593,12 +512,8 @@ namespace AudioManager
                     if (!string.IsNullOrEmpty(destFolder))
                     {
                         string fullDir = Path.Combine(Constants.AudioFolderPath, destFolder);
-                        // Only report folders that were just created (i.e. didn't exist before this run)
-                        // We approximate: if this is the only file in the folder, it's new
                         if (Directory.Exists(fullDir) && Directory.GetFiles(fullDir).Length == 1)
-                        {
                             newFolders.Add(destFolder);
-                        }
                     }
                 }
                 if (newFolders.Count > 0)
@@ -625,7 +540,7 @@ namespace AudioManager
                     {
                         using (TagLib.File tf = TagLib.File.Create(fullPath))
                         {
-                            // Readable = OK (just opening it is enough to verify)
+                            // Readable = OK
                         }
                     }
                     catch
@@ -725,7 +640,6 @@ namespace AudioManager
                 if (string.IsNullOrEmpty(title) || title.Equals("Missing"))
                     return null;
 
-                // Search all XML files in the mirror for a match
                 if (!Directory.Exists(Constants.MirrorFolderPath))
                     return null;
 
@@ -742,7 +656,6 @@ namespace AudioManager
                         if (artistsEl == null || titleEl == null)
                             continue;
 
-                        // Extract primary artist from the XML (may have multiple artists)
                         string mirrorArtistsRaw = artistsEl.InnerText;
                         if (string.IsNullOrEmpty(mirrorArtistsRaw))
                             continue;
@@ -750,7 +663,6 @@ namespace AudioManager
                         string mirrorPrimary = Track.ProcessProperty(mirrorArtistsRaw)[0].Trim();
                         string mirrorTitle = titleEl.InnerText.Trim();
 
-                        // Case-insensitive, whitespace-trimmed comparison
                         if (mirrorPrimary.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase) &&
                             mirrorTitle.Equals(title, StringComparison.OrdinalIgnoreCase))
                         {
@@ -774,24 +686,20 @@ namespace AudioManager
         {
             try
             {
-                // Extract relative path from AUDIO_MIRROR folder (MirrorFolderPath already points to AUDIO_MIRROR)
                 string mirrorBaseFolder = Constants.MirrorFolderPath;
                 if (!mirrorXmlPath.StartsWith(mirrorBaseFolder, StringComparison.OrdinalIgnoreCase))
-                    return mirrorXmlPath; // fallback: return as-is
+                    return mirrorXmlPath;
 
-                // Remove AUDIO_MIRROR prefix to get relative path
                 string relativePath = mirrorXmlPath.Substring(mirrorBaseFolder.Length).TrimStart(Path.DirectorySeparatorChar);
 
-                // Replace .xml with .mp3
                 if (relativePath.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
                     relativePath = relativePath.Substring(0, relativePath.Length - 4) + ".mp3";
 
-                // Construct full library path
                 return Path.Combine(Constants.AudioFolderPath, relativePath);
             }
             catch
             {
-                return mirrorXmlPath; // fallback
+                return mirrorXmlPath;
             }
         }
 
@@ -834,6 +742,230 @@ namespace AudioManager
                     album = albumStr;
             }
             catch { /* fall through to null */ }
+        }
+
+        /// <summary>
+        /// Detects whether the album containing the given XML mirror file is a compilation,
+        /// by reading all XML files in the same folder and collecting every distinct artist
+        /// across all positions (not just primary). Returns true if 3 or more distinct artists
+        /// are found, which catches both traditional compilations (many primary artists) and
+        /// ATD-style albums (one primary artist featuring many different people).
+        /// </summary>
+        private bool IsAlbumFolderCompilation(string xmlPath)
+        {
+            try
+            {
+                string albumFolder = Path.GetDirectoryName(xmlPath);
+                if (string.IsNullOrEmpty(albumFolder) || !Directory.Exists(albumFolder))
+                    return false;
+
+                var xmlFiles = Directory.GetFiles(albumFolder, "*.xml");
+                if (xmlFiles.Length < 3)
+                    return false;
+
+                var distinctArtists = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var f in xmlFiles)
+                {
+                    try
+                    {
+                        var doc = new XmlDocument();
+                        doc.Load(f);
+                        var artistsEl = doc.SelectSingleNode("//Artists");
+                        if (artistsEl == null) continue;
+                        foreach (string artist in Track.ProcessProperty(artistsEl.InnerText))
+                        {
+                            string trimmed = artist.Trim();
+                            if (!string.IsNullOrEmpty(trimmed))
+                                distinctArtists.Add(trimmed);
+                        }
+                    }
+                    catch { /* skip malformed XML */ }
+                }
+
+                return distinctArtists.Count >= 3;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Pre-scans all files in the batch: reads and cleans tags, finds duplicates.
+        /// No UI interaction. Returns a ScannedFile list for the duplicate review and routing phases.
+        /// </summary>
+        private List<ScannedFile> PreScanFiles(string[] files)
+        {
+            var result = new List<ScannedFile>();
+            foreach (var sourcePath in files)
+            {
+                var entry = new LogEntry { Filename = Path.GetFileName(sourcePath) };
+                var sf = new ScannedFile { SourcePath = sourcePath, LogEntry = entry };
+                try
+                {
+                    Track track = new Track();
+                    using (TagLib.File tagFile = TagLib.File.Create(sourcePath))
+                    {
+                        Tag tag = tagFile.Tag;
+                        track.Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
+                        track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
+                        track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
+                        track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
+                        track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
+                    }
+
+                    if (dryRun && !track.Title.Equals("Missing") && !track.Artists.Equals("Missing"))
+                    {
+                        string rawTitle = track.Title;
+                        var simArtistList = TagFixer.ExtractAndFixArtists(rawTitle, track.Artists);
+                        track.Title = TagFixer.RemoveParentheticals(rawTitle);
+                        track.Artists = string.Join(";", simArtistList);
+                        if (!track.Album.Equals("Missing"))
+                            track.Album = TagFixer.RemoveParentheticals(track.Album);
+                        if (TagFixer.ShouldFixGenre(track.Artists, track.Genres))
+                            track.Genres = TagFixer.DetermineGenre(track.Artists);
+                    }
+
+                    entry.Title = track.Title;
+                    entry.Artists = track.Artists;
+                    entry.Album = track.Album;
+                    sf.Track = track;
+                    sf.IsReadable = true;
+
+                    string duplicatePath = FindDuplicateInMirror(track);
+                    if (!string.IsNullOrEmpty(duplicatePath))
+                        sf.Duplicate = BuildDupData(sourcePath, track, duplicatePath);
+                }
+                catch (Exception ex)
+                {
+                    sf.IsReadable = false;
+                    sf.ReadError = ex.Message;
+                    sf.ReadException = ex;
+                }
+                result.Add(sf);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a DupData object for a duplicate found during pre-scan.
+        /// Computes all display strings and the [L]/[D] recommendation.
+        /// </summary>
+        private DupData BuildDupData(string sourcePath, Track track, string duplicatePath)
+        {
+            string libraryFilePath = DeriveLibraryPathFromMirrorPath(duplicatePath);
+            string relLibraryPath = libraryFilePath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
+                ? libraryFilePath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
+                : libraryFilePath;
+            string relMirrorPath = duplicatePath.StartsWith(Constants.MirrorFolderPath, StringComparison.OrdinalIgnoreCase)
+                ? duplicatePath.Substring(Constants.MirrorFolderPath.Length).TrimStart('\\', '/')
+                : Path.GetFileName(duplicatePath);
+            string relNewPath = Path.GetFileName(sourcePath);
+
+            bool libraryIsSingle = relLibraryPath.IndexOf("\\Singles\\", StringComparison.OrdinalIgnoreCase) >= 0
+                                || relLibraryPath.StartsWith("Singles\\", StringComparison.OrdinalIgnoreCase);
+            bool libraryIsCompilation = relMirrorPath.StartsWith("Compilations\\", StringComparison.OrdinalIgnoreCase)
+                                     || relMirrorPath.StartsWith("Compilations/", StringComparison.OrdinalIgnoreCase)
+                                     || IsAlbumFolderCompilation(duplicatePath);
+            bool newIsAlbum = !string.IsNullOrEmpty(track.Album)
+                           && !track.Album.Equals("Missing", StringComparison.OrdinalIgnoreCase)
+                           && !track.Album.Equals(track.Title, StringComparison.OrdinalIgnoreCase);
+
+            string libraryAlbum = Path.GetFileName(Path.GetDirectoryName(duplicatePath));
+            bool sameAlbum = newIsAlbum && libraryAlbum.Equals(track.Album, StringComparison.OrdinalIgnoreCase);
+
+            string dupReason = "";
+            char recommendedKey = '\0';
+            if (sameAlbum)
+            {
+                recommendedKey = 'D';
+                dupReason = $"Same song from same album ('{track.Album}') - already in library";
+            }
+            else if (libraryIsSingle && newIsAlbum)
+            {
+                recommendedKey = 'L';
+                dupReason = $"Library has single; new file is from album '{track.Album}' - album preferred";
+            }
+            else if (libraryIsCompilation && newIsAlbum)
+            {
+                recommendedKey = 'L';
+                dupReason = $"Library copy is from a compilation; new file is from artist album '{track.Album}'";
+            }
+
+            string optD = "[D] Delete NewMusic copy (keep library)";
+            string optL = "[L] Delete library copy (keep new file)";
+            string optK = "[K] Keep both";
+            string optQ = "[Q] Quit";
+            if (recommendedKey == 'L') optL += " (recommended)";
+            else if (recommendedKey == 'D') optD += " (recommended)";
+            string optionsLine = recommendedKey == 'L'
+                ? $"  {optL}   {optD}   {optK}   {optQ}"
+                : $"  {optD}   {optL}   {optK}   {optQ}";
+
+            string displayNewFilename = $"{track.Artists} - {track.Title}.mp3";
+            ReadMirrorTrackInfo(duplicatePath, out string mirrorTrack, out string mirrorAlbum);
+
+            return new DupData
+            {
+                DuplicatePath = duplicatePath,
+                LibraryFilePath = libraryFilePath,
+                RelLibraryPath = relLibraryPath,
+                RelMirrorPath = relMirrorPath,
+                RelNewPath = relNewPath,
+                DisplayNewFilename = displayNewFilename,
+                MirrorTrack = mirrorTrack,
+                MirrorAlbum = mirrorAlbum,
+                DupReason = dupReason,
+                RecommendedKey = recommendedKey,
+                OptionsLine = optionsLine
+            };
+        }
+
+        /// <summary>
+        /// Presents one duplicate to the user and collects their D/L/K/Q decision.
+        /// Sets sf.Duplicate.Decision. Returns false if user pressed Q, true otherwise.
+        /// </summary>
+        private bool PresentDuplicateAndDecide(ScannedFile sf)
+        {
+            var dup = sf.Duplicate;
+            Track track = sf.Track;
+
+            string dupProposed = dup.RecommendedKey == 'L'
+                ? "Delete library copy, keep new file"
+                : dup.RecommendedKey == 'D'
+                    ? "Delete NewMusic copy, keep library"
+                    : "No version preference";
+
+            Console.WriteLine();
+            PrintTimestamped("===========================================================================");
+            PrintTimestamped("  DUPLICATE FOUND");
+            PrintTimestamped("===========================================================================");
+            Console.WriteLine();
+            PrintTimestamped($"  In AudioMirror: {dup.RelMirrorPath}");
+            if (!string.IsNullOrEmpty(dup.MirrorTrack))
+                PrintTimestamped($"  Track:          {dup.MirrorTrack}");
+            if (!string.IsNullOrEmpty(dup.MirrorAlbum))
+                PrintTimestamped($"  Album:          {dup.MirrorAlbum}");
+            Console.WriteLine();
+            PrintTimestamped($"  New file:   {dup.DisplayNewFilename}");
+            PrintTimestamped($"  Album:      {track.Album}");
+            Console.WriteLine();
+            PrintTimestamped($"  Proposed:   {dupProposed}");
+            if (!string.IsNullOrEmpty(dup.DupReason))
+                PrintTimestamped($"  Reason:     {dup.DupReason}");
+            Console.WriteLine();
+            PrintTimestamped("---------------------------------------------------------------------------");
+            PrintTimestamped(dup.OptionsLine);
+            PrintTimestamped("---------------------------------------------------------------------------");
+
+            while (true)
+            {
+                var key = ReadMenuKey();
+                if (key == ConsoleKey.D) { dup.Decision = 'D'; Console.WriteLine(); return true; }
+                else if (key == ConsoleKey.L) { dup.Decision = 'L'; Console.WriteLine(); return true; }
+                else if (key == ConsoleKey.K) { dup.Decision = 'K'; Console.WriteLine(); return true; }
+                else if (key == ConsoleKey.Q) { dup.Decision = 'Q'; Console.WriteLine(); return false; }
+            }
         }
 
         /// <summary>
