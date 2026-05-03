@@ -8,13 +8,13 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 1 - CURRENT BLOCKERS (fix before retrying integration)
 
-**Goal: complete the first real integration cleanly.** LibChecker was clean before this run. All failures below were introduced by this integration and must be resolved before retry.
+**Goal: complete the first real integration cleanly.** ~35 of 50 songs integrated before crashing. LibChecker was clean before this run - all failures below were introduced by this integration and must be resolved before retry.
 
 ---
 
 ### Blocker A: Integration crash - illegal characters in path
 
-**Integration failed midway (2026-05-03 23:30).** ~13-14 of 15 songs integrated successfully before crashing on this file.
+**Integration failed midway (2026-05-03 23:30).** ~35 of 50 songs integrated successfully before crashing on this file.
 
 **Evidence:**
 ```
