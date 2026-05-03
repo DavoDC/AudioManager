@@ -1,0 +1,45 @@
+Code after "Scan-ahead: 4 artist(s) will hit 3-song threshold:
+  - 4 in batch = 4 total -> new Artists/Dylan Owen/
+  - 8 in batch = 8 total -> new Artists/Akira The Don/
+  - 3 in batch = 3 total -> new Artists/Joshua Golden/
+  - 5 in batch = 5 total -> new Artists/Kings Dead/"
+  TOOK VERY long to run!  and no indication that anything was happening
+  Thought it hung!
+
+
+In future, when program stabilises, tested many times, decisions analysed and most decisions known, ONLY LET HUMAN make decision when program is uncertain! known cases can be done automatically!
+i.e. if perfect match for one of the known routing cases, just do it automatically! WAIT until i explictly say im confident enuf in program for this tho!
+
+Concise prposal not showing up in right place ! (se below, should be under Propose line , not sure aobut besty way think about , ask me if needed)
+[23:02:42] ===========================================================================
+[23:02:42]   Dylan Owen - Sail Up The Sun
+[23:02:42] ===========================================================================
+
+[23:02:42]   Album:   There's More To Life
+[23:02:42]   Year:    2015
+[23:02:42]   Genres:  Rap; Hip Hop
+
+[23:02:42]   -> Dylan Owen / There's More To Life
+[23:02:42]   Proposed: Artists\Dylan Owen\There's More To Life\Dylan Owen - Sail Up The Sun.mp3
+[23:02:42]   Reason:   Artist folder [new via scan-ahead]; 2 songs from album -> album subfolder
+
+[23:02:42] ---------------------------------------------------------------------------
+[23:02:42]   [Y] Accept   [N] Decline   [Q] Quit
+[23:02:42] ---------------------------------------------------------------------------
+             >
+maybe Proposed: Akira The Don / Singles and then Path: Musivation\Akira The Don\Singles\Akira The Don;Brian Tracy - UNSTOPPABLE.mp3  , would make sense!
+
+
+Reason duplicating proposal ehre, not right . other Reasons shown sounded better
+[23:07:12] ===========================================================================
+[23:07:12]   Akira The Don;Rupert Spira - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE
+[23:07:12] ===========================================================================
+
+[23:07:12]   Album:   THE SHINING OF BEING
+[23:07:12]   Year:    2026
+[23:07:12]   Genres:  Musivation
+
+[23:07:12]   -> Akira The Don / People / Rupert Spira / THE SHINING OF BEING
+[23:07:12]   Proposed: Musivation\Akira The Don\People\Rupert Spira\THE SHINING OF BEING\Akira The Don;Rupert Spira - WHAT YOU ARE LOOKING FOR IS WHAT YOU ARE.mp3
+[23:07:12]   Reason:   Akira The Don -> People/Rupert Spira/THE SHINING OF BEING (5 songs from album)
+
