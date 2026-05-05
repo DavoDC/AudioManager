@@ -28,8 +28,8 @@ David@RAPHAEL ../NewMusic:. NEW MUSIC FOLDER SHOULD BE EDELETED AFTERE INGRATION
 - [ ] **Investigate and prevent LibChecker issues from Stage 3C integration** - Real integration found:
   - 'version' tag appearing in album field of 'Shaggy; Ricardo Ducent - It Wasn't Me'
   - Album subfolder rule violation: only 1 song from 'The Boombastic Collection - Best Of Shaggy (International Version)' routed to album subfolder instead of Singles/
-  
   **Investigation needed:** (1) Why did routing logic select album subfolder for a single-song edge case? (2) Where did 'version' in album tag originate (Reflector, TagFixer, manual edit)? (3) Should GetDestDir() have a single-song-from-album guard to route to Singles instead? (4) Should TagFixer strip 'version' from album field? Review the Stage 3C decision XML and tags for root cause, then add guards to prevent recurrence.
+  - NOTE:  I FIXED THIS BY removing " (International Version)" from the album field of the "It wasnt me" track IN MP3TAG and that fixed BOTH issues! Tag fixer should do this!  LibChecker also should maybe consider if album matches album folder and if all tracks in album folde have same album field!
 
 - [ ] **Review integration feedback and update workflow** - After Stage 3C completes successfully, review the actual execution for feedback: What broke? What took longer than expected? What UX pain points emerged? Record findings to `docs/Development/FEEDBACK-Stage3C-2026-05-XX.md`, then use the checklist in `docs/Historical/WorkflowExecution-2026-04-26/STAGE_5_FEEDBACK_AND_IMPROVEMENT_(BLOCKED).md` (Substeps A-C) to convert feedback into IDEAS.md improvements. This closes the loop: planned workflow -> execution -> validated learnings -> next iteration.
 
