@@ -10,6 +10,19 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: execute and validate the first end-to-end integration. Unblock TIER 2.**
 
+CLAUDE ADD THIS IDEA TO THE RIGHT TIER = after integration , folders were left behind = David@RAPHAEL ../NewMusic: tree
+Folder PATH listing for volume BOOT_SSD
+Volume serial number is C49F-42E2
+C:/USERS/DAVID/DOWNLOADS/NEWMUSIC
+├───PROCESSED
+    +├───Akira The Don - WHAT IF_
+    +├───Kings Dead - Revenge of the Beast
+    +├───Lupe Fiasco - Lasers
+    +├───Lupe Fiasco - Lupe Fiasco's Food & Liquor
+    ├───Shaggy - The Boombastic Collection - Best Of Shaggy (International Version)
+David@RAPHAEL ../NewMusic: find . -type f
+David@RAPHAEL ../NewMusic:. NEW MUSIC FOLDER SHOULD BE EDELETED AFTERE INGRATION. low P issue coz issue to resolve myself by del
+
 - [x] **Execute Stage 3C real integration (15-song NewMusic batch)** - Dry run passed 2026-05-05. Executed 2026-05-05 evening. Real integration revealed 2 LibChecker issues (see next item). Decision XMLs and routing logs captured. Manual fixes applied (user to document).
 
 - [ ] **Investigate and prevent LibChecker issues from Stage 3C integration** - Real integration found:
