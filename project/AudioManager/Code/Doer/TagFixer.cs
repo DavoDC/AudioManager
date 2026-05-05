@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 using AudioManager.Code.Modules;
 using TagLib;
 using File = System.IO.File;
@@ -246,6 +247,32 @@ namespace AudioManager
             return result.Trim();
         }
 
+        private static Dictionary<string, string> _artistOverrides;
+
+        /// <summary>
+        /// Loads artist name overrides from config/artist-name-overrides.xml (once per process).
+        /// Keys and values are both the canonical form; lookup is case-insensitive.
+        /// </summary>
+        private static Dictionary<string, string> GetArtistOverrides()
+        {
+            if (_artistOverrides != null) return _artistOverrides;
+            _artistOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                if (!File.Exists(Constants.ArtistOverridesPath)) return _artistOverrides;
+                var doc = new XmlDocument();
+                doc.Load(Constants.ArtistOverridesPath);
+                foreach (XmlElement el in doc.SelectNodes("//Artist").OfType<XmlElement>())
+                {
+                    string canonical = el.GetAttribute("canonical");
+                    if (!string.IsNullOrEmpty(canonical))
+                        _artistOverrides[canonical] = canonical;
+                }
+            }
+            catch { /* fallback: apply no overrides */ }
+            return _artistOverrides;
+        }
+
         /// <summary>
         /// Extracts featured artists from title parentheticals and combines with existing artists.
         /// Returns a list of artists with primary artist first, others semicolon-separated.
@@ -286,10 +313,12 @@ namespace AudioManager
                 }
             }
 
-            // Fix casing: "Scott adams" -> "Scott Adams" (each artist part independently title-cased)
+            // Fix casing: "Scott adams" -> "Scott Adams" (title-cased by default).
+            // Exception: artists in the overrides config keep their canonical casing (e.g. "mike." stays lowercase).
+            var overrides = GetArtistOverrides();
             var textInfo = System.Globalization.CultureInfo.InvariantCulture.TextInfo;
             return artists
-                .Select(a => textInfo.ToTitleCase(a.ToLower()))
+                .Select(a => overrides.TryGetValue(a, out string canonical) ? canonical : textInfo.ToTitleCase(a.ToLower()))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
