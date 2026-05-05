@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Canonical artist name casing overrides for TagFixer.
+  Add an entry for any artist whose name intentionally uses non-standard casing
+  (e.g. all-lowercase, stylized caps). TagFixer will use these instead of title-casing.
+  Matching is case-insensitive so only the canonical form is needed.
+-->
+<ArtistOverrides>
+
+  <!-- "mike." intentionally uses all-lowercase including the trailing period -->
+  <Artist canonical="mike." />
+
+</ArtistOverrides>

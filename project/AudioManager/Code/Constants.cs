@@ -40,6 +40,9 @@ namespace AudioManager
         // Path to the LibChecker exceptions config file
         public static readonly string LibCheckerExceptionsPath = Path.Combine(RepoRoot, "config", "libchecker-exceptions.xml");
 
+        // Path to the artist name casing overrides config file
+        public static readonly string ArtistOverridesPath = Path.Combine(RepoRoot, "config", "artist-name-overrides.xml");
+
         // Path to the integration logs folder (gitignored, written by MusicIntegrator)
         public static readonly string LogsPath = Path.Combine(RepoRoot, "logs");
 
