@@ -10,4 +10,7 @@
   <!-- "mike." intentionally uses all-lowercase including the trailing period -->
   <Artist canonical="mike." />
 
+  <!-- "Scott Adams" must be title-cased (preserves the rule in config, not relying on code comment) -->
+  <Artist canonical="Scott Adams" />
+
 </ArtistOverrides>
