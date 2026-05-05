@@ -1081,7 +1081,7 @@ namespace AudioManager
                     if (albumCount >= 2)
                     {
                         reason = $"Artist folder{scanNote}; {albumCount} songs from album -> album subfolder";
-                        return Path.Combine(artistFolder, track.Album);
+                        return Path.Combine(artistFolder, SanitiseFolderName(track.Album));
                     }
                     else
                     {
@@ -1110,7 +1110,7 @@ namespace AudioManager
 
             // Count in library (scan artist folder for album subfolders)
             string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, artist);
-            string albumFolder = Path.Combine(artistFolder, album);
+            string albumFolder = Path.Combine(artistFolder, SanitiseFolderName(album));
             if (Directory.Exists(albumFolder))
             {
                 count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
@@ -1238,7 +1238,7 @@ namespace AudioManager
 
             // Count in library: Musivation/Akira The Don/People/{sampledPerson}/{album}/
             string albumFolder = Path.Combine(
-                Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson, album);
+                Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson, SanitiseFolderName(album));
             if (Directory.Exists(albumFolder))
             {
                 count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
