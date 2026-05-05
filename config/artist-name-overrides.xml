@@ -3,6 +3,11 @@
   Canonical artist name casing overrides for TagFixer.
   Add an entry for any artist whose name intentionally uses non-standard casing
   (e.g. all-lowercase, stylized caps). TagFixer will use these instead of title-casing.
+
+  Applies to both primary and featured (secondary) artists. One entry per artist handles
+  all positions. Example: "Scott Adams" entry will preserve casing whether Scott Adams
+  appears as primary artist or as featured (e.g. "Akira The Don; Scott adams" -> "Akira The Don; Scott Adams").
+
   Matching is case-insensitive so only the canonical form is needed.
 -->
 <ArtistOverrides>
