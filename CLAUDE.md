@@ -169,6 +169,7 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
+- **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually (e.g. wrong artist casing after integration), advise the user to use Mp3tag. David knows how to use it. Do not suggest VLC or Windows file properties for tag editing.
 
 ## Critical Safety Rule
 
