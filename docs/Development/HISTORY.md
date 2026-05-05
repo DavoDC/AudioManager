@@ -4,6 +4,28 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-05 - TIER 1 complete: crash fix, TagFixer casing, LibChecker clean, first successful dry run
+
+Three blockers from the 2026-05-03 partial integration crash resolved. First dry run post-fix completed with no errors.
+
+**Blocker A - Integration crash: illegal characters in path**
+
+`GetDestDir()`, `CountAlbumSongs()`, and `CountAkiraTheDonPersonAlbumSongs()` used raw `track.Album` values directly in `Path.Combine()` calls. Album tags can contain Windows-illegal characters (e.g. "WHAT IF?" contains `?`). Added `SanitiseFolderName()` helper in `MusicIntegrator` wrapping `Reflector.SanitiseFilename()`. Updated all four path-construction sites. Display strings (reason lines) still show the raw human-readable album name unchanged.
+
+**Blocker B1 - Eels "soundtrack" LibChecker false positive**
+
+Album "Useless Trinkets: B-sides, Soundtracks, Rarities and Unreleased" legitimately contains "Soundtracks". Added exception to `libchecker-exceptions.xml` matching `Artists contains "Eels"` + `Album contains "Useless Trinkets"`.
+
+**Blocker B2 - Mike. single-song routing**
+
+Confirmed not a routing logic bug - library already had 6 songs in `mike\the highs\` by the time the session ran. The failure was a transient artifact of the crash-interrupted partial run. Resolved once remaining songs were integrated.
+
+**Bonus: TagFixer was title-casing "mike." to "Mike."**
+
+`ExtractAndFixArtists()` applied `ToTitleCase(a.ToLower())` to all artists, silently converting "mike." to "Mike." on integration. This caused `CheckAlbumSubfolderRule()` to see only 1 song in the "Mike." group (the others were "mike."), falsely triggering the singles/album mismatch rule. Fix: added `config/artist-name-overrides.xml` with a `<Artist canonical="mike." />` entry and updated `ExtractAndFixArtists()` to use canonical casing from config instead of title-casing for listed artists. Two already-integrated "Mike." library files fixed manually via Mp3tag. Future integrations preserve "mike." correctly.
+
+---
+
 ## 2026-05-03 - UX: Duplicate detection and output grouping (two interrelated items)
 
 **Item A - Smarter [L] recommendation for ATD-style compilations**

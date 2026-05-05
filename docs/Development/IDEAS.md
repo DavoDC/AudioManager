@@ -6,53 +6,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
-## TIER 1 - CURRENT BLOCKERS (fix before retrying integration)
-
-**Goal: complete the first real integration cleanly.** ~35 of 50 songs integrated before crashing. LibChecker was clean before this run - all failures below were introduced by this integration and must be resolved before retry.
-
----
-
-### Blocker A: Integration crash - illegal characters in path
-
-**Integration failed midway (2026-05-03 23:30).** ~35 of 50 songs integrated successfully before crashing on this file.
-
-**Evidence:**
-```
-[23:30:13] Error processing file: Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
-[23:30:13] Error details: Illegal characters in path.
-[23:30:13] Full path: ...\Akira The Don - WHAT IF_\Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
-```
-
-**Root cause:** UNKNOWN - investigate first. Other semicolon-filename songs integrated fine, so semicolon is NOT the culprit. **Primary suspect: question mark in album name "WHAT IF?"** - question marks are illegal in Windows paths. Verify before assuming.
-
-**Fix steps:**
-1. Identify the exact illegal character (compare against successfully-integrated files)
-2. Extend TagFixer to strip/replace illegal Windows characters (`< > : " / \ | ? *`) from filenames and folder names
-3. Add pre-integration validation: scan all files + destination paths before starting, abort if illegal characters found (fail fast, not midway)
-4. Re-tag files and retry
-
----
-
-### Blocker B: Post-integration LibChecker failures
-
-**After partial integration + force regen, LibChecker reported 2 errors. LibChecker was clean before this run - these were introduced by this integration.**
-
-**Failure 1: "soundtrack" in album tag - Eels - Mighty Fine Blues**
-```
-Found 'soundtrack' in album of 'Eels - Mighty Fine Blues'  (Total hits: 1)
-```
-- TagFixer [SKIPPED] this file but the album name contains "soundtrack", which LibChecker flags
-- Investigate: is this a legitimate album name (false positive -> add to exceptions) or a tag that needs fixing (TagFixer gap)?
-
-**Failure 2: Single-song routed to album subfolder - Mike. - real things**
-```
-'\Artists\mike\the highs\Mike. - real things.xml': only 1 song from album 'the highs.' but in subfolder 'the highs/' (should be Singles/)
-```
-- Rule: 1 song from an album -> Singles/; 2+ songs from same album -> album subfolder. This was violated.
-- Investigate: routing logic bug in `GetDestDir()` for this edge case, or a tag data issue that fooled the scan-ahead count?
-
----
-
 ## TIER 2 - QUALITY
 
 **Goal: improve UX and add minimal test coverage. Start after first clean integration completes.**
@@ -82,9 +35,10 @@ Found 'soundtrack' in album of 'Eels - Mighty Fine Blues'  (Total hits: 1)
 - [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
 
 - [ ] **Add minimal automated tests (scoped down from kitchen-sink)** - ROI analysis showed full test suite not worth it; these three are.
+  - **Motivation (2026-05-05):** Each session currently requires multiple manual dry runs and force regens to verify fixes. Tests for the key code paths would catch regressions immediately at build time, reducing the verify-fix-rerun loop to a single `launch.bat` "Run tests" step. Less friction, faster confidence.
   - **Smoke build test** (~50 lines): MSBuild builds cleanly; exe runs with `--help` without crashing. Catches today's class of bug. Payback in weeks.
   - **`GetDestDir()` routing tests** (~150 lines): fixed inputs (artist, album, scan-ahead set) -> fixed destinations. Routing is the most dangerous code path - wrong dest = real files moved wrong. Payback in 1-2 months.
-  - **`PreProcessTags()` tag-mutation tests** (~80 lines): no-TCMP input -> TCMP=True; Akira The Don wrong-genre input -> Musivation. Tiny and easy.
+  - **`ExtractAndFixArtists()` / `PreProcessTags()` tag-mutation tests** (~80 lines): no-TCMP input -> TCMP=True; Akira The Don wrong-genre input -> Musivation; "mike." input stays "mike." (not title-cased). Tiny and easy - the artist casing bug (2026-05-05) would have been caught instantly.
   - **Skipped:** full LibChecker-rule suite (~400+ lines, 6-12 month payback - add incrementally when rules change, don't backfill). Full integration test with fake MP3s (too heavy, dry-run already covers).
   - Add `AudioManager.Tests` xUnit project; wire into `launch.bat` as "Run tests" menu item; broken tests block exe launch.
 
