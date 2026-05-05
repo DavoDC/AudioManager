@@ -182,6 +182,36 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 **Never:** Claude runs `integrate`, `analysis`, or moves files.
 
+## Tag Fixer Constraint
+
+**TagFixer MUST ONLY operate on NewMusic folder.** Never on the Audio library.
+
+TagFixer modifies ID3 tags (TCMP, genres, parentheticals, featured artists) and renames files to match library convention. Tag changes on library files are high-risk: changes propagate to many files, are hard to audit, and difficult to reverse.
+
+**Current implementation:** TagFixer scans `Constants.NewMusicPath` exclusively. Code reads:
+```csharp
+var files = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories);
+```
+
+**Rule:** Never refactor this to accept a `folderPath` parameter or add a library mode. If you need to fix tags in the library, implement it as a separate, read-only analysis tool first (identify which files need fixing), then ask David before touching any files.
+
+## Library Operations Constraint
+
+**In the Audio library, the program can ONLY:**
+- Move files from NewMusic into library destinations ✅
+- Create destination folders as needed ✅  
+- Delete duplicates (user-approved L decisions only) ✅
+
+**The program CANNOT:**
+- Modify tags on library files
+- Rename library files (except during move)
+- Delete files for any reason other than duplicates
+- Reorganise existing library structure without user approval
+
+**Current implementation:** Compliant. MusicIntegrator respects these boundaries. All tag modifications happen in NewMusic; library operations are file moves, folder creation, and duplicate deletion only.
+
+**Audit trail:** See `docs/References/SAFETY_CONSTRAINTS.md` for a detailed safety review against these rules.
+
 ## Build Scripts - IMPORTANT
 
 **.bat files MUST be run with PowerShell, never Bash.** Windows batch scripts (.bat) don't work in Unix shells. Always use:
