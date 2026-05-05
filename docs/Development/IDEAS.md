@@ -6,6 +6,18 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
+## TIER 1 - BLOCKING
+
+**Goal: execute and validate the first end-to-end integration. Unblock TIER 2.**
+
+- [ ] **Execute Stage 3C real integration (15-song NewMusic batch)** - Dry run passed 2026-05-05. Ready to execute. Clean up partial state from 2026-05-03 failure first (Option A from STAGE_3C doc), then run real integration with decision logging. Verify LibChecker CLEAN after execution.
+
+- [ ] **Review integration feedback and update workflow** - After Stage 3C completes successfully, review the actual execution for feedback: What broke? What took longer than expected? What UX pain points emerged? Record findings to `docs/Development/FEEDBACK-Stage3C-2026-05-XX.md`, then use the checklist in `docs/Historical/WorkflowExecution-2026-04-26/STAGE_5_FEEDBACK_AND_IMPROVEMENT_(BLOCKED).md` (Substeps A-C) to convert feedback into IDEAS.md improvements. This closes the loop: planned workflow -> execution -> validated learnings -> next iteration.
+
+- [ ] **Mark historical workflow docs as frozen** - The `docs/Historical/WorkflowExecution-2026-04-26/` folder documents the April 26 workflow planning sessions. These docs are now stale (decisions made, execution pending or in progress). Add a header note to `docs/Historical/WorkflowExecution-2026-04-26/README.md` (create if needed): "This folder is FROZEN as a historical record. Do not edit these docs - they describe pre-execution planning from April 26, 2026. Live workflow feedback and improvements live in IDEAS.md and git history. Kept for reference only." This prevents future attempts to maintain these docs.
+
+---
+
 ## TIER 2 - QUALITY
 
 **Goal: improve UX and add minimal test coverage. Start after first clean integration completes.**
