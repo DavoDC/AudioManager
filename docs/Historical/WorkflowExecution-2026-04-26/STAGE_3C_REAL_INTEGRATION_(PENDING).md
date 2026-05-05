@@ -1,13 +1,44 @@
 # STAGE 3C: Real Integration - Execute
 
-**Date:** 2026-05-03  
-**Status:** ❌ FAILED MIDWAY (23:30) - Illegal characters in path error  
-**Batch:** 15 songs attempted, ~13-14 successfully integrated before failure
-**Blocker:** SHOWSTOPPER issue added to IDEAS.md - needs investigation & fix
+**Date:** 2026-05-03 → 2026-05-05  
+**Status:** ✅ BLOCKER FIXED - First dry run successful  
+**Batch:** 15 songs (complete batch from NewMusic)
+**Context:** Failed integration 2026-05-03 (illegal chars crash) → fixed in Session 204 → dry run complete
 
 ---
 
-## Iteration Summary (2026-04-28 → 2026-05-03)
+## Resolution (Session 204 - 2026-05-05 08:30-09:08)
+
+### Blocker A - Illegal Characters Crash (FIXED)
+
+**Root cause identified:** Album tag `WHAT IF?` contains question mark - illegal in Windows paths. Tag values were used raw in `Path.Combine()` calls.
+
+**Solution deployed:** 
+- Added `SanitiseFolderName()` helper wrapping `Reflector.SanitiseFilename()`
+- Applied to all 4 path-construction sites in MusicIntegrator.cs
+- Pattern: keep sanitised variable for filesystem calls, use raw tag value for display strings (preserves metadata accuracy)
+
+**Verified:** Dry-run completed with no errors. LibChecker clean after regeneration.
+
+### Blocker B1 - Eels "Soundtrack" False Positive (FIXED)
+
+Album "Useless Trinkets: B-sides, Soundtracks, Rarities..." was being flagged as soundtrack (legitimate compilation, not soundtrack by genre).
+
+**Solution:** Added exception to `libchecker-exceptions.xml` for this specific album.
+
+### Blocker B2 - Mike. Routing (VERIFIED RESOLVED)
+
+Library already had 6 songs in `mike\the highs\` folder. Confirmed as artifact from crash-interrupted run, no ongoing issue.
+
+### Bonus - TagFixer Casing Bug (FIXED)
+
+`ExtractAndFixArtists()` applied `ToTitleCase` to all artists, converting "mike." -> "Mike." on integration. This caused LibChecker to see separate groups and falsely flag single-song group.
+
+**Solution:** Added `config/artist-name-overrides.xml` and `GetArtistOverrides()` static loader in TagFixer. David manually fixed 2 already-integrated files via Mp3tag.
+
+---
+
+## Iteration Summary (2026-04-28 → 2026-05-05)
 
 Over the past week, extensive development sessions were run using `/dev-session` skill to validate and refine the integration workflow. Key outcomes:
 
@@ -19,58 +50,47 @@ Over the past week, extensive development sessions were run using `/dev-session`
 - Decision Logging: full audit trail now captures routing context and track metadata
 - Integration Preview: dry-run now shows all changes before execution, enabling confident real-run
 - Library Integration: seamless AudioMirror update and LibChecker validation in workflow
+- **Character sanitisation:** Illegal Windows characters stripped from paths while preserving tag metadata
+- **Casing consistency:** Artist name overrides prevent unintended titlecase mutations
 
-**Confidence Level:** After extensive testing and iteration, ready to execute real integration with high confidence.
+**Confidence Level:** Dry-run successful. Integration now ready to execute.
 
 See `ClaudeOnly/memory/session-history.md` for detailed session notes and feedback cycles.
 
 ---
 
-## Execution Result (2026-05-03 23:30)
+## Execution Status (2026-05-03 - FAILED → 2026-05-05 - DRY RUN SUCCESSFUL)
 
-### What Happened
+### Initial Failure (2026-05-03 23:30)
 
 Real integration was launched on the NewMusic batch (15 songs total). Integration progressed through tag fixing and routing for approximately 13-14 songs before encountering a critical error.
 
-**Failure Point:**
-```
-[23:30:13] ===========================================================================
-[23:30:13] INTEGRATION FAILED
-[23:30:13] ===========================================================================
+**Failure Point:** Illegal characters in path - album tag `WHAT IF?` (question mark is illegal in Windows filenames)
 
-[23:30:13] Error processing file: Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
-[23:30:13] Full path: C:\Users\David\Downloads\NewMusic\PROCESSED\Akira The Don - WHAT IF_\Akira The Don;Scott Adams - AUTHOR YOURSELF.mp3
+**Status of integration:** ~13-14 of 15 files moved to destinations. Partial state not rolled back. AudioMirror not updated.
 
-[23:30:13] Error details: Illegal characters in path.
+### Resolution & Validation (2026-05-05)
 
-Stack trace:
-   at System.Security.Permissions.FileIOPermission.EmulateFileIOPermissionChecks(String fullPath)
-   at System.IO.Directory.InternalCreateDirectoryHelper(String path, Boolean checkHost)
-   at System.IO.Directory.CreateDirectory(String path)
-   at AudioManager.MusicIntegrator..ctor(Boolean dryRun) in C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\Code\Doer\MusicIntegrator.cs:line 314
-```
+All blockers identified from the failed run were fixed in Session 204:
+- Sanitisation helper applied to all path-construction sites
+- Config exceptions added to LibChecker
+- Artist casing overrides configured
+- Force-regenerated AudioMirror and validated: CLEAN
 
-**Status of successfully-integrated songs:** PARTIAL. ~13-14 of 15 files were moved to their destinations before the failure. The partial integration state was not rolled back (no transactional safety yet).
+**Dry-run result:** 15-song batch processed without errors. Library validation passed. Ready to retry real integration.
 
-**Post-integration commit:** NOT PERFORMED. AudioMirror was not updated and no commit was made due to the failure.
+### Fixes Implemented
 
-### Root Cause Analysis
+1. ✅ **Character sanitisation:** `SanitiseFolderName()` strips illegal Windows characters at all path-construction sites
+2. ✅ **LibChecker exceptions:** Album-specific exceptions added to `libchecker-exceptions.xml`
+3. ✅ **Artist casing overrides:** Config-based override system prevents unintended titlecase mutations
+4. ✅ **Dry-run validation:** Full batch processed without errors, library validation CLEAN
 
-**Unknown - Requires Investigation.** The error "Illegal characters in path" could be caused by:
-- **Question mark in album name:** The file belongs to album `WHAT IF?` - question marks are illegal in Windows filesystem paths. This is the primary suspect.
-- NOT the semicolon: Other songs with semicolons in featured-artist filenames (e.g., `Akira The Don;Rupert Spira - ...`) were successfully integrated, so the semicolon is not the culprit.
+### Retry Real Integration
 
-**Next step:** Identify the exact illegal character (likely `?`) and trace where it appears (filename or destination path). See SHOWSTOPPER issue in `IDEAS.md`.
+After dry-run validation confirmed success, the integration can now proceed with high confidence.
 
-### What Needs to Happen
-
-1. **Investigation (SHOWSTOPPER):** Confirm which character is illegal and where it appears
-2. **TagFixer fix:** Extend filename/folder-name fixing to strip/replace all illegal Windows characters (`< > : " / \ | ? *`)
-3. **Pre-integration validation:** Add check to scan files and paths BEFORE starting integration, abort if illegal characters found
-4. **Cleanup:** Decide whether to manually roll back the partial integration or accept the partial state
-5. **Retry:** After fix is deployed and verified, attempt integration again
-
-See `docs/Development/IDEAS.md` → SHOWSTOPPER section for full details.
+**Next step:** Execute real integration command (`.\scripts\launch.bat` → Option 4).
 
 ---
 
@@ -91,41 +111,25 @@ See `docs/Development/IDEAS.md` → SHOWSTOPPER section for full details.
 
 ---
 
-## Next Steps - BLOCKED Until Fix
+## Next Steps - Ready to Integrate
 
-**Status:** Integration FAILED. SHOWSTOPPER issue blocking further progress.
+**Status:** Blockers resolved. Dry run successful. Ready for real integration.
 
-### Immediate Action: Fix SHOWSTOPPER (2026-05-03 onwards)
+### Step 0: Clean Up Partial Integration (2026-05-03 artifact)
 
-Do NOT retry integration until the illegal-character issue is fixed.
+The failed 2026-05-03 run left ~13-14 files moved to destinations. Before retrying, decide:
 
-**Required steps (in order):**
+**Option A (Recommended):** Manually revert the moved files back to NewMusic folder
+- Check Artist folders for files from 2026-05-03 run
+- Move them back to `C:\Users\David\Downloads\NewMusic\PROCESSED\`
+- Then proceed with fresh integration
 
-1. **Investigation:** Confirm the exact illegal character
-   - Likely culprit: Question mark in `WHAT IF?` album name
-   - Check TagFixer's filename-fixing logic - where are illegal chars being left un-stripped?
-   - Verify with a simple test: rename the file locally to remove `?` and see if it moves without error
+**Option B:** Accept partial state and re-integrate remaining files
+- Dry-run will detect which files are already in library
+- Only new files will be routed and integrated
+- May result in incomplete mirror state for this batch
 
-2. **TagFixer Enhancement:** Strip/replace illegal Windows characters
-   - Current logic: handles parentheticals (`(feat. X)`) and basic renames
-   - Missing: illegal character handling for `< > : " / \ | ? *`
-   - Update `ShouldFixFilename()` and `DetermineFixedFilename()` in TagFixer.cs
-   - Test on the failing file to confirm fix
-
-3. **Pre-integration Validation:** Add safety gate
-   - Before launching real integration, scan all NewMusic/PROCESSED files
-   - Flag any with illegal characters in filename or that would create illegal paths
-   - ABORT if any found, display list for user to review
-
-4. **Retry Integration:**
-   - After fix is deployed and tested, re-tag the NewMusic files
-   - Run integration again (will need to clean up partially-integrated files first)
-
-See `docs/Development/IDEAS.md` → SHOWSTOPPER section for full technical details.
-
----
-
-## Stage 3C Workflow - Execute Now
+Recommend Option A for clean state and clear audit trail.
 
 ### Step 1: Execute Real Integration
 
@@ -137,24 +141,24 @@ See `docs/Development/IDEAS.md` → SHOWSTOPPER section for full technical detai
    - Genres corrected (Musivation for Akira The Don, etc.)
    - Parentheticals removed
    - Featured artists moved to TPE1 tag
-   - File renames per convention
+   - File renames per convention (with illegal chars stripped)
 
 2. **Routing** - Moves files to destinations
-   - Decision for each of 51 tracks (Artists/Musivation/Motivation/Misc)
-   - Full routing reasoning logged (artist auto-route, genre rule, scan-ahead, manual)
+   - Decision for each of 15 tracks
+   - Full routing reasoning logged
    - Folder structure created automatically
 
-3. **AudioMirror Update** - Regenerates XML snapshot to reflect new files
+3. **AudioMirror Update** - Regenerates XML snapshot
 
 4. **LibChecker Validation** - Runs library checks (expected: CLEAN)
 
-5. **Decision Logging** - Routes logged to `decisions.xml`
-   - Full audit trail with track metadata
-   - Marked dryRun: false with execution timestamp
+5. **Decision Logging** - Routes logged to `decisions.xml` with execution timestamp
 
-**Expected outcome:** All 51 tracks moved, AudioMirror updated, library CLEAN, decisions logged.
+**Expected outcome:** All 15 tracks moved successfully, AudioMirror updated, library CLEAN, decisions logged.
 
 **Confirmation prompt:** You'll be asked "Type YES to confirm" before files are moved. This is your last safety checkpoint.
+
+---
 
 ### Step 2: Post-Integration Validation & Cleanup
 
@@ -167,11 +171,11 @@ After integration completes successfully:
 - [ ] **Commit AudioMirror changes**
   - Open GitHub Desktop
   - Stage `AudioMirror/AUDIO_MIRROR/` folder (files that changed)
-  - Commit with message: "2026-05-03 Batch integration (51 tracks, after iteration)"
+  - Commit with message: "2026-05-05 Batch integration (15 tracks, after blocker fixes)"
   - Push to origin (auto-commit is disabled for safety)
 
 - [ ] **Extract routing patterns** (TIER 1 analysis)
-  - Review `logs/decisions-2026-05-03-HHMMSS.xml` (most recent run)
+  - Review `logs/decisions-2026-05-05-HHMMSS.xml` (most recent run)
   - Identify patterns: "Akira The Don → 100% Musivation", "New artist with 3+ tracks → new Artists folder", etc.
   - Document at least 3 patterns in HISTORY.md for future optimization
 
@@ -188,7 +192,14 @@ After integration completes successfully:
 
 ## What Happens Next
 
-After Stage 3C completes successfully:
+### Immediate (2026-05-05+)
+
+1. **Clean up partial state** from 2026-05-03 failure (Option A recommended)
+2. **Execute real integration** on the 15-song batch
+3. **Validate and commit** AudioMirror changes
+4. **Extract routing patterns** for TIER 1 analysis
+
+### After Stage 3C Completes Successfully
 
 1. **TIER 1 validation** - Confirm routing decisions are captured and patterns extracted
 2. **TIER 2 work** - Robustness: add automated tests for routing logic, investigate performance
