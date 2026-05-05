@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-05 (evening) - Scott Adams artist casing rule restored
+
+**Blocker resolution:** Scott Adams title-casing rule was accidentally lost during the initial refactor to add `artist-name-overrides.xml` system. Rule existed in code comments but was not ported to the new config. Added `<Artist canonical="Scott Adams" />` to config/artist-name-overrides.xml. Clarified config file comment to document that override entries apply to both primary and featured (secondary) artists - one entry per artist covers all positions.
+
+**Lesson:** When refactoring code that handles rules/config/overrides, audit existing rules BEFORE refactoring and ensure ALL are migrated to the new system. Silent data loss is serious. Feedback file created: `feedback_audit_rules_before_refactoring.md`.
+
+---
+
 ## 2026-05-05 - TIER 1 complete: crash fix, TagFixer casing, LibChecker clean, first successful dry run
 
 Three blockers from the 2026-05-03 partial integration crash resolved. First dry run post-fix completed with no errors.
@@ -23,6 +31,8 @@ Confirmed not a routing logic bug - library already had 6 songs in `mike\the hig
 **Bonus: TagFixer was title-casing "mike." to "Mike."**
 
 `ExtractAndFixArtists()` applied `ToTitleCase(a.ToLower())` to all artists, silently converting "mike." to "Mike." on integration. This caused `CheckAlbumSubfolderRule()` to see only 1 song in the "Mike." group (the others were "mike."), falsely triggering the singles/album mismatch rule. Fix: added `config/artist-name-overrides.xml` with a `<Artist canonical="mike." />` entry and updated `ExtractAndFixArtists()` to use canonical casing from config instead of title-casing for listed artists. Two already-integrated "Mike." library files fixed manually via Mp3tag. Future integrations preserve "mike." correctly.
+
+**Note on artist casing rules:** The override system (`artist-name-overrides.xml`) is the durable home for all artist casing rules going forward. During this refactor, some existing rules may have been missed - audit the codebase and HISTORY for any other artists that require non-standard casing (e.g. Scott Adams) and ensure they're migrated to config.
 
 ---
 
