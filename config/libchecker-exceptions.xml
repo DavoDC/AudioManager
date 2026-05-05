@@ -70,5 +70,10 @@
     <Title contains="The Highest Virtue" />
   </Exception>
 
+  <!-- Eels B-sides compilation - album "Useless Trinkets: B-sides, Soundtracks, Rarities and Unreleased" legitimately contains 'Soundtracks' -->
+  <Exception unwanted="soundtrack">
+    <Artists contains="Eels" />
+    <Album contains="Useless Trinkets" />
+  </Exception>
 
 </Exceptions>
