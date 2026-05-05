@@ -1,0 +1,8 @@
+After partial integraiton of  songs
+
+got evne more songs  
+
+BUT fixed spotify palylist gen first (see 0924cd0e591d75c59d51c0955aee521bfb31c78c commit ownards)
+## Session 207 - Day 05 May 2026 (interactive)
+
+so much back and forth , so many rounds of dev sessions, gave up updating tehse docs
