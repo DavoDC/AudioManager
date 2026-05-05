@@ -106,7 +106,17 @@ The safety of the L (replace library) decision depends on **duplicate detection 
 - Catches true duplicates even if file has different bitrate/encoding
 - Harder to false-positive (requires both artist AND title to match)
 
-**Edge case risk:**
+**Edge case risk - special characters:**
+- Duplicate detection compares raw metadata (artist/title from ID3 tags), not sanitized filenames
+- This is correct: if a file's tag says "Jöhn Döe", we compare that string directly
+- Filenames get sanitized separately (removes ö, ë, etc.) when files are moved to library
+- **What if scenario:** File in NewMusic has `artist="Jöhn Döe"`, exists in library with `artist="John Doe"` (already sanitized)
+  - Duplicate detection fails: "Jöhn Döe" != "John Doe" (direct string comparison)
+  - File not flagged as duplicate
+  - New file is integrated alongside old file
+- **This is acceptable** because: (1) Tag values should match what's in library XML, (2) sanitization is for filesystem compatibility only, (3) user can catch this visually in dry-run
+
+**Edge case risk - missing/corrupted tags:**
 - If a file has its primary artist or title corrupted/missing: won't detect duplicate
 - If artist or title differs even slightly: won't detect duplicate (requires exact match after whitespace trim)
 - If the AudioMirror is stale or has errors in artist/title fields: detection fails
@@ -117,6 +127,7 @@ The safety of the L (replace library) decision depends on **duplicate detection 
 1. Before running any integration with L decisions, dry-run first to see what would be deleted
 2. Verify that AudioMirror XMLs have clean artist/title fields (run Analysis mode first)
 3. Spot-check any L decisions by manually looking at the affected library file
+4. If you detect a true duplicate with different special characters, manually delete the NewMusic copy and re-run integration
 
 ---
 

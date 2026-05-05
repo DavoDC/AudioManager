@@ -969,6 +969,16 @@ namespace AudioManager
         }
 
         /// <summary>
+        /// Sanitises a tag value (e.g. Album, Artist) for use as a Windows filesystem folder name.
+        /// Tag values can contain characters illegal in paths (e.g. ? in "WHAT IF?").
+        /// Must be called on any tag value used in Path.Combine - never on display strings.
+        /// </summary>
+        private static string SanitiseFolderName(string component)
+        {
+            return Reflector.SanitiseFilename(component ?? "");
+        }
+
+        /// <summary>
         /// Determines the destination directory for a track based on its metadata.
         /// </summary>
         /// <param name="track">The track to route.</param>
@@ -1015,7 +1025,7 @@ namespace AudioManager
                             if (albumCount >= 2)
                             {
                                 reason = $"Akira The Don -> People/{sampledPerson}/{track.Album} ({albumCount} songs from album)";
-                                return Path.Combine(peopleFolder, track.Album);
+                                return Path.Combine(peopleFolder, SanitiseFolderName(track.Album));
                             }
                             else
                             {
