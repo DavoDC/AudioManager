@@ -4,6 +4,27 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-07 - Stage 3C Retrospectives Complete
+
+Comprehensive post-integration analysis completed for Stage 3C (April 26 - May 7, 2026, 11 days, 251 commits).
+
+**Forensic Analysis:** `docs/Development/FEEDBACK-Stage3C-2026-05-07.md` (403 lines)
+- Full timeline of execution, blocker discoveries, root cause analysis, pattern analysis, confidence assessment, process insights
+- Key findings: 3-blocker cluster identified (illegal characters, artist casing, album suffixes), dry-run effective for normal cases but misses statistical outliers (edge cases found in real integration), scope evolution tracked (82 IDEAS updates = 33% of commits)
+- Deliverable: TIER 2+ work prioritized by findings and validated by 502 real integration outcomes (Musivation batch, Stage 3C blocker fixes verified)
+- Impact: All downstream TIER 2 items now cross-referenced to retrospective root cause analysis and evidence
+
+**Claude Workspace Reflection:** `ClaudeOnly/memory/overnight-reflections/2026-05-07-Stage3C-reflection.md` (650 lines)
+- Post-mortem analysis of Claude's performance during AudioManager Stage 3C (12 /dev-session invocations, 247 commits)
+- Decision audit: validated decisions (character sanitization, artist casing overrides, routing logic, decision logging), partially validated decisions (album suffix stripping, dry-run methodology), unvalidated decisions (parser optimization, full library consistency)
+- Rule system effectiveness: improvement loop broken (learnings captured in narrative but not converted to rules), TDD gate missing (2% test commits vs 30% expected), scope creep visible (82 IDEAS updates untracked mid-session)
+- Recommendations: P0 (fix improvement loop in /dev-session), P1 (add TDD gate), P2 (add scope gate), P3+ (workspace cleanup and hardening)
+- Impact: Identifies systematic improvement loop gap (narration without action defeats self-improvement). Sets priority for /dev-session skill enhancements (add enforced checkpoints for TDD, scope, rule capture)
+
+**Integration Outcome:** Real integration attempt May 3 succeeded after blocker fixes applied May 5. 5531 songs verified clean post-integration. Decision logging enabled forensic analysis. Dry-run post-fix verified no regressions.
+
+---
+
 ## 2026-05-05 (evening) - Scott Adams artist casing rule restored
 
 **Blocker resolution:** Scott Adams title-casing rule was accidentally lost during the initial refactor to add `artist-name-overrides.xml` system. Rule existed in code comments but was not ported to the new config. Added `<Artist canonical="Scott Adams" />` to config/artist-name-overrides.xml. Clarified config file comment to document that override entries apply to both primary and featured (secondary) artists - one entry per artist covers all positions.

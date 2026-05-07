@@ -10,11 +10,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: retrospectives complete, TIER 2 informed by findings. Harden Stage 3C learnings.**
 
-**RETROSPECTIVES (COMPLETED):**
-
-- [x] **Review AudioManager integration workflow and outcomes** - COMPLETED 2026-05-07. Forensic analysis: `docs/Development/FEEDBACK-Stage3C-2026-05-07.md` (403 lines). Records 3-blocker cluster (characters, casing, suffixes), root causes, fixes applied, pattern analysis, scope evolution (251 commits, 82 IDEAS updates), confidence assessment. Key finding: Dry-run catches normal cases, real integration finds statistical outliers (edge cases). Downstream impact: TIER 2 priorities informed by root cause analysis + blocker classifications.
-
-- [x] **Claude workspace reflection - Stage 3C performance** - COMPLETED 2026-05-07. Reflection doc: `ClaudeOnly/memory/overnight-reflections/2026-05-07-Stage3C-reflection.md` (650 lines). Analyzes decision-making quality, TDD enforcement (2% vs 30% expected), scope discipline (82 IDEAS updates = 33% of commits), tool effectiveness, rule system gaps. Findings: improvement loop broken (learnings captured but not converted to rules), TDD gate missing from /dev-session skill, scope checks needed mid-session. Recommendations in order: fix improvement loop (P0), add TDD gate (P1), add scope gate (P2).
+**RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
 **HARDENING (informed by retrospective root cause analysis):**
 
