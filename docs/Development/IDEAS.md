@@ -34,6 +34,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **(3) Fix concise proposal positioning:** Summary line `-> Artist / Folder` appears above `Proposed:` path, feels out-of-order. Investigate correct ordering for scannability. (Needs discussion with user on preferred layout).
   - **Impact:** Fixes user experience friction observed during Stage 3C. Makes routing decisions scannable at a glance instead of parsing full paths.
 
+- [ ] **Fix report table formatting - markdown tables instead of plain text** - **ESSENTIAL:** Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as broken plain text (raw columns, no markdown formatting), making them unreadable on GitHub and difficult to scan. Root cause: `ReportWriter.cs` (and/or `Analyser.cs`) emits plain text, not markdown. Fix: modify output to emit proper markdown tables with pipe-delimited columns and header separators (e.g. `| Header | Header |` + `|--------|--------|`). Payoff: reports become usable for data review and archival.
+
 - [ ] **Add minimal automated tests for three broad features** - ROI analysis showed full test suite not worth it; these three core features are high-payback.
   - **Motivation:** Each session requires multiple manual dry runs and force regens to verify fixes. Tests for key features catch regressions immediately at build time, enabling faster iteration. Current feedback: each fix session needs 2-3 manual verification cycles (dry run, force regen, spot-check). Tests eliminate this.
   - **Feature 1: Build and launch** - Program compiles cleanly via MSBuild and runs without crashing (e.g. `--help` works). Catches compilation/linkage regressions immediately. Payback: weeks.
@@ -72,8 +74,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Recommendation:** TIER 4 exploratory task - audit existing metadata patterns before deciding if automation is feasible. May need to accept manual folder-picker as permanent solution.
 
 - [ ] **AudioMirrorCommitter: safety gates then re-enable auto-commit** - Two phases: (1) SAFETY GATES: currently skips auto-commit only if LibChecker reported hits, but doesn't account for other issues like unexpected file extensions. Update check: if Reflector found unexpected extensions OR LibChecker reported hits, skip commit and notify user. Goal: auto-commit only runs when entire pipeline is completely clean. (2) RE-ENABLE: once safety gates proven stable (several weeks of runs, zero accidental data loss), re-enable auto-commit by uncommenting logic in `AudioMirrorCommitter.TryCommit()` (lines ~60-85). Blocked by: TIER 1 all verified first. Note: manual commits are safe, re-enable is nice-to-have, not critical.
-
-- [ ] **Fix report table formatting - markdown tables instead of plain text** - Symptom: Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as plain text (raw columns, no markdown formatting). Root cause: `ReportWriter.cs` (and/or `Analyser.cs`) emits plain text, not markdown. Impact: tables don't render nicely on GitHub, harder to scan. Fix: modify output to emit proper markdown tables with pipe-delimited columns and header separators (e.g. `| Header | Header |` + `|--------|--------|`). Improves readability and GitHub rendering consistency.
 
 ---
 
