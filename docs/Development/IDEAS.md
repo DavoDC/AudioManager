@@ -16,6 +16,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Claude workspace reflection - how did Claude perform, what can improve?** - Post-integration reflection (separate from AudioManager): Analyze Claude's performance and workspace tool effectiveness during Stage 3C. Methodology: Use `/deep-dive` skill to investigate. Check: (1) git history of this session (commits, what was fixed/changed), (2) session history notes in workspace (what worked, what didn't), (3) AudioManager git log for patterns (commit style, scope creep, decision quality), (4) CLAUDE.md vs actual behavior (gaps). Document to `ClaudeOnly/memory/overnight-reflections/2026-05-XX-Stage3C-reflection.md`. Focus on: Claude's decision-making quality, task decomposition accuracy, tool usage patterns, context management efficiency. Identify improvements to: enforced-rules.md (behavior patterns), CLAUDE.md (workspace philosophy), skills, or hooks. Include: what worked well (don't regress), what caused friction, what should change.
 
+- [ ] **NEW PARADIGM: Analyze library to auto-decide routing instead of prompting user** - Core vision: Instead of asking user to confirm every routing decision, scan the library structure (artist folder distribution, album patterns, file counts per artist/album) to build statistical models and auto-decide. Example: if artist consistently has 1-2 song albums across the library, auto-route to Singles without asking. If genre appears 95% of the time for an artist, use that as the default. If album already exists in a known folder, auto-route there. Decision data: analyze decision XMLs from past integrations + AudioMirror XMLs. This transforms integration from "confirm N files" to "handle N files automatically". High impact on workflow friction.
+
 - [ ] **Mark historical workflow docs as frozen** - The `docs/Historical/WorkflowExecution-2026-04-26/` folder documents the April 26 workflow planning sessions. These docs are now stale (decisions made, execution pending or in progress). Add a header note to `docs/Historical/WorkflowExecution-2026-04-26/README.md` (create if needed): "This folder is FROZEN as a historical record. Do not edit these docs - they describe pre-execution planning from April 26, 2026. Live workflow feedback and improvements live in IDEAS.md and git history. Kept for reference only." This prevents future attempts to maintain these docs.
 
 ---
@@ -95,8 +97,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 ## TIER 4 - FUTURE
 
 **Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
-
-- **LibChecker & routing: analyze library patterns to decide automatically instead of prompting user** - After several stable integration runs with mature rules, explore building statistical models of library structure (artist folder distribution, album patterns, file counts) to auto-decide routing instead of user confirmation. Example: if artist consistently has 1-2 song albums, auto-route to Singles; if genre appears 95% of the time for an artist, use as default. Lower priority now since current rules are solid and catch issues well (Stage 3C validation confirmed). Revisit after TIERS 1-3 are complete and you have more decision XML history to analyze.
 
 - **"My Edits" tracking** - detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
