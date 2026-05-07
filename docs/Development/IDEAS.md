@@ -37,6 +37,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
+- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. Profile bottleneck: XML parsing, tag reading, file I/O, or something else? Benchmark against alternatives (streaming vs. loading entire mirror, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive.
+
 - [ ] **UX: Misc routes should batch-review at end instead of per-file** - Auto-accept has been turned off. Still need: collect all Misc-routed files during the run, then present at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting flow for every file.
 
 - [ ] **Routing proposal UX: split `Proposed:` into human-readable path + filesystem path** - Currently shows one long `Proposed: Musivation\Akira The Don\Singles\...` line. Suggested improvement:
@@ -52,8 +54,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - Inconsistent spacing in output. Ensure all [FIXED]/[SKIPPED] blocks are separated by a blank line.
 
 - [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost.
-
-- [ ] **Performance investigation - Parser is slow** - Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). Profile bottleneck: XML parsing, tag reading, file I/O, or something else? Benchmark against alternatives (streaming vs. loading entire mirror, parallel processing per artist folder, etc.). Document findings and propose optimization targets.
 
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - Currently flagged for MANUAL migration. Revisit with confirmation gate after tests exist.
 
