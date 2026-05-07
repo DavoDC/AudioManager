@@ -47,11 +47,11 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Routing proposal UX: `Reason` field should explain WHY, not restate destination** - Currently `Reason` sometimes mirrors what `Proposed:` already shows. Replace restatements with actual decision logic (e.g. "5 songs from album -> album subfolder", "artist folder exists -> auto-route", etc.).
 
-- [ ] **Scan-ahead: show progress indicator during computation** - Scan-ahead calculation takes noticeably long with no feedback. Fix: print a progress line while scanning, e.g. "Scanning batch... (checking N artists)" or a simple dot-tick per artist.
+- [ ] **Scan-ahead: show progress indicator during computation** - Symptom: User observed silence after "Scan-ahead: 4 artist(s) will hit 3-song threshold:" with no feedback, thought program hung. Root cause: scan-ahead computation takes several seconds but produces no intermediate output. Fix: print progress during scanning (e.g. "Scanning batch... (checking N artists)" or dot-tick per artist). Improves perceived responsiveness.
 
-- [ ] **Routing proposal UX: concise proposal positioning** - Concise proposal summary is showing in the wrong position relative to the `Proposed:` line. Needs investigation and discussion before implementing.
+- [ ] **Routing proposal UX: concise proposal positioning** - Symptom: The concise proposal summary line (e.g. `-> Artist / Folder`) appears ABOVE the full `Proposed:` filesystem path, making the layout feel out-of-order. User flagged: unclear if line should move, or if display logic should change. Root cause: unclear - needs investigation to determine correct ordering for scannability. Discuss with user before implementing position change.
 
-- [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - Inconsistent spacing in output. Ensure all [FIXED]/[SKIPPED] blocks are separated by a blank line.
+- [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - Symptom: TagFixer output has inconsistent spacing - blank lines separate most [FIXED] entries but are missing between [SKIPPED] and following [FIXED] entries. Root cause: output generation doesn't ensure separators after SKIPPED entries. Fix: ensure all [FIXED]/[SKIPPED] blocks are consistently separated by blank lines for readability.
 
 - [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost.
 
@@ -83,7 +83,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **Re-enable AudioMirrorCommitter auto-commit** - currently disabled (shows manual instructions instead). Re-enable when program is more mature and proven stable on real library operations. Prerequisites: (1) TIER 1 all verified, (2) several weeks of stable runs with zero accidental data loss, (3) both safety checks above in place. Low priority - manual commits are safe and auditable.
   - **Note:** Old auto-commit logic is commented out in `AudioMirrorCommitter.TryCommit()` (lines ~60-85) for easy re-enable.
 
-- [ ] **Fix report table formatting - markdown tables instead of plain text** - Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as plain text with no formatting. Modify `ReportWriter.cs` (and/or `Analyser.cs` if it generates the data) to emit proper markdown tables with pipe-delimited columns and header separators. Affects readability and consistency with GitHub markdown rendering.
+- [ ] **Fix report table formatting - markdown tables instead of plain text** - Symptom: Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as plain text (raw columns, no markdown formatting). Root cause: `ReportWriter.cs` (and/or `Analyser.cs`) emits plain text, not markdown. Impact: tables don't render nicely on GitHub, harder to scan. Fix: modify output to emit proper markdown tables with pipe-delimited columns and header separators (e.g. `| Header | Header |` + `|--------|--------|`). Improves readability and GitHub rendering consistency.
 
 - [ ] **Low priority: Evaluate removing .md integration logs in favour of decision XMLs** - Integration logs (`logs/integration-*.md`) and decision XMLs overlap in content. If XMLs contain all routing information, the .md logs may be redundant. Evaluate what .md logs have that XMLs don't (human-readable narrative vs structured data). If XMLs are sufficient for audit and analysis, remove .md logs to simplify the output.
 
