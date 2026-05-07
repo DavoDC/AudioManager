@@ -8,30 +8,13 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 1 - BLOCKING
 
-**Goal: execute and validate the first end-to-end integration. Unblock TIER 2.**
+**Goal: validate and harden Stage 3C findings. Unblock TIER 2.**
 
-CLAUDE ADD THIS IDEA TO THE RIGHT TIER = after integration , folders were left behind = David@RAPHAEL ../NewMusic: tree
-Folder PATH listing for volume BOOT_SSD
-Volume serial number is C49F-42E2
-C:/USERS/DAVID/DOWNLOADS/NEWMUSIC
-├───PROCESSED
-    +├───Akira The Don - WHAT IF_
-    +├───Kings Dead - Revenge of the Beast
-    +├───Lupe Fiasco - Lasers
-    +├───Lupe Fiasco - Lupe Fiasco's Food & Liquor
-    ├───Shaggy - The Boombastic Collection - Best Of Shaggy (International Version)
-David@RAPHAEL ../NewMusic: find . -type f
-David@RAPHAEL ../NewMusic:. NEW MUSIC FOLDER SHOULD BE EDELETED AFTERE INGRATION. low P issue coz issue to resolve myself by del
+- [ ] **Fix TagFixer to strip album-folder parentheticals** - Stage 3C revealed: 'version' tag (specifically " (International Version)") appearing in album field of 'Shaggy; Ricardo Ducent - It Wasn't Me' caused routing confusion. User manually fixed by removing the suffix from MP3TAG. Root cause: TagFixer should strip these suffixes from album field (same way it processes artist names). Add logic to `TagFixer.cs` to detect and remove common album-folder suffixes like " (International Version)", " (Deluxe)", etc.
 
-- [x] **Execute Stage 3C real integration (15-song NewMusic batch)** - Dry run passed 2026-05-05. Executed 2026-05-05 evening. Real integration revealed 2 LibChecker issues (see next item). Decision XMLs and routing logs captured. Manual fixes applied (user to document).
+- [ ] **Review GetDestDir() single-song-from-album edge case** - Stage 3C found: single song from a multi-song album was routed to album subfolder instead of Singles/. Investigate: should GetDestDir() have a single-song guard that routes to Singles instead of creating a subfolder for a one-off album track? Document decision and add guard if appropriate.
 
-- [ ] **Investigate and prevent LibChecker issues from Stage 3C integration** - Real integration found:
-  - 'version' tag appearing in album field of 'Shaggy; Ricardo Ducent - It Wasn't Me'
-  - Album subfolder rule violation: only 1 song from 'The Boombastic Collection - Best Of Shaggy (International Version)' routed to album subfolder instead of Singles/
-  **Investigation needed:** (1) Why did routing logic select album subfolder for a single-song edge case? (2) Where did 'version' in album tag originate (Reflector, TagFixer, manual edit)? (3) Should GetDestDir() have a single-song-from-album guard to route to Singles instead? (4) Should TagFixer strip 'version' from album field? Review the Stage 3C decision XML and tags for root cause, then add guards to prevent recurrence.
-  - NOTE:  I FIXED THIS BY removing " (International Version)" from the album field of the "It wasnt me" track IN MP3TAG and that fixed BOTH issues! Tag fixer should do this!  LibChecker also should maybe consider if album matches album folder and if all tracks in album folde have same album field!
-
-- [ ] **Review integration feedback and update workflow** - After Stage 3C completes successfully, review the actual execution for feedback: What broke? What took longer than expected? What UX pain points emerged? Record findings to `docs/Development/FEEDBACK-Stage3C-2026-05-XX.md`, then use the checklist in `docs/Historical/WorkflowExecution-2026-04-26/STAGE_5_FEEDBACK_AND_IMPROVEMENT_(BLOCKED).md` (Substeps A-C) to convert feedback into IDEAS.md improvements. This closes the loop: planned workflow -> execution -> validated learnings -> next iteration.
+- [ ] **Review integration feedback and update workflow** - After Stage 3C, review actual execution: What broke? What took longer than expected? What UX pain points emerged? Record findings to `docs/Development/FEEDBACK-Stage3C-2026-05-XX.md`, then use the checklist in `docs/Historical/WorkflowExecution-2026-04-26/STAGE_5_FEEDBACK_AND_IMPROVEMENT_(BLOCKED).md` (Substeps A-C) to convert feedback into IDEAS.md improvements.
 
 - [ ] **Mark historical workflow docs as frozen** - The `docs/Historical/WorkflowExecution-2026-04-26/` folder documents the April 26 workflow planning sessions. These docs are now stale (decisions made, execution pending or in progress). Add a header note to `docs/Historical/WorkflowExecution-2026-04-26/README.md` (create if needed): "This folder is FROZEN as a historical record. Do not edit these docs - they describe pre-execution planning from April 26, 2026. Live workflow feedback and improvements live in IDEAS.md and git history. Kept for reference only." This prevents future attempts to maintain these docs.
 
@@ -39,42 +22,40 @@ David@RAPHAEL ../NewMusic:. NEW MUSIC FOLDER SHOULD BE EDELETED AFTERE INGRATION
 
 ## TIER 2 - QUALITY
 
-**Goal: improve UX and add minimal test coverage. Start after first clean integration completes.**
+**Goal: improve UX and add test coverage. Start after first clean integration completes.**
 
-- [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - currently flagged for MANUAL migration (deemed too risky to auto-move existing library files). Revisit with a confirmation gate after tests exist.
-
-- [ ] **UX: Misc routes should not auto-accept - review all at end instead** - Auto-accept has been turned off (user now confirms Y/N like all other routes). Still need: collect all Misc-routed files during the run, then present them all at once at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting the flow for every file. Needs investigation of current state + implementation of batch review at end.
+- [ ] **Add minimal automated tests (scoped down from kitchen-sink)** - ROI analysis showed full test suite not worth it; these three are foundational.
+  - **Motivation:** Each session requires multiple manual dry runs and force regens to verify fixes. Tests for key code paths catch regressions immediately at build time, enabling faster iteration.
+  - **Smoke build test** (~50 lines): MSBuild builds cleanly; exe runs with `--help` without crashing. Payback in weeks.
+  - **`GetDestDir()` routing tests** (~150 lines): fixed inputs (artist, album, scan-ahead set) -> fixed destinations. Routing is the most dangerous code path. Payback in 1-2 months.
+  - **`ExtractAndFixArtists()` / `PreProcessTags()` tag-mutation tests** (~80 lines): no-TCMP input -> TCMP=True; Akira The Don wrong-genre input -> Musivation; "mike." input stays "mike." (not title-cased). Would have caught the artist casing bug instantly.
+  - **Skipped:** full LibChecker-rule suite (add incrementally when rules change, don't backfill). Full integration test (dry-run already covers).
+  - Add `AudioManager.Tests` xUnit project; wire into `launch.bat` as "Run tests" menu item; broken tests block exe launch.
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
-  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). **Full reasoning:** ALL FILES in the Musivation folder must have the Musivation genre tag. Loot Bryon Smith is a Musivation artist, so files are routed to the Musivation folder. Because they go to Musivation, they require the Musivation genre tag - it's a folder-level requirement enforced by LibChecker.
+  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). ALL FILES in the Musivation folder must have the Musivation genre tag.
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
-  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension to check artist name and/or existing genre tags. Once implemented, TagFixer will be 100% comprehensive.
+  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
-- [ ] **Scan-ahead: show progress indicator during computation** - Scan-ahead calculation takes noticeably long (user thought it hung). Currently no output between "Scan-ahead: N artist(s) will hit 3-song threshold:" and the results. Fix: print a progress line while scanning, e.g. "Scanning batch... (checking N artists)" or a simple dot-tick per artist. Evidence from feedback: user saw scan-ahead output then silence for several seconds with no feedback.
+- [ ] **UX: Misc routes should batch-review at end instead of per-file** - Auto-accept has been turned off. Still need: collect all Misc-routed files during the run, then present at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting flow for every file.
 
-- [ ] **Routing proposal UX: split `Proposed:` into human-readable path + filesystem path** - Currently shows one long `Proposed: Musivation\Akira The Don\Singles\...` line that mixes logical path (for human review) and filesystem path (for execution). Suggested improvement: split into two lines:
+- [ ] **Routing proposal UX: split `Proposed:` into human-readable path + filesystem path** - Currently shows one long `Proposed: Musivation\Akira The Don\Singles\...` line. Suggested improvement:
   - `Proposed: Akira The Don / Singles` (short, human-readable)
   - `Path: Musivation\Akira The Don\Singles\Akira The Don;Brian Tracy - UNSTOPPABLE.mp3` (full filesystem path)
-  This makes the proposal easier to read at a glance before accepting.
 
-- [ ] **Routing proposal UX: `Reason` field should not duplicate the proposal** - Currently `Reason` sometimes restates what `Proposed:` already shows (e.g. "Akira The Don -> People/Rupert Spira/THE SHINING OF BEING (5 songs from album)" which mirrors the `->` line above it). Reason should explain WHY the routing was chosen, not restate the destination. Fix: audit Reason strings in routing logic; if a Reason just restates the destination path, replace with the actual decision logic (e.g. "5 songs from album -> album subfolder", "artist folder exists -> auto-route", etc.).
+- [ ] **Routing proposal UX: `Reason` field should explain WHY, not restate destination** - Currently `Reason` sometimes mirrors what `Proposed:` already shows. Replace restatements with actual decision logic (e.g. "5 songs from album -> album subfolder", "artist folder exists -> auto-route", etc.).
 
-- [ ] **Routing proposal UX: concise proposal positioning** - Concise proposal summary is showing in the wrong position relative to the `Proposed:` line. Needs investigation and discussion with David before implementing (user flagged: "not sure about best way to think about, ask me if needed").
+- [ ] **Scan-ahead: show progress indicator during computation** - Scan-ahead calculation takes noticeably long with no feedback. Fix: print a progress line while scanning, e.g. "Scanning batch... (checking N artists)" or a simple dot-tick per artist.
 
-- [ ] **TagFixer output formatting: missing blank line between SKIPPED and FIXED entries** - Tag fixer output has inconsistent spacing. A blank line separates most [FIXED] entries but is missing between a [SKIPPED] line and the following [FIXED] line. Fix: ensure all consecutive [FIXED]/[SKIPPED] blocks are separated by a blank line for consistent readability.
+- [ ] **Routing proposal UX: concise proposal positioning** - Concise proposal summary is showing in the wrong position relative to the `Proposed:` line. Needs investigation and discussion before implementing.
 
-- [ ] **Periodic audit: ensure all artist casing rules are in config** - The artist-name-overrides.xml system is durable and version-controlled. However, casing rules can be scattered in code comments and easily forgotten during refactors. After major TagFixer work sessions, audit the codebase (comments, CLAUDE.md notes, HISTORY.md, code history) for any artist casing rules that may have been missed and migrate them to artist-name-overrides.xml. This keeps the rule source single and prevents "accidentally blatted" rules. Scott Adams rule was restored 2026-05-05 evening as a test case - verify no other rules were similarly lost.
+- [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - Inconsistent spacing in output. Ensure all [FIXED]/[SKIPPED] blocks are separated by a blank line.
 
-- [ ] **Performance investigation - Parser is slow** - Analysis runs take time; Parser phase is noticeably slow when processing 5000+ MP3s. Profile the bottleneck: is it XML parsing, tag reading, file I/O, or something else? Benchmark against alternative approaches (e.g., streaming vs. loading entire mirror into memory, parallel processing per artist folder, etc.). Document findings and propose optimization target for TIER 2 implementation (if payback is clear).
-  - **Observed performance (2026-05-05):** Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). Establish this as baseline for optimization targets.
+- [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost.
 
-- [ ] **Add minimal automated tests (scoped down from kitchen-sink)** - ROI analysis showed full test suite not worth it; these three are.
-  - **Motivation (2026-05-05):** Each session currently requires multiple manual dry runs and force regens to verify fixes. Tests for the key code paths would catch regressions immediately at build time, reducing the verify-fix-rerun loop to a single `launch.bat` "Run tests" step. Less friction, faster confidence.
-  - **Smoke build test** (~50 lines): MSBuild builds cleanly; exe runs with `--help` without crashing. Catches today's class of bug. Payback in weeks.
-  - **`GetDestDir()` routing tests** (~150 lines): fixed inputs (artist, album, scan-ahead set) -> fixed destinations. Routing is the most dangerous code path - wrong dest = real files moved wrong. Payback in 1-2 months.
-  - **`ExtractAndFixArtists()` / `PreProcessTags()` tag-mutation tests** (~80 lines): no-TCMP input -> TCMP=True; Akira The Don wrong-genre input -> Musivation; "mike." input stays "mike." (not title-cased). Tiny and easy - the artist casing bug (2026-05-05) would have been caught instantly.
-  - **Skipped:** full LibChecker-rule suite (~400+ lines, 6-12 month payback - add incrementally when rules change, don't backfill). Full integration test with fake MP3s (too heavy, dry-run already covers).
-  - Add `AudioManager.Tests` xUnit project; wire into `launch.bat` as "Run tests" menu item; broken tests block exe launch.
+- [ ] **Performance investigation - Parser is slow** - Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). Profile bottleneck: XML parsing, tag reading, file I/O, or something else? Benchmark against alternatives (streaming vs. loading entire mirror, parallel processing per artist folder, etc.). Document findings and propose optimization targets.
+
+- [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - Currently flagged for MANUAL migration. Revisit with confirmation gate after tests exist.
 
 ---
 
