@@ -28,6 +28,12 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. Profile bottleneck: XML parsing, tag reading, file I/O, or something else? Benchmark against alternatives (streaming vs. loading entire mirror, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive.
 
+- [ ] **Routing proposal UX: three quick wins from Stage 3C feedback** - User observed these pain points during integration. All quick wins, high impact on scanning/decision speed:
+  - **(1) Split `Proposed:` into readable + filesystem path:** Currently one long `Proposed: Musivation\Akira The Don\Singles\...` line. Split into: `Proposed: Akira The Don / Singles` (short) + `Path: Musivation\Akira The Don\Singles\...` (full).
+  - **(2) `Reason` field should explain WHY, not restate:** Currently mirrors `Proposed:` line (e.g. "Akira The Don -> Singles"). Replace with actual logic (e.g. "3+ songs from album -> album subfolder", "artist folder exists -> auto-route").
+  - **(3) Fix concise proposal positioning:** Summary line `-> Artist / Folder` appears above `Proposed:` path, feels out-of-order. Investigate correct ordering for scannability. (Needs discussion with user on preferred layout).
+  - **Impact:** Fixes user experience friction observed during Stage 3C. Makes routing decisions scannable at a glance instead of parsing full paths.
+
 - [ ] **Add minimal automated tests for three broad features** - ROI analysis showed full test suite not worth it; these three core features are high-payback.
   - **Motivation:** Each session requires multiple manual dry runs and force regens to verify fixes. Tests for key features catch regressions immediately at build time, enabling faster iteration. Current feedback: each fix session needs 2-3 manual verification cycles (dry run, force regen, spot-check). Tests eliminate this.
   - **Feature 1: Build and launch** - Program compiles cleanly via MSBuild and runs without crashing (e.g. `--help` works). Catches compilation/linkage regressions immediately. Payback: weeks.
@@ -42,15 +48,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
-- [ ] **Routing proposal UX: split `Proposed:` into human-readable path + filesystem path** - Currently shows one long `Proposed: Musivation\Akira The Don\Singles\...` line. Suggested improvement:
-  - `Proposed: Akira The Don / Singles` (short, human-readable)
-  - `Path: Musivation\Akira The Don\Singles\Akira The Don;Brian Tracy - UNSTOPPABLE.mp3` (full filesystem path)
-
-- [ ] **Routing proposal UX: `Reason` field should explain WHY, not restate destination** - Currently `Reason` sometimes mirrors what `Proposed:` already shows. Replace restatements with actual decision logic (e.g. "5 songs from album -> album subfolder", "artist folder exists -> auto-route", etc.).
-
 - [ ] **Scan-ahead: show progress indicator during computation** - Symptom: User observed silence after "Scan-ahead: 4 artist(s) will hit 3-song threshold:" with no feedback, thought program hung. Root cause: scan-ahead computation takes several seconds but produces no intermediate output. Fix: print progress during scanning (e.g. "Scanning batch... (checking N artists)" or dot-tick per artist). Improves perceived responsiveness.
-
-- [ ] **Routing proposal UX: concise proposal positioning** - Symptom: The concise proposal summary line (e.g. `-> Artist / Folder`) appears ABOVE the full `Proposed:` filesystem path, making the layout feel out-of-order. User flagged: unclear if line should move, or if display logic should change. Root cause: unclear - needs investigation to determine correct ordering for scannability. Discuss with user before implementing position change.
 
 - [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - Symptom: TagFixer output has inconsistent spacing - blank lines separate most [FIXED] entries but are missing between [SKIPPED] and following [FIXED] entries. Root cause: output generation doesn't ensure separators after SKIPPED entries. Fix: ensure all [FIXED]/[SKIPPED] blocks are consistently separated by blank lines for readability.
 
