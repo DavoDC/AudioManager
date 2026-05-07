@@ -24,6 +24,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX and add test coverage. Start after first clean integration completes.**
 
+- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. Profile bottleneck: XML parsing, tag reading, file I/O, or something else? Benchmark against alternatives (streaming vs. loading entire mirror, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive.
+
 - [ ] **Add minimal automated tests for three broad features** - ROI analysis showed full test suite not worth it; these three core features are high-payback.
   - **Motivation:** Each session requires multiple manual dry runs and force regens to verify fixes. Tests for key features catch regressions immediately at build time, enabling faster iteration. Current feedback: each fix session needs 2-3 manual verification cycles (dry run, force regen, spot-check). Tests eliminate this.
   - **Feature 1: Build and launch** - Program compiles cleanly via MSBuild and runs without crashing (e.g. `--help` works). Catches compilation/linkage regressions immediately. Payback: weeks.
@@ -37,8 +39,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). ALL FILES in the Musivation folder must have the Musivation genre tag.
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
-
-- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. Profile bottleneck: XML parsing, tag reading, file I/O, or something else? Benchmark against alternatives (streaming vs. loading entire mirror, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive.
 
 - [ ] **UX: Misc routes should batch-review at end instead of per-file** - Auto-accept has been turned off. Still need: collect all Misc-routed files during the run, then present at the end as a single batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). This way Misc routing is visible and auditable without interrupting flow for every file.
 
