@@ -10,9 +10,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: validate and harden Stage 3C findings. Unblock TIER 2.**
 
-- [ ] **Fix TagFixer to strip album-folder parentheticals** - Stage 3C revealed: 'version' tag (specifically " (International Version)") appearing in album field of 'Shaggy; Ricardo Ducent - It Wasn't Me' caused routing confusion. User manually fixed by removing the suffix from MP3TAG. Root cause: TagFixer should strip these suffixes from album field (same way it processes artist names). Add logic to `TagFixer.cs` to detect and remove common album-folder suffixes like " (International Version)", " (Deluxe)", etc.
-
-- [ ] **Review GetDestDir() single-song-from-album edge case** - Stage 3C found: single song from a multi-song album was routed to album subfolder instead of Singles/. Investigate: should GetDestDir() have a single-song guard that routes to Singles instead of creating a subfolder for a one-off album track? Document decision and add guard if appropriate.
+- [ ] **Fix TagFixer to strip album-folder parentheticals** - Stage 3C revealed: " (International Version)" suffix in album field caused both routing issues (user manually fixed by removing it from MP3TAG). Root cause: TagFixer should strip these suffixes from album field same way it processes artist names. Add logic to detect and remove common album-folder suffixes like " (International Version)", " (Deluxe)", etc. This single fix prevents both issues from recurring.
 
 - [ ] **Review integration feedback and update workflow** - After Stage 3C, review actual execution: What broke? What took longer than expected? What UX pain points emerged? Record findings to `docs/Development/FEEDBACK-Stage3C-2026-05-XX.md`, then use the checklist in `docs/Historical/WorkflowExecution-2026-04-26/STAGE_5_FEEDBACK_AND_IMPROVEMENT_(BLOCKED).md` (Substeps A-C) to convert feedback into IDEAS.md improvements.
 
