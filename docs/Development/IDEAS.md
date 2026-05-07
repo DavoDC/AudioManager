@@ -42,8 +42,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
-- [ ] **UX: Misc routes should batch-review at end instead of per-file** - **CONDITIONAL ON TIER 1 AUTO-ROUTING:** Once auto-routing is enabled, manual Misc routes will be rare (only edge cases, genuinely ambiguous metadata). At that point, collect remaining Misc-routed files and present at end as batch review ("These N files would go to Misc - accept all / review one by one / decline all?"). Lower priority than auto-routing; payoff diminishes once auto-routing handles the common cases. Currently auto-accept is off, so batching would help with current manual flow, but this becomes obsolete once TIER 1 auto-routing reduces Misc prompts to handful.
-
 - [ ] **Routing proposal UX: split `Proposed:` into human-readable path + filesystem path** - Currently shows one long `Proposed: Musivation\Akira The Don\Singles\...` line. Suggested improvement:
   - `Proposed: Akira The Don / Singles` (short, human-readable)
   - `Path: Musivation\Akira The Don\Singles\Akira The Don;Brian Tracy - UNSTOPPABLE.mp3` (full filesystem path)
