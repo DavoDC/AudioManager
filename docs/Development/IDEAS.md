@@ -114,6 +114,8 @@ David@RAPHAEL ../NewMusic:. NEW MUSIC FOLDER SHOULD BE EDELETED AFTERE INGRATION
 
 **Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
 
+- **LibChecker & routing: analyze library patterns to decide automatically instead of prompting user** - After several stable integration runs with mature rules, explore building statistical models of library structure (artist folder distribution, album patterns, file counts) to auto-decide routing instead of user confirmation. Example: if artist consistently has 1-2 song albums, auto-route to Singles; if genre appears 95% of the time for an artist, use as default. Lower priority now since current rules are solid and catch issues well (Stage 3C validation confirmed). Revisit after TIERS 1-3 are complete and you have more decision XML history to analyze.
+
 - **"My Edits" tracking** - detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
 - **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
