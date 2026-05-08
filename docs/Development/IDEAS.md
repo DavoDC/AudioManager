@@ -23,6 +23,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 2 - QUALITY
 
+- [ ] **Combine tag fix + routing into a single per-file summary** - Currently Step 1 (tag fix) prints its summary block, then Step 3 (routing) prints per-file routing decisions separately. Idea: merge into one block per song showing both what tags changed AND where it routes, so the user can review the full picture for each file in one glance before confirming. Design TBD - needs to preserve reviewability (user can still scan and catch wrong decisions).
+
 - [ ] **Add timestamps to integration log file** - Console output has timestamps removed (too noisy for fast operations), but the saved log file (`logs/integration-*.md`) should include timestamps on every line for post-run audit and timing analysis. `SaveLog()` in MusicIntegrator.cs currently writes entries without timestamps.
 
 **Goal: improve UX, add test coverage, and audit metadata quality. Start after TIER 1 prerequisites are verified.**
