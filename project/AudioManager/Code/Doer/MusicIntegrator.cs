@@ -450,7 +450,7 @@ namespace AudioManager
                 int miscCount = miscCounts.ContainsKey(artist) ? miscCounts[artist] : 0;
                 int total = batchCount + miscCount;
 
-                string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, artist);
+                string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist));
                 if (total >= 3 && !Directory.Exists(artistFolder))
                 {
                     result.Add(artist);
@@ -821,7 +821,7 @@ namespace AudioManager
                         track.Title = TagFixer.RemoveParentheticals(rawTitle);
                         track.Artists = string.Join(";", simArtistList);
                         if (!track.Album.Equals("Missing"))
-                            track.Album = TagFixer.RemoveParentheticals(track.Album);
+                            track.Album = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(track.Album));
                         if (TagFixer.ShouldFixGenre(track.Artists, track.Genres))
                             track.Genres = TagFixer.DetermineGenre(track.Artists);
                     }
@@ -1016,7 +1016,7 @@ namespace AudioManager
                     int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson);
                     if (personSongCount >= 3)
                     {
-                        string peopleFolder = Path.Combine(peopleParent, sampledPerson);
+                        string peopleFolder = Path.Combine(peopleParent, SanitiseFolderName(sampledPerson));
 
                         // Within People/{person}/, apply same album-vs-singles rule as Artists/ routing
                         if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase))
@@ -1067,7 +1067,7 @@ namespace AudioManager
             }
 
             string primaryArtist2 = track.PrimaryArtist;
-            string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, primaryArtist2);
+            string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(primaryArtist2));
 
             // Artist folder exists OR scan-ahead says this artist needs a new one
             bool routeToArtists = Directory.Exists(artistFolder) || newArtistFolders.Contains(primaryArtist2);
@@ -1109,7 +1109,7 @@ namespace AudioManager
             int count = 0;
 
             // Count in library (scan artist folder for album subfolders)
-            string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, artist);
+            string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist));
             string albumFolder = Path.Combine(artistFolder, SanitiseFolderName(album));
             if (Directory.Exists(albumFolder))
             {
@@ -1157,7 +1157,7 @@ namespace AudioManager
             int count = 0;
 
             // Count in library (scan Musivation/Akira The Don/People/{person}/)
-            string personFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson);
+            string personFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", SanitiseFolderName(sampledPerson));
             if (Directory.Exists(personFolder))
             {
                 count += Directory.GetFiles(personFolder, "*.mp3", SearchOption.AllDirectories).Length;
@@ -1238,7 +1238,7 @@ namespace AudioManager
 
             // Count in library: Musivation/Akira The Don/People/{sampledPerson}/{album}/
             string albumFolder = Path.Combine(
-                Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", sampledPerson, SanitiseFolderName(album));
+                Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", SanitiseFolderName(sampledPerson), SanitiseFolderName(album));
             if (Directory.Exists(albumFolder))
             {
                 count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
