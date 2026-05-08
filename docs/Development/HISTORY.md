@@ -4,6 +4,13 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-08 - All TIER 1 prerequisites complete (2.1 + 2.2 + quick wins)
+
+**TagFixer: character validation & sanitization pass (TIER 1 prerequisite 2.2)**
+Applied `SanitiseFolderName()` to all artist and person-name path construction sites (6 sites across `RunScanAhead`, `GetDestDir`, `CountAlbumSongs`, `CountAkiraTheDonPersonSongs`, `CountAkiraTheDonPersonAlbumSongs`). Artist names were previously used raw in `Path.Combine()` - a name like "AC/DC" would silently break path construction since `/` is a path separator on Windows. `SanitiseFilename` already uses `Path.GetInvalidFileNameChars()` which is comprehensive (covers `?`, `/`, `\`, `:`, `*`, `<`, `>`, `|`, `"`). Also fixed dry-run simulation in `PreScanFiles`: album was cleaned with `RemoveParentheticals` only, not `StripAlbumSuffixes`, so dry-run routing predictions for suffix-corrupted tracks were wrong while real-run was correct. Both now consistent. Remaining scope: tag validation of 5531 library tracks via user-run Analysis (LibChecker surfaces any metadata issues). Commit: 16ff2c9.
+
+---
+
 ## 2026-05-08 - Blocker B2 fix + two quick wins
 
 **TagFixer: Comprehensive suffix stripping (TIER 1 prerequisite 2.1)**

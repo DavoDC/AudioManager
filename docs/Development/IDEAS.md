@@ -14,7 +14,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Prerequisites for reliable auto-routing:**
 
-- [ ] **(2.2) Character validation & sanitization pass** - [HIGH confidence] Blocker A root cause: Windows path validation failed on "?" in album tag (WHAT IF?). Current fix (SanitiseFolderName) is targeted but incomplete. Fix scope: audit ALL Windows illegal characters (?, /, \, :, *, <, >, |, "), create character-safety test cases, validate all 5531 tags. Payback: prevents integration crashes from character edge cases. Evidence: real integration found case (May 3 23:36); dry-run missed it. Implementation notes in FEEDBACK-Stage3C.md lines 29-41.
 
 **Target - user's top priority:**
 
