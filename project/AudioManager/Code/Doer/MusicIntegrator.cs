@@ -323,8 +323,8 @@ namespace AudioManager
                             PrintTimestamped($"  Year:    {track.Year}");
                             PrintTimestamped($"  Genres:  {track.Genres}");
                             Console.WriteLine();
-                            PrintTimestamped($"  -> {routeSummary}");
-                            PrintTimestamped($"  Proposed: {relativeDest}");
+                            PrintTimestamped($"  Proposed: {routeSummary}");
+                            PrintTimestamped($"  Path:     {relativeDest}");
                             PrintTimestamped($"  Reason:   {reason}");
                             Console.WriteLine();
                             PrintTimestamped("---------------------------------------------------------------------------");
@@ -1065,27 +1065,27 @@ namespace AudioManager
                             int albumCount = CountAkiraTheDonPersonAlbumSongs(sampledPerson, track.Album);
                             if (albumCount >= 2)
                             {
-                                reason = $"Akira The Don -> People/{sampledPerson}/{track.Album} ({albumCount} songs from album)";
+                                reason = $"{albumCount} songs from album '{track.Album}'";
                                 confidence = RoutingConfidence.Certain;
                                 return Path.Combine(peopleFolder, SanitiseFolderName(track.Album));
                             }
                             else
                             {
-                                reason = $"Akira The Don -> People/{sampledPerson}/{Constants.SinglesDir} ({personSongCount} songs, only {albumCount} from album)";
+                                reason = $"{personSongCount} song(s) from {sampledPerson}, only {albumCount} from this album";
                                 confidence = RoutingConfidence.Certain;
                                 return Path.Combine(peopleFolder, Constants.SinglesDir);
                             }
                         }
                         else
                         {
-                            reason = $"Akira The Don -> People/{sampledPerson}/{Constants.SinglesDir} ({personSongCount} songs, no distinct album)";
+                            reason = $"{personSongCount} song(s) from {sampledPerson}, no distinct album";
                             confidence = RoutingConfidence.Certain;
                             return Path.Combine(peopleFolder, Constants.SinglesDir);
                         }
                     }
                     else
                     {
-                        reason = $"Akira The Don -> Singles ({personSongCount} {(personSongCount == 1 ? "song" : "songs")} from {sampledPerson})";
+                        reason = $"{personSongCount} song(s) from {sampledPerson}, below People threshold";
                         confidence = RoutingConfidence.Certain;
                         return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
                     }
@@ -1093,7 +1093,7 @@ namespace AudioManager
                 else
                 {
                     // No sampled person listed, use Singles
-                    reason = "Akira The Don -> Singles (no sampled person)";
+                    reason = "No sampled person listed";
                     confidence = RoutingConfidence.Certain;
                     return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
                 }
