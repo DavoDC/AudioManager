@@ -12,15 +12,9 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
-**Quick win:**
-
-- [ ] **Mark historical workflow docs as frozen** - The `docs/Historical/WorkflowExecution-2026-04-26/` folder documents the April 26 workflow planning sessions. These docs are now stale (decisions made, execution complete). Add a header note to `docs/Historical/WorkflowExecution-2026-04-26/README.md` (create if needed): "FROZEN - Historical record of pre-execution planning from 2026-04-26. Do not edit. Live improvements documented in IDEAS.md and git history." Prevents future maintenance attempts.
-
 **Prerequisites for reliable auto-routing:**
 
 - [ ] **(2.2) Character validation & sanitization pass** - [HIGH confidence] Blocker A root cause: Windows path validation failed on "?" in album tag (WHAT IF?). Current fix (SanitiseFolderName) is targeted but incomplete. Fix scope: audit ALL Windows illegal characters (?, /, \, :, *, <, >, |, "), create character-safety test cases, validate all 5531 tags. Payback: prevents integration crashes from character edge cases. Evidence: real integration found case (May 3 23:36); dry-run missed it. Implementation notes in FEEDBACK-Stage3C.md lines 29-41.
-
-- [ ] **(2.1) TagFixer: Comprehensive suffix stripping** - [HIGH confidence] Blocker B2 root cause: Shaggy track had " (International Version)" in album field, caused routing to album subfolder instead of Singles. User manually fixed via MP3tag. Fix scope: strip ALL common album-folder suffixes (parentheticals, edition markers, remaster markers, year suffixes) before tagging. Test cases exist (real integration data). Payback: prevents false-positive routing and LibChecker violations from metadata corruption - directly affects auto-routing reliability. Implementation notes in FEEDBACK-Stage3C.md lines 59-70.
 
 **Target - user's top priority:**
 
@@ -32,7 +26,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **(3) Fix concise proposal positioning:** Summary line `-> Artist / Folder` appears above `Proposed:` path, feels out-of-order. Optimize ordering for scannability (layout to be determined at implementation time).
   - **Impact:** Fixes user experience friction observed during Stage 3C. Makes routing decisions scannable at a glance instead of parsing full paths.
 
-- [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - [quick win] Symptom: TagFixer output has inconsistent spacing - blank lines separate most [FIXED] entries but are missing between [SKIPPED] and following [FIXED] entries. Root cause: output generation doesn't ensure separators after SKIPPED entries. Fix: ensure all [FIXED]/[SKIPPED] blocks are consistently separated by blank lines for readability.
 
 ---
 

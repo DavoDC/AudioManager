@@ -4,6 +4,19 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-08 - Blocker B2 fix + two quick wins
+
+**TagFixer: Comprehensive suffix stripping (TIER 1 prerequisite 2.1)**
+Added `StripAlbumSuffixes()` called after `RemoveParentheticals()` for the album field only (not title). Strips edition markers `(Deluxe Edition)`, remaster tags `(2011 Remaster)`, version qualifiers `(International Version)`, bonus content `(Bonus Tracks)`, and year suffixes `(2019)`. Root cause of Blocker B2 (Shaggy "It Wasn't Me" routed to wrong album subfolder): folder-name suffix leaked into album tag, making GetDestDir() see a unique album and route to subfolder instead of Singles. Fix prevents that triple-failure chain (tag corruption -> wrong routing -> LibChecker false positive). Commit: 630a7a7.
+
+**TagFixer output formatting: consistent blank-line separators**
+Added `Console.WriteLine()` after `[SKIPPED]` and `[ERROR]` entries in the per-file report to match existing spacing after `[FIXED]` entries. Prevents SKIPPED/FIXED blocks from running together in output. Commit: 41f851b.
+
+**Mark historical workflow docs as frozen**
+Created `docs/Historical/WorkflowExecution-2026-04-26/README.md` with FROZEN header to prevent future maintenance attempts on stale pre-execution planning docs. Commit: 3a4ec61.
+
+---
+
 ## 2026-05-07 - Stage 3C Retrospectives Complete
 
 Comprehensive post-integration analysis completed for Stage 3C (April 26 - May 7, 2026, 11 days, 251 commits).
