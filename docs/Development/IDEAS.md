@@ -8,37 +8,33 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 1 - BLOCKING
 
-**Goal: retrospectives complete, TIER 2 informed by findings. Harden Stage 3C learnings.**
+**Goal: deliver auto-routing for known cases - eliminate confirmation fatigue. Prerequisites must be verified on real data first.**
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
-**HARDENING (informed by retrospective root cause analysis):**
-
-**Priority Order (from FEEDBACK-Stage3C-2026-05-07, TIER 2 recommendations):**
-
-- [ ] **(TIER 2.1) TagFixer: Comprehensive suffix stripping** - [HIGH confidence] Blocker B2 root cause: Shaggy track had " (International Version)" in album field, caused routing to album subfolder instead of Singles. User manually fixed via MP3tag. Fix scope: strip ALL common album-folder suffixes (parentheticals, edition markers, remaster markers, year suffixes) before tagging. Test cases exist (real integration data). Payback: prevents false-positive routing and LibChecker violations from metadata corruption. Implementation notes in FEEDBACK-Stage3C.md lines 59-70.
-
-- [ ] **(TIER 2.2) Character validation & sanitization pass** - [HIGH confidence] Blocker A root cause: Windows path validation failed on "?" in album tag (WHAT IF?). Current fix (SanitiseFolderName) is targeted but incomplete. Fix scope: audit ALL Windows illegal characters (?, /, \, :, *, <, >, |, "), create character-safety test cases, validate all 5531 tags. Payback: prevents integration crashes from character edge cases. Evidence: real integration found case (May 3 23:36); dry-run missed it. Implementation notes in FEEDBACK-Stage3C.md lines 29-41.
-
-- [ ] **(TIER 2.3) Parser performance investigation** - [MEDIUM confidence] User-visible pain point: 38.124s for 5531 tags (6.9ms per file). Hypothesis: MP3 I/O bottleneck, not XML parsing. Fix scope: profile with instrumentation (file open time, tag read time, parsing time separately). Once profiled, propose optimization. NOT implemented until root cause confirmed. Payback: significant responsiveness improvement. Implementation notes in FEEDBACK-Stage3C.md lines 280-286.
-
-- [ ] **(TIER 2.4) Metadata audit of existing library** - [HIGH confidence] Pattern finding: 3 blocker types (character, casing, suffixes) suggest systematic brittleness. Fix scope: scan existing AudioMirror XMLs for casing inconsistencies, character illegality, metadata-vs-folder mismatches. Produce violations report. Payback: find edge cases BEFORE next batch integration. Implementation notes in FEEDBACK-Stage3C.md lines 342-345.
-
-- [ ] **(TIER 2.5) Routing UX improvements (3 quick wins)** - [HIGH confidence] Observed during real integration (May 3-5). (1) Split Proposed: into human-readable + filesystem path. (2) Reason field should explain WHY (routing logic) not restate destination. (3) Optimize proposal positioning for scannability. All low effort, high impact. Payback: real user friction observed. Implementation notes in FEEDBACK-Stage3C.md lines 347-350.
-
-- [ ] **(TIER 2.6) Automated tests for three broad features (TDD)** - [MEDIUM confidence] TDD approach enforced: write tests FIRST. Strict scope: only 3 features (Build/Launch, Tag Normalization, Routing Correctness). Payback: catches regressions at build time, eliminates manual dry-run cycles. Note: Retro 2 found TDD violation (2% test commits vs 30% expected during Stage 3C). This fixes the gap. Implementation notes in FEEDBACK-Stage3C.md lines 352-356; extended TDD guidance in Retro 2.
+**Quick win:**
 
 - [ ] **Mark historical workflow docs as frozen** - The `docs/Historical/WorkflowExecution-2026-04-26/` folder documents the April 26 workflow planning sessions. These docs are now stale (decisions made, execution complete). Add a header note to `docs/Historical/WorkflowExecution-2026-04-26/README.md` (create if needed): "FROZEN - Historical record of pre-execution planning from 2026-04-26. Do not edit. Live improvements documented in IDEAS.md and git history." Prevents future maintenance attempts.
+
+**Prerequisites for reliable auto-routing:**
+
+- [ ] **(2.2) Character validation & sanitization pass** - [HIGH confidence] Blocker A root cause: Windows path validation failed on "?" in album tag (WHAT IF?). Current fix (SanitiseFolderName) is targeted but incomplete. Fix scope: audit ALL Windows illegal characters (?, /, \, :, *, <, >, |, "), create character-safety test cases, validate all 5531 tags. Payback: prevents integration crashes from character edge cases. Evidence: real integration found case (May 3 23:36); dry-run missed it. Implementation notes in FEEDBACK-Stage3C.md lines 29-41.
+
+- [ ] **(2.1) TagFixer: Comprehensive suffix stripping** - [HIGH confidence] Blocker B2 root cause: Shaggy track had " (International Version)" in album field, caused routing to album subfolder instead of Singles. User manually fixed via MP3tag. Fix scope: strip ALL common album-folder suffixes (parentheticals, edition markers, remaster markers, year suffixes) before tagging. Test cases exist (real integration data). Payback: prevents false-positive routing and LibChecker violations from metadata corruption - directly affects auto-routing reliability. Implementation notes in FEEDBACK-Stage3C.md lines 59-70.
+
+**Target - user's top priority:**
+
+- [ ] **Auto-routing for known cases - eliminate confirmation fatigue** - [HIGH confidence] Current rules (artist folder mapping, genre overrides, album subfolder logic) are validated by Stage 3C real integration (5531 songs, 502 routing decisions). Implement confidence gates in GetDestDir(): (1) artist folder exists -> auto-route (certain), (2) Musivation artist -> auto-route to Musivation (certain), (3) 3+ songs from existing album -> auto-route to album subfolder (likely). **NO confirmation prompts for certain/likely routes** - routing happens silently with decision logged. Only prompt for uncertain cases (new artist, ambiguous metadata, edge cases). Mark each route with confidence level (certain/likely/uncertain) and log ALL decisions to XML for audit trail. Impact: transforms integration from "confirm N files" to "handle N files" - eliminates decision fatigue on routine routing. Implementation: update GetDestDir() to accept confidence thresholds as parameters, add routing confidence enum, wire into MusicIntegrator decision loop.
 
 ---
 
 ## TIER 2 - QUALITY
 
-**Goal: improve UX and add test coverage. Start after first clean integration completes.**
+**Goal: improve UX, add test coverage, and audit metadata quality. Start after TIER 1 prerequisites are verified.**
 
-- [ ] **HIGHLY DESIRED: Auto-routing for known cases - eliminate confirmation fatigue** - [HIGH confidence] **User's top-priority feature.** Current rules (artist folder mapping, genre overrides, album subfolder logic) are validated by Stage 3C real integration (5531 songs, 502 routing decisions). Implement confidence gates in GetDestDir(): (1) artist folder exists -> auto-route (certain), (2) Musivation artist -> auto-route to Musivation (certain), (3) 3+ songs from existing album -> auto-route to album subfolder (likely). **NO confirmation prompts for certain/likely routes** - routing happens silently with decision logged. Only prompt for uncertain cases (new artist, ambiguous metadata, edge cases). Mark each route with confidence level (certain/likely/uncertain) and log ALL decisions to XML for audit trail. Impact: transforms integration from "confirm N files" to "handle N files" - eliminates decision fatigue on routine routing. Implementation: update GetDestDir() to accept confidence thresholds as parameters, add routing confidence enum, wire into MusicIntegrator decision loop.
+- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. **Suspected bottleneck:** Reading thousands of MP3 file metadata (not XML parsing). Profile to confirm and benchmark against alternatives (streaming vs. batch loading, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive. Implementation notes in FEEDBACK-Stage3C.md lines 280-286.
 
-- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. **Suspected bottleneck:** Reading thousands of MP3 file metadata (not XML parsing). Profile to confirm and benchmark against alternatives (streaming vs. batch loading, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive.
+- [ ] **Metadata audit of existing library** - [HIGH confidence] Pattern finding from Stage 3C: 3 blocker types (character, casing, suffixes) suggest systematic brittleness in existing library metadata. Fix scope: scan existing AudioMirror XMLs for casing inconsistencies, character illegality, metadata-vs-folder mismatches. Produce violations report. Payback: find edge cases BEFORE next batch integration; complements character validation (2.2) by revealing existing library state. Implementation notes in FEEDBACK-Stage3C.md lines 342-345.
 
 - [ ] **Routing proposal UX: three quick wins from Stage 3C feedback** - User observed these pain points during integration. All quick wins, high impact on scanning/decision speed:
   - **(1) Split `Proposed:` into readable + filesystem path:** Currently one long `Proposed: Musivation\Akira The Don\Singles\...` line. Split into: `Proposed: Akira The Don / Singles` (short) + `Path: Musivation\Akira The Don\Singles\...` (full).
