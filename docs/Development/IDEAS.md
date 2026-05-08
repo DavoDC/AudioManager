@@ -23,6 +23,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 2 - QUALITY
 
+- [ ] **Add timestamps to integration log file** - Console output has timestamps removed (too noisy for fast operations), but the saved log file (`logs/integration-*.md`) should include timestamps on every line for post-run audit and timing analysis. `SaveLog()` in MusicIntegrator.cs currently writes entries without timestamps.
+
 **Goal: improve UX, add test coverage, and audit metadata quality. Start after TIER 1 prerequisites are verified.**
 
 - [ ] **Fix report table formatting - markdown tables instead of plain text** - [quick win] Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as broken plain text (raw columns, no markdown formatting), making them unreadable on GitHub and difficult to scan. Root cause: `ReportWriter.cs` (and/or `Analyser.cs`) emits plain text, not markdown. **Two-part fix:** (1) Modify code to emit proper markdown tables with pipe-delimited columns and header separators (e.g. `| Header | Header |` + `|--------|--------|`). (2) Regenerate all historical reports (2026-05-05 and earlier) using the corrected code to restore archival records. Payoff: reports become usable for data review and archival.

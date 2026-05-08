@@ -286,17 +286,17 @@ namespace AudioManager
 
                             if (!dryRun && File.Exists(destPath))
                             {
-                                PrintTimestamped($"  [SKIP] {track.Artists} - {track.Title}: already exists at destination");
+                                Console.WriteLine($"  [SKIP] {track.Artists} - {track.Title}: already exists at destination");
                                 Console.WriteLine();
                                 entry.Status = "skipped"; entry.Detail = "already exists at destination";
                                 logEntries.Add(entry); skippedCount++;
                             }
                             else if (dryRun)
                             {
-                                PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
-                                PrintTimestamped($"    Route: {routeSummary}");
-                                Console.WriteLine($"           Reason: {reason}");
-                                PrintTimestamped($"    Path: {relativeDest}");
+                                Console.WriteLine($"  [{autoLabel}] {track.Artists} - {track.Title}");
+                                Console.WriteLine($"    Route: {routeSummary}");
+                                Console.WriteLine($"    Reason: {reason}");
+                                Console.WriteLine($"    Path: {relativeDest}");
                                 Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "would-move";
@@ -307,9 +307,9 @@ namespace AudioManager
                                 Directory.CreateDirectory(destDir);
                                 File.Move(sf.SourcePath, destPath);
                                 movedCount++;
-                                PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
-                                PrintTimestamped($"    Route: {routeSummary}");
-                                Console.WriteLine($"           Reason: {reason}");
+                                Console.WriteLine($"  [{autoLabel}] {track.Artists} - {track.Title}");
+                                Console.WriteLine($"    Route: {routeSummary}");
+                                Console.WriteLine($"    Reason: {reason}");
                                 Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "moved";
@@ -320,21 +320,21 @@ namespace AudioManager
                         {
                             // Uncertain: show full track info and require confirmation
                             Console.WriteLine();
-                            PrintTimestamped("===========================================================================");
-                            PrintTimestamped($"  {track.Artists} - {track.Title}");
-                            PrintTimestamped("===========================================================================");
+                            Console.WriteLine("===========================================================================");
+                            Console.WriteLine($"  {track.Artists} - {track.Title}");
+                            Console.WriteLine("===========================================================================");
                             Console.WriteLine();
-                            PrintTimestamped($"  Album:   {track.Album}");
-                            PrintTimestamped($"  Year:    {track.Year}");
-                            PrintTimestamped($"  Genres:  {track.Genres}");
+                            Console.WriteLine($"  Album:   {track.Album}");
+                            Console.WriteLine($"  Year:    {track.Year}");
+                            Console.WriteLine($"  Genres:  {track.Genres}");
                             Console.WriteLine();
-                            PrintTimestamped($"  Proposed: {routeSummary}");
-                            PrintTimestamped($"  Path:     {relativeDest}");
-                            PrintTimestamped($"  Reason:   {reason}");
+                            Console.WriteLine($"  Proposed: {routeSummary}");
+                            Console.WriteLine($"  Path:     {relativeDest}");
+                            Console.WriteLine($"  Reason:   {reason}");
                             Console.WriteLine();
-                            PrintTimestamped("---------------------------------------------------------------------------");
-                            PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
-                            PrintTimestamped("---------------------------------------------------------------------------");
+                            Console.WriteLine("---------------------------------------------------------------------------");
+                            Console.WriteLine("  [Y] Accept   [N] Decline   [Q] Quit");
+                            Console.WriteLine("---------------------------------------------------------------------------");
 
                             while (true)
                             {
@@ -343,13 +343,13 @@ namespace AudioManager
                                 {
                                     if (!dryRun && File.Exists(destPath))
                                     {
-                                        PrintTimestamped($"  - Skipped '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
+                                        Console.WriteLine($"  - Skipped '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
                                         entry.Status = "skipped"; entry.Detail = "already exists at destination";
                                         logEntries.Add(entry); skippedCount++;
                                     }
                                     else if (dryRun)
                                     {
-                                        PrintTimestamped($"  [DRY RUN] Would move to: {relativeDest}");
+                                        Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                         entry.Status = "would-move";
                                         logEntries.Add(entry); movedCount++;
@@ -359,7 +359,7 @@ namespace AudioManager
                                         Directory.CreateDirectory(destDir);
                                         File.Move(sf.SourcePath, destPath);
                                         movedCount++;
-                                        PrintTimestamped($"  Moved to: {relativeDest}");
+                                        Console.WriteLine($"  Moved to: {relativeDest}");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                         Console.WriteLine();
                                         entry.Status = "moved";
@@ -377,7 +377,7 @@ namespace AudioManager
                                 {
                                     if (dryRun)
                                     {
-                                        PrintTimestamped("  [DRY RUN] Would decline (leave in NewMusic)");
+                                        Console.WriteLine("  [DRY RUN] Would decline (leave in NewMusic)");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                         entry.Status = "would-decline";
                                         entry.Detail = "user declined";
@@ -385,7 +385,7 @@ namespace AudioManager
                                     }
                                     else
                                     {
-                                        PrintTimestamped("  Declined. File left in NewMusic for next run.");
+                                        Console.WriteLine("  Declined. File left in NewMusic for next run.");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                         entry.Status = "declined";
                                         entry.Detail = "user declined";
