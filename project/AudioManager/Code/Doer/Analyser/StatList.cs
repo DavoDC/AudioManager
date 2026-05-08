@@ -122,7 +122,8 @@ namespace AudioManager.Code.Modules
         {
             // Print heading and columns
             Console.WriteLine($"\n# {name} Statistics {comment}");
-            Statistic.PrintColumns("#", "%", name, "Occurrences");
+            Console.WriteLine();
+            Statistic.PrintColumns("#", "%", name, "Occurrences", isHeader: true);
 
             // Print out every statistics object
             for (int i = 0; i < statList.Count; i++)

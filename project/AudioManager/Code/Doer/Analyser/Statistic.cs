@@ -40,20 +40,33 @@ namespace AudioManager.Code.Modules
                 // Format percentage
                 string percentageS = percentage.ToString("F2") + "%";
 
-                // Print out info in columns
-                PrintColumns(pos.ToString(), percentageS, property, count.ToString());
+                // Print out info in columns (markdown table row)
+                PrintColumns(pos.ToString(), percentageS, property, count.ToString(), isHeader: false);
             }
         }
 
         /// <summary>
-        /// Print out three strings in spaced out columns
+        /// Print out four strings in markdown table row format
         /// </summary>
-        /// <param name="c1"></param>
-        /// <param name="c2"></param>
-        /// <param name="c3"></param>
-        public static void PrintColumns(string c1, string c2, string c3, string c4)
+        /// <param name="c1">First column</param>
+        /// <param name="c2">Second column</param>
+        /// <param name="c3">Third column</param>
+        /// <param name="c4">Fourth column</param>
+        /// <param name="isHeader">If true, print header row and separator; if false, print data row</param>
+        public static void PrintColumns(string c1, string c2, string c3, string c4, bool isHeader = false)
         {
-            Console.WriteLine($"{c1,-5} {c2,-10} {c3, -35} {c4}");
+            if (isHeader)
+            {
+                // Print markdown table header row
+                Console.WriteLine($"| {c1} | {c2} | {c3} | {c4} |");
+                // Print separator row with reasonable column widths
+                Console.WriteLine("|---|---|---------|----------|");
+            }
+            else
+            {
+                // Print markdown table data row
+                Console.WriteLine($"| {c1} | {c2} | {c3} | {c4} |");
+            }
         }
     }
 }
