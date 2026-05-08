@@ -12,12 +12,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
-**Prerequisites for reliable auto-routing:**
-
-
-**Target - user's top priority:**
-
-
 - [ ] **Routing proposal UX: three quick wins from Stage 3C feedback** - User observed these pain points during integration. All quick wins, high impact on scanning/decision speed:
   - **(1) Split `Proposed:` into readable + filesystem path:** Currently one long `Proposed: Musivation\Akira The Don\Singles\...` line. Split into: `Proposed: Akira The Don / Singles` (short) + `Path: Musivation\Akira The Don\Singles\...` (full).
   - **(2) `Reason` field should explain WHY, not restate:** Currently mirrors `Proposed:` line (e.g. "Akira The Don -> Singles"). Replace with actual logic (e.g. "3+ songs from album -> album subfolder", "artist folder exists -> auto-route").
