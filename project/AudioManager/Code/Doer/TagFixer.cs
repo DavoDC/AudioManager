@@ -111,7 +111,7 @@ namespace AudioManager
                         if (titleChanged) log.Changes.Add($"Title: \"{title}\"  -> \"{cleanTitle}\"");
                         if (albumChanged) log.Changes.Add($"Album: \"{album}\"  -> \"{cleanAlbum}\"");
                         if (artistsChanged) log.Changes.Add($"Artists: \"{artists}\"  -> \"{cleanArtists}\"");
-                        if (tcmpNeeded) log.Changes.Add("TCMP: False  -> True");
+                        // TCMP fix is silent - almost always needed, adds noise to output
                         if (genreNeeded)
                         {
                             string newGenre = DetermineGenre(cleanArtists);

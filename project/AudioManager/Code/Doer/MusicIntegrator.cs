@@ -294,7 +294,8 @@ namespace AudioManager
                             else if (dryRun)
                             {
                                 PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
-                                PrintTimestamped($"    -> {routeSummary}  |  {reason}");
+                                PrintTimestamped($"    Route: {routeSummary}");
+                                Console.WriteLine($"           Reason: {reason}");
                                 PrintTimestamped($"    Path: {relativeDest}");
                                 Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
@@ -307,7 +308,8 @@ namespace AudioManager
                                 File.Move(sf.SourcePath, destPath);
                                 movedCount++;
                                 PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
-                                PrintTimestamped($"    -> {routeSummary}  |  {reason}");
+                                PrintTimestamped($"    Route: {routeSummary}");
+                                Console.WriteLine($"           Reason: {reason}");
                                 Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "moved";
