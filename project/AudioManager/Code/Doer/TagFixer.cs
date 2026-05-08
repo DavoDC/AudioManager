@@ -183,10 +183,12 @@ namespace AudioManager
                     if (log.Status == "skipped")
                     {
                         Console.WriteLine($"  [SKIPPED] {log.OriginalFilename} ({log.Detail})");
+                        Console.WriteLine();
                     }
                     else if (log.Status == "error")
                     {
                         Console.WriteLine($"  [ERROR] {log.OriginalFilename} ({log.Detail})");
+                        Console.WriteLine();
                     }
                     else
                     {
