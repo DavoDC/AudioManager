@@ -1,0 +1,60 @@
+Integrating new music... [DRY RUN - no files will be moved]
+
+[Step 1] Fixing tags... FEEDBACK: REMOVE THIS
+
+Fixing music tags... [DRY RUN - no files will be modified]  FEEDBACK: REMOVE THIS , duplicates header below
+
+===========================================================================
+Tag Fix Summary (Dry Run)
+===========================================================================
+Files processed: 2          FEEDBACK: MOVE BOTH these lines to just before Tag fixing - time taken: similar to routing patter 
+Fixed: 2  |  Skipped: 0
+
+--- Per-file results --- FEEDBACK: REMOVE THIS 
+[WOULD FIX] Akira The Don - CULTURE IS NOT YOUR FRIEND.mp3
+ Artists: "Akira The Don; Terence McKenna"  -> "Akira The Don;Terence Mckenna"
+ Genre: "Rap; Hip Hop"  -> "Musivation"
+ Filename: Akira The Don - CULTURE IS NOT YOUR FRIEND.mp3  -> Akira The Don;Terence Mckenna - CULTURE IS NOT YOUR FRIEND.mp3
+
+[WOULD FIX] KYLE - But Cha (feat. Josh Golden).mp3
+ Title: "But Cha (feat. Josh Golden)"  -> "But Cha"
+ Album: "But Cha (feat. Josh Golden)"  -> "But Cha"
+ Artists: "KYLE; Josh Golden"  -> "Kyle;Josh Golden"
+ Filename: KYLE - But Cha (feat. Josh Golden).mp3  -> Kyle;Josh Golden - But Cha.mp3
+
+Files processed: 2          FEEDBACK: how it would look
+Fixed: 2  |  Skipped: 0
+
+Tag fixing - time taken: 0.023 seconds
+
+===========================================================================
+Routing (Dry Run)
+===========================================================================
+Files in batch: 2
+
+[AUTO] Akira The Don;Terence Mckenna - CULTURE IS NOT YOUR FRIEND
+ Route: Akira The Don / People / Terence McKenna / Singles
+ Reason: 18 song(s) from Terence McKenna, only 1 from this album
+ Path: Musivation\Akira The Don\People\Terence McKenna\Singles\Akira The Don;Terence Mckenna - CULTURE IS NOT YOUR FRIEND.mp3
+
+[AUTO] Kyle;Josh Golden - But Cha
+ Route: Kyle / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Kyle\Singles\Kyle;Josh Golden - But Cha.mp3
+
+Files processed: 2  FEEDBACK:  for cinsiustency with tag fxing
+Routed: 2  |  Skipped: 0
+
+Routing - time taken: 0.014 seconds  FEEDBACK: nOte line break before this line
+
+Log saved: logs\integration-2026-05-08-202234-dryrun.md
+
+Decision log saved: logs\decisions-2026-05-08-202232.xml    FEEDBACK: simplify these 3 lines (log saved, space, dicison log) to: Logs saved: integration-2026-05-08-202234-dryrun.md, decisions-2026-05-08-202232.xml  Feedabck: enveutally remove this (see logging idea, one centralised log at ened!)
+
+============================================================
+Finished
+============================================================
+
+Total time taken: 3.398 seconds
+
+Finished!
