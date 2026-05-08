@@ -171,46 +171,52 @@ namespace AudioManager
                 // Summary
                 Console.WriteLine();
                 Console.WriteLine("===========================================================================");
-                Console.WriteLine(dryRun ? "  Tag Fix Summary (Dry Run)" : "  Tag Fix Summary");
+                Console.WriteLine(dryRun ? "Tag Fix Summary (Dry Run)" : "Tag Fix Summary");
                 Console.WriteLine("===========================================================================");
-                Console.WriteLine($"  Files processed: {files.Length}");
-                Console.WriteLine($"  Fixed: {fixedCount}  |  Skipped: {skippedCount}");
+                Console.WriteLine($"Files processed: {files.Length}");
+                Console.WriteLine($"Fixed: {fixedCount}  |  Skipped: {skippedCount}");
 
                 // Per-file report
-                Console.WriteLine("\n  --- Per-file results ---");
+                Console.WriteLine("\n--- Per-file results ---");
                 foreach (var log in fixLogs)
                 {
                     if (log.Status == "skipped")
                     {
-                        Console.WriteLine($"  [SKIPPED] {log.OriginalFilename} ({log.Detail})");
+                        Console.WriteLine($"[SKIPPED] {log.OriginalFilename} ({log.Detail})");
                         Console.WriteLine();
                     }
                     else if (log.Status == "error")
                     {
-                        Console.WriteLine($"  [ERROR] {log.OriginalFilename} ({log.Detail})");
+                        Console.WriteLine($"[ERROR] {log.OriginalFilename} ({log.Detail})");
                         Console.WriteLine();
                     }
                     else
                     {
                         string prefix = dryRun ? "[WOULD FIX]" : "[FIXED]";
-                        Console.WriteLine($"  {prefix} {log.OriginalFilename}");
+                        Console.WriteLine($"{prefix} {log.OriginalFilename}");
                         foreach (var change in log.Changes)
                         {
-                            Console.WriteLine($"    - {change}");
+                            Console.WriteLine($" {change}");
                         }
                         if (!string.IsNullOrEmpty(log.Filename) && log.Filename != log.OriginalFilename)
                         {
-                            Console.WriteLine($"    - Filename: {log.OriginalFilename}  -> {log.Filename}");
+                            Console.WriteLine($" Filename: {log.OriginalFilename}  -> {log.Filename}");
                         }
                         Console.WriteLine();
                     }
                 }
 
-                Console.WriteLine("\n===========================================================================");
+                var tagErrors = fixLogs.Where(l => l.Status == "error").ToList();
+                if (tagErrors.Count > 0)
+                {
+                    Console.WriteLine($"[ERRORS: {tagErrors.Count}]");
+                    foreach (var e in tagErrors) Console.WriteLine($" {e.OriginalFilename}: {e.Detail}");
+                    Console.WriteLine();
+                }
             }
             finally
             {
-                FinishAndPrintTimeTaken();
+                FinishAndPrintTimeTaken("Tag fixing");
             }
         }
 

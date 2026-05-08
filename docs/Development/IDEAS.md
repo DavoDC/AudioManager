@@ -25,7 +25,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Combine tag fix + routing into a single per-file summary** - Currently Step 1 (tag fix) prints its summary block, then Step 3 (routing) prints per-file routing decisions separately. Idea: merge into one block per song showing both what tags changed AND where it routes, so the user can review the full picture for each file in one glance before confirming. Design TBD - needs to preserve reviewability (user can still scan and catch wrong decisions).
 
-- [ ] **Add timestamps to integration log file** - Console output has timestamps removed (too noisy for fast operations), but the saved log file (`logs/integration-*.md`) should include timestamps on every line for post-run audit and timing analysis. `SaveLog()` in MusicIntegrator.cs currently writes entries without timestamps.
+- [ ] **Centralise to one log file per run, timestamps on every line** - Currently produces separate `integration-*.md` and `decisions-*.xml` log files. Goal: single `run-YYYYMMDD-HHmmss.log` per run, all output (tag fixes, routing decisions, errors, timings) written there with a timestamp prefix on every line. Console output stays clean (no timestamps); the log file is the complete audit trail. `SaveLog()` and `DecisionLog.Save()` in MusicIntegrator.cs are the starting point.
 
 **Goal: improve UX, add test coverage, and audit metadata quality. Start after TIER 1 prerequisites are verified.**
 
