@@ -287,6 +287,7 @@ namespace AudioManager
                             if (!dryRun && File.Exists(destPath))
                             {
                                 PrintTimestamped($"  [SKIP] {track.Artists} - {track.Title}: already exists at destination");
+                                Console.WriteLine();
                                 entry.Status = "skipped"; entry.Detail = "already exists at destination";
                                 logEntries.Add(entry); skippedCount++;
                             }
@@ -295,6 +296,7 @@ namespace AudioManager
                                 PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
                                 PrintTimestamped($"    -> {routeSummary}  |  {reason}");
                                 PrintTimestamped($"    Path: {relativeDest}");
+                                Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "would-move";
                                 logEntries.Add(entry); movedCount++;
@@ -306,6 +308,7 @@ namespace AudioManager
                                 movedCount++;
                                 PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
                                 PrintTimestamped($"    -> {routeSummary}  |  {reason}");
+                                Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "moved";
                                 logEntries.Add(entry);
@@ -414,15 +417,32 @@ namespace AudioManager
                     }
                 }
 
-                Console.Clear();
-                Console.WriteLine("===========================================================================");
+                Console.WriteLine("\n===========================================================================");
                 Console.WriteLine(dryRun ? "  Dry Run complete (no files moved)" : "  Integration complete");
                 Console.WriteLine("===========================================================================\n");
                 Console.WriteLine(dryRun ? $"  Would move: {movedCount}" : $"  Moved:   {movedCount}");
                 Console.WriteLine($"  Skipped: {skippedCount}");
-                Console.WriteLine("\n---------------------------------------------------------------------------");
 
-                PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
+                if (dryRun)
+                {
+                    var dryErrors = logEntries.Where(e => e.Status == "error").ToList();
+                    Console.WriteLine();
+                    if (dryErrors.Count > 0)
+                    {
+                        Console.WriteLine($"  [ERRORS: {dryErrors.Count}]");
+                        foreach (var e in dryErrors) Console.WriteLine($"  - {e.Filename}: {e.Detail}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("  No errors.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\n---------------------------------------------------------------------------");
+                    PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
+                }
+
                 SaveLog(logEntries, totalFiles, movedCount, skippedCount);
                 decisionLog.Save();
             }
