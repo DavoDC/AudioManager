@@ -87,7 +87,7 @@ namespace AudioManager
 
                         // Apply tag cleanup rules
                         string cleanTitle = RemoveParentheticals(title);
-                        string cleanAlbum = RemoveParentheticals(album);
+                        string cleanAlbum = StripAlbumSuffixes(RemoveParentheticals(album));
                         var artistList = ExtractAndFixArtists(title, artists);
                         string cleanArtists = string.Join(";", artistList);
 
@@ -245,6 +245,39 @@ namespace AudioManager
             }
 
             // Clean up any double spaces left behind
+            result = Regex.Replace(result, @"\s+", " ");
+            return result.Trim();
+        }
+
+        /// <summary>
+        /// Strips album-folder suffix patterns from an album tag value.
+        /// Called after RemoveParentheticals - handles edition markers, remaster tags, version
+        /// qualifiers, and year suffixes that folder names inject into album metadata.
+        /// NOT applied to title field - only album.
+        /// Test cases: "(International Version)" -> "", "(Deluxe Edition)" -> "",
+        /// "(2011 Remaster)" -> "", "(Remastered)" -> "", "(Bonus Tracks)" -> "",
+        /// "(2019)" -> "", plain album unchanged.
+        /// </summary>
+        internal static string StripAlbumSuffixes(string album)
+        {
+            if (string.IsNullOrEmpty(album)) return album;
+
+            string result = album;
+            var patterns = new[]
+            {
+                @"\s*\([^)]*\s+Version\)",                                                   // (International Version), (Radio Version), (Acoustic Version), etc.
+                @"\s*\(Deluxe(?:\s+Edition)?\)",                                             // (Deluxe Edition) or (Deluxe)
+                @"\s*\((?:Special|Limited|Collector'?s?|Anniversary|Expanded|Extended)\s+Edition\)", // edition markers
+                @"\s*\((?:\d{4}\s+)?Remaster(?:ed)?\)",                                     // (Remastered), (Remaster), (2011 Remaster), (2011 Remastered)
+                @"\s*\(Bonus\s+Tracks?\)",                                                   // (Bonus Track) or (Bonus Tracks)
+                @"\s*\((?:19|20)\d{2}\)",                                                    // year suffixes: (2019), (1995), etc.
+            };
+
+            foreach (var pattern in patterns)
+            {
+                result = Regex.Replace(result, pattern, "", RegexOptions.IgnoreCase);
+            }
+
             result = Regex.Replace(result, @"\s+", " ");
             return result.Trim();
         }
