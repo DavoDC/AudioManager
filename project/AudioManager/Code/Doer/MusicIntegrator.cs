@@ -129,7 +129,12 @@ namespace AudioManager
                 }
 
                 // Step 3: Route files (all duplicate decisions already made)
-                Console.WriteLine("\n[Step 3] Routing files...");
+                int routeableCount = scannedFiles.Count(sf => sf.IsReadable && sf.Duplicate?.SkipRouting != true);
+                Console.WriteLine("\n===========================================================================");
+                Console.WriteLine(dryRun ? "Routing (Dry Run)" : "Routing");
+                Console.WriteLine("===========================================================================");
+                Console.WriteLine($"Files in batch: {routeableCount}");
+                Console.WriteLine();
 
                 // 3a: Execute all duplicate decisions together so their outputs are grouped
                 //     before routing output begins. D/L outputs appear consecutively here;
@@ -211,6 +216,7 @@ namespace AudioManager
 
                 // 3b: Route all files. D-decided and dry-run L-decided duplicates already handled
                 //     above; real-mode L files and K files fall through to routing here.
+                var routingStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 foreach (var sf in scannedFiles)
                 {
                     var entry = sf.LogEntry;
@@ -286,17 +292,17 @@ namespace AudioManager
 
                             if (!dryRun && File.Exists(destPath))
                             {
-                                Console.WriteLine($"  [SKIP] {track.Artists} - {track.Title}: already exists at destination");
+                                Console.WriteLine($"[SKIP] {track.Artists} - {track.Title}: already exists at destination");
                                 Console.WriteLine();
                                 entry.Status = "skipped"; entry.Detail = "already exists at destination";
                                 logEntries.Add(entry); skippedCount++;
                             }
                             else if (dryRun)
                             {
-                                Console.WriteLine($"  [{autoLabel}] {track.Artists} - {track.Title}");
-                                Console.WriteLine($"    Route: {routeSummary}");
-                                Console.WriteLine($"    Reason: {reason}");
-                                Console.WriteLine($"    Path: {relativeDest}");
+                                Console.WriteLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                                Console.WriteLine($" Route: {routeSummary}");
+                                Console.WriteLine($" Reason: {reason}");
+                                Console.WriteLine($" Path: {relativeDest}");
                                 Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "would-move";
@@ -307,9 +313,10 @@ namespace AudioManager
                                 Directory.CreateDirectory(destDir);
                                 File.Move(sf.SourcePath, destPath);
                                 movedCount++;
-                                Console.WriteLine($"  [{autoLabel}] {track.Artists} - {track.Title}");
-                                Console.WriteLine($"    Route: {routeSummary}");
-                                Console.WriteLine($"    Reason: {reason}");
+                                Console.WriteLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                                Console.WriteLine($" Route: {routeSummary}");
+                                Console.WriteLine($" Reason: {reason}");
+                                Console.WriteLine($" Path: {relativeDest}");
                                 Console.WriteLine();
                                 decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "moved";
@@ -321,19 +328,19 @@ namespace AudioManager
                             // Uncertain: show full track info and require confirmation
                             Console.WriteLine();
                             Console.WriteLine("===========================================================================");
-                            Console.WriteLine($"  {track.Artists} - {track.Title}");
+                            Console.WriteLine($"{track.Artists} - {track.Title}");
                             Console.WriteLine("===========================================================================");
                             Console.WriteLine();
-                            Console.WriteLine($"  Album:   {track.Album}");
-                            Console.WriteLine($"  Year:    {track.Year}");
-                            Console.WriteLine($"  Genres:  {track.Genres}");
+                            Console.WriteLine($"Album:   {track.Album}");
+                            Console.WriteLine($"Year:    {track.Year}");
+                            Console.WriteLine($"Genres:  {track.Genres}");
                             Console.WriteLine();
-                            Console.WriteLine($"  Proposed: {routeSummary}");
-                            Console.WriteLine($"  Path:     {relativeDest}");
-                            Console.WriteLine($"  Reason:   {reason}");
+                            Console.WriteLine($"Proposed: {routeSummary}");
+                            Console.WriteLine($"Path:     {relativeDest}");
+                            Console.WriteLine($"Reason:   {reason}");
                             Console.WriteLine();
                             Console.WriteLine("---------------------------------------------------------------------------");
-                            Console.WriteLine("  [Y] Accept   [N] Decline   [Q] Quit");
+                            Console.WriteLine("[Y] Accept   [N] Decline   [Q] Quit");
                             Console.WriteLine("---------------------------------------------------------------------------");
 
                             while (true)
@@ -343,13 +350,13 @@ namespace AudioManager
                                 {
                                     if (!dryRun && File.Exists(destPath))
                                     {
-                                        Console.WriteLine($"  - Skipped '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
+                                        Console.WriteLine($"[SKIP] '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
                                         entry.Status = "skipped"; entry.Detail = "already exists at destination";
                                         logEntries.Add(entry); skippedCount++;
                                     }
                                     else if (dryRun)
                                     {
-                                        Console.WriteLine($"  [DRY RUN] Would move to: {relativeDest}");
+                                        Console.WriteLine($"[DRY RUN] Would move to: {relativeDest}");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                         entry.Status = "would-move";
                                         logEntries.Add(entry); movedCount++;
@@ -359,7 +366,7 @@ namespace AudioManager
                                         Directory.CreateDirectory(destDir);
                                         File.Move(sf.SourcePath, destPath);
                                         movedCount++;
-                                        Console.WriteLine($"  Moved to: {relativeDest}");
+                                        Console.WriteLine($"Moved to: {relativeDest}");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                         Console.WriteLine();
                                         entry.Status = "moved";
@@ -377,7 +384,7 @@ namespace AudioManager
                                 {
                                     if (dryRun)
                                     {
-                                        Console.WriteLine("  [DRY RUN] Would decline (leave in NewMusic)");
+                                        Console.WriteLine("[DRY RUN] Would decline (leave in NewMusic)");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                         entry.Status = "would-decline";
                                         entry.Detail = "user declined";
@@ -385,7 +392,7 @@ namespace AudioManager
                                     }
                                     else
                                     {
-                                        Console.WriteLine("  Declined. File left in NewMusic for next run.");
+                                        Console.WriteLine("Declined. File left in NewMusic for next run.");
                                         decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                         entry.Status = "declined";
                                         entry.Detail = "user declined";
@@ -419,38 +426,32 @@ namespace AudioManager
                     }
                 }
 
-                Console.WriteLine("\n===========================================================================");
-                Console.WriteLine(dryRun ? "  Dry Run complete (no files moved)" : "  Integration complete");
-                Console.WriteLine("===========================================================================\n");
-                Console.WriteLine(dryRun ? $"  Would move: {movedCount}" : $"  Moved:   {movedCount}");
-                Console.WriteLine($"  Skipped: {skippedCount}");
+                routingStopwatch.Stop();
 
-                if (dryRun)
+                // Routing section footer
+                var routingErrors = logEntries.Where(e => e.Status == "error").ToList();
+                if (routingErrors.Count > 0)
                 {
-                    var dryErrors = logEntries.Where(e => e.Status == "error").ToList();
+                    Console.WriteLine($"[ERRORS: {routingErrors.Count}]");
+                    foreach (var e in routingErrors) Console.WriteLine($" {e.Filename}: {e.Detail}");
                     Console.WriteLine();
-                    if (dryErrors.Count > 0)
-                    {
-                        Console.WriteLine($"  [ERRORS: {dryErrors.Count}]");
-                        foreach (var e in dryErrors) Console.WriteLine($"  - {e.Filename}: {e.Detail}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("  No errors.");
-                    }
                 }
-                else
-                {
-                    Console.WriteLine("\n---------------------------------------------------------------------------");
+                Console.WriteLine(dryRun ? $"Routed: {movedCount}  |  Skipped: {skippedCount}" : $"Moved: {movedCount}  |  Skipped: {skippedCount}");
+                Console.WriteLine($"Routing - time taken: {Doer.ConvertTimeSpanToString(routingStopwatch.Elapsed)}");
+
+                if (!dryRun)
                     PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
-                }
 
                 SaveLog(logEntries, totalFiles, movedCount, skippedCount);
                 decisionLog.Save();
+
+                Console.WriteLine("\n============================================================");
+                Console.WriteLine("Finished");
+                Console.WriteLine("============================================================");
             }
             finally
             {
-                FinishAndPrintTimeTaken();
+                Finished(); // records time for Doer.PrintTotalTimeTaken(), no separate console output
             }
         }
 

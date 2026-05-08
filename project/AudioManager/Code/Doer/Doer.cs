@@ -57,6 +57,12 @@ namespace AudioManager
             PrintTimeTaken();
         }
 
+        protected void FinishAndPrintTimeTaken(string label)
+        {
+            Finished();
+            Console.WriteLine($"{label} - time taken: {ConvertTimeSpanToString(executionTime)}");
+        }
+
         /// <summary>
         /// Print the total time taken by all Doers during this program's runtime.
         /// </summary>
