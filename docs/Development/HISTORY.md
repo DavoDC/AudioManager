@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-08 - Report table formatting fix (TIER 2 quick win)
+
+Fixed plain-text column format in analysis reports. Converted fixed-width spacing to markdown pipe-delimited tables with proper header separators. All statistics tables (Artists, Genre, Year, Decade) now render correctly on GitHub and other markdown viewers. Changed `Statistic.PrintColumns()` to emit markdown format when isHeader flag set, and inserted blank line + separator row after each table header. Generated test stubs for markdown validation. Commits: 5718676, c3b52ba.
+
+---
+
 ## 2026-05-08 - Auto-routing for known cases (TIER 1 target)
 
 Added `RoutingConfidence` enum (`Certain`/`Likely`/`Uncertain`) to `GetDestDir()`. Routing loop now skips Y/N prompt for Certain/Likely routes and logs `[AUTO]` / `[AUTO (likely)]` to output. Uncertain routes (Misc fallback - no artist folder found) still show full prompt. Confidence assignment: existing artist folder and all ATD/genre-override routes = Certain; scan-ahead new artist folder = Likely; Misc = Uncertain. All decisions including auto-routed ones logged to XML with confidence prepended to reason. Impact: typical integration batch auto-routes all known artists without any Y/N presses; only truly new artists hit the prompt. Commit: 1911640.
