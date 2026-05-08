@@ -17,6 +17,13 @@ namespace AudioManager
     {
         private bool dryRun;
 
+        private enum RoutingConfidence
+        {
+            Certain,   // Known artist folder; genre override; ATD routing. Auto-route, no prompt.
+            Likely,    // Scan-ahead new artist folder; route is reasonable but folder is new. Auto-route, no prompt.
+            Uncertain  // No artist folder (Misc fallback). Show Y/N prompt.
+        }
+
         /// <summary>Per-file integration result for the log.</summary>
         private class LogEntry
         {
@@ -250,8 +257,8 @@ namespace AudioManager
                         string sanitisedTitle = Reflector.SanitiseFilename(track.Title);
                         string destFilename = sanitisedArtists + " - " + sanitisedTitle + ".mp3";
 
-                        // Determine destination directory and reason
-                        string destDir = GetDestDir(track, newArtistFolders, out string reason);
+                        // Determine destination directory, reason, and routing confidence
+                        string destDir = GetDestDir(track, newArtistFolders, out string reason, out RoutingConfidence confidence);
 
                         string destPath = Path.Combine(destDir, destFilename);
 
@@ -271,85 +278,119 @@ namespace AudioManager
                         entry.Destination = relativeDest;
                         string routeSummary = GetRouteSummary(relativeDest);
 
-                        // Print track header
-                        Console.WriteLine();
-                        PrintTimestamped("===========================================================================");
-                        PrintTimestamped($"  {track.Artists} - {track.Title}");
-                        PrintTimestamped("===========================================================================");
-                        Console.WriteLine();
-                        PrintTimestamped($"  Album:   {track.Album}");
-                        PrintTimestamped($"  Year:    {track.Year}");
-                        PrintTimestamped($"  Genres:  {track.Genres}");
-                        Console.WriteLine();
-                        PrintTimestamped($"  -> {routeSummary}");
-                        PrintTimestamped($"  Proposed: {relativeDest}");
-                        PrintTimestamped($"  Reason:   {reason}");
-                        Console.WriteLine();
-                        PrintTimestamped("---------------------------------------------------------------------------");
-
-                        // All routes require confirmation
-                        PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
-                        PrintTimestamped("---------------------------------------------------------------------------");
-
-                        while (true)
+                        if (confidence != RoutingConfidence.Uncertain)
                         {
-                            var key = ReadMenuKey();
-                            if (key == ConsoleKey.Y)
+                            // Auto-route: no confirmation prompt for Certain/Likely routes
+                            string autoLabel = confidence == RoutingConfidence.Certain ? "AUTO" : "AUTO (likely)";
+                            string loggedReason = $"[{confidence}] {reason}";
+
+                            if (!dryRun && File.Exists(destPath))
                             {
-                                if (!dryRun && File.Exists(destPath))
+                                PrintTimestamped($"  [SKIP] {track.Artists} - {track.Title}: already exists at destination");
+                                entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                logEntries.Add(entry); skippedCount++;
+                            }
+                            else if (dryRun)
+                            {
+                                PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
+                                PrintTimestamped($"    -> {routeSummary}  |  {reason}");
+                                PrintTimestamped($"    Path: {relativeDest}");
+                                decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
+                                entry.Status = "would-move";
+                                logEntries.Add(entry); movedCount++;
+                            }
+                            else
+                            {
+                                Directory.CreateDirectory(destDir);
+                                File.Move(sf.SourcePath, destPath);
+                                movedCount++;
+                                PrintTimestamped($"  [{autoLabel}] {track.Artists} - {track.Title}");
+                                PrintTimestamped($"    -> {routeSummary}  |  {reason}");
+                                decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
+                                entry.Status = "moved";
+                                logEntries.Add(entry);
+                            }
+                        }
+                        else
+                        {
+                            // Uncertain: show full track info and require confirmation
+                            Console.WriteLine();
+                            PrintTimestamped("===========================================================================");
+                            PrintTimestamped($"  {track.Artists} - {track.Title}");
+                            PrintTimestamped("===========================================================================");
+                            Console.WriteLine();
+                            PrintTimestamped($"  Album:   {track.Album}");
+                            PrintTimestamped($"  Year:    {track.Year}");
+                            PrintTimestamped($"  Genres:  {track.Genres}");
+                            Console.WriteLine();
+                            PrintTimestamped($"  -> {routeSummary}");
+                            PrintTimestamped($"  Proposed: {relativeDest}");
+                            PrintTimestamped($"  Reason:   {reason}");
+                            Console.WriteLine();
+                            PrintTimestamped("---------------------------------------------------------------------------");
+                            PrintTimestamped("  [Y] Accept   [N] Decline   [Q] Quit");
+                            PrintTimestamped("---------------------------------------------------------------------------");
+
+                            while (true)
+                            {
+                                var key = ReadMenuKey();
+                                if (key == ConsoleKey.Y)
                                 {
-                                    PrintTimestamped($"  - Skipped '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
-                                    entry.Status = "skipped"; entry.Detail = "already exists at destination";
-                                    logEntries.Add(entry); skippedCount++;
+                                    if (!dryRun && File.Exists(destPath))
+                                    {
+                                        PrintTimestamped($"  - Skipped '{Path.GetFileName(sf.SourcePath)}': already exists at destination");
+                                        entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
+                                    else if (dryRun)
+                                    {
+                                        PrintTimestamped($"  [DRY RUN] Would move to: {relativeDest}");
+                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
+                                        entry.Status = "would-move";
+                                        logEntries.Add(entry); movedCount++;
+                                    }
+                                    else
+                                    {
+                                        Directory.CreateDirectory(destDir);
+                                        File.Move(sf.SourcePath, destPath);
+                                        movedCount++;
+                                        PrintTimestamped($"  Moved to: {relativeDest}");
+                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
+                                        Console.WriteLine();
+                                        entry.Status = "moved";
+                                        logEntries.Add(entry);
+                                    }
+                                    break;
                                 }
-                                else if (dryRun)
+                                else if (key == ConsoleKey.Q)
                                 {
-                                    PrintTimestamped($"  [DRY RUN] Would move to: {relativeDest}");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
-                                    entry.Status = "would-move";
-                                    logEntries.Add(entry); movedCount++;
+                                    Console.WriteLine("\n - Quit. Remaining files left for next run.");
+                                    entry.Status = "quit"; logEntries.Add(entry);
+                                    return;
                                 }
-                                else
+                                else if (key == ConsoleKey.N)
                                 {
-                                    Directory.CreateDirectory(destDir);
-                                    File.Move(sf.SourcePath, destPath);
-                                    movedCount++;
-                                    PrintTimestamped($"  Moved to: {relativeDest}");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
+                                    if (dryRun)
+                                    {
+                                        PrintTimestamped("  [DRY RUN] Would decline (leave in NewMusic)");
+                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
+                                        entry.Status = "would-decline";
+                                        entry.Detail = "user declined";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
+                                    else
+                                    {
+                                        PrintTimestamped("  Declined. File left in NewMusic for next run.");
+                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
+                                        entry.Status = "declined";
+                                        entry.Detail = "user declined";
+                                        logEntries.Add(entry); skippedCount++;
+                                    }
                                     Console.WriteLine();
-                                    entry.Status = "moved";
-                                    logEntries.Add(entry);
+                                    break;
                                 }
-                                break;
+                                // ignore other keys
                             }
-                            else if (key == ConsoleKey.Q)
-                            {
-                                Console.WriteLine("\n - Quit. Remaining files left for next run.");
-                                entry.Status = "quit"; logEntries.Add(entry);
-                                return;
-                            }
-                            else if (key == ConsoleKey.N)
-                            {
-                                if (dryRun)
-                                {
-                                    PrintTimestamped("  [DRY RUN] Would decline (leave in NewMusic)");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
-                                    entry.Status = "would-decline";
-                                    entry.Detail = "user declined";
-                                    logEntries.Add(entry); skippedCount++;
-                                }
-                                else
-                                {
-                                    PrintTimestamped("  Declined. File left in NewMusic for next run.");
-                                    decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
-                                    entry.Status = "declined";
-                                    entry.Detail = "user declined";
-                                    logEntries.Add(entry); skippedCount++;
-                                }
-                                Console.WriteLine();
-                                break;
-                            }
-                            // ignore other keys
                         }
                     }
                     catch (Exception ex)
@@ -985,7 +1026,7 @@ namespace AudioManager
         /// <param name="newArtistFolders">Scan-ahead result: artists getting new folders this batch.</param>
         /// <param name="reason">Output: human-readable reason for the proposed destination.</param>
         /// <returns>The full destination directory path.</returns>
-        private string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason)
+        private string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason, out RoutingConfidence confidence)
         {
             // Special case: Akira The Don (check by artist name, not genre, since genre may not be set in dry-run)
             string primaryArtist = track.PrimaryArtist;
@@ -1025,23 +1066,27 @@ namespace AudioManager
                             if (albumCount >= 2)
                             {
                                 reason = $"Akira The Don -> People/{sampledPerson}/{track.Album} ({albumCount} songs from album)";
+                                confidence = RoutingConfidence.Certain;
                                 return Path.Combine(peopleFolder, SanitiseFolderName(track.Album));
                             }
                             else
                             {
                                 reason = $"Akira The Don -> People/{sampledPerson}/{Constants.SinglesDir} ({personSongCount} songs, only {albumCount} from album)";
+                                confidence = RoutingConfidence.Certain;
                                 return Path.Combine(peopleFolder, Constants.SinglesDir);
                             }
                         }
                         else
                         {
                             reason = $"Akira The Don -> People/{sampledPerson}/{Constants.SinglesDir} ({personSongCount} songs, no distinct album)";
+                            confidence = RoutingConfidence.Certain;
                             return Path.Combine(peopleFolder, Constants.SinglesDir);
                         }
                     }
                     else
                     {
                         reason = $"Akira The Don -> Singles ({personSongCount} {(personSongCount == 1 ? "song" : "songs")} from {sampledPerson})";
+                        confidence = RoutingConfidence.Certain;
                         return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
                     }
                 }
@@ -1049,6 +1094,7 @@ namespace AudioManager
                 {
                     // No sampled person listed, use Singles
                     reason = "Akira The Don -> Singles (no sampled person)";
+                    confidence = RoutingConfidence.Certain;
                     return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
                 }
             }
@@ -1057,12 +1103,14 @@ namespace AudioManager
             if (!track.Genres.Equals("Missing") && track.Genres.IndexOf(Constants.MusivDir, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason = "Genre is Musivation";
+                confidence = RoutingConfidence.Certain;
                 return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir);
             }
 
             if (!track.Genres.Equals("Missing") && track.Genres.IndexOf(Constants.MotivDir, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason = "Genre is Motivation";
+                confidence = RoutingConfidence.Certain;
                 return Path.Combine(Constants.AudioFolderPath, Constants.MotivDir);
             }
 
@@ -1070,10 +1118,15 @@ namespace AudioManager
             string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(primaryArtist2));
 
             // Artist folder exists OR scan-ahead says this artist needs a new one
-            bool routeToArtists = Directory.Exists(artistFolder) || newArtistFolders.Contains(primaryArtist2);
+            bool existingArtistFolder = Directory.Exists(artistFolder);
+            bool scanAheadNewFolder = newArtistFolders.Contains(primaryArtist2);
+            bool routeToArtists = existingArtistFolder || scanAheadNewFolder;
             if (routeToArtists)
             {
-                string scanNote = newArtistFolders.Contains(primaryArtist2) ? " [new via scan-ahead]" : "";
+                string scanNote = scanAheadNewFolder ? " [new via scan-ahead]" : "";
+                // Existing folder = Certain; scan-ahead new folder = Likely (creating new structure)
+                RoutingConfidence artistConfidence = existingArtistFolder ? RoutingConfidence.Certain : RoutingConfidence.Likely;
+
                 if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist2))
                 {
                     // Count songs from this album (holistic: library + batch combined)
@@ -1081,22 +1134,26 @@ namespace AudioManager
                     if (albumCount >= 2)
                     {
                         reason = $"Artist folder{scanNote}; {albumCount} songs from album -> album subfolder";
+                        confidence = artistConfidence;
                         return Path.Combine(artistFolder, SanitiseFolderName(track.Album));
                     }
                     else
                     {
                         reason = $"Artist folder{scanNote}; only {albumCount} {(albumCount == 1 ? "song" : "songs")} from album -> Singles/";
+                        confidence = artistConfidence;
                         return Path.Combine(artistFolder, "Singles");
                     }
                 }
                 else
                 {
                     reason = $"Artist folder{scanNote}; no distinct album -> Singles/";
+                    confidence = artistConfidence;
                     return Path.Combine(artistFolder, "Singles");
                 }
             }
 
             reason = "No artist folder found in library";
+            confidence = RoutingConfidence.Uncertain;
             return Path.Combine(Constants.AudioFolderPath, Constants.MiscDir);
         }
 
