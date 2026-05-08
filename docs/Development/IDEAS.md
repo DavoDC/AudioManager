@@ -26,6 +26,14 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Auto-routing for known cases - eliminate confirmation fatigue** - [HIGH confidence] Current rules (artist folder mapping, genre overrides, album subfolder logic) are validated by Stage 3C real integration (5531 songs, 502 routing decisions). Implement confidence gates in GetDestDir(): (1) artist folder exists -> auto-route (certain), (2) Musivation artist -> auto-route to Musivation (certain), (3) 3+ songs from existing album -> auto-route to album subfolder (likely). **NO confirmation prompts for certain/likely routes** - routing happens silently with decision logged. Only prompt for uncertain cases (new artist, ambiguous metadata, edge cases). Mark each route with confidence level (certain/likely/uncertain) and log ALL decisions to XML for audit trail. Impact: transforms integration from "confirm N files" to "handle N files" - eliminates decision fatigue on routine routing. Implementation: update GetDestDir() to accept confidence thresholds as parameters, add routing confidence enum, wire into MusicIntegrator decision loop.
 
+- [ ] **Routing proposal UX: three quick wins from Stage 3C feedback** - User observed these pain points during integration. All quick wins, high impact on scanning/decision speed:
+  - **(1) Split `Proposed:` into readable + filesystem path:** Currently one long `Proposed: Musivation\Akira The Don\Singles\...` line. Split into: `Proposed: Akira The Don / Singles` (short) + `Path: Musivation\Akira The Don\Singles\...` (full).
+  - **(2) `Reason` field should explain WHY, not restate:** Currently mirrors `Proposed:` line (e.g. "Akira The Don -> Singles"). Replace with actual logic (e.g. "3+ songs from album -> album subfolder", "artist folder exists -> auto-route").
+  - **(3) Fix concise proposal positioning:** Summary line `-> Artist / Folder` appears above `Proposed:` path, feels out-of-order. Optimize ordering for scannability (layout to be determined at implementation time).
+  - **Impact:** Fixes user experience friction observed during Stage 3C. Makes routing decisions scannable at a glance instead of parsing full paths.
+
+- [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - [quick win] Symptom: TagFixer output has inconsistent spacing - blank lines separate most [FIXED] entries but are missing between [SKIPPED] and following [FIXED] entries. Root cause: output generation doesn't ensure separators after SKIPPED entries. Fix: ensure all [FIXED]/[SKIPPED] blocks are consistently separated by blank lines for readability.
+
 ---
 
 ## TIER 2 - QUALITY
@@ -35,12 +43,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. **Suspected bottleneck:** Reading thousands of MP3 file metadata (not XML parsing). Profile to confirm and benchmark against alternatives (streaming vs. batch loading, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive. Implementation notes in FEEDBACK-Stage3C.md lines 280-286.
 
 - [ ] **Metadata audit of existing library** - [HIGH confidence] Pattern finding from Stage 3C: 3 blocker types (character, casing, suffixes) suggest systematic brittleness in existing library metadata. Fix scope: scan existing AudioMirror XMLs for casing inconsistencies, character illegality, metadata-vs-folder mismatches. Produce violations report. Payback: find edge cases BEFORE next batch integration; complements character validation (2.2) by revealing existing library state. Implementation notes in FEEDBACK-Stage3C.md lines 342-345.
-
-- [ ] **Routing proposal UX: three quick wins from Stage 3C feedback** - User observed these pain points during integration. All quick wins, high impact on scanning/decision speed:
-  - **(1) Split `Proposed:` into readable + filesystem path:** Currently one long `Proposed: Musivation\Akira The Don\Singles\...` line. Split into: `Proposed: Akira The Don / Singles` (short) + `Path: Musivation\Akira The Don\Singles\...` (full).
-  - **(2) `Reason` field should explain WHY, not restate:** Currently mirrors `Proposed:` line (e.g. "Akira The Don -> Singles"). Replace with actual logic (e.g. "3+ songs from album -> album subfolder", "artist folder exists -> auto-route").
-  - **(3) Fix concise proposal positioning:** Summary line `-> Artist / Folder` appears above `Proposed:` path, feels out-of-order. Optimize ordering for scannability (layout to be determined at implementation time).
-  - **Impact:** Fixes user experience friction observed during Stage 3C. Makes routing decisions scannable at a glance instead of parsing full paths.
 
 - [ ] **Fix report table formatting - markdown tables instead of plain text** - **ESSENTIAL:** Current reports (`reports/2026/YYYY-MM-DD - AudioReport.md`) render statistics tables as broken plain text (raw columns, no markdown formatting), making them unreadable on GitHub and difficult to scan. Root cause: `ReportWriter.cs` (and/or `Analyser.cs`) emits plain text, not markdown. **Two-part fix:** (1) Modify code to emit proper markdown tables with pipe-delimited columns and header separators (e.g. `| Header | Header |` + `|--------|--------|`). (2) Regenerate all historical reports (2026-05-05 and earlier) using the corrected code to restore archival records. Payoff: reports become usable for data review and archival.
 
@@ -60,8 +62,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
 - [ ] **Scan-ahead: show progress indicator during computation** - Symptom: User observed silence after "Scan-ahead: 4 artist(s) will hit 3-song threshold:" with no feedback, thought program hung. Root cause: scan-ahead computation takes several seconds but produces no intermediate output. Fix: print progress during scanning (e.g. "Scanning batch... (checking N artists)" or dot-tick per artist). Improves perceived responsiveness.
-
-- [ ] **TagFixer output formatting: blank line between SKIPPED and FIXED entries** - Symptom: TagFixer output has inconsistent spacing - blank lines separate most [FIXED] entries but are missing between [SKIPPED] and following [FIXED] entries. Root cause: output generation doesn't ensure separators after SKIPPED entries. Fix: ensure all [FIXED]/[SKIPPED] blocks are consistently separated by blank lines for readability.
 
 - [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost.
 
