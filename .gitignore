@@ -354,3 +354,9 @@ reports/with-issues/
 
 # Aider AI files
 .aider*
+
+# Claude Code - local only, except shared guard rules
+.claude/
+!.claude/hooks/
+!.claude/hooks/guard.sh
+!.claude/settings.json
