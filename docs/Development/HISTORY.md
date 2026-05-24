@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Routing proposal UX: three quick wins (TIER 1 closeout)
+
+All 3 sub-items were already implemented across commits 4dd2e0b9 and f7a4f526 but never closed out. Verified and closed in this session.
+
+**(1) Split `Proposed:` into readable + filesystem path** - The Uncertain block now prints `Proposed: {routeSummary}` (short readable summary, e.g. "Akira The Don / Singles") on its own line, then `Path: {relativeDest}` (full filesystem path) on the next. Previously was one long `Proposed: full\path` line. Commit: 4dd2e0b9.
+
+**(2) `Reason` field explains WHY** - All `GetDestDir()` reason strings explain the logic ("Artist folder; 3 songs from album -> album subfolder", "No artist folder found in library") rather than restating the destination ("Akira The Don -> Singles"). ATD reason strings in particular were cleaned up. Commit: 4dd2e0b9.
+
+**(3) Concise proposal positioning fixed** - Old `-> Artist / Folder` summary line was renamed to `Proposed:` and reordered. The Uncertain block now reads top-to-bottom: WHERE-short (Proposed), WHERE-full (Path), WHY (Reason). Previously the summary line appeared before `Proposed: path`, feeling out of order. Commit: 4dd2e0b9.
+
+Impact: Uncertain routing decisions are now scannable at a glance. User can read summary, verify full path, understand logic without parsing a long `Proposed:` line.
+
+---
+
 ## 2026-05-08 - Report table formatting fix (TIER 2 quick win)
 
 Fixed plain-text column format in analysis reports. Converted fixed-width spacing to markdown pipe-delimited tables with proper header separators. All statistics tables (Artists, Genre, Year, Decade) now render correctly on GitHub and other markdown viewers. Changed `Statistic.PrintColumns()` to emit markdown format when isHeader flag set, and inserted blank line + separator row after each table header. Generated test stubs for markdown validation. Commits: 5718676, c3b52ba.

@@ -12,12 +12,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
-- [ ] **Routing proposal UX: three quick wins from Stage 3C feedback** - User observed these pain points during integration. All quick wins, high impact on scanning/decision speed:
-  - **(1) Split `Proposed:` into readable + filesystem path:** Currently one long `Proposed: Musivation\Akira The Don\Singles\...` line. Split into: `Proposed: Akira The Don / Singles` (short) + `Path: Musivation\Akira The Don\Singles\...` (full).
-  - **(2) `Reason` field should explain WHY, not restate:** Currently mirrors `Proposed:` line (e.g. "Akira The Don -> Singles"). Replace with actual logic (e.g. "3+ songs from album -> album subfolder", "artist folder exists -> auto-route").
-  - **(3) Fix concise proposal positioning:** Summary line `-> Artist / Folder` appears above `Proposed:` path, feels out-of-order. Optimize ordering for scannability (layout to be determined at implementation time).
-  - **Impact:** Fixes user experience friction observed during Stage 3C. Makes routing decisions scannable at a glance instead of parsing full paths.
-
+*(No blocking items - advance to TIER 2)*
 
 ---
 
