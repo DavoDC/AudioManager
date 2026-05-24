@@ -226,4 +226,8 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-See `docs/Development/IDEAS.md` for the full priority list. TIER 0 (safety prerequisites) + TIER 1 (decision logging) complete. Tag fixing and routing decision logging integrated. Next: first real integration run via launch.bat to validate the complete pipeline, then extract routing patterns from decision.xml.
+TIER 1 complete. TIER 2 is next. See `docs/Development/IDEAS.md`. First TIER 2 item: output formatting refinements (header redundancy, count placement, log consolidation).
+
+## Close-Out Discipline
+
+**Always move completed items to HISTORY.md in the same session they finish.** Never leave a done item as `[ ]` in IDEAS.md. A session spent 45 min investigating an item (routing proposal UX) already implemented in 4dd2e0b9 because it was never closed out. Before ending any implementation session: confirm the item is removed from IDEAS.md and added to HISTORY.md.
