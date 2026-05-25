@@ -20,11 +20,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-**Integration prep order (/dev-session: start here): (1) scan-ahead progress -> (2) parser responsiveness -> (3) combined per-file summary -> (4) casing audit. Complete before next integration run.**
-
-- [ ] **Scan-ahead: show progress indicator during computation** - Symptom: User observed silence after "Scan-ahead: 4 artist(s) will hit 3-song threshold:" with no feedback, thought program hung. Root cause: scan-ahead computation takes several seconds but produces no intermediate output. Fix: print progress during scanning (e.g. "Scanning batch... (checking N artists)" or dot-tick per artist). Improves perceived responsiveness. Quick win: 30-60 min.
-
-- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. **First step:** add a progress counter ("Parsing tags... N/5516") so the user sees forward motion immediately, even before root cause is fixed. **Then:** profile to confirm bottleneck and benchmark alternatives (streaming vs. batch loading, parallel processing per artist folder, etc.). High payback - runs should feel responsive. Implementation notes in FEEDBACK-Stage3C.md lines 280-286.
+**Integration prep order (/dev-session: start here): (1) combined per-file summary -> (2) casing audit. Complete before next integration run. (scan-ahead progress + parser dots: done 2026-05-25)**
 
 - [ ] **Combine tag fix + routing into a single per-file summary** - Currently Step 1 (tag fix) prints its summary block, then Step 3 (routing) prints per-file routing decisions separately. Idea: merge into one block per song showing both what tags changed AND where it routes, so the user can review the full picture for each file in one glance before confirming. Design TBD - needs to preserve reviewability (user can still scan and catch wrong decisions).
 

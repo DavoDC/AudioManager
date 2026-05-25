@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Progress indicators for scan-ahead and parser (TIER 2)
+
+Two silent phases now show user-visible progress. Both are output-only changes.
+
+**Scan-ahead (MusicIntegrator.cs - RunScanAhead):** Previously printed nothing while reading batch files and scanning the entire Misc AudioMirror folder (could be hundreds of XML files). User reported "thought program hung." Now prints: `Scan-ahead: reading N file(s)... checking Misc (N)... done.` before any computation.
+
+**Parser (Parser.cs):** Previously 38 seconds of silence between "Parsing audio metadata..." and "Tags parsed: 5516" in analysis mode. Now prints a dot per 10% of the library, giving `Parsing audio metadata...........` on one line. Uses `dotInterval = max(1, total/10)` so it scales to any library size.
+
+Impact: the two longest silent phases in the integration + analysis workflow now show forward motion. Eliminates "is it frozen?" uncertainty.
+
+---
+
 ## 2026-05-25 - Output formatting refinements (TIER 2 quick win)
 
 Five sub-items from Feedback823 dry-run review. All display-layer changes, no logic touched.
