@@ -15,6 +15,7 @@ namespace AudioManager
     internal class MusicIntegrator : Doer
     {
         private bool dryRun;
+        private Dictionary<string, List<string>> _miscMigrationCandidates = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         private enum RoutingConfidence
         {
@@ -451,6 +452,8 @@ namespace AudioManager
                 if (!dryRun)
                     PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
 
+                RunMiscMigration();
+
                 Console.WriteLine("\n============================================================");
                 Console.WriteLine("Finished");
                 Console.WriteLine("============================================================");
@@ -492,6 +495,7 @@ namespace AudioManager
 
             // Count existing Misc songs by artist from AudioMirror XML
             var miscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var miscFilesByArtist = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             string mirrorMiscPath = Path.GetFullPath(Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory, Constants.MirrorFolderPath, Constants.MiscDir));
             if (Directory.Exists(mirrorMiscPath))
@@ -509,6 +513,9 @@ namespace AudioManager
                         string primary = Track.ProcessProperty(artistsEl.InnerText)[0].Trim();
                         if (string.IsNullOrEmpty(primary)) continue;
                         miscCounts[primary] = miscCounts.ContainsKey(primary) ? miscCounts[primary] + 1 : 1;
+                        if (!miscFilesByArtist.ContainsKey(primary))
+                            miscFilesByArtist[primary] = new List<string>();
+                        miscFilesByArtist[primary].Add(xmlFile);
                     }
                     catch { /* skip malformed XML */ }
                 }
@@ -532,7 +539,7 @@ namespace AudioManager
                         ? $"{batchCount} in batch + {miscCount} in Misc = {total} total -> new Artists/{artist}/"
                         : $"{batchCount} in batch = {total} total -> new Artists/{artist}/";
                     if (miscCount > 0)
-                        note += $" (NOTE: {miscCount} existing Misc song(s) need manual migration)";
+                        note += $" ({miscCount} existing Misc song(s) will be auto-migrated)";
                     previewLines.Add($"  - {note}");
                 }
             }
@@ -544,7 +551,67 @@ namespace AudioManager
                 Console.WriteLine();
             }
 
+            // Track Misc XMLs for promoted artists so RunMiscMigration can move them post-routing
+            foreach (var artist in result)
+            {
+                if (miscFilesByArtist.TryGetValue(artist, out var xmlPaths) && xmlPaths.Count > 0)
+                    _miscMigrationCandidates[artist] = xmlPaths;
+            }
+
             return result;
+        }
+
+        /// <summary>
+        /// Migrates existing Misc songs to Artists/{artist}/Singles/ for artists promoted this batch.
+        /// Runs in both dry-run (shows what would happen) and real mode (moves files).
+        /// No-op if no artists were promoted with existing Misc songs.
+        /// </summary>
+        private void RunMiscMigration()
+        {
+            if (_miscMigrationCandidates.Count == 0) return;
+
+            Console.WriteLine("\n===========================================================================");
+            Console.WriteLine(dryRun ? "Misc Migration (Dry Run)" : "Misc Migration");
+            Console.WriteLine("===========================================================================");
+
+            int totalCount = 0;
+            foreach (var kvp in _miscMigrationCandidates)
+            {
+                string artist = kvp.Key;
+                var xmlPaths = kvp.Value;
+                string destFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist), Constants.SinglesDir);
+                string relDest = $"Artists\\{SanitiseFolderName(artist)}\\{Constants.SinglesDir}";
+
+                Console.WriteLine($"\n  {artist}: {xmlPaths.Count} song(s) -> {relDest}");
+
+                foreach (var xmlPath in xmlPaths)
+                {
+                    string libPath = DeriveLibraryPathFromMirrorPath(xmlPath);
+                    string fileName = Path.GetFileName(libPath);
+
+                    if (!File.Exists(libPath))
+                    {
+                        Console.WriteLine($"  [WARN] Not found in library (stale mirror?): {fileName}");
+                        continue;
+                    }
+
+                    if (dryRun)
+                    {
+                        Console.WriteLine($"  [DRY RUN] Would move: {fileName}");
+                        totalCount++;
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(destFolder);
+                        File.Move(libPath, Path.Combine(destFolder, fileName));
+                        Console.WriteLine($"  Moved: {fileName}");
+                        totalCount++;
+                    }
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(dryRun ? $"Would migrate: {totalCount} Misc song(s)" : $"Migrated: {totalCount} Misc song(s)");
         }
 
         /// <summary>
