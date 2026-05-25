@@ -33,10 +33,7 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 
 1. Add all songs to a playlist and remove all songs from liked songs
 2. Run `C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist.bat` on that playlist
-   - Script extracts track artists and names
-   - Sends to music service app for downloading
    - Music service places MP3s in `C:\Users\David\Downloads\NewMusic\`
-   - Supports caching of playlist data for faster subsequent runs
 3. Verify all tracks downloaded successfully
 
 ## Stage 3: Integrate
