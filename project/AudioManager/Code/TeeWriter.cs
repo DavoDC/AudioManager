@@ -56,15 +56,17 @@ namespace AudioManager
             consoleWriter.Write(value);
             captureWriter?.Write(value);
             if (fileWriter != null)
-            {
-                if (addFileTimestamps && atLineStart && value != '\r' && value != '\n')
-                {
-                    fileWriter.Write($"[{DateTime.Now:HH:mm:ss}] ");
-                }
-                fileWriter.Write(value);
-                if (value == '\n') atLineStart = true;
-                else if (value != '\r') atLineStart = false;
-            }
+                WriteCharToFile(value);
+        }
+
+        // Writes one char to the file with timestamp logic. Does not touch console/capture.
+        private void WriteCharToFile(char value)
+        {
+            if (addFileTimestamps && atLineStart && value != '\r' && value != '\n')
+                fileWriter.Write($"[{DateTime.Now:HH:mm:ss}] ");
+            fileWriter.Write(value);
+            if (value == '\n') atLineStart = true;
+            else if (value != '\r') atLineStart = false;
         }
 
         public override void WriteLine(string value)
@@ -74,12 +76,23 @@ namespace AudioManager
             if (fileWriter != null)
             {
                 string fileValue = value ?? "";
-                // Only prefix if we're at the start of a line; mid-line WriteLine calls (e.g. Console.Write then Console.WriteLine) don't get a second timestamp
-                if (addFileTimestamps && atLineStart)
+                if (addFileTimestamps && fileValue.IndexOf('\n') >= 0)
+                {
+                    // Embedded newlines: write char by char so each sub-line gets its own timestamp
+                    foreach (char c in fileValue)
+                        WriteCharToFile(c);
+                    WriteCharToFile('\n'); // WriteLine's trailing newline
+                }
+                else if (addFileTimestamps && atLineStart)
+                {
                     fileWriter.WriteLine($"[{DateTime.Now:HH:mm:ss}] {fileValue}");
+                    atLineStart = true;
+                }
                 else
+                {
                     fileWriter.WriteLine(fileValue);
-                atLineStart = true;
+                    atLineStart = true;
+                }
             }
         }
 
