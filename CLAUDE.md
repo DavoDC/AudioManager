@@ -251,7 +251,7 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-TIER 1 complete. TIER 2 in progress. See `docs/Development/IDEAS.md`. Next: (1) casing audit (manual - David), then metadata audit / tests. Items 2-4 shipped 2026-05-25.
+TIER 1 + TIER 2 complete. TIER 3 in progress. See `docs/Development/IDEAS.md`. Next: RoutingConfidence enum removal or comprehensive library audit. Automated tests deprioritized to bottom of TIER 3.
 
 ## Code Invariants (session learnings - update if refactored)
 
