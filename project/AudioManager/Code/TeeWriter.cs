@@ -73,7 +73,12 @@ namespace AudioManager
             captureWriter?.WriteLine(value);
             if (fileWriter != null)
             {
-                fileWriter.WriteLine(addFileTimestamps ? $"[{DateTime.Now:HH:mm:ss}] {value ?? ""}" : (value ?? ""));
+                string fileValue = value ?? "";
+                // Only prefix if we're at the start of a line; mid-line WriteLine calls (e.g. Console.Write then Console.WriteLine) don't get a second timestamp
+                if (addFileTimestamps && atLineStart)
+                    fileWriter.WriteLine($"[{DateTime.Now:HH:mm:ss}] {fileValue}");
+                else
+                    fileWriter.WriteLine(fileValue);
                 atLineStart = true;
             }
         }

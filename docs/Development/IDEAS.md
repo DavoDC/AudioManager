@@ -20,11 +20,15 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-**Integration prep order (/dev-session: start here): (1) casing audit (manual). (combined summary + progress indicators: done 2026-05-25)**
+**Integration prep order (/dev-session: start here): (1) casing audit (manual). (combined summary + progress indicators: done 2026-05-25. unified run log: done 2026-05-25)**
 
 - [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost. Run as a manual pre-integration check.
 
-- [ ] **Centralise to one log file per run, timestamps on every line** - Currently produces separate `integration-*.md` and `decisions-*.xml` log files. Goal: single `run-YYYYMMDD-HHmmss.log` per run, all output (tag fixes, routing decisions, errors, timings) written there with a timestamp prefix on every line. Console output stays clean (no timestamps); the log file is the complete audit trail. `SaveLog()` and `DecisionLog.Save()` in MusicIntegrator.cs are the starting point.
+- [ ] **Auto-route Misc: remove Y/N confirmation for Misc fallback** - Currently all Misc-bound tracks (no artist folder found) are flagged Uncertain and require a Y/N prompt. Feedback from first dry run (2026-05-25): Dolly Parton -> Misc was obvious but still prompted. Fix: change `confidence = RoutingConfidence.Uncertain` to `RoutingConfidence.Certain` in the Misc fallback branch of `GetDestDir()`. Misc is a non-destructive destination; dry-run preview is the safety gate, not per-file confirmation.
+
+- [ ] **Remove duplicate "Finished!" line in integrate/tagfix output** - MusicIntegrator already prints a `=== Finished ===` block. Program.cs then prints `Finished!` again underneath `Total time taken: ...`. The extra `Finished!` is redundant. Remove the `Console.WriteLine("\nFinished!\n")` from the `if (mode == 2 || mode == 3)` block in Program.cs (keep it in the analysis branch where it's the only finish signal).
+
+- [ ] **Fix run-*.log timestamp edge cases** - Observed in 2026-05-25 dry run: (1) lines with embedded `\n` (e.g. `Console.WriteLine("\nPre-integration validation...")`) produce one timestamped blank line + one untimstamped content line - need to split by newline and timestamp each sub-line in TeeWriter. (2) Some console output appears to be missing from the log entirely - investigate which calls bypass the TeeWriter. Note: `Write(string)` -> `Write(char)` chain should capture everything but verify. Low priority; core log capture is working.
 
 - [ ] **TagFixer: extend genre handling for additional artists** - Post-integration (Loot Bryon Smith not in current batch). Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
   - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). ALL FILES in the Musivation folder must have the Musivation genre tag.
