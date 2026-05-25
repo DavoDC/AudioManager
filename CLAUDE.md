@@ -224,6 +224,29 @@ NOT:
 bash scripts/build.bat  # WRONG - will fail
 ```
 
+## Stage 3 Integration Architecture (Developer Reference)
+
+**User workflow:** See Music-Discovery-Workflow.md - Dry-run preview → real run → commit. This section explains how it works for developers.
+
+**The pipeline has two conceptually separate concerns:**
+
+1. **TagFixer (tag cleanup phase):** Reads raw NewMusic files, applies automatic corrections:
+   - Removes unwanted words from Title/Album: "(feat. ...)", "(Album Version)", "(Explicit)", etc.
+   - Ensures featured artists in TPE1 as semicolon-separated list
+   - Renames files to `{artist} - {title}.mp3` format
+   - Sets TCMP=1 (prevents iTunes album grouping)
+   - Sets genre for Musivation/Motivation tracks per Music-Library-Rules.md
+   - **Current state:** User manually cleans tags in MP3Tag before integration (TIER 0 blocker). TagFixer exists but automation blocked on library safety review.
+
+2. **Integration (routing phase):** Routes cleaned files to library destinations:
+   - Applies rules from Music-Library-Rules.md (Artists folder, Compilations, Musivation, Motivation, Sources, Miscellaneous)
+   - Respects 3-song threshold scan-ahead for album subfolder creation
+   - Logs all decisions to XML audit trail (logs/decision.xml) for manual verification
+   - Dry-run mode: previews all fixes + routing without moving files
+   - Post-integration: auto-runs LibChecker to validate library clean
+
+**Design rationale:** Separating tag-fixing from routing makes integration testable and reversible. TagFixer produces clean, ready-to-route files. Integration purely routes. Audit trail documents every decision. If routing fails, it's a routing bug, not a tag issue.
+
 ## Current Focus
 
 TIER 1 complete. TIER 2 is next. See `docs/Development/IDEAS.md`. First TIER 2 item: output formatting refinements (header redundancy, count placement, log consolidation).
