@@ -65,9 +65,11 @@ namespace AudioManager
                 // Set up file logging for all modes (console output tee'd to file + console simultaneously)
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
                 string modeLabel = (mode == 1) ? "analysis" : (mode == 2) ? "integrate" : "tagfix";
-                string logFilePath = Path.Combine(Constants.LogsPath, $"{modeLabel}-{timestamp}.log");
+                bool isIntegrate = (mode == 2);
+                string logPrefix = isIntegrate ? "run" : modeLabel;
+                string logFilePath = Path.Combine(Constants.LogsPath, $"{logPrefix}-{timestamp}.log");
                 StringWriter captureWriter = (mode == 1) ? new StringWriter() : null;
-                TeeWriter teeWriter = new TeeWriter(Console.Out, logFilePath, captureWriter);
+                TeeWriter teeWriter = new TeeWriter(Console.Out, logFilePath, captureWriter, addFileTimestamps: isIntegrate);
                 Console.SetOut(teeWriter);
 
                 try
@@ -175,7 +177,7 @@ namespace AudioManager
                     // Restore real console output and close file logger
                     teeWriter?.CloseLogFile();
                     Console.SetOut(teeWriter.ConsoleWriter);
-                    Console.WriteLine($"Log file saved: logs/{modeLabel}-{timestamp}.log");
+                    Console.WriteLine($"Log file saved: logs/{logPrefix}-{timestamp}.log");
                 }
             }
             catch (Exception ex)

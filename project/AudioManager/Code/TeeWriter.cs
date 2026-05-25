@@ -14,6 +14,8 @@ namespace AudioManager
         private readonly TextWriter consoleWriter;
         private readonly TextWriter captureWriter;
         private readonly StreamWriter fileWriter;
+        private readonly bool addFileTimestamps;
+        private bool atLineStart = true;
 
         /// <summary>Tee to console + StringWriter (in-memory capture).</summary>
         public TeeWriter(TextWriter consoleWriter, StringWriter captureWriter)
@@ -23,11 +25,14 @@ namespace AudioManager
             this.fileWriter = null;
         }
 
-        /// <summary>Tee to console + file + optional StringWriter.</summary>
-        public TeeWriter(TextWriter consoleWriter, string logFilePath, StringWriter captureWriter = null)
+        /// <summary>Tee to console + file + optional StringWriter.
+        /// When addFileTimestamps is true, each line written to the file is prefixed with [HH:mm:ss].
+        /// Console output is never timestamped.</summary>
+        public TeeWriter(TextWriter consoleWriter, string logFilePath, StringWriter captureWriter = null, bool addFileTimestamps = false)
         {
             this.consoleWriter = consoleWriter;
             this.captureWriter = captureWriter;
+            this.addFileTimestamps = addFileTimestamps;
 
             try
             {
@@ -50,14 +55,35 @@ namespace AudioManager
         {
             consoleWriter.Write(value);
             captureWriter?.Write(value);
-            fileWriter?.Write(value);
+            if (fileWriter != null)
+            {
+                if (addFileTimestamps && atLineStart && value != '\r' && value != '\n')
+                {
+                    fileWriter.Write($"[{DateTime.Now:HH:mm:ss}] ");
+                }
+                fileWriter.Write(value);
+                if (value == '\n') atLineStart = true;
+                else if (value != '\r') atLineStart = false;
+            }
         }
 
         public override void WriteLine(string value)
         {
             consoleWriter.WriteLine(value);
             captureWriter?.WriteLine(value);
-            fileWriter?.WriteLine(value);
+            if (fileWriter != null)
+            {
+                fileWriter.WriteLine(addFileTimestamps ? $"[{DateTime.Now:HH:mm:ss}] {value ?? ""}" : (value ?? ""));
+                atLineStart = true;
+            }
+        }
+
+        public override void WriteLine()
+        {
+            consoleWriter.WriteLine();
+            captureWriter?.WriteLine();
+            fileWriter?.WriteLine();
+            atLineStart = true;
         }
 
         public override void Flush()
