@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Comprehensive artist casing overrides (TIER 2 audit)
+
+Periodic casing audit: scanned all library folders against what `ToTitleCase(a.ToLower())` produces. Found 35 artists whose canonical names can't be reproduced by default title-casing (all-caps acronyms, hyphenated names, camelCase, digit-prefixed, all-lowercase styles). Added all 35 to `config/artist-name-overrides.xml`. Without these, integrating a new track by e.g. POLO G would write "Polo G" to the tag, causing LibChecker to flag a folder name mismatch. Codebase audit (docs/comments) was clean - no rules were missing from documentation.
+
+---
+
 ## 2026-05-25 - Auto-migrate Misc songs on artist promotion (TIER 2)
 
 When scan-ahead detects an artist crossing the 3-song threshold (triggering a new `Artists/` folder), any existing songs for that artist in `Miscellaneous Songs/` are now automatically migrated to `Artists/{artist}/Singles/` at the end of the integration run - no manual intervention required.
