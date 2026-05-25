@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Output formatting refinements (TIER 2 quick win)
+
+Five sub-items from Feedback823 dry-run review. All display-layer changes, no logic touched.
+
+1. **Removed duplicate header** - `[Step 1] Fixing tags...` in MusicIntegrator duplicated TagFixer's own `Fixing music tags...` header. Removed the outer one.
+2. **Moved count summaries after per-file table** - TagFixer's "Files processed" and "Fixed/Skipped" now appear after the per-file results table (before timing), not before. Consistent with routing section layout.
+3. **Removed "--- Per-file results ---" labels** - Unnecessary dividers removed from TagFixer summary and confidence report.
+4. **Blank line before routing timing** - Added visual separation between "Routed: N | Skipped: N" and "Routing - time taken:".
+5. **Combined log saved lines** - "Log saved: X" and "Decision log saved: Y" merged into single "Logs saved: X, Y". `SaveLog()` and `DecisionLog.Save()` now return paths (null on failure/empty) instead of printing directly. Commit: ad0ee85.
+
+---
+
 ## 2026-05-25 - Routing proposal UX: three quick wins (TIER 1 closeout)
 
 All 3 sub-items were already implemented across commits 4dd2e0b9 and f7a4f526 but never closed out. Verified and closed in this session.

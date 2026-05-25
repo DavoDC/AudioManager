@@ -18,8 +18,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 2 - QUALITY
 
-- [ ] **Output formatting refinements - remove redundancy and standardize section layout** - Feedback from dry-run review: (1) Remove duplicate "[Step 1] Fixing tags..." header (duplicates "Fixing music tags..." line below). (2) Move file count summaries (Files processed, Fixed/Skipped) to appear right before section timing line (not at top) for consistency across Tag Fix and Routing sections. (3) Remove "--- Per-file results ---" label (unnecessary). (4) Add blank line before "Routing - time taken:" for visual separation. (5) Simplify log saved lines: combine "Log saved: X" and "Decision log saved: Y" into single "Logs saved: X, Y" line. Implementation notes in Feedback823_3d5822b.txt.
-
 - [ ] **Combine tag fix + routing into a single per-file summary** - Currently Step 1 (tag fix) prints its summary block, then Step 3 (routing) prints per-file routing decisions separately. Idea: merge into one block per song showing both what tags changed AND where it routes, so the user can review the full picture for each file in one glance before confirming. Design TBD - needs to preserve reviewability (user can still scan and catch wrong decisions).
 
 - [ ] **Centralise to one log file per run, timestamps on every line** - Currently produces separate `integration-*.md` and `decisions-*.xml` log files. Goal: single `run-YYYYMMDD-HHmmss.log` per run, all output (tag fixes, routing decisions, errors, timings) written there with a timestamp prefix on every line. Console output stays clean (no timestamps); the log file is the complete audit trail. `SaveLog()` and `DecisionLog.Save()` in MusicIntegrator.cs are the starting point.
