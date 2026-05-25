@@ -115,7 +115,7 @@ namespace AudioManager
                 var duplicateFiles = scannedFiles.Where(sf => sf.Duplicate != null).ToList();
                 if (duplicateFiles.Count > 0)
                 {
-                    Console.WriteLine($"\n[Step 2] Reviewing {duplicateFiles.Count} duplicate(s)...");
+                    Console.WriteLine($"\nReviewing {duplicateFiles.Count} duplicate(s)...");
                     foreach (var sf in duplicateFiles)
                     {
                         if (!PresentDuplicateAndDecide(sf))
