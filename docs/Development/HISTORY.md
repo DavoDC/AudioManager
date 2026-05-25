@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Auto-migrate Misc songs on artist promotion (TIER 2)
+
+When scan-ahead detects an artist crossing the 3-song threshold (triggering a new `Artists/` folder), any existing songs for that artist in `Miscellaneous Songs/` are now automatically migrated to `Artists/{artist}/Singles/` at the end of the integration run - no manual intervention required.
+
+Works in both dry-run (shows `[DRY RUN] Would move:` lines) and real mode (moves files). The scan-ahead note updated from "need manual migration" to "will be auto-migrated". A `[WARN]` is printed if a library file is missing (stale AudioMirror edge case).
+
+Implementation: `RunScanAhead` now tracks Misc XML file paths per artist (not just counts) and populates `_miscMigrationCandidates` for promoted artists. `RunMiscMigration()` runs post-routing in both modes.
+
+---
+
 ## 2026-05-25 - TagFixer genre extension + TeeWriter embedded newline fix (TIER 2)
 
 **TagFixer genre extension:** `ShouldFixGenre` and `DetermineGenre` extended for two cases:
