@@ -467,6 +467,7 @@ namespace AudioManager
         private HashSet<string> RunScanAhead(string[] batchFiles)
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            Console.Write($"\nScan-ahead: reading {batchFiles.Length} file(s)...");
 
             // Count artists in the incoming batch
             var batchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -492,7 +493,9 @@ namespace AudioManager
                 AppDomain.CurrentDomain.BaseDirectory, Constants.MirrorFolderPath, Constants.MiscDir));
             if (Directory.Exists(mirrorMiscPath))
             {
-                foreach (var xmlFile in Directory.GetFiles(mirrorMiscPath, "*.xml"))
+                var miscXmlFiles = Directory.GetFiles(mirrorMiscPath, "*.xml");
+                Console.Write($" checking Misc ({miscXmlFiles.Length})...");
+                foreach (var xmlFile in miscXmlFiles)
                 {
                     try
                     {
@@ -507,6 +510,7 @@ namespace AudioManager
                     catch { /* skip malformed XML */ }
                 }
             }
+            Console.WriteLine(" done.");
 
             // Find artists that will hit 3+ threshold and don't already have an Artists/ folder
             var previewLines = new List<string>();

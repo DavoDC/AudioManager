@@ -20,13 +20,16 @@ namespace AudioManager
         public Parser(string mirrorPath)
         {
             // Notify
-            Console.WriteLine("\nParsing audio metadata...");
+            Console.Write("\nParsing audio metadata...");
 
             // Initialise tag list
             audioTags = new List<TrackTag>();
 
             // For every mirrored file
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
+            int parsedCount = 0;
+            int parsedTotal = mirrorFiles.Length;
+            int dotInterval = Math.Max(1, parsedTotal / 10);
             foreach (var mirrorFilePath in mirrorFiles)
             {
                 // Skip the README file
@@ -41,9 +44,13 @@ namespace AudioManager
                     throw new ArgumentException($"Non-XML file found in mirror folder: {mirrorFilePath}");
                 }
 
-                // Get audio file tag and add to list 
+                // Get audio file tag and add to list
                 audioTags.Add(new TrackTag(mirrorFilePath));
+                parsedCount++;
+                if (parsedTotal >= 100 && parsedCount % dotInterval == 0)
+                    Console.Write(".");
             }
+            if (parsedTotal >= 100) Console.WriteLine();
 
             // Print number of tags parsed
             Console.WriteLine($" - Tags parsed: {audioTags.Count}");
