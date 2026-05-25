@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Integration UX cleanup: Misc auto-route + duplicate output removed (TIER 2)
+
+Two small fixes from the 2026-05-25 dry run that surfaced confirmation fatigue and redundant output:
+
+1. **Misc auto-route:** Changed `RoutingConfidence.Uncertain` to `RoutingConfidence.Certain` in the Misc fallback branch of `GetDestDir()`. Misc-bound tracks (no artist folder found) now print `[AUTO]` and route without a Y/N prompt. Misc is non-destructive; the dry-run preview is the safety gate.
+
+2. **Duplicate "Finished!" removed:** `Program.cs` was printing `Console.WriteLine("\nFinished!\n")` after integrate/tagfix runs, but `MusicIntegrator` already prints a `=== Finished ===` block. The redundant Program.cs line is removed. Analysis mode is unaffected.
+
+---
+
 ## 2026-05-25 - Unified run log with timestamps (TIER 2)
 
 Replaced two separate log files (`integration-*.md` markdown summary + `decisions-*.xml` structured routing log) with a single `run-YYYYMMDD-HHmmss.log` per integration run. All console output is captured with a `[HH:mm:ss]` timestamp prefix on every line in the file; console output itself is unchanged (no timestamps visible on screen).
