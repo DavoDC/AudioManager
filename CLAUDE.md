@@ -167,6 +167,8 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 ## Workflow Rules
 
+- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1 - not TIER 2 or TIER 3. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
+
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
 - **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually (e.g. wrong artist casing after integration), advise the user to use Mp3tag. David knows how to use it. Do not suggest VLC or Windows file properties for tag editing.

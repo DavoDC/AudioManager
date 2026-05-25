@@ -10,6 +10,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: deliver auto-routing for known cases - eliminate confirmation fatigue. Prerequisites must be verified on real data first.**
 
+**TIER 1 threshold:** anything that would cause a LibChecker warning belongs here, regardless of where or when it was discovered. Routing gaps, rule divergence, config omissions - all TIER 1 if LibChecker would fire on it.
+
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
 *(No blocking items - advance to TIER 2)*
