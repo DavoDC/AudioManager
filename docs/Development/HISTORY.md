@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Unified run log with timestamps (TIER 2)
+
+Replaced two separate log files (`integration-*.md` markdown summary + `decisions-*.xml` structured routing log) with a single `run-YYYYMMDD-HHmmss.log` per integration run. All console output is captured with a `[HH:mm:ss]` timestamp prefix on every line in the file; console output itself is unchanged (no timestamps visible on screen).
+
+Implementation: `TeeWriter` gained an `addFileTimestamps` flag and `atLineStart` tracking. When enabled, `Write(char)` and `WriteLine(string)` prefix file writes with the current time. `Program.cs` enables this flag for integrate mode and renames the log from `integrate-*.log` to `run-*.log`. `MusicIntegrator` had `SaveLog()`, `DecisionLog` usage, and `PrintTimestamped()` all removed - the TeeWriter stream capture replaces them all.
+
+Routing decisions (previously in `decisions-*.xml`) are now captured as part of the console stream. DecisionLog class is retained but unused; can be deleted if decision XML analysis (TIER 4) is never pursued.
+
+Known edge cases logged in IDEAS.md: embedded `\n` in strings produces an untimstamped content line; investigate any console output not captured by TeeWriter.
+
+---
+
 ## 2026-05-25 - Combined per-file summary: tag changes inline with routing (TIER 2)
 
 Previously: TagFixer printed a standalone "Tag Fix Summary" block (all files at once), then MusicIntegrator printed routing per file separately. User had to mentally join two separate lists to understand what happened to each file.
