@@ -51,13 +51,14 @@ namespace AudioManager
 
         /// <summary>
         /// Save all logged decisions to an XML file in logs/decisions-YYYY-MM-DD.xml.
+        /// Returns the relative path for display, or null if no decisions or on failure.
         /// </summary>
-        public void Save()
+        public string Save()
         {
             try
             {
                 if (decisions.Count == 0)
-                    return;
+                    return null;
 
                 // Determine output path: logs/decisions-YYYY-MM-DD.xml
                 string repoRoot = FindRepoRoot();
@@ -77,11 +78,12 @@ namespace AudioManager
                 var doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
                 doc.Save(outputPath, SaveOptions.None);
 
-                Console.WriteLine($"\nDecision log saved: logs\\decisions-{sessionDate}.xml");
+                return $"logs\\decisions-{sessionDate}.xml";
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"  [WARN] Could not save decision log: {ex.Message}");
+                return null;
             }
         }
 
