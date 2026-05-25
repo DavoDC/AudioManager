@@ -22,6 +22,13 @@ namespace AudioManager
         private int fixedCount = 0;
         private int skippedCount = 0;
 
+        /// <summary>
+        /// Per-file tag changes for display in MusicIntegrator's combined routing block.
+        /// Key: filename MusicIntegrator will see (original in dry-run; post-rename in real mode).
+        /// Value: list of change strings e.g. "Title: \"X\" -> \"Y\"". Excludes filename renames.
+        /// </summary>
+        public Dictionary<string, List<string>> FileChanges { get; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
         private class FixLog
         {
             public string Filename;
@@ -156,6 +163,15 @@ namespace AudioManager
                             fixedCount++;
                         }
 
+                        // Register changes for combined display in MusicIntegrator's routing block
+                        var nonFilenameChanges = log.Changes.Where(c => !c.StartsWith("Filename:")).ToList();
+                        if (nonFilenameChanges.Count > 0)
+                        {
+                            FileChanges[log.OriginalFilename] = nonFilenameChanges;
+                            if (!string.IsNullOrEmpty(log.Filename) && !log.Filename.Equals(log.OriginalFilename, StringComparison.OrdinalIgnoreCase))
+                                FileChanges[log.Filename] = nonFilenameChanges;
+                        }
+
                         fixLogs.Add(log);
                     }
                     catch (Exception ex)
@@ -168,49 +184,14 @@ namespace AudioManager
                     }
                 }
 
-                // Summary
-                Console.WriteLine();
-                Console.WriteLine("===========================================================================");
-                Console.WriteLine(dryRun ? "Tag Fix Summary (Dry Run)" : "Tag Fix Summary");
-                Console.WriteLine("===========================================================================");
-                // Per-file report
-                foreach (var log in fixLogs)
-                {
-                    if (log.Status == "skipped")
-                    {
-                        Console.WriteLine($"[SKIPPED] {log.OriginalFilename} ({log.Detail})");
-                        Console.WriteLine();
-                    }
-                    else if (log.Status == "error")
-                    {
-                        Console.WriteLine($"[ERROR] {log.OriginalFilename} ({log.Detail})");
-                        Console.WriteLine();
-                    }
-                    else
-                    {
-                        string prefix = dryRun ? "[WOULD FIX]" : "[FIXED]";
-                        Console.WriteLine($"{prefix} {log.OriginalFilename}");
-                        foreach (var change in log.Changes)
-                        {
-                            Console.WriteLine($" {change}");
-                        }
-                        if (!string.IsNullOrEmpty(log.Filename) && log.Filename != log.OriginalFilename)
-                        {
-                            Console.WriteLine($" Filename: {log.OriginalFilename}  -> {log.Filename}");
-                        }
-                        Console.WriteLine();
-                    }
-                }
-
+                // Per-file tag changes shown in MusicIntegrator's combined routing block.
+                // Only surface errors and the count here.
                 var tagErrors = fixLogs.Where(l => l.Status == "error").ToList();
                 if (tagErrors.Count > 0)
                 {
                     Console.WriteLine($"[ERRORS: {tagErrors.Count}]");
                     foreach (var e in tagErrors) Console.WriteLine($" {e.OriginalFilename}: {e.Detail}");
-                    Console.WriteLine();
                 }
-
-                Console.WriteLine($"Files processed: {files.Length}");
                 Console.WriteLine($"Fixed: {fixedCount}  |  Skipped: {skippedCount}");
             }
             finally

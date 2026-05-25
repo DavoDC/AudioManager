@@ -91,7 +91,8 @@ namespace AudioManager
             try
             {
                 // Step 1: Fix tags in NewMusic folder
-                new TagFixer(dryRun);
+                var tagFixer = new TagFixer(dryRun);
+                var tagChanges = tagFixer.FileChanges;
 
                 var files = Directory.Exists(Constants.NewMusicPath)
                     ? Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories)
@@ -109,7 +110,7 @@ namespace AudioManager
                 var newArtistFolders = RunScanAhead(files);
 
                 // Pre-scan all files: read + clean tags, find duplicates (no UI)
-                var scannedFiles = PreScanFiles(files);
+                var scannedFiles = PreScanFiles(files, tagChanges);
 
                 // Step 2: Batch duplicate review - all duplicates presented together before routing
                 var duplicateFiles = scannedFiles.Where(sf => sf.Duplicate != null).ToList();
@@ -299,6 +300,8 @@ namespace AudioManager
                             else if (dryRun)
                             {
                                 Console.WriteLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                                foreach (var change in entry.TagChanges)
+                                    Console.WriteLine($" > {change}");
                                 Console.WriteLine($" Route: {routeSummary}");
                                 Console.WriteLine($" Reason: {reason}");
                                 Console.WriteLine($" Path: {relativeDest}");
@@ -313,6 +316,8 @@ namespace AudioManager
                                 File.Move(sf.SourcePath, destPath);
                                 movedCount++;
                                 Console.WriteLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                                foreach (var change in entry.TagChanges)
+                                    Console.WriteLine($" > {change}");
                                 Console.WriteLine($" Route: {routeSummary}");
                                 Console.WriteLine($" Reason: {reason}");
                                 Console.WriteLine($" Path: {relativeDest}");
@@ -333,6 +338,13 @@ namespace AudioManager
                             Console.WriteLine($"Album:   {track.Album}");
                             Console.WriteLine($"Year:    {track.Year}");
                             Console.WriteLine($"Genres:  {track.Genres}");
+                            if (entry.TagChanges.Count > 0)
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine("Tags fixed:");
+                                foreach (var change in entry.TagChanges)
+                                    Console.WriteLine($" > {change}");
+                            }
                             Console.WriteLine();
                             Console.WriteLine($"Proposed: {routeSummary}");
                             Console.WriteLine($"Path:     {relativeDest}");
@@ -866,7 +878,7 @@ namespace AudioManager
         /// Pre-scans all files in the batch: reads and cleans tags, finds duplicates.
         /// No UI interaction. Returns a ScannedFile list for the duplicate review and routing phases.
         /// </summary>
-        private List<ScannedFile> PreScanFiles(string[] files)
+        private List<ScannedFile> PreScanFiles(string[] files, Dictionary<string, List<string>> tagChanges)
         {
             var result = new List<ScannedFile>();
             foreach (var sourcePath in files)
@@ -903,6 +915,11 @@ namespace AudioManager
                     entry.Album = track.Album;
                     sf.Track = track;
                     sf.IsReadable = true;
+
+                    // Populate tag changes for combined routing display
+                    string filename = Path.GetFileName(sourcePath);
+                    if (tagChanges != null && tagChanges.TryGetValue(filename, out var changes))
+                        entry.TagChanges.AddRange(changes);
 
                     string duplicatePath = FindDuplicateInMirror(track);
                     if (!string.IsNullOrEmpty(duplicatePath))
