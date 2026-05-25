@@ -91,7 +91,6 @@ namespace AudioManager
             try
             {
                 // Step 1: Fix tags in NewMusic folder
-                Console.WriteLine("\n[Step 1] Fixing tags...");
                 new TagFixer(dryRun);
 
                 var files = Directory.Exists(Constants.NewMusicPath)
@@ -437,13 +436,17 @@ namespace AudioManager
                     Console.WriteLine();
                 }
                 Console.WriteLine(dryRun ? $"Routed: {movedCount}  |  Skipped: {skippedCount}" : $"Moved: {movedCount}  |  Skipped: {skippedCount}");
+                Console.WriteLine();
                 Console.WriteLine($"Routing - time taken: {Doer.ConvertTimeSpanToString(routingStopwatch.Elapsed)}");
 
                 if (!dryRun)
                     PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
 
-                SaveLog(logEntries, totalFiles, movedCount, skippedCount);
-                decisionLog.Save();
+                string intLogFile = SaveLog(logEntries, totalFiles, movedCount, skippedCount);
+                string decLogFile = decisionLog.Save();
+                var savedLogs = new[] { intLogFile, decLogFile }.Where(s => !string.IsNullOrEmpty(s)).ToList();
+                if (savedLogs.Count > 0)
+                    Console.WriteLine($"\nLogs saved: {string.Join(", ", savedLogs)}");
 
                 Console.WriteLine("\n============================================================");
                 Console.WriteLine("Finished");
@@ -556,7 +559,6 @@ namespace AudioManager
                 Console.WriteLine($"  [ERROR] Count mismatch! Expected {expectedMoved} moved, got {movedCount}.");
 
             // 2. Per-file table
-            Console.WriteLine("\n  --- Per-file results ---");
             foreach (var e in entries)
             {
                 string tagNote = e.TagChanges?.Count > 0 ? $" | Tags: {string.Join(", ", e.TagChanges)}" : "";
@@ -640,8 +642,9 @@ namespace AudioManager
 
         /// <summary>
         /// Saves a formatted integration log to logs/integration-YYYYMMDD.md in markdown format.
+        /// Returns the relative path for display, or null on failure.
         /// </summary>
-        private void SaveLog(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
+        private string SaveLog(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
         {
             try
             {
@@ -679,11 +682,12 @@ namespace AudioManager
                 }
 
                 File.WriteAllText(logPath, sb.ToString());
-                Console.WriteLine($"\nLog saved: logs\\integration-{timestamp}{suffix}.md");
+                return $"logs\\integration-{timestamp}{suffix}.md";
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"  [WARN] Could not save integration log: {ex.Message}");
+                return null;
             }
         }
 
