@@ -12,10 +12,57 @@
 -->
 <ArtistOverrides>
 
-  <!-- "mike." intentionally uses all-lowercase including the trailing period -->
+  <!-- Lowercase / all-lowercase styles -->
+  <Artist canonical="blink-182" />
+  <Artist canonical="iann dior" />
   <Artist canonical="mike." />
 
-  <!-- "Scott Adams" must be title-cased (preserves the rule in config, not relying on code comment) -->
+  <!-- All-caps names and acronyms -->
+  <Artist canonical="DMX" />
+  <Artist canonical="H.E.A.T" />
+  <Artist canonical="KSI" />
+  <Artist canonical="LL COOL J" />
+  <Artist canonical="MIKA" />
+  <Artist canonical="MKTO" />
+  <Artist canonical="MOUNT WESTMORE" />
+  <Artist canonical="N.W.A" />
+  <Artist canonical="NAV" />
+  <Artist canonical="POLO G" />
+  <Artist canonical="YG" />
+
+  <!-- Partial caps / acronym prefix -->
+  <Artist canonical="DC The Don" />
+  <Artist canonical="DJ Khaled" />
+  <Artist canonical="KOTA The Friend" />
+  <Artist canonical="KRS-One" />
+  <Artist canonical="Juice WRLD" />
+  <Artist canonical="NLE Choppa" />
+  <Artist canonical="YNW Melly" />
+
+  <!-- Hyphenated names where letter after hyphen must be capped -->
+  <Artist canonical="Eazy-E" />
+  <Artist canonical="G-Eazy" />
+  <Artist canonical="Jay-Z" />
+  <Artist canonical="T-Pain" />
+  <Artist canonical="Bone Thugs-N-Harmony" />
+
+  <!-- Digit-prefixed names -->
+  <Artist canonical="2Pac" />
+  <Artist canonical="24kGoldn" />
+  <Artist canonical="Rappin' 4-Tay" />
+
+  <!-- CamelCase / internal caps -->
+  <Artist canonical="B.o.B" />
+  <Artist canonical="BigXthaPlug" />
+  <Artist canonical="DaBaby" />
+  <Artist canonical="PinkPantheress" />
+  <Artist canonical="TeeManay" />
+  <Artist canonical="YoungBoy Never Broke Again" />
+
+  <!-- Punctuation-sensitive names -->
+  <Artist canonical="T.I" />
+
+  <!-- Standard title-case (preserved explicitly for auditability) -->
   <Artist canonical="Scott Adams" />
 
 </ArtistOverrides>
