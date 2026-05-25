@@ -18,14 +18,24 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ## TIER 2 - QUALITY
 
+**Goal: improve UX, add test coverage, and audit metadata quality.**
+
+**Integration prep order (/dev-session: start here): (1) scan-ahead progress -> (2) parser responsiveness -> (3) combined per-file summary -> (4) casing audit. Complete before next integration run.**
+
+- [ ] **Scan-ahead: show progress indicator during computation** - Symptom: User observed silence after "Scan-ahead: 4 artist(s) will hit 3-song threshold:" with no feedback, thought program hung. Root cause: scan-ahead computation takes several seconds but produces no intermediate output. Fix: print progress during scanning (e.g. "Scanning batch... (checking N artists)" or dot-tick per artist). Improves perceived responsiveness. Quick win: 30-60 min.
+
+- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. **First step:** add a progress counter ("Parsing tags... N/5516") so the user sees forward motion immediately, even before root cause is fixed. **Then:** profile to confirm bottleneck and benchmark alternatives (streaming vs. batch loading, parallel processing per artist folder, etc.). High payback - runs should feel responsive. Implementation notes in FEEDBACK-Stage3C.md lines 280-286.
+
 - [ ] **Combine tag fix + routing into a single per-file summary** - Currently Step 1 (tag fix) prints its summary block, then Step 3 (routing) prints per-file routing decisions separately. Idea: merge into one block per song showing both what tags changed AND where it routes, so the user can review the full picture for each file in one glance before confirming. Design TBD - needs to preserve reviewability (user can still scan and catch wrong decisions).
+
+- [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost. Run as a manual pre-integration check.
 
 - [ ] **Centralise to one log file per run, timestamps on every line** - Currently produces separate `integration-*.md` and `decisions-*.xml` log files. Goal: single `run-YYYYMMDD-HHmmss.log` per run, all output (tag fixes, routing decisions, errors, timings) written there with a timestamp prefix on every line. Console output stays clean (no timestamps); the log file is the complete audit trail. `SaveLog()` and `DecisionLog.Save()` in MusicIntegrator.cs are the starting point.
 
-**Goal: improve UX, add test coverage, and audit metadata quality. Start after TIER 1 prerequisites are verified.**
-
-
-- [ ] **Performance investigation - Parser is slow** - User-visible pain point: Parsing 5516 tags took 38.124 seconds (~6.9ms per tag). During runs, user perceives long hangs with no feedback. **Suspected bottleneck:** Reading thousands of MP3 file metadata (not XML parsing). Profile to confirm and benchmark against alternatives (streaming vs. batch loading, parallel processing per artist folder, etc.). Once root cause identified, implement optimization. High payback - runs should feel responsive. Implementation notes in FEEDBACK-Stage3C.md lines 280-286.
+- [ ] **TagFixer: extend genre handling for additional artists** - Post-integration (Loot Bryon Smith not in current batch). Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
+  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). ALL FILES in the Musivation folder must have the Musivation genre tag.
+  - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
+  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
 - [ ] **Metadata audit of existing library** - [HIGH confidence] Pattern finding from Stage 3C: 3 blocker types (character, casing, suffixes) suggest systematic brittleness in existing library metadata. Fix scope: scan existing AudioMirror XMLs for casing inconsistencies, character illegality, metadata-vs-folder mismatches. Produce violations report. Payback: find edge cases BEFORE next batch integration; complements character validation (2.2) by revealing existing library state. Implementation notes in FEEDBACK-Stage3C.md lines 342-345.
 
@@ -38,15 +48,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Scope:** Focus on feature behavior, not individual function testing. Test "artist casing is preserved" not "ExtractAndFixArtists() line 47". Test "Musivation artist gets Musivation folder" not "GetDestDir() branch coverage".
   - **Skipped:** full LibChecker validation (add rules incrementally), full integration test (dry-run covers this), edge case enumeration, speculative test coverage beyond the three features.
   - Create `AudioManager.Tests` xUnit project; wire into `launch.bat` as "Run tests" menu item; broken tests block exe launch.
-
-- [ ] **TagFixer: extend genre handling for additional artists** - Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
-  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). ALL FILES in the Musivation folder must have the Musivation genre tag.
-  - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
-  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
-
-- [ ] **Scan-ahead: show progress indicator during computation** - Symptom: User observed silence after "Scan-ahead: 4 artist(s) will hit 3-song threshold:" with no feedback, thought program hung. Root cause: scan-ahead computation takes several seconds but produces no intermediate output. Fix: print progress during scanning (e.g. "Scanning batch... (checking N artists)" or dot-tick per artist). Improves perceived responsiveness.
-
-- [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost.
 
 - [ ] **Auto-migrate existing Misc songs when scan-ahead promotes an artist** - Currently flagged for MANUAL migration. Revisit with confirmation gate after tests exist.
 
