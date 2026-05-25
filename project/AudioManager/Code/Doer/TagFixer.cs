@@ -345,32 +345,44 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Checks if genre needs to be fixed (special handling for Akira The Don and genre "Motivation").
+        /// Checks if genre needs to be fixed.
+        /// Musivation artists (ATD, Loot Bryon Smith): genre must be "Musivation".
+        /// Generic Motivation tracks: any genre containing "Motivation" is normalized to exactly "Motivation".
         /// </summary>
         internal static bool ShouldFixGenre(string artists, string currentGenres)
         {
             if (string.IsNullOrEmpty(artists)) return false;
 
-            // Akira The Don must have Musivation
-            if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0)
+            // Musivation artists must have Musivation genre
+            if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                artists.IndexOf("Loot Bryon Smith", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return currentGenres.IndexOf("Musivation", StringComparison.OrdinalIgnoreCase) < 0;
+            }
+
+            // Generic Motivation: normalize non-exact "Motivation" genre variants (e.g. "Motivational")
+            if (currentGenres.IndexOf("Motivation", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                currentGenres.IndexOf("Musivation", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return !currentGenres.Equals("Motivation", StringComparison.OrdinalIgnoreCase);
             }
 
             return false;
         }
 
         /// <summary>
-        /// Determines what genre should be set for a track based on artist/album.
+        /// Determines what genre should be set. Only called when ShouldFixGenre returns true.
+        /// Musivation artists -> "Musivation"; all other cases -> "Motivation" (only other fix case).
         /// </summary>
         internal static string DetermineGenre(string artists)
         {
             if (string.IsNullOrEmpty(artists)) return "";
 
-            if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                artists.IndexOf("Loot Bryon Smith", StringComparison.OrdinalIgnoreCase) >= 0)
                 return Constants.MusivDir; // "Musivation"
 
-            return "";
+            return Constants.MotivDir; // "Motivation" - the only other case ShouldFixGenre triggers for
         }
     }
 }
