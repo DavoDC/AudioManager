@@ -20,9 +20,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-**Integration prep order (/dev-session: start here): (1) combined per-file summary -> (2) casing audit. Complete before next integration run. (scan-ahead progress + parser dots: done 2026-05-25)**
-
-- [ ] **Combine tag fix + routing into a single per-file summary** - Currently Step 1 (tag fix) prints its summary block, then Step 3 (routing) prints per-file routing decisions separately. Idea: merge into one block per song showing both what tags changed AND where it routes, so the user can review the full picture for each file in one glance before confirming. Design TBD - needs to preserve reviewability (user can still scan and catch wrong decisions).
+**Integration prep order (/dev-session: start here): (1) casing audit (manual). (combined summary + progress indicators: done 2026-05-25)**
 
 - [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost. Run as a manual pre-integration check.
 

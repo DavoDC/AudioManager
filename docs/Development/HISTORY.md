@@ -4,6 +4,24 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - Combined per-file summary: tag changes inline with routing (TIER 2)
+
+Previously: TagFixer printed a standalone "Tag Fix Summary" block (all files at once), then MusicIntegrator printed routing per file separately. User had to mentally join two separate lists to understand what happened to each file.
+
+Now: routing block shows everything in one pass per file:
+```
+[AUTO] Artist - Song
+ > Title: "Song (feat. X)"  -> "Song"
+ > Artists: "Artist"  -> "Artist;X"
+ Route: Artist / Singles
+ Reason: Artist folder...
+ Path: Artists/...
+```
+
+Implementation: `TagFixer` exposes `FileChanges` (dict: filename -> change list). Filename-matching handles the rename case: both original and post-rename names are registered as keys so lookup works regardless of whether TagFixer renamed the file. `MusicIntegrator.PreScanFiles` reads this dict and populates `LogEntry.TagChanges`, which the routing display reads. TagFixer's per-file summary block is replaced with a single count line. Works identically for dry-run and real-run modes.
+
+---
+
 ## 2026-05-25 - Progress indicators for scan-ahead and parser (TIER 2)
 
 Two silent phases now show user-visible progress. Both are output-only changes.
