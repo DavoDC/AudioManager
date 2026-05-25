@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-25 - TagFixer genre extension + TeeWriter embedded newline fix (TIER 2)
+
+**TagFixer genre extension:** `ShouldFixGenre` and `DetermineGenre` extended for two cases:
+- **Loot Bryon Smith** - now identified as a Musivation artist; genre set to "Musivation" automatically (same path as Akira The Don). TagFixer is now 100% comprehensive for known Musivation artists.
+- **Generic Motivation tracks** - if a track's genre contains "Motivation" but isn't exactly "Motivation" (e.g. "Motivational", "Motivation Music"), TagFixer normalises it to "Motivation". `DetermineGenre` returns "Motivation" for all non-Musivation cases (the only other trigger path).
+
+**TeeWriter embedded newline fix:** `WriteLine(string)` previously wrote the full string as one unit to the file, so `"\nFoo"` produced a timestamped blank line + an untimestamped "Foo" line. Fix: if value contains `\n`, delegate to `WriteCharToFile` char by char - same logic as `Write(char)`. A shared `WriteCharToFile` helper extracted to remove duplication. Verified in `run-2026-05-25_155408.log`: every content line has `[HH:mm:ss]` prefix.
+
+---
+
 ## 2026-05-25 - Integration UX cleanup: Misc auto-route + duplicate output removed (TIER 2)
 
 Two small fixes from the 2026-05-25 dry run that surfaced confirmation fatigue and redundant output:
