@@ -241,7 +241,7 @@ bash scripts/build.bat  # WRONG - will fail
 2. **Integration (routing phase):** Routes cleaned files to library destinations:
    - Applies rules from Music-Library-Rules.md (Artists folder, Compilations, Musivation, Motivation, Sources, Miscellaneous)
    - Respects 3-song threshold scan-ahead for album subfolder creation
-   - Logs all decisions to XML audit trail (logs/decision.xml) for manual verification
+   - All console output captured to `logs/run-YYYYMMDD-HHmmss.log` with `[HH:mm:ss]` timestamps (via TeeWriter in Program.cs)
    - Dry-run mode: previews all fixes + routing without moving files
    - Post-integration: auto-runs LibChecker to validate library clean
 
@@ -249,7 +249,7 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-TIER 1 complete. TIER 2 is next. See `docs/Development/IDEAS.md`. First TIER 2 item: output formatting refinements (header redundancy, count placement, log consolidation).
+TIER 1 complete. TIER 2 in progress. See `docs/Development/IDEAS.md`. Next items: (1) casing audit (manual - David), (2) Misc auto-route, (3) Remove duplicate Finished!, (4) TagFixer genre extension.
 
 ## Close-Out Discipline
 
