@@ -249,7 +249,14 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-TIER 1 complete. TIER 2 in progress. See `docs/Development/IDEAS.md`. Next items: (1) casing audit (manual - David), (2) Misc auto-route, (3) Remove duplicate Finished!, (4) TagFixer genre extension.
+TIER 1 complete. TIER 2 in progress. See `docs/Development/IDEAS.md`. Next: (1) casing audit (manual - David), then metadata audit / tests. Items 2-4 shipped 2026-05-25.
+
+## Code Invariants (session learnings - update if refactored)
+
+- **TeeWriter.WriteCharToFile** is the single source of truth for file timestamp logic. `Write(char)` and `WriteLine(string)` both delegate to it. Any TeeWriter change must preserve this. `WriteLine(string)` checks for embedded `\n` and processes char-by-char via `WriteCharToFile` - do not revert to the old single-string write path.
+- **RoutingConfidence.Uncertain** is dead code as of 2026-05-25. Do NOT add new uses. TIER 3 item: replace entire enum with `out bool isNewFolder` in `GetDestDir()`.
+- **DetermineGenre(artists)** is only called when `ShouldFixGenre` returned true. The else-branch returning `Constants.MotivDir` is intentional - Motivation normalization is the only non-Musivation trigger path.
+- **GetRouteCategory(string destDir)** - private static in MusicIntegrator. Strips AudioFolderPath prefix, returns first folder component. Maps "Miscellaneous Songs" -> "Misc". Used by dry-run distribution summary.
 
 ## Close-Out Discipline
 
