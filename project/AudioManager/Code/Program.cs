@@ -167,9 +167,6 @@ namespace AudioManager
                     if (mode == 2 || mode == 3)
                     {
                         Doer.PrintTotalTimeTaken();
-
-                        // Finish message (Integrate and TagFix modes only)
-                        Console.WriteLine("\nFinished!\n");
                     }
                 }
                 finally
