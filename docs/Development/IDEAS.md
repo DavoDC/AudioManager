@@ -24,12 +24,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Periodic audit: ensure all artist casing rules are in config** - Artist-name-overrides.xml is the single source of truth. After major TagFixer work sessions, audit codebase (comments, CLAUDE.md, HISTORY.md) for missed rules and migrate to XML. Scott Adams rule was restored 2026-05-05 as a test case - verify no other rules were similarly lost. Run as a manual pre-integration check.
 
-- [ ] **Fix run-*.log timestamp edge cases** - Observed in 2026-05-25 dry run: (1) lines with embedded `\n` (e.g. `Console.WriteLine("\nPre-integration validation...")`) produce one timestamped blank line + one untimstamped content line - need to split by newline and timestamp each sub-line in TeeWriter. (2) Some console output appears to be missing from the log entirely - investigate which calls bypass the TeeWriter. Note: `Write(string)` -> `Write(char)` chain should capture everything but verify. Low priority; core log capture is working.
 
-- [ ] **TagFixer: extend genre handling for additional artists** - Post-integration (Loot Bryon Smith not in current batch). Currently TagFixer sets genre to "Musivation" only for Akira The Don. Expand to:
-  - **Loot Bryon Smith** -> Genre = "Musivation" (per Music-Library-Rules.md spec). ALL FILES in the Musivation folder must have the Musivation genre tag.
-  - **Generic "Motivation" tracks** -> Genre = "Motivation" (currently not handled)
-  - Current implementation: `ShouldFixGenre()` and `DetermineGenre()` in TagFixer.cs need extension. Once implemented, TagFixer will be 100% comprehensive.
 
 - [ ] **Metadata audit of existing library** - [HIGH confidence] Pattern finding from Stage 3C: 3 blocker types (character, casing, suffixes) suggest systematic brittleness in existing library metadata. Fix scope: scan existing AudioMirror XMLs for casing inconsistencies, character illegality, metadata-vs-folder mismatches. Produce violations report. Payback: find edge cases BEFORE next batch integration; complements character validation (2.2) by revealing existing library state. Implementation notes in FEEDBACK-Stage3C.md lines 342-345.
 
