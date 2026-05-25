@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Xml;
 using File = System.IO.File;
 using TagLib;
@@ -67,11 +66,6 @@ namespace AudioManager
             public DupData Duplicate; // null if no duplicate found
         }
 
-        private void PrintTimestamped(string message)
-        {
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
-        }
-
         /// <summary>
         /// Construct and run the music integrator
         /// </summary>
@@ -85,7 +79,6 @@ namespace AudioManager
             int movedCount = 0;
             int skippedCount = 0;
             var logEntries = new List<LogEntry>();
-            var decisionLog = new DecisionLog(dryRun);
             int totalFiles = 0;
 
             try
@@ -156,18 +149,16 @@ namespace AudioManager
 
                     if (decision == 'D')
                     {
-                        string dLogReason = "User kept library copy" + (dup.RecommendedKey == 'L' ? $" (overrode [L]: {dup.DupReason})" : "");
-                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "duplicate-kept-library", dLogReason);
                         if (dryRun)
                         {
-                            PrintTimestamped($"  [DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
+                            Console.WriteLine($"  [DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
                             entry.Status = "would-delete";
                             entry.Detail = "duplicate (would delete)";
                         }
                         else
                         {
                             File.Delete(sf.SourcePath);
-                            PrintTimestamped($"  Deleted from NewMusic: {dup.RelNewPath}");
+                            Console.WriteLine($"  Deleted from NewMusic: {dup.RelNewPath}");
                             entry.Status = "deleted";
                             entry.Detail = "duplicate (deleted)";
                         }
@@ -177,12 +168,10 @@ namespace AudioManager
                     }
                     else if (decision == 'L')
                     {
-                        string lLogReason = !string.IsNullOrEmpty(dup.DupReason) ? dup.DupReason : "User chose to replace library copy";
-                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "duplicate-replaced-library", lLogReason);
                         if (dryRun)
                         {
-                            PrintTimestamped($"  [DRY RUN] Would delete from library: {dup.RelLibraryPath}");
-                            PrintTimestamped($"  [DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
+                            Console.WriteLine($"  [DRY RUN] Would delete from library: {dup.RelLibraryPath}");
+                            Console.WriteLine($"  [DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
                             entry.Status = "would-replace";
                             entry.Detail = "duplicate (would replace)";
                             logEntries.Add(entry); skippedCount++;
@@ -194,15 +183,15 @@ namespace AudioManager
                             if (File.Exists(dup.LibraryFilePath))
                             {
                                 File.Delete(dup.LibraryFilePath);
-                                PrintTimestamped($"  Deleted from library: {dup.RelLibraryPath}");
-                                PrintTimestamped($"  Integrating replacement: {dup.RelNewPath}");
+                                Console.WriteLine($"  Deleted from library: {dup.RelLibraryPath}");
+                                Console.WriteLine($"  Integrating replacement: {dup.RelNewPath}");
                                 entry.Detail = "duplicate (library replaced)";
                                 Console.WriteLine();
                                 // SkipRouting stays false: new file is routed in 3b
                             }
                             else
                             {
-                                PrintTimestamped($"  [WARN] Library file not found: {dup.RelLibraryPath}");
+                                Console.WriteLine($"  [WARN] Library file not found: {dup.RelLibraryPath}");
                                 entry.Status = "error";
                                 entry.Detail = "duplicate (library file not found)";
                                 logEntries.Add(entry); skippedCount++;
@@ -224,14 +213,14 @@ namespace AudioManager
                     if (!sf.IsReadable)
                     {
                         Console.WriteLine();
-                        PrintTimestamped("===========================================================================");
-                        PrintTimestamped("INTEGRATION FAILED");
-                        PrintTimestamped("===========================================================================");
+                        Console.WriteLine("===========================================================================");
+                        Console.WriteLine("INTEGRATION FAILED");
+                        Console.WriteLine("===========================================================================");
                         Console.WriteLine();
-                        PrintTimestamped($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
-                        PrintTimestamped($"Full path: {sf.SourcePath}");
+                        Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
+                        Console.WriteLine($"Full path: {sf.SourcePath}");
                         Console.WriteLine();
-                        PrintTimestamped($"Error details: {sf.ReadError}");
+                        Console.WriteLine($"Error details: {sf.ReadError}");
                         if (sf.ReadException != null && !string.IsNullOrEmpty(sf.ReadException.StackTrace))
                             Console.WriteLine($"\nStack trace:\n{sf.ReadException.StackTrace}");
                         Console.WriteLine("\n===========================================================================");
@@ -252,7 +241,7 @@ namespace AudioManager
                         // Skip if un-routable (tags are already clean from TagFixer)
                         if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
                         {
-                            PrintTimestamped($"- Skipped '{Path.GetFileName(sf.SourcePath)}': missing required tag");
+                            Console.WriteLine($"- Skipped '{Path.GetFileName(sf.SourcePath)}': missing required tag");
                             entry.Status = "skipped"; entry.Detail = "missing required tag";
                             logEntries.Add(entry); skippedCount++;
                             continue;
@@ -288,7 +277,6 @@ namespace AudioManager
                         {
                             // Auto-route: no confirmation prompt for Certain/Likely routes
                             string autoLabel = confidence == RoutingConfidence.Certain ? "AUTO" : "AUTO (likely)";
-                            string loggedReason = $"[{confidence}] {reason}";
 
                             if (!dryRun && File.Exists(destPath))
                             {
@@ -306,7 +294,6 @@ namespace AudioManager
                                 Console.WriteLine($" Reason: {reason}");
                                 Console.WriteLine($" Path: {relativeDest}");
                                 Console.WriteLine();
-                                decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "would-move";
                                 logEntries.Add(entry); movedCount++;
                             }
@@ -322,7 +309,6 @@ namespace AudioManager
                                 Console.WriteLine($" Reason: {reason}");
                                 Console.WriteLine($" Path: {relativeDest}");
                                 Console.WriteLine();
-                                decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, loggedReason);
                                 entry.Status = "moved";
                                 logEntries.Add(entry);
                             }
@@ -368,7 +354,6 @@ namespace AudioManager
                                     else if (dryRun)
                                     {
                                         Console.WriteLine($"[DRY RUN] Would move to: {relativeDest}");
-                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                         entry.Status = "would-move";
                                         logEntries.Add(entry); movedCount++;
                                     }
@@ -378,7 +363,6 @@ namespace AudioManager
                                         File.Move(sf.SourcePath, destPath);
                                         movedCount++;
                                         Console.WriteLine($"Moved to: {relativeDest}");
-                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), relativeDest, reason);
                                         Console.WriteLine();
                                         entry.Status = "moved";
                                         logEntries.Add(entry);
@@ -396,7 +380,6 @@ namespace AudioManager
                                     if (dryRun)
                                     {
                                         Console.WriteLine("[DRY RUN] Would decline (leave in NewMusic)");
-                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                         entry.Status = "would-decline";
                                         entry.Detail = "user declined";
                                         logEntries.Add(entry); skippedCount++;
@@ -404,7 +387,6 @@ namespace AudioManager
                                     else
                                     {
                                         Console.WriteLine("Declined. File left in NewMusic for next run.");
-                                        decisionLog.LogDecision(track, Path.GetFileName(sf.SourcePath), "declined", "User declined routing");
                                         entry.Status = "declined";
                                         entry.Detail = "user declined";
                                         logEntries.Add(entry); skippedCount++;
@@ -419,14 +401,14 @@ namespace AudioManager
                     catch (Exception ex)
                     {
                         Console.WriteLine();
-                        PrintTimestamped("===========================================================================");
-                        PrintTimestamped("INTEGRATION FAILED");
-                        PrintTimestamped("===========================================================================");
+                        Console.WriteLine("===========================================================================");
+                        Console.WriteLine("INTEGRATION FAILED");
+                        Console.WriteLine("===========================================================================");
                         Console.WriteLine();
-                        PrintTimestamped($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
-                        PrintTimestamped($"Full path: {sf.SourcePath}");
+                        Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
+                        Console.WriteLine($"Full path: {sf.SourcePath}");
                         Console.WriteLine();
-                        PrintTimestamped($"Error details: {ex.Message}");
+                        Console.WriteLine($"Error details: {ex.Message}");
                         if (!string.IsNullOrEmpty(ex.StackTrace))
                             Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
                         Console.WriteLine("\n===========================================================================");
@@ -453,12 +435,6 @@ namespace AudioManager
 
                 if (!dryRun)
                     PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
-
-                string intLogFile = SaveLog(logEntries, totalFiles, movedCount, skippedCount);
-                string decLogFile = decisionLog.Save();
-                var savedLogs = new[] { intLogFile, decLogFile }.Where(s => !string.IsNullOrEmpty(s)).ToList();
-                if (savedLogs.Count > 0)
-                    Console.WriteLine($"\nLogs saved: {string.Join(", ", savedLogs)}");
 
                 Console.WriteLine("\n============================================================");
                 Console.WriteLine("Finished");
@@ -645,66 +621,15 @@ namespace AudioManager
             var errors = entries.Where(e => e.Status == "error").ToList();
             if (errors.Count > 0)
             {
-                PrintTimestamped($"[ERRORS: {errors.Count}]");
-                foreach (var e in errors) PrintTimestamped($"- {e.Filename}: {e.Detail}");
+                Console.WriteLine($"[ERRORS: {errors.Count}]");
+                foreach (var e in errors) Console.WriteLine($"- {e.Filename}: {e.Detail}");
             }
             else
             {
-                PrintTimestamped("No errors.");
+                Console.WriteLine("No errors.");
             }
 
             Console.WriteLine("\n===========================================================================");
-        }
-
-        /// <summary>
-        /// Saves a formatted integration log to logs/integration-YYYYMMDD.md in markdown format.
-        /// Returns the relative path for display, or null on failure.
-        /// </summary>
-        private string SaveLog(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
-        {
-            try
-            {
-                string logsDir = Constants.LogsPath;
-                Directory.CreateDirectory(logsDir);
-
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
-                string suffix = dryRun ? "-dryrun" : "";
-                string logPath = Path.Combine(logsDir, $"integration-{timestamp}{suffix}.md");
-
-                var sb = new StringBuilder();
-                sb.AppendLine($"# {(dryRun ? "Integration Dry Run" : "Integration Log")}");
-                sb.AppendLine();
-                sb.AppendLine($"**Date:** {DateTime.Now:yyyy-MM-dd HH:mm}");
-                sb.AppendLine();
-                sb.AppendLine($"**Results:** {movedCount} moved, {skippedCount} skipped (total {totalFiles} files)");
-                sb.AppendLine();
-                sb.AppendLine("---");
-                sb.AppendLine();
-
-                foreach (var e in entries)
-                {
-                    sb.AppendLine($"## [{e.Status?.ToUpper()}] {e.Filename}");
-                    sb.AppendLine();
-                    sb.AppendLine($"- **Artist:** {e.Artists}");
-                    sb.AppendLine($"- **Title:** {e.Title}");
-                    sb.AppendLine($"- **Album:** {e.Album}");
-                    if (!string.IsNullOrEmpty(e.Destination))
-                        sb.AppendLine($"- **Destination:** `{e.Destination}`");
-                    if (e.TagChanges?.Count > 0)
-                        sb.AppendLine($"- **Tags:** {string.Join(", ", e.TagChanges)}");
-                    if (!string.IsNullOrEmpty(e.Detail))
-                        sb.AppendLine($"- **Note:** {e.Detail}");
-                    sb.AppendLine();
-                }
-
-                File.WriteAllText(logPath, sb.ToString());
-                return $"logs\\integration-{timestamp}{suffix}.md";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"  [WARN] Could not save integration log: {ex.Message}");
-                return null;
-            }
         }
 
         /// <summary>
@@ -1026,26 +951,26 @@ namespace AudioManager
                     : "No version preference";
 
             Console.WriteLine();
-            PrintTimestamped("===========================================================================");
-            PrintTimestamped("  DUPLICATE FOUND");
-            PrintTimestamped("===========================================================================");
+            Console.WriteLine("===========================================================================");
+            Console.WriteLine("  DUPLICATE FOUND");
+            Console.WriteLine("===========================================================================");
             Console.WriteLine();
-            PrintTimestamped($"  In AudioMirror: {dup.RelMirrorPath}");
+            Console.WriteLine($"  In AudioMirror: {dup.RelMirrorPath}");
             if (!string.IsNullOrEmpty(dup.MirrorTrack))
-                PrintTimestamped($"  Track:          {dup.MirrorTrack}");
+                Console.WriteLine($"  Track:          {dup.MirrorTrack}");
             if (!string.IsNullOrEmpty(dup.MirrorAlbum))
-                PrintTimestamped($"  Album:          {dup.MirrorAlbum}");
+                Console.WriteLine($"  Album:          {dup.MirrorAlbum}");
             Console.WriteLine();
-            PrintTimestamped($"  New file:   {dup.DisplayNewFilename}");
-            PrintTimestamped($"  Album:      {track.Album}");
+            Console.WriteLine($"  New file:   {dup.DisplayNewFilename}");
+            Console.WriteLine($"  Album:      {track.Album}");
             Console.WriteLine();
-            PrintTimestamped($"  Proposed:   {dupProposed}");
+            Console.WriteLine($"  Proposed:   {dupProposed}");
             if (!string.IsNullOrEmpty(dup.DupReason))
-                PrintTimestamped($"  Reason:     {dup.DupReason}");
+                Console.WriteLine($"  Reason:     {dup.DupReason}");
             Console.WriteLine();
-            PrintTimestamped("---------------------------------------------------------------------------");
-            PrintTimestamped(dup.OptionsLine);
-            PrintTimestamped("---------------------------------------------------------------------------");
+            Console.WriteLine("---------------------------------------------------------------------------");
+            Console.WriteLine(dup.OptionsLine);
+            Console.WriteLine("---------------------------------------------------------------------------");
 
             while (true)
             {
