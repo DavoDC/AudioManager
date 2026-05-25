@@ -173,11 +173,7 @@ namespace AudioManager
                 Console.WriteLine("===========================================================================");
                 Console.WriteLine(dryRun ? "Tag Fix Summary (Dry Run)" : "Tag Fix Summary");
                 Console.WriteLine("===========================================================================");
-                Console.WriteLine($"Files processed: {files.Length}");
-                Console.WriteLine($"Fixed: {fixedCount}  |  Skipped: {skippedCount}");
-
                 // Per-file report
-                Console.WriteLine("\n--- Per-file results ---");
                 foreach (var log in fixLogs)
                 {
                     if (log.Status == "skipped")
@@ -213,6 +209,9 @@ namespace AudioManager
                     foreach (var e in tagErrors) Console.WriteLine($" {e.OriginalFilename}: {e.Detail}");
                     Console.WriteLine();
                 }
+
+                Console.WriteLine($"Files processed: {files.Length}");
+                Console.WriteLine($"Fixed: {fixedCount}  |  Skipped: {skippedCount}");
             }
             finally
             {
