@@ -127,6 +127,21 @@ namespace AudioManager
                 Console.WriteLine(dryRun ? "Routing (Dry Run)" : "Routing");
                 Console.WriteLine("===========================================================================");
                 Console.WriteLine($"Files in batch: {routeableCount}");
+
+                // Dry-run: pre-compute route distribution and show before per-file output
+                // Lets user spot anomalies (e.g. unexpectedly high Misc count) before reading 100 lines
+                if (dryRun && routeableCount > 1)
+                {
+                    var routeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var sf in scannedFiles.Where(s => s.IsReadable && s.Duplicate?.SkipRouting != true))
+                    {
+                        string preDestDir = GetDestDir(sf.Track, newArtistFolders, out string preReason, out RoutingConfidence preConf);
+                        string cat = GetRouteCategory(preDestDir);
+                        routeCounts[cat] = routeCounts.ContainsKey(cat) ? routeCounts[cat] + 1 : 1;
+                    }
+                    var summaryParts = routeCounts.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}");
+                    Console.WriteLine($"Routes: {string.Join("  |  ", summaryParts)}");
+                }
                 Console.WriteLine();
 
                 // 3a: Execute all duplicate decisions together so their outputs are grouped
@@ -710,6 +725,20 @@ namespace AudioManager
             {
                 return mirrorXmlPath;
             }
+        }
+
+        /// <summary>
+        /// Extracts a display category name from a full destination directory path.
+        /// Used to build the route distribution summary at the top of a dry-run routing section.
+        /// </summary>
+        private static string GetRouteCategory(string destDir)
+        {
+            if (string.IsNullOrEmpty(destDir)) return "Unknown";
+            string rel = destDir.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
+                ? destDir.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
+                : destDir;
+            string first = rel.Split(new[] { '\\', '/' }, 2)[0];
+            return first.Equals("Miscellaneous Songs", StringComparison.OrdinalIgnoreCase) ? "Misc" : first;
         }
 
         /// <summary>
