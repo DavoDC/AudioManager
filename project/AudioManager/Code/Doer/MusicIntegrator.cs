@@ -20,7 +20,7 @@ namespace AudioManager
         {
             Certain,   // Known artist folder; genre override; ATD routing. Auto-route, no prompt.
             Likely,    // Scan-ahead new artist folder; route is reasonable but folder is new. Auto-route, no prompt.
-            Uncertain  // No artist folder (Misc fallback). Show Y/N prompt.
+            Uncertain  // Reserved. Previously used for Misc fallback (Y/N prompt). Misc now routes as Certain.
         }
 
         /// <summary>Per-file integration result for the log.</summary>
@@ -1126,7 +1126,7 @@ namespace AudioManager
             }
 
             reason = "No artist folder found in library";
-            confidence = RoutingConfidence.Uncertain;
+            confidence = RoutingConfidence.Certain;
             return Path.Combine(Constants.AudioFolderPath, Constants.MiscDir);
         }
 
