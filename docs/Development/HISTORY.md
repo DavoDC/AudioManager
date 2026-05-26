@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - Fix ATD scan-ahead false positive + left-align input prompt (dry run bugs)
+
+**ATD scan-ahead false positive:** `RunScanAhead` checked only `Artists/{artist}/` folder existence to decide whether to promote an artist. Akira The Don has no `Artists/Akira The Don/` folder (lives in `Musivation/Akira The Don/`), so it appeared as "new Artists/Akira The Don/" in every dry run - wrong. More critically, if ATD ever had songs in `Miscellaneous Songs/`, `RunMiscMigration` would move them to `Artists/Akira The Don/Singles/` (wrong path) - LibChecker would then fire. Fix: also check `Directory.Exists(Musivation/{artist}/)`. If the artist already has a Musivation folder, they're excluded from scan-ahead entirely.
+
+**Input prompt alignment:** `ReadMenuKey()` used `"             > "` (13-space indent), rendering far right of the options. Changed to `"> "` - fully left-aligned.
+
+---
+
 ## 2026-05-26 - Fix ~1 minute silent hang during duplicate detection (TIER 2 bug)
 
 `PreScanFiles()` called `FindDuplicateInMirror()` once per batch file. Each call did `Directory.GetFiles(...*.xml, AllDirectories)` + XmlDocument.Load on every AudioMirror XML - O(mirror_size x batch_size). With a large mirror and a medium batch this produced a ~1 minute silent hang with no output, indistinguishable from a crash.
