@@ -343,10 +343,19 @@ namespace AudioManager
                 {
                     if (match.Groups.Count > 1)
                     {
-                        string featArtist = match.Groups[1].Value.Trim();
-                        if (!artists.Any(a => a.Equals(featArtist, StringComparison.OrdinalIgnoreCase)))
+                        // "&" in title parentheticals is always a separator, never part of a name.
+                        // Split "A & B" into individual artists so compound forms don't duplicate
+                        // their components (e.g. "X & Y" when "X" and "Y" are already present).
+                        var featParts = match.Groups[1].Value.Trim()
+                            .Split(new[] { " & " }, StringSplitOptions.None)
+                            .Select(p => p.Trim())
+                            .Where(p => !string.IsNullOrEmpty(p));
+                        foreach (var featArtist in featParts)
                         {
-                            artists.Add(featArtist);
+                            if (!artists.Any(a => a.Equals(featArtist, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                artists.Add(featArtist);
+                            }
                         }
                     }
                 }
