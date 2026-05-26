@@ -4,6 +4,19 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - Batch artist casing fixes for May 2026 integration (config, no rebuild)
+
+Added 5 entries to `artist-name-overrides.xml` to prevent title-case corruption on artists in the batch:
+- `TMRWNITE` - all-caps artist; would have become `Tmrwnite` -> new Artists folder with wrong casing
+- `OutKast` - mixed-caps; would have become `Outkast` -> LibChecker would flag existing `Artists\OutKast\` folder mismatch
+- `The Kid LAROI` - mixed-caps; would have become `The Kid Laroi` -> LibChecker flag on existing folder
+- `FIFTY FIFTY` - all-caps K-pop group; would have become `Fifty Fifty` -> aesthetically wrong
+- `Terence McKenna` - internal cap in "Mc"; would have become `Terence Mckenna` -> filename vs People subfolder mismatch
+
+Root cause: `ExtractAndFixArtists` applies `ToTitleCase(toLower())` to all artists not in the overrides XML. Config is loaded at runtime so no rebuild is needed for override additions. Pre-integration dry run confirmed: LibChecker Clean, all 127 files correctly routed.
+
+---
+
 ## 2026-05-26 - Claude dry-run autonomy + output quality + in-batch duplicate detection (TIER 2)
 
 Three causally-linked quality improvements delivered in one session:
