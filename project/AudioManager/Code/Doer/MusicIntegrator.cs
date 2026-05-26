@@ -15,6 +15,7 @@ namespace AudioManager
     internal class MusicIntegrator : Doer
     {
         private bool dryRun;
+        private bool noInput;
         private Dictionary<string, List<string>> _miscMigrationCandidates = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         private enum RoutingConfidence
@@ -71,9 +72,11 @@ namespace AudioManager
         /// Construct and run the music integrator
         /// </summary>
         /// <param name="dryRun">If true, print planned actions without executing any file moves.</param>
-        public MusicIntegrator(bool dryRun = false)
+        /// <param name="noInput">If true, skip all interactive prompts and auto-accept recommended decisions.</param>
+        public MusicIntegrator(bool dryRun = false, bool noInput = false)
         {
             this.dryRun = dryRun;
+            this.noInput = noInput;
             string modeLabel = dryRun ? " [DRY RUN - no files will be moved]" : "";
             Console.WriteLine($"\nIntegrating new music...{modeLabel}");
 
@@ -241,8 +244,7 @@ namespace AudioManager
                             Console.WriteLine($"\nStack trace:\n{sf.ReadException.StackTrace}");
                         Console.WriteLine("\n===========================================================================");
                         Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
-                        Console.WriteLine("Press any key to exit...");
-                        Console.ReadKey();
+                        if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
                         throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {sf.ReadError}", sf.ReadException);
                     }
 
@@ -356,6 +358,17 @@ namespace AudioManager
                             Console.WriteLine("[Y] Accept   [N] Decline   [Q] Quit");
                             Console.WriteLine("---------------------------------------------------------------------------");
 
+                            if (noInput)
+                            {
+                                // Uncertain routes are dead code (Misc routes as Certain since 2026-05-25)
+                                // but guard anyway: auto-accept in non-interactive mode
+                                Console.WriteLine($"  [AUTO] Y (auto-accepted proposed route)");
+                                Console.WriteLine();
+                                if (dryRun) { entry.Status = "would-move"; logEntries.Add(entry); movedCount++; }
+                                else { Directory.CreateDirectory(destDir); File.Move(sf.SourcePath, destPath); movedCount++; entry.Status = "moved"; logEntries.Add(entry); }
+                                continue;
+                            }
+
                             while (true)
                             {
                                 var key = ReadMenuKey();
@@ -429,8 +442,7 @@ namespace AudioManager
                             Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
                         Console.WriteLine("\n===========================================================================");
                         Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
-                        Console.WriteLine("Press any key to exit...");
-                        Console.ReadKey();
+                        if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
                         throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {ex.Message}", ex);
                     }
                 }
@@ -1098,6 +1110,18 @@ namespace AudioManager
             Console.WriteLine("---------------------------------------------------------------------------");
             Console.WriteLine(dup.OptionsLine);
             Console.WriteLine("---------------------------------------------------------------------------");
+
+            if (noInput)
+            {
+                char autoDecision = dup.RecommendedKey != '\0' ? dup.RecommendedKey : 'K';
+                dup.Decision = autoDecision;
+                string autoReason = dup.RecommendedKey != '\0'
+                    ? $"{autoDecision} (auto-accepted recommended)"
+                    : "K (no recommendation - defaulting to Keep Both)";
+                Console.WriteLine($"  [AUTO] {autoReason}");
+                Console.WriteLine();
+                return true;
+            }
 
             while (true)
             {
