@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - Unified integration gate + (with X) tag fixer (TIER 2)
+
+**Unified integration gate:** `launch.bat` options 3 (Dry Run) and 4 (Real) collapsed into a single "Integration" option. Dry run always runs first and displays full output; user must explicitly type `y` to proceed to real integration (default is N). The old "Are you sure?" prompt is removed - seeing the dry-run output IS the review. Enforces the safety property: you cannot move files without having read the routing decisions on screen.
+
+**`(with X)` tag fixer:** Three current-batch tracks used `(with X)` instead of `(feat. X)` - Barbie World (with Aqua) and two Perry Como tracks with long orchestral credits. TagFixer now strips `\(with\s+[^)]+\)` from title/album via `RemoveParentheticals` and extracts the collaborator name into TPE1 via `ExtractAndFixArtists` - identical pattern structure to existing `(feat. X)` handling. Perry Como's orchestral credits will appear as long TPE1 strings; check post-dry-run for new-folder routing side effects; add to `artist-name-overrides.xml` if needed.
+
+---
+
 ## 2026-05-25 - Comprehensive artist casing overrides (TIER 2 audit)
 
 Periodic casing audit: scanned all library folders against what `ToTitleCase(a.ToLower())` produces. Found 35 artists whose canonical names can't be reproduced by default title-casing (all-caps acronyms, hyphenated names, camelCase, digit-prefixed, all-lowercase styles). Added all 35 to `config/artist-name-overrides.xml`. Without these, integrating a new track by e.g. POLO G would write "Polo G" to the tag, causing LibChecker to flag a folder name mismatch. Codebase audit (docs/comments) was clean - no rules were missing from documentation.
