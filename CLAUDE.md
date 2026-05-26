@@ -185,6 +185,13 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 **Never:** Claude runs `integrate`, `analysis`, or moves files.
 
+## Repo Patterns
+
+- **TagFixer artist field mutations must be idempotent.** Before appending a normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if present. Bug: compound form "X & Y" in the field + individual "X" and "Y" added = duplicates.
+- **Sort routing display output by destination path before printing**, not by file processing order. Tracks from the same artist/album should be grouped together in dry-run output so routing anomalies are visible by clustering.
+
+---
+
 ## Tag Fixer Constraint
 
 **TagFixer MUST ONLY operate on NewMusic folder.** Never on the Audio library.
