@@ -532,7 +532,9 @@ namespace AudioManager
                 int total = batchCount + miscCount;
 
                 string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist));
-                if (total >= 3 && !Directory.Exists(artistFolder))
+                string musivArtistFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, SanitiseFolderName(artist));
+                bool hasExistingFolder = Directory.Exists(artistFolder) || Directory.Exists(musivArtistFolder);
+                if (total >= 3 && !hasExistingFolder)
                 {
                     result.Add(artist);
                     string note = miscCount > 0
@@ -1404,7 +1406,7 @@ namespace AudioManager
         {
             while (true)
             {
-                Console.Write("             > ");
+                Console.Write("> ");
                 string input = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
                 switch (input)
                 {
