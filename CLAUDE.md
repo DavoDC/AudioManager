@@ -59,8 +59,7 @@ AudioManager/
 Menu options:
 - 1: Analysis (No Force Regen)
 - 2: Analysis (Force Regen)
-- 3: Integration (Dry Run) - shows tag fixes + routing decisions preview
-- 4: Integration (Real) - applies tag fixes, shows routing decisions preview
+- 3: Integration - runs dry run first, then prompts "Proceed with real integration? [y/N]"
 
 launch.bat handles build internally, no separate build step needed.
 
