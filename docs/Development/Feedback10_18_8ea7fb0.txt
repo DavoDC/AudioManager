@@ -1,0 +1,132 @@
+FEEdback on C:\Users\David\GitHubRepos\AudioManager\logs\FULL test 1013am.txt
+
+THINK ABOUT ALL,  UPDATE MUSIC RULES DOCS IF NEEDED, update all relvant docs, ideas etc 
+
+three dupe etnries like
+===========================================================================
+  DUPLICATE FOUND
+===========================================================================
+
+  In AudioMirror: Artists\Nicki Minaj\Singles\Nicki Minaj;Ice Spice;Aqua - Barbie World.xml
+  Track:          Nicki Minaj - Barbie World
+  Album:          Barbie World
+
+  New file:   Nicki Minaj;Ice Spice;Aqua - Barbie World.mp3
+  Album:      Barbie The Album
+
+  Proposed:   Delete library copy, keep new file
+  Reason:     Library has single; new file is from album 'Barbie The Album' - album preferred
+
+---------------------------------------------------------------------------
+  [L] Delete library copy (keep new file) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+---------------------------------------------------------------------------
+> L
+ISSUE 1 = USer epxeirence = was confused about where dupes would be routed but realised will happen later on 
+ISUE 2  =  'Barbie The Album'is a compilation, you can tell coz has diff primary artists across tracks, we need to decide whether to make compilation folder OR  just put tracks into Singles folders in Artist folders, or misc if none. im leaning towards the latter,  but RMB THIS principle = I LIKE HAVING AS LEAST tracks in misc as possible! 
+i think the rule should be , for tracks that have artist folders, put into theirsingles folder,  for tracks that don't have,  put into Compialtion folkde in C:\Users\David\Audio\Compilations maybe?  but if only track, maybe just put into misc folder,  DECIDE USING /think  , i also don't rlly like one track folders
+
+
+ANOTHER ISSUE
+LEft align these fully, no spaces inf ront 
+  [DRY RUN] Would delete from library: Musivation\Akira The Don\This Is a Mysterious Planet and We Are Mysterious Beings\Akira The Don; David Foster Wallace- Inside My Head.mp3
+  [DRY RUN] Would keep new file: Akira The Don;David Foster Wallace - Inside My Head.mp3
+
+  [DRY RUN] Would delete from library: Artists\Nicki Minaj\Singles\Nicki Minaj;Ice Spice;Aqua - Barbie World.mp3
+  [DRY RUN] Would keep new file: Nicki Minaj;Ice Spice;Aqua - Barbie World.mp3
+
+  [DRY RUN] Would delete from library: Artists\The Kid LAROI\Singles\The Kid LAROI - Forever & Again.mp3
+  [DRY RUN] Would keep new file: The Kid Laroi - Forever & Again.mp3
+
+  [DRY RUN] Would delete from library: Artists\Akon\Singles\Akon - Akon's Beautiful Day.mp3
+  [DRY RUN] Would keep new file: Akon - AKON'S BEAUTIFUL DAY.mp3
+
+  [DRY RUN] Would delete from library: Artists\Akon\Singles\Akon;Simien - Never Really Mattered.mp3
+  [DRY RUN] Would keep new file: Akon;Simien - NEVER REALLY MATTERED.mp3
+
+
+
+ANOTHER ISSUE
+POOR SORTING  of routing info = see bellow, all David goggins and David foster wlaance should be next to eaoachtoehr, group together by artist,  SHOULDNT BE INTERSPERSED if going to same folder!  SAME WIHT JOYNER LUCAS= SORT BY ARTIST FIRST, THEN ALBUM,  logical groupings by routing/metdata !!!
+[AUTO] Akira The Don;David Goggins - GETTING BETTER OR YOU'RE GETTING WORSE
+ > Artists: "Akira The Don; David Goggins"  -> "Akira The Don;David Goggins"
+ > Genre: "Rap; Hip Hop"  -> "Musivation"
+ Route: Akira The Don / People / David Goggins / GETTING BETTER OR YOU'RE GETTING WORSE
+ Reason: 2 songs from album 'GETTING BETTER OR YOU'RE GETTING WORSE'
+ Path: Musivation\Akira The Don\People\David Goggins\GETTING BETTER OR YOU'RE GETTING WORSE\Akira The Don;David Goggins - GETTING BETTER OR YOU'RE GETTING WORSE.mp3
+
+[AUTO] Akira The Don - if the news are fake imagine history
+ > Genre: "Rap; Hip Hop"  -> "Musivation"
+ Route: Akira The Don / Singles
+ Reason: No sampled person listed
+ Path: Musivation\Akira The Don\Singles\Akira The Don - if the news are fake imagine history.mp3
+
+[AUTO] Akira The Don;David Foster Wallace - Meaning from Experience
+ > Artists: "Akira The Don; David Foster Wallace"  -> "Akira The Don;David Foster Wallace"
+ > Genre: "Rap; Hip Hop"  -> "Musivation"
+ Route: Akira The Don / People / David Foster Wallace / This Is Waterwave
+ Reason: 4 songs from album 'This Is Waterwave'
+ Path: Musivation\Akira The Don\People\David Foster Wallace\This Is Waterwave\Akira The Don;David Foster Wallace - Meaning from Experience.mp3
+
+[AUTO] Akira The Don;David Goggins - THAT'S WHEN YOU KNOW
+ > Artists: "Akira The Don; David Goggins"  -> "Akira The Don;David Goggins"
+ > Genre: "Rap; Hip Hop"  -> "Musivation"
+ Route: Akira The Don / People / David Goggins / GETTING BETTER OR YOU'RE GETTING WORSE
+ Reason: 2 songs from album 'GETTING BETTER OR YOU'RE GETTING WORSE'
+ Path: Musivation\Akira The Don\People\David Goggins\GETTING BETTER OR YOU'RE GETTING WORSE\Akira The Don;David Goggins - THAT'S WHEN YOU KNOW.mp3
+
+
+
+
+ANOTHER ISSUE
+" Reason: No artist folder found in library"  
+Routing reasons should be sufficiently descriptive . no artist found yes, and hasn't hit 3 limit. if 2 were incoming and was one in misc, there would bne no artist folder  but that doesn't i mean its hould go misc, should go arist folder!!!  So that's missing from reason!  think on this too
+
+
+
+ANOTHER ISSUE 
+there is a Common song here = C:\Users\David\Audio\Sources\Films\Smallfoot
+
+AND
+
+[AUTO] Common - The Food (Live)
+ Route: Misc
+ Reason: No artist folder found in library
+ Path: Miscellaneous Songs\Common - The Food (Live).mp3
+
+[AUTO] Common;John Legend;Kanye West - They Say
+ > Artists: "Common; John Legend; Kanye West"  -> "Common;John Legend;Kanye West"
+ Route: Misc
+ Reason: No artist folder found in library
+ Path: Miscellaneous Songs\Common;John Legend;Kanye West - They Say.mp3
+
+SO all three should go in new Common arist folder!!! i think,  think on this  
+
+
+
+question/ISSUE , what IS AUTO LIKELY  . Confuisng, this may or may not happen???
+[AUTO (likely)] Dominic Fike - Hey Blondie
+ Route: Dominic Fike / Singles
+ Reason: Artist folder [new via scan-ahead]; only 1 song from album -> Singles/
+ Path: Artists\Dominic Fike\Singles\Dominic Fike - Hey Blondie.mp3
+
+
+
+
+ISSUE , SHOULDNT TOUCH ARISTS HERE BECAUSE ITS ALREADY IN, need to check whats there ,  arists field overloaded/duplicated now
+[AUTO (likely)] Perry Como;Mitchell Ayres And His Orchestra;The Ray Charles Singers;Mitchell Ayres And His Orchestra & The Ray Charles Singers - Catch a Falling Star
+ > Title: "Catch a Falling Star (with Mitchell Ayres and His Orchestra & The Ray Charles Singers)"  -> "Catch a Falling Star"
+ > Artists: "Perry Como; Mitchell Ayres And His Orchestra; The Ray Charles Singers"  -> "Perry Como;Mitchell Ayres And His Orchestra;The Ray Charles Singers;Mitchell Ayres And His Orchestra & The Ray Charles Singers"
+ Route: Perry Como / Very Best Of
+ Reason: Artist folder [new via scan-ahead]; 4 songs from album -> album subfolder
+ Path: Artists\Perry Como\Very Best Of\Perry Como;Mitchell Ayres And His Orchestra;The Ray Charles Singers;Mitchell Ayres And His Orchestra & The Ray Charles Singers - Catch a Falling Star.mp3
+
+
+GENERAL THOUGHTS
+PRETTY GOOD overall, good job , majority of decisions correct,  realisign there  ALOT OF EDGE CASES , may need far future to investiage and handle, aand each one needs human deicion for library org preference - e.g. Film smallfoot thing, tricky   , need investigation later on and OR  we just handle as it comes up  
+
+
+
+
+
+
+
