@@ -14,6 +14,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
+- [ ] **Post-integration retrospective (May 2026 batch)** - After real integration runs, come back and check: (1) Did LibChecker pass clean on post-integration analysis? (2) Did any routing go wrong that the dry run didn't catch? (3) Did any tag fixes produce unexpected filenames? Pre-integration Claude confidence justifications to evaluate against actual outcome: *All 127 files accounted for (97 Artists + 22 Misc + 8 Musivation). LibChecker clean on 2 consecutive dry runs. TMRWNITE/OutKast/The Kid LAROI casing confirmed correct in second run. 5 duplicates all recommended [L] (album over single - standard policy). Misc migrations (Dominic Fike x2, Martin Garrix x1, Shaboozey x1) looked correct. Martin Garrix "Patrick Stump of Fall Out Boy" artist bug fixed before integration. Remaining cosmetic items: Tj Hickey -> Tj (Misc-only), Masego;Fkj (featured artist only), Ty Dolla $Ign (featured artist only).* If something went wrong, use this list to find where the confidence was misplaced.
+
 ---
 
 ## TIER 2 - QUALITY
