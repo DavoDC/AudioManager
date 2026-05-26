@@ -520,6 +520,31 @@ namespace AudioManager
                     catch { /* skip malformed XML */ }
                 }
             }
+
+            // Count existing Sources/ songs by artist (Films, Shows, Anime) from AudioMirror XML.
+            // Sources/ tracks count toward the 3-song threshold but are NOT migrated - they stay
+            // in Sources/ regardless of whether the artist gets a new Artists/ folder.
+            var sourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            string mirrorSourcesPath = Path.Combine(Constants.MirrorFolderPath, Constants.SourcesDir);
+            if (Directory.Exists(mirrorSourcesPath))
+            {
+                var sourcesXmlFiles = Directory.GetFiles(mirrorSourcesPath, "*.xml", SearchOption.AllDirectories);
+                Console.Write($" checking Sources ({sourcesXmlFiles.Length})...");
+                foreach (var xmlFile in sourcesXmlFiles)
+                {
+                    try
+                    {
+                        var xmlDoc = new System.Xml.XmlDocument();
+                        xmlDoc.Load(xmlFile);
+                        var artistsEl = xmlDoc.SelectSingleNode("//Artists");
+                        if (artistsEl == null) continue;
+                        string primary = Track.ProcessProperty(artistsEl.InnerText)[0].Trim();
+                        if (string.IsNullOrEmpty(primary)) continue;
+                        sourcesCounts[primary] = sourcesCounts.ContainsKey(primary) ? sourcesCounts[primary] + 1 : 1;
+                    }
+                    catch { /* skip malformed XML */ }
+                }
+            }
             Console.WriteLine(" done.");
 
             // Find artists that will hit 3+ threshold and don't already have an Artists/ folder
@@ -529,7 +554,8 @@ namespace AudioManager
                 string artist = kvp.Key;
                 int batchCount = kvp.Value;
                 int miscCount = miscCounts.ContainsKey(artist) ? miscCounts[artist] : 0;
-                int total = batchCount + miscCount;
+                int sourcesCount = sourcesCounts.ContainsKey(artist) ? sourcesCounts[artist] : 0;
+                int total = batchCount + miscCount + sourcesCount;
 
                 string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist));
                 string musivArtistFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, SanitiseFolderName(artist));
@@ -537,9 +563,15 @@ namespace AudioManager
                 if (total >= 3 && !hasExistingFolder)
                 {
                     result.Add(artist);
-                    string note = miscCount > 0
-                        ? $"{batchCount} in batch + {miscCount} in Misc = {total} total -> new Artists/{artist}/"
-                        : $"{batchCount} in batch = {total} total -> new Artists/{artist}/";
+                    string note;
+                    if (miscCount > 0 && sourcesCount > 0)
+                        note = $"{batchCount} in batch + {miscCount} in Misc + {sourcesCount} in Sources = {total} total -> new Artists/{artist}/";
+                    else if (miscCount > 0)
+                        note = $"{batchCount} in batch + {miscCount} in Misc = {total} total -> new Artists/{artist}/";
+                    else if (sourcesCount > 0)
+                        note = $"{batchCount} in batch + {sourcesCount} in Sources = {total} total -> new Artists/{artist}/";
+                    else
+                        note = $"{batchCount} in batch = {total} total -> new Artists/{artist}/";
                     if (miscCount > 0)
                         note += $" ({miscCount} existing Misc song(s) will be auto-migrated)";
                     previewLines.Add($"  - {note}");
