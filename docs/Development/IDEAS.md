@@ -14,6 +14,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
+- [ ] **TMRWNITE artist casing investigation** - Dry-run 2026-05-26 shows Path as `Artists\Tmrwnite\...` but scan-ahead shows `Artists/TMRWNITE/`. TagFixer.ExtractAndFixArtists may be title-casing all-caps names. If so, `CheckArtistFolder()` (case-sensitive String.Equals) will flag on next analysis. Before integrating this batch: (1) run analysis after dry-run to confirm whether TMRWNITE is in artist-name-overrides.xml, (2) if not, add it, (3) trace whether ExtractAndFixArtists applies any casing normalisation to all-caps names and fix if so.
+
 ---
 
 ## TIER 2 - QUALITY
