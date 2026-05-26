@@ -14,8 +14,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **RETROSPECTIVES (COMPLETED - see HISTORY.md for details)**
 
-- [ ] **Artist field duplication in TagFixer** - TagFixer appends artists from parenthetical title suffixes (e.g. "with Mitchell Ayres and His Orchestra & The Ray Charles Singers") but does not check whether those names already appear in the existing artist field. Result: compound forms and their component parts both end up in the field. Example: Perry Como track ended up with "Mitchell Ayres And His Orchestra" listed twice (once split out, once as part of the `&` compound). Fix: before appending any normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if already present. Make TagFixer's artist field mutations idempotent.
-
 - [ ] **In-batch + Misc threshold for artist folder creation** - When all tracks from an artist arrive together in a single batch with no existing library folder, each track is evaluated independently and routes to Misc. But if the combined count (batch + any existing Misc tracks for that artist) meets the 3-track threshold, a new `Artists/<name>/` folder should be created. Example: Common had 3 tracks (Smallfoot song already in Sources/Films + Food (Live) + They Say in this batch) - all went to `Miscellaneous Songs/` when they collectively qualify for a new Common artist folder. Fix: during routing, sum tracks per primary artist across the batch and scan existing Misc for matches; if total >= 3 and no artist folder exists, create one.
 
 ---

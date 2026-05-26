@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - TagFixer compound artist idempotency (TIER 1)
+
+`ExtractAndFixArtists` was adding compound "A & B" featured-artist strings as a single entry even when "A" and "B" were already individually present in the artist field. Example: Perry Como track with `(with Mitchell Ayres and His Orchestra & The Ray Charles Singers)` in the title produced 4 artist entries instead of 3.
+
+Fix: split extracted featured-artist groups on `" & "` before the existing-artist check. Each component is added individually only if absent. The `&` in title parentheticals is always a separator, never part of a name, so this split is always safe. The `.Distinct()` downstream remains as a final safety net. Artist field mutations are now idempotent for compound forms.
+
+---
+
 ## 2026-05-26 - TagFixer filename guard for empty artist/title after sanitisation (TIER 3a)
 
 If artist or title tag was empty (or contained only illegal filesystem characters), `SanitiseFilename` returned an empty string and the rename produced `" - TITLE.mp3"` or `"ARTIST - .mp3"`. Guard added to both real and dry-run paths: if either sanitised part is empty, log `[WARN] Rename skipped: empty artist or title after sanitisation`, keep original filename, continue. The tag changes (TCMP, genre, etc.) still apply - only the rename is skipped.
