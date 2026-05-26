@@ -352,10 +352,16 @@ namespace AudioManager
                             .Where(p => !string.IsNullOrEmpty(p));
                         foreach (var featArtist in featParts)
                         {
-                            if (!artists.Any(a => a.Equals(featArtist, StringComparison.OrdinalIgnoreCase)))
-                            {
-                                artists.Add(featArtist);
-                            }
+                            // Skip exact duplicates
+                            if (artists.Any(a => a.Equals(featArtist, StringComparison.OrdinalIgnoreCase)))
+                                continue;
+                            // Skip "X of BandName" clarifications where BandName is already present.
+                            // e.g. "(feat. Macklemore & Patrick Stump of Fall Out Boy)" when "Fall Out Boy"
+                            // is already in the artist field - "of BandName" is a descriptor, not a separator.
+                            int ofIdx = featArtist.IndexOf(" of ", StringComparison.OrdinalIgnoreCase);
+                            if (ofIdx >= 0 && artists.Any(a => a.Equals(featArtist.Substring(ofIdx + 4).Trim(), StringComparison.OrdinalIgnoreCase)))
+                                continue;
+                            artists.Add(featArtist);
                         }
                     }
                 }
