@@ -218,6 +218,8 @@ namespace AudioManager
                 @"\s*\[feat\.\s+[^\]]+\]", // [feat. Artist]
                 @"\s*\[ft\.\s+[^\]]+\]",   // [ft. Artist]
                 @"\s*\(Album\s+Version\)", // (Album Version)
+                @"\s*\(Single\s+Version\)", // (Single Version)
+                @"\s*\(Radio\s+Version\)", // (Radio Version) - title field; album field already handled by StripAlbumSuffixes
                 @"\s*\(Explicit\)",       // (Explicit)
                 @"\s*\(Radio\s+Edit\)",  // (Radio Edit)
                 @"\s*\(Edit\)",           // (Edit)
