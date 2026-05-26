@@ -26,15 +26,13 @@ echo.
 echo Select mode:
 echo   1. Analysis (No Force Regen)
 echo   2. Analysis (Force Regen)
-echo   3. Integration (Dry Run)
-echo   4. Integration (Real)
+echo   3. Integration
 echo.
-set /p CHOICE=Enter choice (1-4):
+set /p CHOICE=Enter choice (1-3):
 
 if "%CHOICE%"=="1" goto analysis_normal
 if "%CHOICE%"=="2" goto analysis_force
-if "%CHOICE%"=="3" goto integrate_dry
-if "%CHOICE%"=="4" goto integrate_real
+if "%CHOICE%"=="3" goto integrate
 echo Invalid choice.
 pause
 cmd /k
@@ -55,22 +53,19 @@ echo.
 "%EXE%" analysis --force-regen
 goto done
 
-:integrate_dry
+:integrate
 echo.
 echo [RUN] Integration (Dry Run)
 echo ============================================================
 echo.
 "%EXE%" integrate --dry-run
-goto done
-
-:integrate_real
 echo.
-echo [WARNING] Real integration will move files. Make sure Dry Run passed first.
-set /p CONFIRM=Are you sure? (Y/N):
-if /I not "%CONFIRM%"=="Y" (
+echo --- DRY RUN COMPLETE ---
+echo.
+set /p PROCEED=Proceed with real integration? [y/N]:
+if /I not "%PROCEED%"=="y" (
     echo Cancelled.
-    pause
-    cmd /k
+    goto done
 )
 echo.
 echo [RUN] Integration (Real)
