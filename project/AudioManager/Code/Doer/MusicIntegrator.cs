@@ -71,6 +71,7 @@ namespace AudioManager
             public Exception ReadException;
             public LogEntry LogEntry;
             public DupData Duplicate; // null if no duplicate found
+            public bool InBatchDuplicate; // true if another file in the batch shares normalised artist+title
         }
 
         /// <summary>
@@ -113,6 +114,9 @@ namespace AudioManager
 
                 // Pre-scan all files: read + clean tags, find duplicates (no UI)
                 var scannedFiles = PreScanFiles(files, tagChanges);
+
+                // Flag in-batch duplicates (same normalised artist+title appearing twice in NewMusic)
+                MarkInBatchDuplicates(scannedFiles);
 
                 // Step 2: Batch duplicate review - all duplicates presented together before routing
                 var duplicateFiles = scannedFiles.Where(sf => sf.Duplicate != null).ToList();
@@ -313,6 +317,8 @@ namespace AudioManager
                             else if (dryRun)
                             {
                                 var sb = new StringBuilder();
+                                if (sf.InBatchDuplicate)
+                                    sb.AppendLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
                                 sb.AppendLine($"[{autoLabel}] {track.Artists} - {track.Title}");
                                 foreach (var change in entry.TagChanges)
                                     sb.AppendLine($" > {change}");
@@ -326,6 +332,8 @@ namespace AudioManager
                             }
                             else
                             {
+                                if (sf.InBatchDuplicate)
+                                    Console.WriteLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
                                 Directory.CreateDirectory(destDir);
                                 File.Move(sf.SourcePath, destPath);
                                 movedCount++;
@@ -956,6 +964,24 @@ namespace AudioManager
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Flags ScannedFile entries where the same normalised artist+title appears more than once
+        /// in the batch. Sets InBatchDuplicate = true on all files sharing a key. Non-blocking.
+        /// </summary>
+        private void MarkInBatchDuplicates(List<ScannedFile> scannedFiles)
+        {
+            var keyGroups = new Dictionary<string, List<ScannedFile>>(StringComparer.Ordinal);
+            foreach (var sf in scannedFiles.Where(f => f.IsReadable && f.Track != null))
+            {
+                string key = sf.Track.PrimaryArtist.ToLowerInvariant() + "\0" + sf.Track.Title.ToLowerInvariant();
+                if (!keyGroups.ContainsKey(key)) keyGroups[key] = new List<ScannedFile>();
+                keyGroups[key].Add(sf);
+            }
+            foreach (var group in keyGroups.Values.Where(g => g.Count > 1))
+                foreach (var sf in group)
+                    sf.InBatchDuplicate = true;
         }
 
         /// <summary>
