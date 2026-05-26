@@ -200,6 +200,8 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 ## Repo Patterns
 
+- **artist-name-overrides.xml is loaded at runtime** (XmlDocument.Load at first call, cached per process). No rebuild needed when adding entries - changes take effect on next exe run.
+- **Colons in ID3 album tags become underscores in folder/filenames** via Path.GetInvalidFileNameChars() in SanitiseFilename. The ID3 tag itself retains the colon. Expected behavior, not a bug.
 - **TagFixer artist field mutations must be idempotent.** Before appending a normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if present. Bug: compound form "X & Y" in the field + individual "X" and "Y" added = duplicates.
 - **Sort routing display output by destination path before printing**, not by file processing order. Tracks from the same artist/album should be grouped together in dry-run output so routing anomalies are visible by clustering.
 
