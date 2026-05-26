@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - Fix ~1 minute silent hang during duplicate detection (TIER 2 bug)
+
+`PreScanFiles()` called `FindDuplicateInMirror()` once per batch file. Each call did `Directory.GetFiles(...*.xml, AllDirectories)` + XmlDocument.Load on every AudioMirror XML - O(mirror_size x batch_size). With a large mirror and a medium batch this produced a ~1 minute silent hang with no output, indistinguishable from a crash.
+
+Fix: `BuildMirrorIndex()` pre-loads the full AudioMirror into a `Dictionary<string, string>` (normalised `primary\0title -> xmlPath`) once before the pre-scan loop. Prints "Indexing AudioMirror for duplicates (N tracks)..." so the user sees activity. `FindDuplicateInMirror` signature changed to accept the index; lookup is O(1). Total cost: O(mirror_size + batch_size) instead of O(mirror_size x batch_size).
+
+---
+
 ## 2026-05-26 - (Single Version) and (Radio Version) stripped from title field (TIER 3)
 
 `RemoveParentheticals` now strips `(Single Version)` and `(Radio Version)` from track titles. `(Radio Version)` was already handled in `StripAlbumSuffixes` for the album field but not the title field. Batched as two patterns in one change per IDEAS.md.
