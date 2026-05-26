@@ -715,57 +715,53 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Searches AudioMirror XML files for an existing track with the same primary artist and title.
-        /// Returns the path to the matching track's XML file if found, null otherwise.
-        /// Search is case-insensitive and whitespace-trimmed.
+        /// Builds an in-memory index of all AudioMirror XMLs: normalised "primary\0title" -> xmlPath.
+        /// Called once before PreScanFiles so duplicate detection is O(1) per file instead of O(mirror_size).
+        /// Prints a progress message so the user sees activity during what was previously a silent hang.
         /// </summary>
-        private string FindDuplicateInMirror(Track track)
+        private Dictionary<string, string> BuildMirrorIndex()
         {
-            try
+            var index = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!Directory.Exists(Constants.MirrorFolderPath)) return index;
+
+            var xmlFiles = Directory.GetFiles(Constants.MirrorFolderPath, "*.xml", SearchOption.AllDirectories);
+            Console.Write($"\nIndexing AudioMirror for duplicates ({xmlFiles.Length} tracks)...");
+
+            foreach (var xmlFile in xmlFiles)
             {
-                string primaryArtist = track.PrimaryArtist;
-                if (string.IsNullOrEmpty(primaryArtist) || primaryArtist.Equals("Missing"))
-                    return null;
-
-                string title = track.Title;
-                if (string.IsNullOrEmpty(title) || title.Equals("Missing"))
-                    return null;
-
-                if (!Directory.Exists(Constants.MirrorFolderPath))
-                    return null;
-
-                foreach (var xmlFile in Directory.GetFiles(Constants.MirrorFolderPath, "*.xml", SearchOption.AllDirectories))
+                try
                 {
-                    try
-                    {
-                        var xmlDoc = new System.Xml.XmlDocument();
-                        xmlDoc.Load(xmlFile);
-
-                        var artistsEl = xmlDoc.SelectSingleNode("//Artists");
-                        var titleEl = xmlDoc.SelectSingleNode("//Title");
-
-                        if (artistsEl == null || titleEl == null)
-                            continue;
-
-                        string mirrorArtistsRaw = artistsEl.InnerText;
-                        if (string.IsNullOrEmpty(mirrorArtistsRaw))
-                            continue;
-
-                        string mirrorPrimary = Track.ProcessProperty(mirrorArtistsRaw)[0].Trim();
-                        string mirrorTitle = titleEl.InnerText.Trim();
-
-                        if (mirrorPrimary.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase) &&
-                            mirrorTitle.Equals(title, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return xmlFile;
-                        }
-                    }
-                    catch { /* skip malformed XML */ }
+                    var xmlDoc = new System.Xml.XmlDocument();
+                    xmlDoc.Load(xmlFile);
+                    var artistsEl = xmlDoc.SelectSingleNode("//Artists");
+                    var titleEl = xmlDoc.SelectSingleNode("//Title");
+                    if (artistsEl == null || titleEl == null) continue;
+                    string primary = Track.ProcessProperty(artistsEl.InnerText)[0].Trim();
+                    string title = titleEl.InnerText.Trim();
+                    if (string.IsNullOrEmpty(primary) || string.IsNullOrEmpty(title)) continue;
+                    string key = primary.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+                    if (!index.ContainsKey(key))
+                        index[key] = xmlFile;
                 }
+                catch { /* skip malformed XML */ }
             }
-            catch { /* skip errors */ }
 
-            return null;
+            Console.WriteLine(" done.");
+            return index;
+        }
+
+        /// <summary>
+        /// Looks up an existing track in the pre-built mirror index by primary artist + title (case-insensitive).
+        /// Returns the matching XML path, or null if not found.
+        /// </summary>
+        private string FindDuplicateInMirror(Track track, Dictionary<string, string> mirrorIndex)
+        {
+            string primaryArtist = track.PrimaryArtist;
+            if (string.IsNullOrEmpty(primaryArtist) || primaryArtist.Equals("Missing")) return null;
+            string title = track.Title;
+            if (string.IsNullOrEmpty(title) || title.Equals("Missing")) return null;
+            string key = primaryArtist.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+            return mirrorIndex.TryGetValue(key, out string xmlPath) ? xmlPath : null;
         }
 
         /// <summary>
@@ -901,6 +897,7 @@ namespace AudioManager
         /// </summary>
         private List<ScannedFile> PreScanFiles(string[] files, Dictionary<string, List<string>> tagChanges)
         {
+            var mirrorIndex = BuildMirrorIndex();
             var result = new List<ScannedFile>();
             foreach (var sourcePath in files)
             {
@@ -942,7 +939,7 @@ namespace AudioManager
                     if (tagChanges != null && tagChanges.TryGetValue(filename, out var changes))
                         entry.TagChanges.AddRange(changes);
 
-                    string duplicatePath = FindDuplicateInMirror(track);
+                    string duplicatePath = FindDuplicateInMirror(track, mirrorIndex);
                     if (!string.IsNullOrEmpty(duplicatePath))
                         sf.Duplicate = BuildDupData(sourcePath, track, duplicatePath);
                 }
