@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - RunScanAhead Sources/ threshold (TIER 1)
+
+`RunScanAhead` already counted batch + Misc tracks but missed `Sources/` tracks, so artists with a Sources/Films song (e.g. Common in Smallfoot) plus 2 batch songs still routed to Misc (2 < 3 threshold). Fix: also scan `AudioMirror/Sources/**/*.xml` by primary artist and include in the total. Sources tracks count toward promotion but are NOT migrated - they stay in Sources/ with their original classification. Scan-ahead note updated to show the breakdown (e.g. "2 in batch + 1 in Sources = 3 total -> new Artists/Common/").
+
+---
+
 ## 2026-05-26 - TagFixer compound artist idempotency (TIER 1)
 
 `ExtractAndFixArtists` was adding compound "A & B" featured-artist strings as a single entry even when "A" and "B" were already individually present in the artist field. Example: Perry Como track with `(with Mitchell Ayres and His Orchestra & The Ray Charles Singers)` in the title produced 4 artist entries instead of 3.
