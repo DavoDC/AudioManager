@@ -192,6 +192,13 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 **Never:** Claude runs real `integrate` or moves/deletes any files in the library or NewMusic.
 
+**Claude dev workflow for verifying fixes:**
+```
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
+& "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" integrate --dry-run --no-input
+```
+`--no-input` skips all interactive prompts (auto-accepts recommended duplicate decisions). Run after any routing or tag fix to see real output without blocking.
+
 ## Repo Patterns
 
 - **TagFixer artist field mutations must be idempotent.** Before appending a normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if present. Bug: compound form "X & Y" in the field + individual "X" and "Y" added = duplicates.

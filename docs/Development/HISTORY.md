@@ -4,6 +4,21 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - Claude dry-run autonomy + output quality + in-batch duplicate detection (TIER 2)
+
+Three causally-linked quality improvements delivered in one session:
+
+**Claude autonomous dry-run (`--no-input` flag):** Added `--no-input` CLI flag so Claude can run `integrate --dry-run --no-input` without blocking on interactive prompts. Duplicate resolver auto-accepts the recommended key (K if no recommendation), error halts skip `ReadKey`, Uncertain routing path (dead code) also guarded. CLAUDE.md updated: analysis and dry-run are safe for Claude to run; real integration remains user-only. Payback: Claude can now verify routing fixes by actually running the tool, not just reasoning about code.
+
+**Dry-run output quality pass (3 improvements):**
+- Sort routing output by destination path - tracks from the same artist/album now cluster together, making routing anomalies visible by visual grouping
+- Routing reason for Misc now shows full decision chain: `no artist folder; N in batch + M in library = T total, below threshold 3 -> Misc`
+- `[DRY RUN]` lines now flush-left, aligning with `[AUTO]` routing lines
+
+**In-batch duplicate detection:** Before routing begins, all NewMusic files are grouped by normalised artist+title. Any two sharing a key get `[WARN: IN-BATCH DUPLICATE]` prepended to their routing block in the sorted dry-run output (appears adjacent due to sort). Non-blocking flag-only; lets user delete duplicates before real integration. Also shown in real mode as safety net.
+
+---
+
 ## 2026-05-26 - RunScanAhead Sources/ threshold (TIER 1)
 
 `RunScanAhead` already counted batch + Misc tracks but missed `Sources/` tracks, so artists with a Sources/Films song (e.g. Common in Smallfoot) plus 2 batch songs still routed to Misc (2 < 3 threshold). Fix: also scan `AudioMirror/Sources/**/*.xml` by primary artist and include in the total. Sources tracks count toward promotion but are NOT migrated - they stay in Sources/ with their original classification. Scan-ahead note updated to show the breakdown (e.g. "2 in batch + 1 in Sources = 3 total -> new Artists/Common/").
