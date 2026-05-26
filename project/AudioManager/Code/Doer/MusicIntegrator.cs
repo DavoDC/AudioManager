@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml;
 using File = System.IO.File;
 using TagLib;
@@ -17,6 +18,10 @@ namespace AudioManager
         private bool dryRun;
         private bool noInput;
         private Dictionary<string, List<string>> _miscMigrationCandidates = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        // Populated by RunScanAhead; used by GetDestDir to build full routing reason for Misc fallback
+        private Dictionary<string, int> _scanAheadBatchCounts;
+        private Dictionary<string, int> _scanAheadMiscCounts;
+        private Dictionary<string, int> _scanAheadSourcesCounts;
 
         private enum RoutingConfidence
         {
@@ -170,7 +175,7 @@ namespace AudioManager
                     {
                         if (dryRun)
                         {
-                            Console.WriteLine($"  [DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
+                            Console.WriteLine($"[DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
                             entry.Status = "would-delete";
                             entry.Detail = "duplicate (would delete)";
                         }
@@ -189,8 +194,8 @@ namespace AudioManager
                     {
                         if (dryRun)
                         {
-                            Console.WriteLine($"  [DRY RUN] Would delete from library: {dup.RelLibraryPath}");
-                            Console.WriteLine($"  [DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
+                            Console.WriteLine($"[DRY RUN] Would delete from library: {dup.RelLibraryPath}");
+                            Console.WriteLine($"[DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
                             entry.Status = "would-replace";
                             entry.Detail = "duplicate (would replace)";
                             logEntries.Add(entry); skippedCount++;
@@ -224,6 +229,8 @@ namespace AudioManager
 
                 // 3b: Route all files. D-decided and dry-run L-decided duplicates already handled
                 //     above; real-mode L files and K files fall through to routing here.
+                // In dry-run: collect outputs and print sorted by destination path after the loop.
+                var dryRunRoutingOutputs = dryRun ? new List<(string destPath, string block)>() : null;
                 var routingStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 foreach (var sf in scannedFiles)
                 {
@@ -305,13 +312,15 @@ namespace AudioManager
                             }
                             else if (dryRun)
                             {
-                                Console.WriteLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                                var sb = new StringBuilder();
+                                sb.AppendLine($"[{autoLabel}] {track.Artists} - {track.Title}");
                                 foreach (var change in entry.TagChanges)
-                                    Console.WriteLine($" > {change}");
-                                Console.WriteLine($" Route: {routeSummary}");
-                                Console.WriteLine($" Reason: {reason}");
-                                Console.WriteLine($" Path: {relativeDest}");
-                                Console.WriteLine();
+                                    sb.AppendLine($" > {change}");
+                                sb.AppendLine($" Route: {routeSummary}");
+                                sb.AppendLine($" Reason: {reason}");
+                                sb.AppendLine($" Path: {relativeDest}");
+                                sb.AppendLine();
+                                dryRunRoutingOutputs.Add((relativeDest, sb.ToString()));
                                 entry.Status = "would-move";
                                 logEntries.Add(entry); movedCount++;
                             }
@@ -448,6 +457,13 @@ namespace AudioManager
                 }
 
                 routingStopwatch.Stop();
+
+                // Print dry-run routing outputs sorted by destination path
+                if (dryRun && dryRunRoutingOutputs != null)
+                {
+                    foreach (var (_, block) in dryRunRoutingOutputs.OrderBy(x => x.destPath, StringComparer.OrdinalIgnoreCase))
+                        Console.Write(block);
+                }
 
                 // Routing section footer
                 var routingErrors = logEntries.Where(e => e.Status == "error").ToList();
@@ -604,6 +620,11 @@ namespace AudioManager
                     _miscMigrationCandidates[artist] = xmlPaths;
             }
 
+            // Store counts so GetDestDir can build a full routing reason for Misc fallback
+            _scanAheadBatchCounts = batchCounts;
+            _scanAheadMiscCounts = miscCounts;
+            _scanAheadSourcesCounts = sourcesCounts;
+
             return result;
         }
 
@@ -643,7 +664,7 @@ namespace AudioManager
 
                     if (dryRun)
                     {
-                        Console.WriteLine($"  [DRY RUN] Would move: {fileName}");
+                        Console.WriteLine($"[DRY RUN] Would move: {fileName}");
                         totalCount++;
                     }
                     else
@@ -1276,7 +1297,13 @@ namespace AudioManager
                 }
             }
 
-            reason = "No artist folder found in library";
+            int scanBatch = (_scanAheadBatchCounts != null && _scanAheadBatchCounts.TryGetValue(primaryArtist2, out int sb2)) ? sb2 : 0;
+            int scanMisc = (_scanAheadMiscCounts != null && _scanAheadMiscCounts.TryGetValue(primaryArtist2, out int sm)) ? sm : 0;
+            int scanSources = (_scanAheadSourcesCounts != null && _scanAheadSourcesCounts.TryGetValue(primaryArtist2, out int ss)) ? ss : 0;
+            int scanTotal = scanBatch + scanMisc + scanSources;
+            reason = scanTotal > 0
+                ? $"no artist folder; {scanBatch} in batch + {scanMisc + scanSources} in library = {scanTotal} total, below threshold 3 -> Misc"
+                : "No artist folder found in library";
             confidence = RoutingConfidence.Certain;
             return Path.Combine(Constants.AudioFolderPath, Constants.MiscDir);
         }
