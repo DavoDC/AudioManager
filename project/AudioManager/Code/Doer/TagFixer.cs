@@ -214,6 +214,7 @@ namespace AudioManager
             {
                 @"\s*\(feat\.\s+[^)]+\)", // (feat. Artist)
                 @"\s*\(ft\.\s+[^)]+\)",   // (ft. Artist)
+                @"\s*\(with\s+[^)]+\)",   // (with Artist)
                 @"\s*\[feat\.\s+[^\]]+\]", // [feat. Artist]
                 @"\s*\[ft\.\s+[^\]]+\]",   // [ft. Artist]
                 @"\s*\(Album\s+Version\)", // (Album Version)
@@ -314,6 +315,7 @@ namespace AudioManager
             {
                 @"\(feat\.\s+([^)]+)\)",  // (feat. Artist)
                 @"\(ft\.\s+([^)]+)\)",    // (ft. Artist)
+                @"\(with\s+([^)]+)\)",    // (with Artist)
                 @"\[feat\.\s+([^\]]+)\]", // [feat. Artist]
                 @"\[ft\.\s+([^\]]+)\]",   // [ft. Artist]
             };
