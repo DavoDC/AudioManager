@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - TagFixer filename guard for empty artist/title after sanitisation (TIER 3a)
+
+If artist or title tag was empty (or contained only illegal filesystem characters), `SanitiseFilename` returned an empty string and the rename produced `" - TITLE.mp3"` or `"ARTIST - .mp3"`. Guard added to both real and dry-run paths: if either sanitised part is empty, log `[WARN] Rename skipped: empty artist or title after sanitisation`, keep original filename, continue. The tag changes (TCMP, genre, etc.) still apply - only the rename is skipped.
+
+---
+
 ## 2026-05-26 - Fix ATD scan-ahead false positive + left-align input prompt (dry run bugs)
 
 **ATD scan-ahead false positive:** `RunScanAhead` checked only `Artists/{artist}/` folder existence to decide whether to promote an artist. Akira The Don has no `Artists/Akira The Don/` folder (lives in `Musivation/Akira The Don/`), so it appeared as "new Artists/Akira The Don/" in every dry run - wrong. More critically, if ATD ever had songs in `Miscellaneous Songs/`, `RunMiscMigration` would move them to `Artists/Akira The Don/Singles/` (wrong path) - LibChecker would then fire. Fix: also check `Directory.Exists(Musivation/{artist}/)`. If the artist already has a Musivation folder, they're excluded from scan-ahead entirely.
