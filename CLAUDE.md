@@ -175,15 +175,22 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 ## Critical Safety Rule
 
-**Only the user (David) executes integration.** Claude implements features and prepares workflows, but stops before running any integration. Integration commands touch real files in AudioMirror repo and NewMusic folder - user must manually trigger via `launch.bat` for data safety and auditability. No exceptions, even for dry-run.
+**Only the user (David) runs real integration.** Real integration moves files from NewMusic into the library - user must manually trigger via `launch.bat` for data safety and auditability.
 
-**User workflow:** 
+**Claude CAN run (read-only, no file moves):**
+- `analysis` (and `analysis --force-regen`) - reads library, generates report, no writes except AudioMirror XML regen
+- `integrate --dry-run` - previews routing decisions without touching any files
+
+**Claude CANNOT run:**
+- `integrate` (real) - moves files, irreversible
+
+**User workflow for real integration:**
 ```
 .\scripts\launch.bat
-→ Select option 3 (Dry Run) or 4 (Real)
+→ Select option 3 (Dry Run) to verify, then option 4 (Real) to integrate
 ```
 
-**Never:** Claude runs `integrate`, `analysis`, or moves files.
+**Never:** Claude runs real `integrate` or moves/deletes any files in the library or NewMusic.
 
 ## Repo Patterns
 

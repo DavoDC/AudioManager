@@ -23,15 +23,17 @@ namespace AudioManager
                 // Set mirror path relative to the executable
                 string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, Constants.MirrorFolderPath));
 
-                // Detect CLI args: "analysis [--force-regen]" or "integrate [--dry-run]"
+                // Detect CLI args: "analysis [--force-regen]" or "integrate [--dry-run] [--no-input]"
                 int mode;
                 bool forceMirrorRegen;
                 bool dryRun = false;
+                bool noInput = false;
                 if (args.Length > 0)
                 {
                     string modeArg = args[0].ToLower();
                     bool forceRegen = args.Any(a => a.Equals("--force-regen", StringComparison.OrdinalIgnoreCase));
                     dryRun = args.Any(a => a.Equals("--dry-run", StringComparison.OrdinalIgnoreCase));
+                    noInput = args.Any(a => a.Equals("--no-input", StringComparison.OrdinalIgnoreCase));
 
                     if (modeArg == "analysis" || modeArg == "analyse" || modeArg == "analyze")
                     {
@@ -125,7 +127,7 @@ namespace AudioManager
                         }
 
                         // Gate passed - proceed with integration
-                        MusicIntegrator mi = new MusicIntegrator(dryRun);
+                        MusicIntegrator mi = new MusicIntegrator(dryRun, noInput);
 
                         // Post-integration validation: regenerate mirror and run LibChecker
                         if (!dryRun)
