@@ -139,16 +139,22 @@ namespace AudioManager
                             // Rename file: {artists} - {title}.mp3
                             string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
                             string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
-                            string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
-                            string newPath = Path.Combine(Path.GetDirectoryName(sourcePath), newFilename);
-
-                            if (newPath != sourcePath && !File.Exists(newPath))
+                            if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
                             {
-                                File.Move(sourcePath, newPath);
-                                log.Changes.Add($"Filename: \"{Path.GetFileName(sourcePath)}\"  -> \"{newFilename}\"");
+                                log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
+                                log.Filename = log.OriginalFilename;
                             }
-
-                            log.Filename = newFilename;
+                            else
+                            {
+                                string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
+                                string newPath = Path.Combine(Path.GetDirectoryName(sourcePath), newFilename);
+                                if (newPath != sourcePath && !File.Exists(newPath))
+                                {
+                                    File.Move(sourcePath, newPath);
+                                    log.Changes.Add($"Filename: \"{Path.GetFileName(sourcePath)}\"  -> \"{newFilename}\"");
+                                }
+                                log.Filename = newFilename;
+                            }
                             log.Status = "fixed";
                             fixedCount++;
                         }
@@ -157,8 +163,16 @@ namespace AudioManager
                             // Dry run: show what would change
                             string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
                             string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
-                            string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
-                            log.Filename = newFilename;
+                            if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
+                            {
+                                log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
+                                log.Filename = log.OriginalFilename;
+                            }
+                            else
+                            {
+                                string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
+                                log.Filename = newFilename;
+                            }
                             log.Status = "would-fix";
                             fixedCount++;
                         }
