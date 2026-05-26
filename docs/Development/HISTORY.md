@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-26 - (Single Version) and (Radio Version) stripped from title field (TIER 3)
+
+`RemoveParentheticals` now strips `(Single Version)` and `(Radio Version)` from track titles. `(Radio Version)` was already handled in `StripAlbumSuffixes` for the album field but not the title field. Batched as two patterns in one change per IDEAS.md.
+
+---
+
 ## 2026-05-26 - Unified integration gate + (with X) tag fixer (TIER 2)
 
 **Unified integration gate:** `launch.bat` options 3 (Dry Run) and 4 (Real) collapsed into a single "Integration" option. Dry run always runs first and displays full output; user must explicitly type `y` to proceed to real integration (default is N). The old "Are you sure?" prompt is removed - seeing the dry-run output IS the review. Enforces the safety property: you cannot move files without having read the routing decisions on screen.
