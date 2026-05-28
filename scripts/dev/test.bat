@@ -1,5 +1,5 @@
 @echo off
-set EXE=%~dp0..\project\AudioManager\bin\Release\AudioManager.exe
+set EXE=%~dp0..\..\project\AudioManager\bin\Release\AudioManager.exe
 set START_TIME=%TIME%
 
 echo ============================================================
