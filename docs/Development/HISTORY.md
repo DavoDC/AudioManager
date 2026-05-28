@@ -40,6 +40,16 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-28 - Parked: three post-integration bugs from May 2026 run (deferred to next integration)
+
+Removed from IDEAS.md 2026-05-28 - next integration is far off, will reassess if they surface then.
+
+1. **Post-integration validation should force full AudioMirror rebuild** - non-force regen leaves stale XMLs; force regen post-integration clears them. Workaround: run force regen manually after integrating.
+2. **LibChecker "version"/"bonus" regex fires on legitimate qualifiers** - `Extended Version`, `Bonus` flagged incorrectly. Workaround: `config/libchecker-exceptions.xml` (Joyner Lucas; Ashanti and Shaboozey already added).
+3. **Integration should prompt for missing Album tag before integrating** - would have caught Dolly Parton - The Johnny Carson Show. Manual check until this is implemented.
+
+---
+
 ## 2026-05-26 - May 2026 batch integration retrospective
 
 Integrated 127 files. Routing was correct (97 Artists + 22 Misc + 8 Musivation). Tag fixes all correct, no unexpected filenames. 5 duplicates all recommended [L] (album over single - correct policy).
