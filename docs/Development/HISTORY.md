@@ -40,6 +40,19 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-26 - May 2026 batch integration retrospective
+
+Integrated 127 files. Routing was correct (97 Artists + 22 Misc + 8 Musivation). Tag fixes all correct, no unexpected filenames. 5 duplicates all recommended [L] (album over single - correct policy).
+
+**Post-integration LibChecker was NOT clean.** Three issues surfaced after the run:
+1. Stale XMLs from integration file moves - force regen cleared all 8 false duplicate pairs + 3 "artist-in-Misc" warnings + 1 stale Akira The Don path. Root cause: integration runs AudioMirror with `Recreated: False`; stale XMLs remain for moved files. Fix: always force full rebuild in post-integration validation (added to TIER 1).
+2. LibChecker "version"/"bonus" regex fired on `Joyner Lucas; Ashanti - Fall Slowly (Extended Version)` and `Shaboozey - Chrome (Bonus)` - legitimate qualifiers that should not be flagged. Workaround: added to exceptions.xml. Fix in TIER 1.
+3. `Dolly Parton - The Johnny Carson Show` missing Album tag - not caught before integration. Fix: TagFixer should halt integration on missing Album tag (TIER 1 feature).
+
+**Key learning:** Dry runs run against existing library state and cannot predict stale XMLs produced by integration file moves. Post-integration validation must always force full AudioMirror rebuild - incremental mode is insufficient.
+
+---
+
 ## 2026-05-26 - Batch artist casing fixes for May 2026 integration (config, no rebuild)
 
 Added 5 entries to `artist-name-overrides.xml` to prevent title-case corruption on artists in the batch:
