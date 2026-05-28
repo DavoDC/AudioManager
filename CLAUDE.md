@@ -279,7 +279,7 @@ var files = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.All
 
 ## Current Focus
 
-TIER 1 integration bugs exist (force regen post-integration, LibChecker "version/bonus" regex, missing Album tag prompt, Dolly Parton data fix) but are blocked while not integrating. Test infrastructure done (2026-05-28): TagFixer tests, --test flag, scripts/dev/test.bat - see HISTORY.md. Next: TIER 1 Session 2 (routing tests) and TIER 2 thin-bat Phase 2 (move launch.bat menu into Program.cs).
+Routing tests done (2026-05-28): GetDestDir parameterized with _libraryPath, 6 routing scenarios, 25 tests passing - see HISTORY.md. Tier 1 is now clear. Next: TIER 2 QUICK WIN (--no-pause flag across all bats) then test logging, JSON manifest, thin-bat Phase 2.
 
 ## Code Invariants (session learnings - update if refactored)
 
