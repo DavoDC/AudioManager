@@ -65,7 +65,9 @@
     <Compile Include="Code\Doer\Analyser\Analyser.cs" />
     <Compile Include="Code\Doer\Analyser\Statistic.cs" />
     <Compile Include="Code\Doer\Analyser\StatList.cs" />
-    <Compile Include="Code\StatisticTests.cs" />
+    <Compile Include="Code\Tests\Assert.cs" />
+    <Compile Include="Code\Tests\TestRunner.cs" />
+    <Compile Include="Code\Tests\TagFixerTests.cs" />
     <Compile Include="Code\Doer\AudioMirrorCommitter.cs" />
     <Compile Include="Code\Doer\LibChecker.cs" />
     <Compile Include="Code\Doer\AgeChecker.cs" />

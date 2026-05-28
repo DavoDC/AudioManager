@@ -23,6 +23,14 @@ namespace AudioManager
                 // Set mirror path relative to the executable
                 string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, Constants.MirrorFolderPath));
 
+                // --test: run inline test suite and exit before any file/logging setup
+                if (args.Length > 0 && args[0].Equals("--test", StringComparison.OrdinalIgnoreCase))
+                {
+                    bool allPassed = TestRunner.Run();
+                    Environment.Exit(allPassed ? 0 : 1);
+                    return;
+                }
+
                 // Detect CLI args: "analysis [--force-regen]" or "integrate [--dry-run] [--no-input]"
                 int mode;
                 bool forceMirrorRegen;
