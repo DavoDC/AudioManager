@@ -41,10 +41,19 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Thin bats: move all menu logic into Program.cs, make .bat files thin wrappers** - All .bat logic should live in Program.cs (testable, debuggable, no duplication). `launch.bat` is 91 lines with its own menu - it duplicates the interactive menu already in `Program.cs`. Refactor so every .bat file is a build-then-run one-liner.
   - **launch.bat:** Call build.bat then `AudioManager.exe` (no args). Exe shows arrow-key interactive menu. Becomes ~8 lines including timing.
-  - **test.bat:** Already thin - call build.bat then `AudioManager.exe --test`. No changes needed.
-  - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 4: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate, (4) Run Tests. Currently Force Regen is a second prompt; collapse it into the main menu. Run Tests calls `TestRunner.Run()` directly.
+  - **test.bat:** Already thin - calls build.bat then `AudioManager.exe --test`. No changes needed.
+  - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 3: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate. Currently Force Regen is a second prompt after mode selection - collapse into main menu. No "Run Tests" in the interactive menu - tests are a dev/Claude tool, launch.bat is the user's workflow tool. test.bat is the right home.
   - **Result:** Bats are pure launchers. All mode logic lives in Program.cs. Single source of truth for options.
-  - **Note:** `--test` CLI flag already added (Session 1). This item adds the interactive menu entry and shrinks launch.bat.
+
+- [ ] **Test logging: write test results to logs/ for debugging** - Currently `--test` prints to console only. For debugging failures (especially when Claude runs tests as part of a session), output should also go to `logs/test-{timestamp}.log`. Simple change: TestRunner.Run() writes the same [PASS]/[FAIL] output to a log file using the same logs/ folder as analysis/integrate. Payback: when a test fails mid-session, the log file shows exactly what broke and what the assertion values were without needing to re-run manually.
+
+- [ ] **Dry run with committed test fixtures (integration pipeline test)** - A dry run against real MP3s in NewMusic is effectively an integration test, but NewMusic is only populated during integration sessions. For Claude to run integration-pipeline tests at any time, we need committed dummy .mp3 files with known tags. Design:
+  - Commit a small set of tagged .mp3 files to `test-fixtures/NewMusic/` in the repo (minimal valid MP3s, ~1KB each, with controlled ID3 tags covering key routing cases)
+  - Add `--test-new-music-path <path>` flag to override `Constants.NewMusicPath` at runtime
+  - Claude can then run `AudioManager.exe integrate --dry-run --test-new-music-path test-fixtures/NewMusic/` and assert routing output matches expected destinations
+  - Cover: artist with existing folder, new artist (3+ songs -> album), Musivation artist, Misc fallback, duplicate detection
+  - This is the Session 2 routing test extended to the full integration pipeline - complements GetDestDir unit tests with an end-to-end check
+  - **Note:** Dummy .mp3 files must have valid ID3 tags but can have 1-second silent audio. TagLib# requires a valid audio frame to open the file - pure header-only files won't work.
 
 - [ ] **Feature: Clean up NewMusic folder after real integration** - After real integration completes, automatically clean up the NewMusic source folder (`C:\Users\David\Downloads\NewMusic`). Steps: (1) check for remaining files - if any files exist, warn user and abort cleanup (do NOT delete); (2) if 0 files remain, delete all empty subdirectories and the folder itself. Gate: file count only - if 0 files, the folder is safe to delete regardless of LibChecker state (empty folder cannot cause data loss). No LibChecker gate needed. Rationale: after May 2026 run, 2 empty subdirectories were left behind (`Akon - BEAUTIFUL DAY/` and `Shaboozey - Where I've Been, Isn't Where I'm Going_ The Complete Edition/`). Current state as of 2026-05-26: 0 files, 2 empty subdirectories - safe to delete now.
 

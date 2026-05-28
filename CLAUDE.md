@@ -70,13 +70,28 @@ launch.bat handles build internally, no separate build step needed.
 & "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
 ```
 
-The `echo "" |` pipes input to skip the "Press any key..." pause. Build completes in ~2-3 seconds without blocking.
+Build completes in ~2-3 seconds without blocking.
 
 **Success looks like:**
 ```
 [BUILD] Compiling AudioManager...
 [BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\..\project\AudioManager\bin\Release\AudioManager.exe
 ```
+
+### Claude: Running Tests (MANDATORY after any C# code change)
+
+**After every C# code change, run tests before committing.** Tests are fast (< 1 second) and catch tag logic regressions immediately. Do not skip this step even for "obviously safe" changes.
+
+```powershell
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
+& "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" --test
+```
+
+**Tests must be green (19/19 passing) before any commit to C# files.**
+
+If a test fails after a change: fix the code, not the test (unless the test is wrong - state why explicitly).
+
+Files where a change triggers mandatory test run: anything in `Code/` - especially TagFixer.cs, Track/Track.cs, Constants.cs (string constants), and all files in Code/Tests/.
 
 **If build fails:**
 - Check `logs\build.log` for full MSBuild output and error details
