@@ -88,6 +88,8 @@ Build completes in ~2-3 seconds without blocking.
 
 **Tests must be green before any commit to C# files.**
 
+**NOTE: `test.bat` and `launch.bat` both end with `cmd /k` - they keep the window open for user interaction and will BLOCK PowerShell. Claude must only use `verify.bat` (clean exit) or `build.bat --no-pause`.**
+
 If a test fails after a change: fix the code, not the test (unless the test is wrong - state why explicitly).
 
 Files where a change triggers mandatory test run: anything in `Code/` - especially TagFixer.cs, Track/Track.cs, Constants.cs (string constants), and all files in Code/Tests/.
@@ -119,7 +121,7 @@ This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs`
 1. Create the `.cs` file in the appropriate folder
 2. Open `project\AudioManager\AudioManager.csproj`
 3. Add a `<Compile Include="Code\...\NewFile.cs" />` entry in the correct section (e.g., after similar files in Doer/ or Track/)
-4. Build to verify: `.\scripts\build.bat`
+4. Build to verify: `.\scripts\dev\build.bat`
 
 **If you forget:** Build fails with `CS0103: The name '...' does not exist in the current context`
 
@@ -201,7 +203,7 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 **User workflow for real integration:**
 ```
 .\scripts\launch.bat
-→ Select option 3 (Dry Run) to verify, then option 4 (Real) to integrate
+→ Select option 3 (Integration) - runs dry run first, prompts "Proceed with real integration? [y/N]"
 ```
 
 **Never:** Claude runs real `integrate` or moves/deletes any files in the library or NewMusic.
@@ -251,17 +253,6 @@ var files = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.All
 **Current implementation:** Compliant. MusicIntegrator respects these boundaries. All tag modifications happen in NewMusic; library operations are file moves, folder creation, and duplicate deletion only.
 
 **Audit trail:** See `docs/References/SAFETY_CONSTRAINTS.md` for a detailed safety review against these rules.
-
-## Build Scripts - IMPORTANT
-
-**.bat files MUST be run with PowerShell, never Bash.** Windows batch scripts (.bat) don't work in Unix shells. Always use:
-```powershell
-.\scripts\dev\build.bat
-```
-NOT:
-```bash
-bash scripts/dev/build.bat  # WRONG - will fail
-```
 
 ## Stage 3 Integration Architecture (Developer Reference)
 
