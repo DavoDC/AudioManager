@@ -1,5 +1,7 @@
 # AudioManager - Claude Context
 
+For implementation invariants, architecture detail, and code patterns: read `docs/References/DevContext.md`.
+
 ## What it does
 
 C# console app for managing a personal music library. Two modes:
@@ -98,21 +100,6 @@ Files where a change triggers mandatory test run: anything in `Code/` - especial
 - Check `logs\build.log` for full MSBuild output and error details
 - Common errors: missing csproj file registration (see CRITICAL below), platform mismatch
 
-### For Scripted/CLI Use
-
-After successful build, exe is at:
-```
-project\AudioManager\bin\Release\AudioManager.exe
-```
-
-Direct CLI:
-```
-project\AudioManager\bin\Release\AudioManager.exe analysis
-project\AudioManager\bin\Release\AudioManager.exe analysis --force-regen
-project\AudioManager\bin\Release\AudioManager.exe integrate --dry-run
-project\AudioManager\bin\Release\AudioManager.exe integrate
-```
-
 **CRITICAL: Legacy csproj format - manual file registration required.**
 
 This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs` files are NOT auto-included in the build.
@@ -120,7 +107,7 @@ This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs`
 **Every new file must be manually registered:**
 1. Create the `.cs` file in the appropriate folder
 2. Open `project\AudioManager\AudioManager.csproj`
-3. Add a `<Compile Include="Code\...\NewFile.cs" />` entry in the correct section (e.g., after similar files in Doer/ or Track/)
+3. Add a `<Compile Include="Code\...\NewFile.cs" />` entry in the correct section
 4. Build to verify: `.\scripts\dev\build.bat`
 
 **If you forget:** Build fails with `CS0103: The name '...' does not exist in the current context`
@@ -145,26 +132,6 @@ This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs`
 - Never delete source files without confirming the destination write succeeded
 - When in doubt, do nothing and ask
 
-## AudioMirror as Classification Oracle
-
-**The AudioMirror is the source of truth for facts about the library. Use it to answer classification questions - not name heuristics.**
-
-When you need to determine what something IS (compilation? artist album? genre folder?), read the actual data in AudioMirror rather than pattern-matching names or paths.
-
-**Examples:**
-- **Is this album a compilation?** -> Read all XML files in the album folder, collect the full `Artists` field from each track. If many distinct artists appear across tracks = compilation. If the same artist appears on every track = artist album. This works on any album name, including unusual ones like "MEANINGWAVE MASTERPIECES V" that keyword lists would miss.
-- **Does an artist have a folder?** -> Check `Directory.Exists(artistFolder)` against the library, not string matching.
-- **Is this a Singles folder?** -> Check the path component, not the album tag.
-
-**Why this is better than heuristics:**
-- Names drift: compilations aren't always called "Best Of" or "Greatest Hits"
-- Heuristics have edge cases: "Volume V" could be an artist's studio album
-- Data doesn't lie: if 10 tracks in a folder have 10 different Artists fields, it IS a compilation - no keyword needed
-
-**Applying this principle:** Before writing any keyword list, regex, or name-pattern check, ask: "Does the AudioMirror data already answer this question more reliably?" In most cases, it does. Read the XMLs.
-
----
-
 ## Display Conventions
 
 - **"In AudioMirror"** = the XML entry in AudioMirror repo (`C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\...xml`)
@@ -182,12 +149,12 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 ## Workflow Rules
 
-- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1 - not TIER 2 or TIER 3. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
+- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
 
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
-- **AudioMirror rebuild reliability:** Analysis (non-force regen) runs with `Recreated: False` (incremental mirror update) - NOT reliable for LibChecker pass claims or auto-commit. Stale XMLs persist from previously moved or deleted files. Only analysis (force regen) and integration produce a fully reliable mirror state (`Recreated: True` / full rebuild). Auto-commit must only trigger on force regen or integration. Lesson from May 2026 run: Misc Migration moved 4 files from Misc to Artists/, but non-force regen left old Misc XMLs, causing 8 false duplicate warnings in LibChecker.
+- **AudioMirror rebuild reliability:** Analysis (non-force regen) runs with `Recreated: False` (incremental mirror update) - NOT reliable for LibChecker pass claims or auto-commit. Only analysis (force regen) and integration produce a fully reliable mirror state. Auto-commit must only trigger on force regen or integration.
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
-- **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually (e.g. wrong artist casing after integration), advise the user to use Mp3tag. David knows how to use it. Do not suggest VLC or Windows file properties for tag editing.
+- **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually, advise the user to use Mp3tag. Do not suggest VLC or Windows file properties for tag editing.
 
 ## Critical Safety Rule
 
@@ -203,48 +170,30 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 **User workflow for real integration:**
 ```
 .\scripts\launch.bat
-→ Select option 3 (Integration) - runs dry run first, prompts "Proceed with real integration? [y/N]"
+-> Select option 3 (Integration) - runs dry run first, prompts "Proceed with real integration? [y/N]"
 ```
-
-**Never:** Claude runs real `integrate` or moves/deletes any files in the library or NewMusic.
 
 **Claude dev workflow for verifying fixes:**
 ```
 & "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\build.bat" --no-pause
 & "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" integrate --dry-run --no-input
 ```
-`--no-input` skips all interactive prompts (auto-accepts recommended duplicate decisions). Run after any routing or tag fix to see real output without blocking.
-
-## Repo Patterns
-
-- **artist-name-overrides.xml is loaded at runtime** (XmlDocument.Load at first call, cached per process). No rebuild needed when adding entries - changes take effect on next exe run.
-- **Colons in ID3 album tags become underscores in folder/filenames** via Path.GetInvalidFileNameChars() in SanitiseFilename. The ID3 tag itself retains the colon. Expected behavior, not a bug.
-- **TagFixer artist field mutations must be idempotent.** Before appending a normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if present. Bug: compound form "X & Y" in the field + individual "X" and "Y" added = duplicates.
-- **Sort routing display output by destination path before printing**, not by file processing order. Tracks from the same artist/album should be grouped together in dry-run output so routing anomalies are visible by clustering.
-- **Test constructor pattern for MusicIntegrator:** `internal MusicIntegrator(string testLibraryPath)` bypasses the full pipeline, sets `_libraryPath` and initializes empty scan-ahead dicts. Use for any new module that can't be instantiated cheaply via the public constructor.
-- **RoutingFixtures.AddAlbumFiles uses `new byte[0]` placeholder .mp3 files.** Safe because `CountAlbumSongs` only calls `Directory.GetFiles(*.mp3)` on the library side - it never opens them with TagLib#. Do NOT use this trick for test scenarios that trigger TagLib# reads (e.g. the NewMusic batch scan path in CountAlbumSongs).
-
----
+`--no-input` skips all interactive prompts. Run after any routing or tag fix to see real output without blocking.
 
 ## Tag Fixer Constraint
 
 **TagFixer MUST ONLY operate on NewMusic folder.** Never on the Audio library.
 
-TagFixer modifies ID3 tags (TCMP, genres, parentheticals, featured artists) and renames files to match library convention. Tag changes on library files are high-risk: changes propagate to many files, are hard to audit, and difficult to reverse.
+TagFixer modifies ID3 tags and renames files to match library convention. Tag changes on library files are high-risk: changes propagate to many files, are hard to audit, and difficult to reverse.
 
-**Current implementation:** TagFixer scans `Constants.NewMusicPath` exclusively. Code reads:
-```csharp
-var files = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories);
-```
-
-**Rule:** Never refactor this to accept a `folderPath` parameter or add a library mode. If you need to fix tags in the library, implement it as a separate, read-only analysis tool first (identify which files need fixing), then ask David before touching any files.
+**Rule:** Never refactor this to accept a `folderPath` parameter or add a library mode. If you need to fix tags in the library, implement it as a separate, read-only analysis tool first, then ask David before touching any files.
 
 ## Library Operations Constraint
 
 **In the Audio library, the program can ONLY:**
-- Move files from NewMusic into library destinations ✅
-- Create destination folders as needed ✅  
-- Delete duplicates (user-approved L decisions only) ✅
+- Move files from NewMusic into library destinations
+- Create destination folders as needed
+- Delete duplicates (user-approved L decisions only)
 
 **The program CANNOT:**
 - Modify tags on library files
@@ -252,51 +201,4 @@ var files = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.All
 - Delete files for any reason other than duplicates
 - Reorganise existing library structure without user approval
 
-**Current implementation:** Compliant. MusicIntegrator respects these boundaries. All tag modifications happen in NewMusic; library operations are file moves, folder creation, and duplicate deletion only.
-
 **Audit trail:** See `docs/References/SAFETY_CONSTRAINTS.md` for a detailed safety review against these rules.
-
-## Stage 3 Integration Architecture (Developer Reference)
-
-**User workflow:** See Music-Discovery-Workflow.md - Dry-run preview → real run → commit. This section explains how it works for developers.
-
-**The pipeline has two conceptually separate concerns:**
-
-1. **TagFixer (tag cleanup phase):** Reads raw NewMusic files, applies automatic corrections:
-   - Removes unwanted words from Title/Album: "(feat. ...)", "(Album Version)", "(Explicit)", etc.
-   - Ensures featured artists in TPE1 as semicolon-separated list
-   - Renames files to `{artist} - {title}.mp3` format
-   - Sets TCMP=1 (prevents iTunes album grouping)
-   - Sets genre for Musivation/Motivation tracks per Music-Library-Rules.md
-   - **Current state:** User manually cleans tags in MP3Tag before integration (TIER 0 blocker). TagFixer exists but automation blocked on library safety review.
-
-2. **Integration (routing phase):** Routes cleaned files to library destinations:
-   - Applies rules from Music-Library-Rules.md (Artists folder, Compilations, Musivation, Motivation, Sources, Miscellaneous)
-   - Respects 3-song threshold scan-ahead for album subfolder creation
-   - All console output captured to `logs/run-YYYYMMDD-HHmmss.log` with `[HH:mm:ss]` timestamps (via TeeWriter in Program.cs)
-   - Dry-run mode: previews all fixes + routing without moving files
-   - Post-integration: auto-runs LibChecker to validate library clean
-
-**Design rationale:** Separating tag-fixing from routing makes integration testable and reversible. TagFixer produces clean, ready-to-route files. Integration purely routes. Audit trail documents every decision. If routing fails, it's a routing bug, not a tag issue.
-
-## Current Focus
-
-Routing tests done (2026-05-28): GetDestDir parameterized with _libraryPath, 6 routing scenarios, 25 tests passing - see HISTORY.md. Tier 1 is now clear. Next: TIER 2 QUICK WIN (--no-pause flag across all bats) then test logging, JSON manifest, thin-bat Phase 2.
-
-## Code Invariants (session learnings - update if refactored)
-
-- **Dry-run parity for ALL integration operations** - every step that moves or deletes files must have a dry-run branch that prints what would happen instead. `RunMiscMigration` checks `dryRun` and prints `[DRY RUN] Would move:`. Never add a new integration operation without implementing the dry-run counterpart first.
-
-- **TeeWriter.WriteCharToFile** is the single source of truth for file timestamp logic. `Write(char)` and `WriteLine(string)` both delegate to it. Any TeeWriter change must preserve this. `WriteLine(string)` checks for embedded `\n` and processes char-by-char via `WriteCharToFile` - do not revert to the old single-string write path.
-- **RoutingConfidence.Uncertain** is dead code as of 2026-05-25. Do NOT add new uses. TIER 3 item: replace entire enum with `out bool isNewFolder` in `GetDestDir()`.
-- **LibChecker.CheckArtistFolder() uses case-sensitive String.Equals** (line 373). Windows NTFS case-insensitivity protects file routing but NOT LibChecker validation. Any artist with non-standard casing that gets a new track integrated will cause a LibChecker flag even if the file lands in the right folder. Protection: artist-name-overrides.xml (comprehensive as of 2026-05-26, audited post-May integration run).
-- **DetermineGenre(artists)** is only called when `ShouldFixGenre` returned true. The else-branch returning `Constants.MotivDir` is intentional - Motivation normalization is the only non-Musivation trigger path.
-- **GetRouteCategory(string destDir)** - private static in MusicIntegrator. Strips AudioFolderPath prefix, returns first folder component. Maps "Miscellaneous Songs" -> "Misc". Used by dry-run distribution summary.
-- **RunScanAhead must check ALL routing destinations, not just Artists/.** Artists homed in Musivation/ (e.g. Akira The Don) have no Artists/{name}/ folder - scan-ahead used to falsely flag them as needing a new Artists/ folder. Fix (2026-05-26): also check Directory.Exists(Musivation/{artist}/). Any future alternative routing home must be added to this check or it will generate wrong scan-ahead messages and incorrect Misc migration paths.
-- **BuildMirrorIndex() is the pattern for any batch-vs-library comparison.** Pre-load all AudioMirror XMLs into Dictionary<string,string> (normalised "primary\0title" -> xmlPath) once before the loop. O(mirror) setup, O(1) per-file lookup. Never do a full Directory.GetFiles scan inside a per-file loop - that's O(mirror x batch) and caused a ~1min silent hang on a 5531-track library with 126 batch files.
-- **RunScanAhead counts batch + Misc + Sources/ for artist folder threshold.** Sources/ tracks are scanned via `Path.Combine(Constants.MirrorFolderPath, Constants.SourcesDir)` with `SearchOption.AllDirectories` - same XML parsing as Misc. Sources tracks count toward the 3-song threshold but are NOT added to `_miscMigrationCandidates` - they stay in Sources/ regardless of whether the artist gets promoted. (Fix 2026-05-26: without Sources/, Common with 1 Sources/Films song + 2 batch songs still routed to Misc.)
-- **ExtractAndFixArtists: `" & "` in title parentheticals is always a collaborator separator, never part of an artist name.** The code splits on `" & "` before the duplicate-artist check and adds each component individually. This invariant must be preserved if featured-artist extraction is ever refactored - never add the compound "A & B" form when A and B will both be present separately. (Fix 2026-05-26: Perry Como track was producing 4 artist entries instead of 3.)
-
-## Close-Out Discipline
-
-**Always move completed items to HISTORY.md in the same session they finish.** Never leave a done item as `[ ]` in IDEAS.md. A session spent 45 min investigating an item (routing proposal UX) already implemented in 4dd2e0b9 because it was never closed out. Before ending any implementation session: confirm the item is removed from IDEAS.md and added to HISTORY.md.
