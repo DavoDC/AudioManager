@@ -11,11 +11,11 @@ if not defined MSBUILD (
     exit /b 1
 )
 
-set SLN=%~dp0..\project\AudioManager.sln
-set EXE=%~dp0..\project\AudioManager\bin\Release\AudioManager.exe
-set LOG=%~dp0..\logs\build.log
+set SLN=%~dp0..\..\project\AudioManager.sln
+set EXE=%~dp0..\..\project\AudioManager\bin\Release\AudioManager.exe
+set LOG=%~dp0..\..\logs\build.log
 
-if not exist "%~dp0..\logs" mkdir "%~dp0..\logs"
+if not exist "%~dp0..\..\logs" mkdir "%~dp0..\..\logs"
 
 echo [BUILD] Compiling AudioManager...
 %MSBUILD% "%SLN%" -p:Configuration=Release -p:Platform="Any CPU" -verbosity:minimal > "%LOG%" 2>&1
