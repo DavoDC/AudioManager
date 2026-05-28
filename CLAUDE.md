@@ -274,7 +274,7 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-TIER 1 + TIER 2 complete. TIER 3 in progress. See `docs/Development/IDEAS.md`. Next: RoutingConfidence enum removal or comprehensive library audit. Automated tests deprioritized to bottom of TIER 3.
+TIER 1 integration bugs exist (force regen post-integration, LibChecker "version/bonus" regex, missing Album tag prompt, Dolly Parton data fix) but are blocked while not integrating. Active focus: automated test infrastructure. See TIER 1 in `docs/Development/IDEAS.md` for the two-session plan (Session 1: TagNormalizer extraction + inline test runner; Session 2: routing tests). Implementation derived from /think analysis 2026-05-28.
 
 ## Code Invariants (session learnings - update if refactored)
 
