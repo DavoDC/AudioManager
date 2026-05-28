@@ -1,0 +1,83 @@
+# AudioManager - Developer Context
+
+Implementation invariants, architecture notes, and code patterns. Read this when working on routing, tag, or integration code. Not needed for analysis-only or doc sessions.
+
+---
+
+## AudioMirror as Classification Oracle
+
+**The AudioMirror is the source of truth for facts about the library. Use it to answer classification questions - not name heuristics.**
+
+When you need to determine what something IS (compilation? artist album? genre folder?), read the actual data in AudioMirror rather than pattern-matching names or paths.
+
+**Examples:**
+- **Is this album a compilation?** - Read all XML files in the album folder, collect the full `Artists` field from each track. If many distinct artists appear across tracks = compilation. If the same artist appears on every track = artist album. This works on any album name, including unusual ones like "MEANINGWAVE MASTERPIECES V" that keyword lists would miss.
+- **Does an artist have a folder?** - Check `Directory.Exists(artistFolder)` against the library, not string matching.
+- **Is this a Singles folder?** - Check the path component, not the album tag.
+
+**Why this is better than heuristics:** Names drift; heuristics have edge cases; data doesn't lie. Before writing any keyword list, regex, or name-pattern check, ask: "Does the AudioMirror data already answer this question more reliably?" In most cases, it does. Read the XMLs.
+
+---
+
+## Stage 3 Integration Architecture
+
+**User workflow:** See Music-Discovery-Workflow.md. This section explains how it works for developers.
+
+**The pipeline has two conceptually separate concerns:**
+
+1. **TagFixer (tag cleanup phase):** Reads raw NewMusic files, applies automatic corrections:
+   - Removes unwanted words from Title/Album: "(feat. ...)", "(Album Version)", "(Explicit)", etc.
+   - Ensures featured artists in TPE1 as semicolon-separated list
+   - Renames files to `{artist} - {title}.mp3` format
+   - Sets TCMP=1 (prevents iTunes album grouping)
+   - Sets genre for Musivation/Motivation tracks per Music-Library-Rules.md
+   - **Current state:** User manually cleans tags in MP3Tag before integration (TIER 0 blocker). TagFixer exists but automation blocked on library safety review.
+
+2. **Integration (routing phase):** Routes cleaned files to library destinations:
+   - Applies rules from Music-Library-Rules.md (Artists folder, Compilations, Musivation, Motivation, Sources, Miscellaneous)
+   - Respects 3-song threshold scan-ahead for album subfolder creation
+   - All console output captured to `logs/run-YYYYMMDD-HHmmss.log` with `[HH:mm:ss]` timestamps (via TeeWriter in Program.cs)
+   - Dry-run mode: previews all fixes + routing without moving files
+   - Post-integration: auto-runs LibChecker to validate library clean
+
+**Design rationale:** Separating tag-fixing from routing makes integration testable and reversible. TagFixer produces clean, ready-to-route files. Integration purely routes. Audit trail documents every decision. If routing fails, it's a routing bug, not a tag issue.
+
+---
+
+## Code Invariants
+
+- **Dry-run parity for ALL integration operations** - every step that moves or deletes files must have a dry-run branch that prints what would happen instead. `RunMiscMigration` checks `dryRun` and prints `[DRY RUN] Would move:`. Never add a new integration operation without implementing the dry-run counterpart first.
+
+- **TeeWriter.WriteCharToFile** is the single source of truth for file timestamp logic. `Write(char)` and `WriteLine(string)` both delegate to it. Any TeeWriter change must preserve this. `WriteLine(string)` checks for embedded `\n` and processes char-by-char via `WriteCharToFile` - do not revert to the old single-string write path.
+
+- **RoutingConfidence.Uncertain** is dead code as of 2026-05-25. Do NOT add new uses. TIER 3 item: replace entire enum with `out bool isNewFolder` in `GetDestDir()`.
+
+- **LibChecker.CheckArtistFolder() uses case-sensitive String.Equals** (line 373). Windows NTFS case-insensitivity protects file routing but NOT LibChecker validation. Any artist with non-standard casing that gets a new track integrated will cause a LibChecker flag even if the file lands in the right folder. Protection: artist-name-overrides.xml (comprehensive as of 2026-05-26, audited post-May integration run).
+
+- **DetermineGenre(artists)** is only called when `ShouldFixGenre` returned true. The else-branch returning `Constants.MotivDir` is intentional - Motivation normalization is the only non-Musivation trigger path.
+
+- **GetRouteCategory(string destDir)** - private static in MusicIntegrator. Strips AudioFolderPath prefix, returns first folder component. Maps "Miscellaneous Songs" -> "Misc". Used by dry-run distribution summary.
+
+- **RunScanAhead must check ALL routing destinations, not just Artists/.** Artists homed in Musivation/ (e.g. Akira The Don) have no Artists/{name}/ folder - scan-ahead used to falsely flag them as needing a new Artists/ folder. Fix (2026-05-26): also check Directory.Exists(Musivation/{artist}/). Any future alternative routing home must be added to this check or it will generate wrong scan-ahead messages and incorrect Misc migration paths.
+
+- **BuildMirrorIndex() is the pattern for any batch-vs-library comparison.** Pre-load all AudioMirror XMLs into Dictionary<string,string> (normalised "primary\0title" -> xmlPath) once before the loop. O(mirror) setup, O(1) per-file lookup. Never do a full Directory.GetFiles scan inside a per-file loop - that's O(mirror x batch) and caused a ~1min silent hang on a 5531-track library with 126 batch files.
+
+- **RunScanAhead counts batch + Misc + Sources/ for artist folder threshold.** Sources/ tracks are scanned via `Path.Combine(Constants.MirrorFolderPath, Constants.SourcesDir)` with `SearchOption.AllDirectories` - same XML parsing as Misc. Sources tracks count toward the 3-song threshold but are NOT added to `_miscMigrationCandidates` - they stay in Sources/ regardless of whether the artist gets promoted. (Fix 2026-05-26: without Sources/, Common with 1 Sources/Films song + 2 batch songs still routed to Misc.)
+
+- **ExtractAndFixArtists: `" & "` in title parentheticals is always a collaborator separator, never part of an artist name.** The code splits on `" & "` before the duplicate-artist check and adds each component individually. This invariant must be preserved if featured-artist extraction is ever refactored - never add the compound "A & B" form when A and B will both be present separately. (Fix 2026-05-26: Perry Como track was producing 4 artist entries instead of 3.)
+
+---
+
+## Repo Patterns
+
+- **artist-name-overrides.xml is loaded at runtime** (XmlDocument.Load at first call, cached per process). No rebuild needed when adding entries - changes take effect on next exe run.
+
+- **Colons in ID3 album tags become underscores in folder/filenames** via Path.GetInvalidFileNameChars() in SanitiseFilename. The ID3 tag itself retains the colon. Expected behavior, not a bug.
+
+- **TagFixer artist field mutations must be idempotent.** Before appending a normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if present. Bug: compound form "X & Y" in the field + individual "X" and "Y" added = duplicates.
+
+- **Sort routing display output by destination path before printing**, not by file processing order. Tracks from the same artist/album should be grouped together in dry-run output so routing anomalies are visible by clustering.
+
+- **Test constructor pattern for MusicIntegrator:** `internal MusicIntegrator(string testLibraryPath)` bypasses the full pipeline, sets `_libraryPath` and initializes empty scan-ahead dicts. Use for any new module that can't be instantiated cheaply via the public constructor.
+
+- **RoutingFixtures.AddAlbumFiles uses `new byte[0]` placeholder .mp3 files.** Safe because `CountAlbumSongs` only calls `Directory.GetFiles(*.mp3)` on the library side - it never opens them with TagLib#. Do NOT use this trick for test scenarios that trigger TagLib# reads (e.g. the NewMusic batch scan path in CountAlbumSongs).
