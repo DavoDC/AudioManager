@@ -221,6 +221,8 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 - **Colons in ID3 album tags become underscores in folder/filenames** via Path.GetInvalidFileNameChars() in SanitiseFilename. The ID3 tag itself retains the colon. Expected behavior, not a bug.
 - **TagFixer artist field mutations must be idempotent.** Before appending a normalized artist entry, check if the normalized form is already a substring of any existing artist entry - skip if present. Bug: compound form "X & Y" in the field + individual "X" and "Y" added = duplicates.
 - **Sort routing display output by destination path before printing**, not by file processing order. Tracks from the same artist/album should be grouped together in dry-run output so routing anomalies are visible by clustering.
+- **Test constructor pattern for MusicIntegrator:** `internal MusicIntegrator(string testLibraryPath)` bypasses the full pipeline, sets `_libraryPath` and initializes empty scan-ahead dicts. Use for any new module that can't be instantiated cheaply via the public constructor.
+- **RoutingFixtures.AddAlbumFiles uses `new byte[0]` placeholder .mp3 files.** Safe because `CountAlbumSongs` only calls `Directory.GetFiles(*.mp3)` on the library side - it never opens them with TagLib#. Do NOT use this trick for test scenarios that trigger TagLib# reads (e.g. the NewMusic batch scan path in CountAlbumSongs).
 
 ---
 
