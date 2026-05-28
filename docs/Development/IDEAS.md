@@ -45,13 +45,34 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Test logging: write test results to logs/ for debugging** - Currently `--test` prints to console only. For debugging failures (especially when Claude runs tests as part of a session), output should also go to `logs/test-{timestamp}.log`. Simple change: TestRunner.Run() writes the same [PASS]/[FAIL] output to a log file using the same logs/ folder as analysis/integrate. Payback: when a test fails mid-session, the log file shows exactly what broke and what the assertion values were without needing to re-run manually.
 
-- [ ] **Dry run with committed test fixtures (integration pipeline test)** - A dry run against real MP3s in NewMusic is effectively an integration test, but NewMusic is only populated during integration sessions. For Claude to run integration-pipeline tests at any time, we need committed dummy .mp3 files with known tags. Design:
-  - Commit a small set of tagged .mp3 files to `test-fixtures/NewMusic/` in the repo (minimal valid MP3s, ~1KB each, with controlled ID3 tags covering key routing cases)
-  - Add `--test-new-music-path <path>` flag to override `Constants.NewMusicPath` at runtime
-  - Claude can then run `AudioManager.exe integrate --dry-run --test-new-music-path test-fixtures/NewMusic/` and assert routing output matches expected destinations
-  - Cover: artist with existing folder, new artist (3+ songs -> album), Musivation artist, Misc fallback, duplicate detection
-  - This is the Session 2 routing test extended to the full integration pipeline - complements GetDestDir unit tests with an end-to-end check
-  - **Note:** Dummy .mp3 files must have valid ID3 tags but can have 1-second silent audio. TagLib# requires a valid audio frame to open the file - pure header-only files won't work.
+- [ ] **Dry-run as routing regression test (JSON manifest, no MP3 files)** - Dry run already IS an integration test - routing logic runs for real, no file moves. What's missing is (a) controlled input without real NewMusic, and (b) an assertion mechanism. Two approaches, prefer B:
+
+  **Approach A - Minimal MP3 fixtures (simpler to build, messier repo):**
+  - Commit tiny .mp3 files to `test-fixtures/NewMusic/` with controlled ID3 tags
+  - Add `--test-new-music-path <path>` to override `Constants.NewMusicPath`
+  - Problem: TagLib# requires a valid audio frame - pure header-only files fail. Files must contain a real (silent) audio frame, meaning actual binary MP3s in the repo.
+
+  **Approach B - JSON routing manifest (no binary files, recommended):**
+  - Add `--routing-manifest <path>` flag that bypasses file scanning and TagFixer entirely
+  - Manifest JSON defines virtual tracks (artist, title, album, filename) + expected destination per track
+  - MusicIntegrator loads manifest, builds Track objects directly, runs GetDestDir + scan-ahead for real
+  - Commit `test-fixtures/routing-manifest.json` - pure text, version-controllable, human-readable
+  - Exits code 1 if any actual destination != expected destination, 0 if all match
+
+  ```json
+  [
+    {"filename": "Known Artist - Song.mp3", "artist": "Known Artist", "title": "Song", "album": "Known Album", "expectedDest": "Artists\\Known Artist\\Singles\\"},
+    {"filename": "New Artist - Song1.mp3", "artist": "New Artist", "title": "Song1", "album": "Debut", "expectedDest": "Misc"},
+    ...
+  ]
+  ```
+
+  **What Approach B tests:** GetDestDir routing, scan-ahead (3-song threshold), Misc migration, Musivation routing, duplicate detection via AudioMirror lookup.
+  **What it doesn't test:** TagLib# tag reading, TagFixer mutations, file renaming (those are separate concerns - unit tests cover TagFixer pure functions; a separate MP3-based test could cover TagFixer I/O).
+
+  **Pairs with `--json-output` item below** - json-output is the output side (parse real dry-run results); the manifest is the input side (inject controlled test tracks). Together they form a full regression harness. The manifest approach is higher value first - input control is the harder problem.
+
+  **Scenarios to cover:** (1) artist with existing library folder -> Singles/; (2) 3+ songs same new artist -> album subfolder; (3) 1-2 songs new artist -> Singles/ then Misc; (4) Musivation artist -> Musivation/ subfolder; (5) no artist match -> Misc; (6) duplicate detected via AudioMirror -> dupe resolution path.
 
 - [ ] **Feature: Clean up NewMusic folder after real integration** - After real integration completes, automatically clean up the NewMusic source folder (`C:\Users\David\Downloads\NewMusic`). Steps: (1) check for remaining files - if any files exist, warn user and abort cleanup (do NOT delete); (2) if 0 files remain, delete all empty subdirectories and the folder itself. Gate: file count only - if 0 files, the folder is safe to delete regardless of LibChecker state (empty folder cannot cause data loss). No LibChecker gate needed. Rationale: after May 2026 run, 2 empty subdirectories were left behind (`Akon - BEAUTIFUL DAY/` and `Shaboozey - Where I've Been, Isn't Where I'm Going_ The Complete Edition/`). Current state as of 2026-05-26: 0 files, 2 empty subdirectories - safe to delete now.
 
