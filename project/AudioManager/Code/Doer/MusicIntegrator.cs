@@ -22,8 +22,9 @@ namespace AudioManager
         private Dictionary<string, int> _scanAheadBatchCounts;
         private Dictionary<string, int> _scanAheadMiscCounts;
         private Dictionary<string, int> _scanAheadSourcesCounts;
+        private string _libraryPath;
 
-        private enum RoutingConfidence
+        internal enum RoutingConfidence
         {
             Certain,   // Known artist folder; genre override; ATD routing. Auto-route, no prompt.
             Likely,    // Scan-ahead new artist folder; route is reasonable but folder is new. Auto-route, no prompt.
@@ -83,6 +84,7 @@ namespace AudioManager
         {
             this.dryRun = dryRun;
             this.noInput = noInput;
+            _libraryPath = Constants.AudioFolderPath;
             string modeLabel = dryRun ? " [DRY RUN - no files will be moved]" : "";
             Console.WriteLine($"\nIntegrating new music...{modeLabel}");
 
@@ -498,6 +500,15 @@ namespace AudioManager
             {
                 Finished(); // records time for Doer.PrintTotalTimeTaken(), no separate console output
             }
+        }
+
+        /// <summary>Test-only constructor. Does not run the integration pipeline.</summary>
+        internal MusicIntegrator(string testLibraryPath)
+        {
+            _libraryPath = testLibraryPath;
+            _scanAheadBatchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _scanAheadMiscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _scanAheadSourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -1197,7 +1208,7 @@ namespace AudioManager
         /// <param name="newArtistFolders">Scan-ahead result: artists getting new folders this batch.</param>
         /// <param name="reason">Output: human-readable reason for the proposed destination.</param>
         /// <returns>The full destination directory path.</returns>
-        private string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason, out RoutingConfidence confidence)
+        internal string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason, out RoutingConfidence confidence)
         {
             // Special case: Akira The Don (check by artist name, not genre, since genre may not be set in dry-run)
             string primaryArtist = track.PrimaryArtist;
@@ -1210,7 +1221,7 @@ namespace AudioManager
                     string sampledPerson = artists[1]; // Second artist is the sampled person
 
                     // Use existing library folder casing if one already exists (e.g. "Scott Adams" not "Scott adams")
-                    string peopleParent = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People");
+                    string peopleParent = Path.Combine(_libraryPath, Constants.MusivDir, "Akira The Don", "People");
                     if (Directory.Exists(peopleParent))
                     {
                         foreach (var dir in Directory.GetDirectories(peopleParent))
@@ -1258,7 +1269,7 @@ namespace AudioManager
                     {
                         reason = $"{personSongCount} song(s) from {sampledPerson}, below People threshold";
                         confidence = RoutingConfidence.Certain;
-                        return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
+                        return Path.Combine(_libraryPath, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
                     }
                 }
                 else
@@ -1266,7 +1277,7 @@ namespace AudioManager
                     // No sampled person listed, use Singles
                     reason = "No sampled person listed";
                     confidence = RoutingConfidence.Certain;
-                    return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
+                    return Path.Combine(_libraryPath, Constants.MusivDir, "Akira The Don", "Singles");
                 }
             }
 
@@ -1275,18 +1286,18 @@ namespace AudioManager
             {
                 reason = "Genre is Musivation";
                 confidence = RoutingConfidence.Certain;
-                return Path.Combine(Constants.AudioFolderPath, Constants.MusivDir);
+                return Path.Combine(_libraryPath, Constants.MusivDir);
             }
 
             if (!track.Genres.Equals("Missing") && track.Genres.IndexOf(Constants.MotivDir, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason = "Genre is Motivation";
                 confidence = RoutingConfidence.Certain;
-                return Path.Combine(Constants.AudioFolderPath, Constants.MotivDir);
+                return Path.Combine(_libraryPath, Constants.MotivDir);
             }
 
             string primaryArtist2 = track.PrimaryArtist;
-            string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(primaryArtist2));
+            string artistFolder = Path.Combine(_libraryPath, Constants.ArtistsDir, SanitiseFolderName(primaryArtist2));
 
             // Artist folder exists OR scan-ahead says this artist needs a new one
             bool existingArtistFolder = Directory.Exists(artistFolder);
@@ -1331,7 +1342,7 @@ namespace AudioManager
                 ? $"no artist folder; {scanBatch} in batch + {scanMisc + scanSources} in library = {scanTotal} total, below threshold 3 -> Misc"
                 : "No artist folder found in library";
             confidence = RoutingConfidence.Certain;
-            return Path.Combine(Constants.AudioFolderPath, Constants.MiscDir);
+            return Path.Combine(_libraryPath, Constants.MiscDir);
         }
 
         /// <summary>
@@ -1343,7 +1354,7 @@ namespace AudioManager
             int count = 0;
 
             // Count in library (scan artist folder for album subfolders)
-            string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist));
+            string artistFolder = Path.Combine(_libraryPath, Constants.ArtistsDir, SanitiseFolderName(artist));
             string albumFolder = Path.Combine(artistFolder, SanitiseFolderName(album));
             if (Directory.Exists(albumFolder))
             {
