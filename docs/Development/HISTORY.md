@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-28 - scripts/dev/ reorganisation + verify.bat (TIER 2 - Phase 1)
+
+Moved dev tools out of scripts/ root into scripts/dev/ so the root stays user-facing only. Added verify.bat as Claude's one-step build+test command (clean exit codes, no interactive prompt).
+
+**What was done:**
+- `build.bat` and `test.bat` moved to `scripts/dev/` with corrected `..\..\` relative paths
+- `verify.bat` (new): calls build.bat then `--test`, exits 0/1, no cmd /k - replaces two-command sequence
+- `launch.bat` updated to call `dev\build.bat`
+- CLAUDE.md paths updated throughout; stale test counts removed (rule: never write exact counts in any doc)
+
+**Why it mattered:** Dev tools mixed with user-facing launcher caused confusion. verify.bat gives Claude a single command with a single exit code - unambiguous pass/fail. Phase 2 (moving menu logic into Program.cs) remains in IDEAS.md TIER 2.
+
+---
+
 ## 2026-05-28 - Automated test infrastructure: inline test runner, 19 TagFixer tests (TIER 1 - Session 1)
 
 Added a complete inline test suite for TagFixer's pure string-manipulation logic. 19 tests, all passing. No xUnit - old-style csproj + no VS test runner in the workflow made a DIY approach strictly better.
