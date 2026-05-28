@@ -39,11 +39,28 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-- [ ] **Thin bats: move all menu logic into Program.cs, make .bat files thin wrappers** - All .bat logic should live in Program.cs (testable, debuggable, no duplication). `launch.bat` is 91 lines with its own menu - it duplicates the interactive menu already in `Program.cs`. Refactor so every .bat file is a build-then-run one-liner.
-  - **launch.bat:** Call build.bat then `AudioManager.exe` (no args). Exe shows arrow-key interactive menu. Becomes ~8 lines including timing.
-  - **test.bat:** Already thin - calls build.bat then `AudioManager.exe --test`. No changes needed.
-  - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 3: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate. Currently Force Regen is a second prompt after mode selection - collapse into main menu. No "Run Tests" in the interactive menu - tests are a dev/Claude tool, launch.bat is the user's workflow tool. test.bat is the right home.
-  - **Result:** Bats are pure launchers. All mode logic lives in Program.cs. Single source of truth for options.
+- [ ] **Thin bats + scripts/ reorganisation** - Two combined goals: (1) move all interactive menu logic into Program.cs so bats are pure launchers; (2) reorganise scripts/ so the root contains only user-facing bats and dev tools live in `scripts/dev/`.
+
+  **Final scripts/ layout:**
+  ```
+  scripts/
+    launch.bat          <- only user-facing bat in root (build + run exe)
+    dev/
+      build.bat         <- moved from scripts/build.bat
+      test.bat          <- moved from scripts/test.bat
+      verify.bat        <- NEW: build + test in one command (Claude's primary tool)
+    once-off/           <- unchanged
+  ```
+
+  **Changes per file:**
+  - **launch.bat:** Shrinks from 91 lines to ~10. Calls `dev\build.bat` then `AudioManager.exe` (no args). Exe shows arrow-key menu. Move timing to here.
+  - **build.bat:** Move to `dev/build.bat`. No content changes.
+  - **test.bat:** Move to `dev/test.bat`. Update build.bat reference to `%~dp0build.bat` (same folder after move).
+  - **verify.bat (new):** `dev\build.bat` then `AudioManager.exe --test`. If build fails, print error and exit code 1. If tests fail, exit code 1. Claude calls this instead of two separate commands.
+  - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 3: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate. Collapse the second Force Regen prompt into the main menu. No "Run Tests" in the interactive menu - dev tool, wrong context.
+  - **CLAUDE.md:** Update all bat paths. Claude's standard verify command becomes `scripts/dev/verify.bat --no-pause` (build + tests in one call).
+
+  **Why verify.bat instead of just "build then test":** Single command, single exit code, single output block. Claude can call one bat and know the codebase is clean. Eliminates the current two-step (build.bat + exe --test) that requires reading both outputs separately.
 
 - [ ] **Test logging: write test results to logs/ for debugging** - Currently `--test` prints to console only. For debugging failures (especially when Claude runs tests as part of a session), output should also go to `logs/test-{timestamp}.log`. Simple change: TestRunner.Run() writes the same [PASS]/[FAIL] output to a log file using the same logs/ folder as analysis/integrate. Payback: when a test fails mid-session, the log file shows exactly what broke and what the assertion values were without needing to re-run manually.
 
