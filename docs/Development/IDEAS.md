@@ -21,8 +21,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **csproj registrations required:** Tests/RoutingTests.cs, Tests/RoutingFixtures.cs.
   - **Payback:** Catches routing regressions without any dry run. Highest-risk module - wrong routing = files moved to wrong library location.
 
-- [ ] **Data fix: Dolly Parton - The Johnny Carson Show - missing Album tag** - LibChecker flagged `\Miscellaneous Songs\Dolly Parton - The Johnny Carson Show.xml has no Album set!` after May 2026 integration. This is a live TV performance recording with no standard album. Decision needed: (a) tag it with an appropriate compilation/collection album name, or (b) add to libchecker-exceptions.xml if no album is genuinely the correct state for this track type. Once resolved, this warning will not recur.
-
 ---
 
 ## TIER 2 - QUALITY
