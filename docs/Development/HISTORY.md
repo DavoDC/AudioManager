@@ -4,6 +4,28 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-28 - Automated test infrastructure: inline test runner, 19 TagFixer tests (TIER 1 - Session 1)
+
+Added a complete inline test suite for TagFixer's pure string-manipulation logic. 19 tests, all passing. No xUnit - old-style csproj + no VS test runner in the workflow made a DIY approach strictly better.
+
+**What was built:**
+- `Code/Tests/Assert.cs` - 20-line assertion class (Equal, True)
+- `Code/Tests/TestRunner.cs` - reflection-based runner, prints [PASS]/[FAIL] per test, exits code 0/1
+- `Code/Tests/TagFixerTests.cs` - 19 tests across 5 functions
+- `--test` CLI flag in Program.cs - bypasses TeeWriter/logging, runs tests and exits
+- `scripts/test.bat` - builds then runs `AudioManager.exe --test`
+
+**Tests cover:**
+- `RemoveParentheticals` (5): feat., ft., Explicit, Album Version, plain title
+- `StripAlbumSuffixes` (4): Deluxe Edition, Remastered, year suffix, plain album
+- `ExtractAndFixArtists` (4): basic extraction, `&` split (Perry Como class), no duplicates, `of BandName` skip
+- `ShouldFixGenre` (3): Musivation artist missing genre, already has genre, normal artist
+- `DetermineGenre` (3): Akira The Don, Loot Bryon Smith, other artist
+
+**Why it mattered:** Tag mutation regressions (Perry Como 4-artist bug, TMRWNITE casing) were only discovered days later during integration dry runs. Tests now catch these in < 1 second at build time. Deleted `StatisticTests.cs` (wrong scope, never wired up, stubs only).
+
+---
+
 ## 2026-05-26 - Batch artist casing fixes for May 2026 integration (config, no rebuild)
 
 Added 5 entries to `artist-name-overrides.xml` to prevent title-case corruption on artists in the batch:
