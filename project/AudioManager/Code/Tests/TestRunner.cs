@@ -9,7 +9,7 @@ namespace AudioManager
         {
             Console.WriteLine("\n###### AudioManager Tests ######\n");
 
-            var testTypes = new[] { typeof(TagFixerTests) };
+            var testTypes = new[] { typeof(TagFixerTests), typeof(RoutingTests) };
             int passed = 0, failed = 0;
 
             foreach (var type in testTypes)
