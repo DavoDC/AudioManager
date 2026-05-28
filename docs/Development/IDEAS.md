@@ -39,6 +39,11 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
+- [ ] **QUICK WIN: Consistent `--no-pause` flag across all bats** - All bats should support the same two-mode contract: no args = `cmd /k` at end (human - window stays open to read output); `--no-pause` = clean `exit /b` with correct code (Claude - no blocking, no interactive prompts). Currently inconsistent: build.bat has it, verify.bat exits cleanly but has no `cmd /k` for human use, test.bat and launch.bat have unconditional `cmd /k` with no `--no-pause` escape.
+  - **Pattern for every exit path:** `if not "%1"=="--no-pause" cmd /k` then `exit /b N`. Remove all standalone `pause` calls (redundant when `cmd /k` keeps window open).
+  - **launch.bat:** change `call "%~dp0dev\build.bat"` to `call "%~dp0dev\build.bat" --no-pause` (always - launch.bat controls its own output; intermediate pause from build is wrong UX).
+  - **CLAUDE.md update:** change note from "Claude must only use verify.bat or build.bat --no-pause" to "all bats support `--no-pause`; always pass it when calling any bat from Claude".
+
 - [ ] **Thin bats - Phase 2: move interactive menu into Program.cs** - Phase 1 (file moves) done 2026-05-28. Remaining: move all menu logic from launch.bat into Program.cs so launch.bat becomes a pure ~10-line launcher.
   - **launch.bat:** Shrinks from 83 lines to ~10. Calls `dev\build.bat` then `AudioManager.exe` (no args). Exe shows interactive menu. Move timing to here.
   - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 3: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate. Collapse the second Force Regen prompt into the main menu. No "Run Tests" in the interactive menu - dev tool, wrong context.
