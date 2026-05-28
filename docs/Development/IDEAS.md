@@ -14,13 +14,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **ACTIVE FOCUS:** Routing tests (GetDestDir) are the top Tier 1 item - start here. Integration bugs below are code-ready; verify at next integration batch. Tests pay back every subsequent fix session.
 
-- [ ] **Automated tests - Routing correctness (GetDestDir)** - Parameterize `GetDestDir()` with `libraryPath` so tests can pass a temp directory. Write 5-6 routing scenarios covering the most common paths. Test infrastructure (Assert.cs, --test runner) is already in place.
-  - **Code change:** Add `string libraryPath = null` optional parameter to `GetDestDir()`. When null, falls back to `Constants.AudioFolderPath` - no production caller change needed. Tests pass a temp path.
-  - **Test helper:** `Tests/RoutingFixtures.cs` - static `CreateLibraryFixture(string[] artistFolders, string[] musivationFolders)`: creates temp dir with realistic structure, returns tempRoot. Cleanup in `try/finally`.
-  - **Test scenarios:** (1) 3+ songs same album -> album subfolder created; (2) 1-2 songs -> Singles/; (3) existing artist folder -> routes into it; (4) Musivation artist -> Musivation/ subfolder; (5) no artist match -> Misc; (6) new artist + 3+ songs -> new Artists/ folder created.
-  - **csproj registrations required:** Tests/RoutingTests.cs, Tests/RoutingFixtures.cs.
-  - **Payback:** Catches routing regressions without any dry run. Highest-risk module - wrong routing = files moved to wrong library location.
-
 ---
 
 ## TIER 2 - QUALITY

@@ -40,6 +40,21 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-28 - Automated tests: routing correctness (GetDestDir) - Tier 1 complete
+
+Added 6 routing correctness tests covering `GetDestDir()` - the highest-risk module (wrong routing = files moved to wrong library location).
+
+**What was built:**
+- `_libraryPath` field on MusicIntegrator, initialized from `Constants.AudioFolderPath` in production. Test constructor `MusicIntegrator(string testLibraryPath)` bypasses the pipeline entirely.
+- `GetDestDir` and `RoutingConfidence` promoted to `internal` so tests can call them directly.
+- `CountAlbumSongs` uses `_libraryPath` so fixture files are found correctly.
+- `Tests/RoutingFixtures.cs` - `CreateLibraryFixture`, `AddAlbumFiles`, `Cleanup` helpers using temp dirs.
+- `Tests/RoutingTests.cs` - 6 tests: existing artist->Singles/, existing artist+3 album songs->album subfolder, no artist folder->Misc, Musivation genre->Musivation/, scan-ahead new artist->Singles/, scan-ahead new artist 1 song->Singles/.
+
+**Why it mattered:** Routing regressions (artist routed to wrong folder) were only catchable via dry run + manual review. Tests now catch them in < 1 second. Total suite: 25 tests, all passing.
+
+---
+
 ## 2026-05-28 - Parked: three post-integration bugs from May 2026 run (deferred to next integration)
 
 Removed from IDEAS.md 2026-05-28 - next integration is far off, will reassess if they surface then.
