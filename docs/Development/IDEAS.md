@@ -14,18 +14,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **ACTIVE FOCUS (integration paused):** Automated test infrastructure - Sessions 1 and 2 below. Integration bugs further down remain TIER 1 but are blocked until next integration batch. Tests now: they prevent the same class of regressions that integration bugs expose, and they pay back every single fix session from here on.
 
-- [ ] **Automated tests - Session 1: TagNormalizer extraction + inline test runner** - /think analysis: the testing gap is a testability problem, not a framework problem. TagFixer contains pure string-manipulation logic (ExtractFeaturedArtists, NormalizeTitle, DetermineGenre, SanitiseFilename) that is already testable with zero filesystem dependency - it just needs extracting. This session delivers the test infrastructure AND highest-value tests in one pass.
-  - **Why no xUnit / no separate project:** old-style csproj requires manual file registration per .cs file; no VS test runner in the build workflow; DIY 20-line Assert class gives everything needed. Framework overhead exceeded value - tests stayed unwritten for months because of this.
-  - **Step 1:** Delete `Code/StatisticTests.cs` - wrong scope (report formatting stubs), never wired up, not registered in csproj.
-  - **Step 2:** Create `Code/TagNormalizer.cs` - extract pure functions from TagFixer into a static class: `NormalizeTitle(string)`, `ExtractFeaturedArtists(string title, string existingArtists)`, `DetermineGenre(string[] artists)`, `SanitiseFilename(string)`. Pure static methods, no TagLib#, no filesystem, no Constants.cs. TagFixer calls TagNormalizer - same logic, now extracted and testable.
-  - **Step 3:** Create `Tests/Assert.cs` - 20-line static class: `Equal(expected, actual, label)`, `Contains(substring, value, label)`, `True(condition, label)`. Throws descriptive exception on failure.
-  - **Step 4:** Create `Tests/TagNormalizerTests.cs` - 15-20 test cases covering every bug already found: Perry Como 4-artist extraction (compound `& ` in parentheticals), artist casing preservation (mike. stays lowercase), Musivation genre assignment, suffix stripping (feat., Explicit, Album Version, Bonus). Each test = `Assert.Equal(expected, TagNormalizer.Method(input))`.
-  - **Step 5:** Add `--test` flag to `Program.cs` arg handler - explicitly calls all test methods, prints `[PASS] TestName` or `[FAIL] TestName: expected X got Y`, exits code 0 or 1.
-  - **Step 6:** Add `scripts/test.bat` - builds then runs `AudioManager.exe --test`.
-  - **Step 7:** Add to `launch.bat` as menu option 5 (Run Tests).
-  - **csproj registrations required:** TagNormalizer.cs (in `<Compile>` after TagFixer.cs), Tests/Assert.cs, Tests/TagNormalizerTests.cs.
-  - **Payback:** Catches tag mutation regressions (Perry Como class of bug) in < 1 second at build time. Eliminates 1-2 manual dry run cycles per fix session.
-
 - [ ] **Automated tests - Session 2: Routing correctness (GetDestDir)** - Parameterize `GetDestDir()` with `libraryPath` so tests can pass a temp directory. Write 5-6 routing scenarios covering the most common paths. Depends on Session 1 infrastructure (Assert.cs, --test runner) being in place first.
   - **Code change:** Add `string libraryPath = null` optional parameter to `GetDestDir()`. When null, falls back to `Constants.AudioFolderPath` - no production caller change needed. Tests pass a temp path.
   - **Test helper:** `Tests/RoutingFixtures.cs` - static `CreateLibraryFixture(string[] artistFolders, string[] musivationFolders)`: creates temp dir with realistic structure, returns tempRoot. Cleanup in `try/finally`.
@@ -50,6 +38,13 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 ## TIER 2 - QUALITY
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
+
+- [ ] **Thin bats: move all menu logic into Program.cs, make .bat files thin wrappers** - All .bat logic should live in Program.cs (testable, debuggable, no duplication). `launch.bat` is 91 lines with its own menu - it duplicates the interactive menu already in `Program.cs`. Refactor so every .bat file is a build-then-run one-liner.
+  - **launch.bat:** Call build.bat then `AudioManager.exe` (no args). Exe shows arrow-key interactive menu. Becomes ~8 lines including timing.
+  - **test.bat:** Already thin - call build.bat then `AudioManager.exe --test`. No changes needed.
+  - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 4: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate, (4) Run Tests. Currently Force Regen is a second prompt; collapse it into the main menu. Run Tests calls `TestRunner.Run()` directly.
+  - **Result:** Bats are pure launchers. All mode logic lives in Program.cs. Single source of truth for options.
+  - **Note:** `--test` CLI flag already added (Session 1). This item adds the interactive menu entry and shrinks launch.bat.
 
 - [ ] **Feature: Clean up NewMusic folder after real integration** - After real integration completes, automatically clean up the NewMusic source folder (`C:\Users\David\Downloads\NewMusic`). Steps: (1) check for remaining files - if any files exist, warn user and abort cleanup (do NOT delete); (2) if 0 files remain, delete all empty subdirectories and the folder itself. Gate: file count only - if 0 files, the folder is safe to delete regardless of LibChecker state (empty folder cannot cause data loss). No LibChecker gate needed. Rationale: after May 2026 run, 2 empty subdirectories were left behind (`Akon - BEAUTIFUL DAY/` and `Shaboozey - Where I've Been, Isn't Where I'm Going_ The Complete Edition/`). Current state as of 2026-05-26: 0 files, 2 empty subdirectories - safe to delete now.
 
@@ -88,7 +83,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
   - **Integration consideration:** The audit script may be worth absorbing into AudioManager itself as a `--audit` mode (alongside `--dry-run`, `--integrate`, etc.). Arguments for integration: (a) audit logic needs the same XML-parsing and rules knowledge already in the codebase - duplication risk if kept external; (b) a built-in mode can be run on demand at any time with no separate toolchain; (c) output can share the existing run log format. Arguments against: audit is infrequent and exploratory - a standalone script is lower risk to implement and easier to iterate. Decide during the think pass; if integrated, it becomes a proper `--audit` CLI flag wired into `launch.bat`.
   - **Script approach (token-saving):** Whether standalone or integrated, the audit produces a structured violations report (count, severity, representative examples per violation type) that Claude reviews as output - not by scanning raw XMLs file-by-file. Dramatically reduces token load and makes the audit repeatable without AI involvement.
 
-- [ ] **Simplify launch.bat - move menu logic into Program.cs** - RivalsVidMaker's `run.bat` is 2 lines; all menu/mode logic lives in Python. AudioManager's `launch.bat` is 91 lines with its own menu, duplicating CLI arg logic already in `Program.cs`. Refactor: `launch.bat` becomes a ~5-line wrapper that just builds + runs `AudioManager.exe` with no args; all menu logic lives in Program.cs where it's testable and debuggable.
 
 - [ ] **Dupe routing UX clarity** - When the duplicate resolver shows `[L] Delete library copy`, it is not obvious that the kept file will be routed/placed during the integration step that follows. Add a one-line note after the dupe resolution prompt: "The kept file will be routed in the next step." Eliminates confusion about where the track ends up.
 
