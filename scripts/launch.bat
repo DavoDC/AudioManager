@@ -13,7 +13,7 @@ echo ============================================================
 echo.
 
 :: Build
-call "%~dp0build.bat"
+call "%~dp0dev\build.bat"
 if errorlevel 1 (
     echo [ERROR] Build failed. Aborting.
     pause
