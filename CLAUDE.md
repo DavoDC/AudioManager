@@ -67,7 +67,7 @@ launch.bat handles build internally, no separate build step needed.
 
 **Always use PowerShell (never Bash) for .bat files. Use full absolute path with --no-pause flag (no cd needed - build.bat uses %~dp0 internally):**
 ```powershell
-& "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\build.bat" --no-pause
 ```
 
 Build completes in ~2-3 seconds without blocking.
@@ -75,7 +75,7 @@ Build completes in ~2-3 seconds without blocking.
 **Success looks like:**
 ```
 [BUILD] Compiling AudioManager...
-[BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\..\project\AudioManager\bin\Release\AudioManager.exe
+[BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\dev\..\..\project\AudioManager\bin\Release\AudioManager.exe
 ```
 
 ### Claude: Running Tests (MANDATORY after any C# code change)
@@ -83,11 +83,10 @@ Build completes in ~2-3 seconds without blocking.
 **After every C# code change, run tests before committing.** Tests are fast (< 1 second) and catch tag logic regressions immediately. Do not skip this step even for "obviously safe" changes.
 
 ```powershell
-& "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
-& "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" --test
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\verify.bat"
 ```
 
-**Tests must be green (19/19 passing) before any commit to C# files.**
+**Tests must be green before any commit to C# files.**
 
 If a test fails after a change: fix the code, not the test (unless the test is wrong - state why explicitly).
 
@@ -209,7 +208,7 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 **Claude dev workflow for verifying fixes:**
 ```
-& "C:\Users\David\GitHubRepos\AudioManager\scripts\build.bat" --no-pause
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\build.bat" --no-pause
 & "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" integrate --dry-run --no-input
 ```
 `--no-input` skips all interactive prompts (auto-accepts recommended duplicate decisions). Run after any routing or tag fix to see real output without blocking.
@@ -257,11 +256,11 @@ var files = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.All
 
 **.bat files MUST be run with PowerShell, never Bash.** Windows batch scripts (.bat) don't work in Unix shells. Always use:
 ```powershell
-.\scripts\build.bat
+.\scripts\dev\build.bat
 ```
 NOT:
 ```bash
-bash scripts/build.bat  # WRONG - will fail
+bash scripts/dev/build.bat  # WRONG - will fail
 ```
 
 ## Stage 3 Integration Architecture (Developer Reference)
@@ -289,7 +288,7 @@ bash scripts/build.bat  # WRONG - will fail
 
 ## Current Focus
 
-TIER 1 integration bugs exist (force regen post-integration, LibChecker "version/bonus" regex, missing Album tag prompt, Dolly Parton data fix) but are blocked while not integrating. Test infrastructure done (2026-05-28): 19 TagFixer tests, --test flag, test.bat - see HISTORY.md. Next: TIER 1 Session 2 (routing tests) and TIER 2 thin-bat refactor (move launch.bat menu into Program.cs).
+TIER 1 integration bugs exist (force regen post-integration, LibChecker "version/bonus" regex, missing Album tag prompt, Dolly Parton data fix) but are blocked while not integrating. Test infrastructure done (2026-05-28): TagFixer tests, --test flag, scripts/dev/test.bat - see HISTORY.md. Next: TIER 1 Session 2 (routing tests) and TIER 2 thin-bat Phase 2 (move launch.bat menu into Program.cs).
 
 ## Code Invariants (session learnings - update if refactored)
 
@@ -297,7 +296,7 @@ TIER 1 integration bugs exist (force regen post-integration, LibChecker "version
 
 - **TeeWriter.WriteCharToFile** is the single source of truth for file timestamp logic. `Write(char)` and `WriteLine(string)` both delegate to it. Any TeeWriter change must preserve this. `WriteLine(string)` checks for embedded `\n` and processes char-by-char via `WriteCharToFile` - do not revert to the old single-string write path.
 - **RoutingConfidence.Uncertain** is dead code as of 2026-05-25. Do NOT add new uses. TIER 3 item: replace entire enum with `out bool isNewFolder` in `GetDestDir()`.
-- **LibChecker.CheckArtistFolder() uses case-sensitive String.Equals** (line 373). Windows NTFS case-insensitivity protects file routing but NOT LibChecker validation. Any artist with non-standard casing that gets a new track integrated will cause a LibChecker flag even if the file lands in the right folder. Protection: artist-name-overrides.xml (comprehensive as of 2026-05-26, 42 entries).
+- **LibChecker.CheckArtistFolder() uses case-sensitive String.Equals** (line 373). Windows NTFS case-insensitivity protects file routing but NOT LibChecker validation. Any artist with non-standard casing that gets a new track integrated will cause a LibChecker flag even if the file lands in the right folder. Protection: artist-name-overrides.xml (comprehensive as of 2026-05-26, audited post-May integration run).
 - **DetermineGenre(artists)** is only called when `ShouldFixGenre` returned true. The else-branch returning `Constants.MotivDir` is intentional - Motivation normalization is the only non-Musivation trigger path.
 - **GetRouteCategory(string destDir)** - private static in MusicIntegrator. Strips AudioFolderPath prefix, returns first folder component. Maps "Miscellaneous Songs" -> "Misc". Used by dry-run distribution summary.
 - **RunScanAhead must check ALL routing destinations, not just Artists/.** Artists homed in Musivation/ (e.g. Akira The Don) have no Artists/{name}/ folder - scan-ahead used to falsely flag them as needing a new Artists/ folder. Fix (2026-05-26): also check Directory.Exists(Musivation/{artist}/). Any future alternative routing home must be added to this check or it will generate wrong scan-ahead messages and incorrect Misc migration paths.
