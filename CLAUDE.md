@@ -90,7 +90,7 @@ Build completes in ~2-3 seconds without blocking.
 
 **Tests must be green before any commit to C# files.**
 
-**NOTE: `test.bat` and `launch.bat` both end with `cmd /k` - they keep the window open for user interaction and will BLOCK PowerShell. Claude must only use `verify.bat` (clean exit) or `build.bat --no-pause`.**
+**NOTE: All bats support `--no-pause` (clean exit for Claude) vs no args (window stays open for human use). Always pass `--no-pause` when calling any bat from Claude.**
 
 If a test fails after a change: fix the code, not the test (unless the test is wrong - state why explicitly).
 

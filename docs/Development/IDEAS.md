@@ -20,12 +20,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-- [ ] **QUICK WIN: Consistent `--no-pause` flag across all bats** - All bats should support the same two-mode contract: no args = `cmd /k` at end (human - window stays open to read output); `--no-pause` = clean `exit /b` with correct code (Claude - no blocking, no interactive prompts). Currently inconsistent: build.bat has it, verify.bat exits cleanly but has no `cmd /k` for human use, test.bat and launch.bat have unconditional `cmd /k` with no `--no-pause` escape.
-  - **Pattern for every exit path:** `if not "%1"=="--no-pause" cmd /k` then `exit /b N`. Remove all standalone `pause` calls (redundant when `cmd /k` keeps window open).
-  - **launch.bat:** change `call "%~dp0dev\build.bat"` to `call "%~dp0dev\build.bat" --no-pause` (always - launch.bat controls its own output; intermediate pause from build is wrong UX).
-  - **CLAUDE.md update:** change note from "Claude must only use verify.bat or build.bat --no-pause" to "all bats support `--no-pause`; always pass it when calling any bat from Claude".
-
-- [ ] **Test logging: write test results to logs/ for debugging** - Currently `--test` prints to console only. For debugging failures (especially when Claude runs tests as part of a session), output should also go to `logs/test-{timestamp}.log`. Simple change: TestRunner.Run() writes the same [PASS]/[FAIL] output to a log file using the same logs/ folder as analysis/integrate. Payback: when a test fails mid-session, the log file shows exactly what broke and what the assertion values were without needing to re-run manually.
 
 - [ ] **Dry-run as routing regression test (JSON manifest, no MP3 files)** - Dry run already IS an integration test - routing logic runs for real, no file moves. What's missing is (a) controlled input without real NewMusic, and (b) an assertion mechanism. Two approaches, prefer B:
 

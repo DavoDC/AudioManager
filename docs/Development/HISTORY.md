@@ -40,6 +40,23 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - Test coverage expansion + bat --no-pause consistency (TIER 2)
+
+**Routing tests expanded from 6 to 11:**
+- `Routing_MotivationGenre_RoutesToMotivation` - genre routing to Motivation/
+- `Routing_ExistingArtist_TwoAlbumSongs_RoutesToAlbumSubfolder` - album threshold at exactly 2 songs (the minimum)
+- `Routing_ExistingArtist_OneAlbumSong_RoutesToSingles` - 1 album song is below threshold -> Singles
+- `Routing_ExistingArtist_MissingAlbum_RoutesToSingles` - album="Missing" tag -> Singles
+- `Routing_ExistingArtist_AlbumMatchesArtistName_RoutesToSingles` - album == artist name -> Singles (no distinct album)
+
+**Test logging:** TestRunner now writes `logs/test-{timestamp}.log` alongside console output. Debugging test failures mid-session no longer requires a manual re-run.
+
+**bat --no-pause consistency (TIER 2 QUICK WIN):** All bats now support the same two-mode contract: no args = `cmd /k` (human mode, window stays open); `--no-pause` = clean `exit /b` (Claude mode, no blocking). Affected: test.bat, verify.bat, launch.bat (which now passes `--no-pause` to build.bat internally). CLAUDE.md note updated.
+
+Total suite: 30 tests, all passing.
+
+---
+
 ## 2026-05-28 - Automated tests: routing correctness (GetDestDir) - Tier 1 complete
 
 Added 6 routing correctness tests covering `GetDestDir()` - the highest-risk module (wrong routing = files moved to wrong library location).
