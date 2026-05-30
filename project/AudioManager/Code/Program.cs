@@ -36,6 +36,7 @@ namespace AudioManager
                 bool forceMirrorRegen;
                 bool dryRun = false;
                 bool noInput = false;
+                bool interactiveMode = false;
                 if (args.Length > 0)
                 {
                     string modeArg = args[0].ToLower();
@@ -67,9 +68,15 @@ namespace AudioManager
                 }
                 else
                 {
-                    // Interactive menu fallback
-                    mode = PromptMode();
-                    forceMirrorRegen = (mode == 1) ? PromptForceMirrorRegen() : false;
+                    // Interactive menu: 3 options, Force Regen collapsed into menu (no separate prompt)
+                    interactiveMode = true;
+                    int choice = PromptMode();
+                    switch (choice)
+                    {
+                        case 1: mode = 1; forceMirrorRegen = false; break; // Analysis
+                        case 2: mode = 1; forceMirrorRegen = true;  break; // Analysis (Force Regen)
+                        default: mode = 2; forceMirrorRegen = false; break; // Integrate
+                    }
                 }
 
                 // Set up file logging for all modes (console output tee'd to file + console simultaneously)
@@ -132,6 +139,23 @@ namespace AudioManager
                         {
                             Console.WriteLine("\nFix library issues before adding new songs.\n");
                             Environment.Exit(1);
+                        }
+
+                        // Interactive mode: dry-run preview first, then confirm before real integration
+                        if (interactiveMode)
+                        {
+                            new MusicIntegrator(dryRun: true, noInput: false);
+                            Console.WriteLine("\n--- DRY RUN COMPLETE ---\n");
+                            Console.Write("Proceed with real integration? [y/N]: ");
+                            string answer = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
+                            if (answer != "Y")
+                            {
+                                Console.WriteLine("Cancelled.");
+                                return;
+                            }
+                            Console.WriteLine();
+                            dryRun = false;
+                            noInput = false;
                         }
 
                         // Gate passed - proceed with integration
@@ -294,24 +318,12 @@ namespace AudioManager
 
         /// <summary>
         /// Prompt the user to select the program mode.
-        /// Clears the console and displays the mode menu, then reads a single key.
-        /// Loops until the user selects '1' or '2'.
+        /// Returns 1 = Analysis, 2 = Analysis (Force Regen), 3 = Integrate.
         /// </summary>
-        /// <returns>1 for Scan, 2 for Integrate</returns>
         private static int PromptMode()
         {
-            int selected = PromptMenu("Select mode:", new[] { "Analysis", "Integrate" });
-            return selected + 1; // 1 = Analysis, 2 = Integrate
-        }
-
-        /// <summary>
-        /// Prompt whether to force mirror regeneration. Reads a single key and loops until Y/N.
-        /// </summary>
-        /// <returns>true if user selects Y, false for N</returns>
-        private static bool PromptForceMirrorRegen()
-        {
-            int selected = PromptMenu("Force mirror regeneration?", new[] { "No", "Yes" });
-            return selected == 1;
+            int selected = PromptMenu("Select mode:", new[] { "Analysis", "Analysis (Force Regen)", "Integrate" });
+            return selected + 1; // 1, 2, or 3
         }
 
         /// <summary>
