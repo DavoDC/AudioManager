@@ -40,6 +40,21 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - Thin bats Phase 2: interactive menu moved into Program.cs (TIER 2)
+
+launch.bat shrunk from 83 to 16 lines - now just builds and launches the exe. All menu logic moved into Program.cs.
+
+**What changed:**
+- `PromptMode()` expanded from 2 options to 3: Analysis / Analysis (Force Regen) / Integrate. Force Regen prompt eliminated as a separate step.
+- Interactive Integrate path: Program.cs now runs dry-run internally, shows preview, then prompts "Proceed with real integration? [y/N]" before the real run. One exe invocation, one log file.
+- `PromptForceMirrorRegen()` removed - collapsed into the main menu.
+- `launch.bat` now: build + `AudioManager.exe` (no args) + timing. Zero menu logic.
+- CLAUDE.md Build/Run section updated.
+
+Pre-integration gate runs once (not twice as before when launch.bat ran two separate exe calls).
+
+---
+
 ## 2026-05-31 - Test coverage expansion + bat --no-pause consistency (TIER 2)
 
 **Routing tests expanded from 6 to 11:**

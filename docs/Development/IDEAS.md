@@ -64,9 +64,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
     - AudioMirrorCommitter: verify commit is skipped when LibChecker has hits; verify it runs on force regen + clean run.
   - **Scope discipline:** Test feature behavior, not individual function internals. "Artist casing is preserved end-to-end" not "ExtractAndFixArtists() branch 47". Internals are tested indirectly; changing internals should not break tests if behavior is unchanged.
 
-- [ ] **Thin bats - Phase 2: move interactive menu into Program.cs** - Phase 1 (file moves) done 2026-05-28. Remaining: move all menu logic from launch.bat into Program.cs so launch.bat becomes a pure ~10-line launcher.
-  - **launch.bat:** Shrinks from 83 lines to ~10. Calls `dev\build.bat` then `AudioManager.exe` (no args). Exe shows interactive menu. Move timing to here.
-  - **Program.cs interactive menu (PromptMode):** Expand from 2 options to 3: (1) Analysis, (2) Analysis (Force Regen), (3) Integrate. Collapse the second Force Regen prompt into the main menu. No "Run Tests" in the interactive menu - dev tool, wrong context.
 
 - [ ] **Feature: Clean up NewMusic folder after real integration** - After real integration completes, automatically clean up the NewMusic source folder (`C:\Users\David\Downloads\NewMusic`). Steps: (1) check for remaining files - if any files exist, warn user and abort cleanup (do NOT delete); (2) if 0 files remain, delete all empty subdirectories and the folder itself. Gate: file count only - if 0 files, the folder is safe to delete regardless of LibChecker state (empty folder cannot cause data loss). No LibChecker gate needed. Rationale: after May 2026 run, 2 empty subdirectories were left behind (`Akon - BEAUTIFUL DAY/` and `Shaboozey - Where I've Been, Isn't Where I'm Going_ The Complete Edition/`). Current state as of 2026-05-26: 0 files, 2 empty subdirectories - safe to delete now.
 
