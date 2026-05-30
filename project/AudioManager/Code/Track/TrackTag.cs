@@ -42,6 +42,8 @@ namespace AudioManager.Code.Modules
                 Length = xmlFileIn.Length;
                 AlbumCoverCount = xmlFileIn.AlbumCoverCount;
                 Compilation = xmlFileIn.Compilation;
+                CoverWidth  = xmlFileIn.CoverWidth  ?? "Unknown";
+                CoverHeight = xmlFileIn.CoverHeight ?? "Unknown";
 
                 // Stop
                 return;
@@ -69,8 +71,59 @@ namespace AudioManager.Code.Modules
             ID3Tag id3tag = (ID3Tag) tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
             Compilation = id3tag.IsCompilation.ToString();
 
+            // Extract album art dimensions (pure byte parsing - no System.Drawing dependency)
+            var pics = tag.Pictures;
+            if (pics != null && pics.Length > 0)
+            {
+                var (w, h) = GetCoverDimensions(pics[0].Data.Data);
+                CoverWidth  = w > 0 ? w.ToString() : "Unknown";
+                CoverHeight = h > 0 ? h.ToString() : "Unknown";
+            }
+            else
+            {
+                CoverWidth = "0";
+                CoverHeight = "0";
+            }
+
             // Overwrite mirror file contents with metadata
             TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
+        }
+
+        /// <summary>
+        /// Reads pixel dimensions from raw JPEG or PNG album art bytes.
+        /// Returns (0, 0) for unsupported/unreadable formats.
+        /// </summary>
+        private static (int width, int height) GetCoverDimensions(byte[] data)
+        {
+            if (data == null || data.Length < 8) return (0, 0);
+
+            // PNG: magic 89 50 4E 47 - IHDR chunk has dimensions at bytes 16-23
+            if (data.Length >= 24 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47)
+            {
+                int w = (data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19];
+                int h = (data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23];
+                return (w, h);
+            }
+
+            // JPEG: FF D8 - scan for SOF (Start Of Frame) marker
+            if (data[0] == 0xFF && data[1] == 0xD8)
+            {
+                int i = 2;
+                while (i + 4 < data.Length)
+                {
+                    if (data[i] != 0xFF) break;
+                    byte marker = data[i + 1];
+                    if (marker == 0xFF) { i++; continue; }
+                    int segLen = (data[i + 2] << 8) | data[i + 3];
+                    bool isSof = (marker >= 0xC0 && marker <= 0xC3) || (marker >= 0xC5 && marker <= 0xC7) ||
+                                 (marker >= 0xC9 && marker <= 0xCB) || (marker >= 0xCD && marker <= 0xCF);
+                    if (isSof && i + 8 < data.Length)
+                        return ((data[i + 7] << 8) | data[i + 8], (data[i + 5] << 8) | data[i + 6]);
+                    i += 2 + segLen;
+                }
+            }
+
+            return (0, 0);
         }
     }
 }

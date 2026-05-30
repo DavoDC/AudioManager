@@ -1143,7 +1143,7 @@ namespace AudioManager
             }
 
             string optD = "[D] Delete NewMusic copy (keep library)";
-            string optL = "[L] Delete library copy (keep new file)";
+            string optL = "[L] Delete library copy (keep new file - will be routed in the next step)";
             string optK = "[K] Keep both";
             string optQ = "[Q] Quit";
             if (recommendedKey == 'L') optL += " (recommended)";
