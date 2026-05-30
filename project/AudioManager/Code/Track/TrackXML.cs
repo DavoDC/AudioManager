@@ -40,6 +40,8 @@ namespace AudioManager.Code.Modules
                     SetElementValue("Length", tag.Length);
                     SetElementValue("AlbumCoverCount", tag.AlbumCoverCount);
                     SetElementValue("Compilation", tag.Compilation);
+                    SetElementValue("CoverWidth", tag.CoverWidth);
+                    SetElementValue("CoverHeight", tag.CoverHeight);
 
                     // Save file
                     xmlDoc.Save(mirrorFilePath);
@@ -60,6 +62,8 @@ namespace AudioManager.Code.Modules
                     Length = GetElementValue("Length");
                     AlbumCoverCount = GetElementValue("AlbumCoverCount");
                     Compilation = GetElementValue("Compilation");
+                    CoverWidth  = GetElementValue("CoverWidth");
+                    CoverHeight = GetElementValue("CoverHeight");
                 }
             }
             catch (Exception)
