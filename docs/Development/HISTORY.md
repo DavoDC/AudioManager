@@ -40,6 +40,14 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - NewMusic cleanup + RoutingConfidence enum removed (TIER 2/3)
+
+**NewMusic cleanup (TIER 2):** `MusicIntegrator.CleanupNewMusicFolder()` added. Runs after each integration (dry-run shows preview, real mode deletes). Gate: if any files remain, warns and skips. Only removes empty subdirectories; leaves root NewMusic folder. Eliminates the manual cleanup step needed after May 2026 batch.
+
+**RoutingConfidence enum removed (TIER 3):** Replaced `out RoutingConfidence confidence` with `out bool isNewFolder` in `GetDestDir()`. Removed ~80 lines of dead Uncertain-path code from the routing loop (Misc has routed as Certain since 2026-05-25). Display: `[AUTO - new folder]` replaces `[AUTO (likely)]` for scan-ahead promoted artists. All 30 tests passing.
+
+---
+
 ## 2026-05-31 - Thin bats Phase 2: interactive menu moved into Program.cs (TIER 2)
 
 launch.bat shrunk from 83 to 16 lines - now just builds and launches the exe. All menu logic moved into Program.cs.
