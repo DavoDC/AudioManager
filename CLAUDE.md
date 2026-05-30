@@ -58,12 +58,12 @@ AudioManager/
 .\scripts\launch.bat
 ```
 
-Menu options:
-- 1: Analysis (No Force Regen)
-- 2: Analysis (Force Regen)
-- 3: Integration - runs dry run first, then prompts "Proceed with real integration? [y/N]"
+Menu options (arrow-key navigable, shown in the exe after build):
+- Analysis - standard analysis run
+- Analysis (Force Regen) - forces full AudioMirror regeneration
+- Integrate - runs dry run first, then prompts "Proceed with real integration? [y/N]"
 
-launch.bat handles build internally, no separate build step needed.
+launch.bat handles build internally; the exe shows the interactive menu (no menu logic in the bat).
 
 ### Claude: Building the Program
 
