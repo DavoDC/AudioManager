@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Reflection;
+using System.Text;
 
 namespace AudioManager
 {
@@ -7,7 +9,16 @@ namespace AudioManager
     {
         internal static bool Run()
         {
-            Console.WriteLine("\n###### AudioManager Tests ######\n");
+            string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            var sb = new StringBuilder();
+
+            void Out(string line)
+            {
+                Console.WriteLine(line);
+                sb.AppendLine(line);
+            }
+
+            Out("\n###### AudioManager Tests ######\n");
 
             var testTypes = new[] { typeof(TagFixerTests), typeof(RoutingTests) };
             int passed = 0, failed = 0;
@@ -19,25 +30,35 @@ namespace AudioManager
                     try
                     {
                         method.Invoke(null, null);
-                        Console.WriteLine($"[PASS] {method.Name}");
+                        Out($"[PASS] {method.Name}");
                         passed++;
                     }
                     catch (TargetInvocationException tie)
                     {
-                        Console.WriteLine($"[FAIL] {method.Name}: {tie.InnerException?.Message ?? tie.Message}");
+                        Out($"[FAIL] {method.Name}: {tie.InnerException?.Message ?? tie.Message}");
                         failed++;
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[FAIL] {method.Name}: {ex.Message}");
+                        Out($"[FAIL] {method.Name}: {ex.Message}");
                         failed++;
                     }
                 }
             }
 
-            Console.WriteLine($"\n-------------------------------");
-            Console.WriteLine($"Results: {passed} passed, {failed} failed");
-            Console.WriteLine($"-------------------------------\n");
+            Out($"\n-------------------------------");
+            Out($"Results: {passed} passed, {failed} failed");
+            Out($"-------------------------------\n");
+
+            try
+            {
+                if (!Directory.Exists(Constants.LogsPath))
+                    Directory.CreateDirectory(Constants.LogsPath);
+                string logPath = Path.Combine(Constants.LogsPath, $"test-{timestamp}.log");
+                File.WriteAllText(logPath, sb.ToString());
+                Console.WriteLine($"  Log: {logPath}");
+            }
+            catch { /* log write failures must not break the test run */ }
 
             return failed == 0;
         }
