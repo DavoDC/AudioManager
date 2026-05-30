@@ -31,6 +31,14 @@ namespace AudioManager
                     return;
                 }
 
+                // --routing-manifest <path>: validate routing against a JSON manifest and exit
+                if (args.Length >= 2 && args[0].Equals("--routing-manifest", StringComparison.OrdinalIgnoreCase))
+                {
+                    bool allPassed = ManifestRunner.Run(args[1]);
+                    Environment.Exit(allPassed ? 0 : 1);
+                    return;
+                }
+
                 // Detect CLI args: "analysis [--force-regen]" or "integrate [--dry-run] [--no-input]"
                 int mode;
                 bool forceMirrorRegen;

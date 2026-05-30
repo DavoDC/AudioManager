@@ -1,0 +1,76 @@
+[
+  {
+    "scenario": "Unknown artist, no library folder -> Misc",
+    "filename": "MANIFEST TEST Unknown - Song.mp3",
+    "artist": "MANIFEST TEST Unknown",
+    "title": "Song",
+    "album": "Missing",
+    "expectedDest": "Miscellaneous Songs"
+  },
+  {
+    "scenario": "Musivation genre -> Musivation/",
+    "filename": "MANIFEST TEST Speaker A - Talk.mp3",
+    "artist": "MANIFEST TEST Speaker A",
+    "title": "Talk",
+    "album": "Talks",
+    "genres": "Musivation",
+    "expectedDest": "Musivation"
+  },
+  {
+    "scenario": "Motivation genre -> Motivation/",
+    "filename": "MANIFEST TEST Speaker B - Life Talk.mp3",
+    "artist": "MANIFEST TEST Speaker B",
+    "title": "Life Talk",
+    "album": "Talks",
+    "genres": "Motivation",
+    "expectedDest": "Motivation"
+  },
+  {
+    "scenario": "Scan-ahead: 3 songs by new artist -> Artists/Singles/ (song 1 of 3)",
+    "filename": "MANIFEST TEST Band - Song 1.mp3",
+    "artist": "MANIFEST TEST Band",
+    "title": "Song 1",
+    "album": "Missing",
+    "expectedDest": "Artists\\MANIFEST TEST Band\\Singles"
+  },
+  {
+    "scenario": "Scan-ahead: 3 songs by new artist -> Artists/Singles/ (song 2 of 3)",
+    "filename": "MANIFEST TEST Band - Song 2.mp3",
+    "artist": "MANIFEST TEST Band",
+    "title": "Song 2",
+    "album": "Missing",
+    "expectedDest": "Artists\\MANIFEST TEST Band\\Singles"
+  },
+  {
+    "scenario": "Scan-ahead: 3 songs by new artist -> Artists/Singles/ (song 3 of 3)",
+    "filename": "MANIFEST TEST Band - Song 3.mp3",
+    "artist": "MANIFEST TEST Band",
+    "title": "Song 3",
+    "album": "Missing",
+    "expectedDest": "Artists\\MANIFEST TEST Band\\Singles"
+  },
+  {
+    "scenario": "No artist folder, 1 song -> Misc (below scan-ahead threshold)",
+    "filename": "MANIFEST TEST Solo - Only Song.mp3",
+    "artist": "MANIFEST TEST Solo",
+    "title": "Only Song",
+    "album": "Some Album",
+    "expectedDest": "Miscellaneous Songs"
+  },
+  {
+    "scenario": "No artist folder, 2 songs (below 3-song threshold) -> Misc (song 1 of 2)",
+    "filename": "MANIFEST TEST Duo - Song A.mp3",
+    "artist": "MANIFEST TEST Duo",
+    "title": "Song A",
+    "album": "Missing",
+    "expectedDest": "Miscellaneous Songs"
+  },
+  {
+    "scenario": "No artist folder, 2 songs (below 3-song threshold) -> Misc (song 2 of 2)",
+    "filename": "MANIFEST TEST Duo - Song B.mp3",
+    "artist": "MANIFEST TEST Duo",
+    "title": "Song B",
+    "album": "Missing",
+    "expectedDest": "Miscellaneous Songs"
+  }
+]

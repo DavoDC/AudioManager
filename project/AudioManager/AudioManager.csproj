@@ -70,6 +70,7 @@
     <Compile Include="Code\Tests\TagFixerTests.cs" />
     <Compile Include="Code\Tests\RoutingFixtures.cs" />
     <Compile Include="Code\Tests\RoutingTests.cs" />
+    <Compile Include="Code\Tests\ManifestRunner.cs" />
     <Compile Include="Code\Doer\AudioMirrorCommitter.cs" />
     <Compile Include="Code\Doer\LibChecker.cs" />
     <Compile Include="Code\Doer\AgeChecker.cs" />
