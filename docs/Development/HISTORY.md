@@ -40,6 +40,16 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - Album art Phase 1 + dupe UX + verify.bat manifest integration
+
+**Album art Phase 1 - Capture (TIER 2):** `<CoverWidth>` and `<CoverHeight>` fields now written to every AudioMirror XML during regen. Pure byte-level JPEG/PNG dimension parser in TrackTag (no System.Drawing dependency). Existing XMLs get dimensions populated on next force regen. Enables Phase 2 (histogram analysis) without any further code changes.
+
+**Dupe routing UX clarity (TIER 3):** [L] option now reads "Delete library copy (keep new file - will be routed in the next step)". Eliminates confusion about where the kept file ends up.
+
+**verify.bat now includes manifest runner:** `verify.bat --no-pause` runs build -> unit tests -> routing manifest. All 39 assertions checked in one command (30 unit tests + 9 manifest tests).
+
+---
+
 ## 2026-05-31 - JSON routing manifest: --routing-manifest flag (TIER 2)
 
 `AudioManager.exe --routing-manifest <path>` validates GetDestDir routing against a JSON manifest without any real MP3 files or NewMusic folder. Each manifest entry specifies `artist, title, album, genres (optional), scenario (label), expectedDest` (relative to Audio root). Exit 0 if all pass, 1 if any fail.

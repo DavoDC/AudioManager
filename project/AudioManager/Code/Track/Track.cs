@@ -86,6 +86,22 @@ namespace AudioManager.Code.Modules
             set => albumCoverCount = value;
         }
 
+        // Album art width in pixels ("0" = no art, "Unknown" = art present but format unrecognised)
+        private string coverWidth;
+        public string CoverWidth
+        {
+            get => coverWidth;
+            set => coverWidth = value;
+        }
+
+        // Album art height in pixels
+        private string coverHeight;
+        public string CoverHeight
+        {
+            get => coverHeight;
+            set => coverHeight = value;
+        }
+
         // The track's compilation status (i.e. whether its album is a compilation of songs by various artists)
         private string compilation;
         public string Compilation
