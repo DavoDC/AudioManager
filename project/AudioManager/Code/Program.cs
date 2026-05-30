@@ -36,6 +36,7 @@ namespace AudioManager
                 bool forceMirrorRegen;
                 bool dryRun = false;
                 bool noInput = false;
+                bool jsonOutput = false;
                 bool interactiveMode = false;
                 if (args.Length > 0)
                 {
@@ -43,6 +44,7 @@ namespace AudioManager
                     bool forceRegen = args.Any(a => a.Equals("--force-regen", StringComparison.OrdinalIgnoreCase));
                     dryRun = args.Any(a => a.Equals("--dry-run", StringComparison.OrdinalIgnoreCase));
                     noInput = args.Any(a => a.Equals("--no-input", StringComparison.OrdinalIgnoreCase));
+                    jsonOutput = args.Any(a => a.Equals("--json-output", StringComparison.OrdinalIgnoreCase));
 
                     if (modeArg == "analysis" || modeArg == "analyse" || modeArg == "analyze")
                     {
@@ -61,7 +63,7 @@ namespace AudioManager
                     }
                     else
                     {
-                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] | integrate [--dry-run] | tagfix [--dry-run]");
+                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] | integrate [--dry-run [--json-output]] | tagfix [--dry-run]");
                         Environment.Exit(1);
                         return;
                     }
@@ -144,7 +146,7 @@ namespace AudioManager
                         // Interactive mode: dry-run preview first, then confirm before real integration
                         if (interactiveMode)
                         {
-                            new MusicIntegrator(dryRun: true, noInput: false);
+                            new MusicIntegrator(dryRun: true, noInput: false, jsonOutput: false);
                             Console.WriteLine("\n--- DRY RUN COMPLETE ---\n");
                             Console.Write("Proceed with real integration? [y/N]: ");
                             string answer = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
@@ -159,7 +161,7 @@ namespace AudioManager
                         }
 
                         // Gate passed - proceed with integration
-                        MusicIntegrator mi = new MusicIntegrator(dryRun, noInput);
+                        MusicIntegrator mi = new MusicIntegrator(dryRun, noInput, jsonOutput);
 
                         // Post-integration validation: regenerate mirror and run LibChecker
                         if (!dryRun)

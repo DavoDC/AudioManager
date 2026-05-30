@@ -40,6 +40,14 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - --json-output mode + album tag inheritance (TIER 2/3)
+
+**`--json-output` flag (TIER 2):** `AudioManager.exe integrate --dry-run --json-output` writes `logs/routing-{timestamp}.json` with structured routing decisions. Schema: `{filename, artist, title, album, destination, reason, isNewFolder, status, inBatchDuplicate, tagChanges[]}`. Additive - standard text output unchanged. Enables Claude to parse routing decisions programmatically for automated assertions. `LogEntry` extended with `Reason`, `IsNewFolder`, `InBatchDuplicate` fields (also captured in real-mode runs for future log enhancement).
+
+**Album tag inheritance (TIER 3):** In `PreScanFiles`, if album tag is "Missing" and the file is in an immediate subfolder of NewMusic, the subfolder name is used as the album fallback. Runs before TagFixer simulation so suffix stripping applies. Fixes: tracks with missing album tags but grouped under an album folder would otherwise all route to Singles regardless of batch count.
+
+---
+
 ## 2026-05-31 - NewMusic cleanup + RoutingConfidence enum removed (TIER 2/3)
 
 **NewMusic cleanup (TIER 2):** `MusicIntegrator.CleanupNewMusicFolder()` added. Runs after each integration (dry-run shows preview, real mode deletes). Gate: if any files remain, warns and skips. Only removes empty subdirectories; leaves root NewMusic folder. Eliminates the manual cleanup step needed after May 2026 batch.
