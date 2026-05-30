@@ -21,34 +21,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
 
-- [ ] **Dry-run as routing regression test (JSON manifest, no MP3 files)** - Dry run already IS an integration test - routing logic runs for real, no file moves. What's missing is (a) controlled input without real NewMusic, and (b) an assertion mechanism. Two approaches, prefer B:
-
-  **Approach A - Minimal MP3 fixtures (simpler to build, messier repo):**
-  - Commit tiny .mp3 files to `test-fixtures/NewMusic/` with controlled ID3 tags
-  - Add `--test-new-music-path <path>` to override `Constants.NewMusicPath`
-  - Problem: TagLib# requires a valid audio frame - pure header-only files fail. Files must contain a real (silent) audio frame, meaning actual binary MP3s in the repo.
-
-  **Approach B - JSON routing manifest (no binary files, recommended):**
-  - Add `--routing-manifest <path>` flag that bypasses file scanning and TagFixer entirely
-  - Manifest JSON defines virtual tracks (artist, title, album, filename) + expected destination per track
-  - MusicIntegrator loads manifest, builds Track objects directly, runs GetDestDir + scan-ahead for real
-  - Commit `test-fixtures/routing-manifest.json` - pure text, version-controllable, human-readable
-  - Exits code 1 if any actual destination != expected destination, 0 if all match
-
-  ```json
-  [
-    {"filename": "Known Artist - Song.mp3", "artist": "Known Artist", "title": "Song", "album": "Known Album", "expectedDest": "Artists\\Known Artist\\Singles\\"},
-    {"filename": "New Artist - Song1.mp3", "artist": "New Artist", "title": "Song1", "album": "Debut", "expectedDest": "Misc"},
-    ...
-  ]
-  ```
-
-  **What Approach B tests:** GetDestDir routing, scan-ahead (3-song threshold), Misc migration, Musivation routing, duplicate detection via AudioMirror lookup.
-  **What it doesn't test:** TagLib# tag reading, TagFixer mutations, file renaming (those are separate concerns - unit tests cover TagFixer pure functions; a separate MP3-based test could cover TagFixer I/O).
-
-  **Pairs with `--json-output` (next item)** - json-output is the output side (parse real dry-run results); the manifest is the input side (inject controlled test tracks). Together they form a full regression harness. The manifest approach is higher value first - input control is the harder problem.
-
-  **Scenarios to cover:** (1) artist with existing library folder -> Singles/; (2) 3+ songs same new artist -> album subfolder; (3) 1-2 songs new artist -> Singles/ then Misc; (4) Musivation artist -> Musivation/ subfolder; (5) no artist match -> Misc; (6) duplicate detected via AudioMirror -> dupe resolution path.
 
 
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.

@@ -40,6 +40,22 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - JSON routing manifest: --routing-manifest flag (TIER 2)
+
+`AudioManager.exe --routing-manifest <path>` validates GetDestDir routing against a JSON manifest without any real MP3 files or NewMusic folder. Each manifest entry specifies `artist, title, album, genres (optional), scenario (label), expectedDest` (relative to Audio root). Exit 0 if all pass, 1 if any fail.
+
+**Implementation:** `ManifestRunner.cs` - simple regex-based JSON parser (no external deps), scan-ahead computed from batch counts in the manifest, uses real `MusicIntegrator(testLibraryPath)` constructor with `Constants.AudioFolderPath` to check real library structure without running the pipeline.
+
+**Initial manifest** `test-fixtures/routing-manifest.json` - 9 scenarios all passing:
+- Unknown artist -> Miscellaneous Songs
+- Musivation/Motivation genre routing
+- Scan-ahead: 3 songs by new artist -> Artists/Singles/
+- 1-2 songs by new artist -> Miscellaneous Songs (below threshold)
+
+**Limitation:** CountAlbumSongs does not scan the manifest batch, only the real library. Album subfolder tests (2+ songs -> album/ instead of Singles/) still require the unit test approach (AddAlbumFiles fixture).
+
+---
+
 ## 2026-05-31 - --json-output mode + album tag inheritance (TIER 2/3)
 
 **`--json-output` flag (TIER 2):** `AudioManager.exe integrate --dry-run --json-output` writes `logs/routing-{timestamp}.json` with structured routing decisions. Schema: `{filename, artist, title, album, destination, reason, isNewFolder, status, inBatchDuplicate, tagChanges[]}`. Additive - standard text output unchanged. Enables Claude to parse routing decisions programmatically for automated assertions. `LogEntry` extended with `Reason`, `IsNewFolder`, `InBatchDuplicate` fields (also captured in real-mode runs for future log enhancement).
