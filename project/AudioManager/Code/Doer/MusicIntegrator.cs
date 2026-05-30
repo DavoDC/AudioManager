@@ -17,6 +17,7 @@ namespace AudioManager
     {
         private bool dryRun;
         private bool noInput;
+        private bool jsonOutput;
         private Dictionary<string, List<string>> _miscMigrationCandidates = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         // Populated by RunScanAhead; used by GetDestDir to build full routing reason for Misc fallback
         private Dictionary<string, int> _scanAheadBatchCounts;
@@ -25,7 +26,7 @@ namespace AudioManager
         private string _libraryPath;
 
 
-        /// <summary>Per-file integration result for the log.</summary>
+        /// <summary>Per-file integration result for the log and JSON output.</summary>
         private class LogEntry
         {
             public string Filename;
@@ -36,6 +37,9 @@ namespace AudioManager
             public List<string> TagChanges = new List<string>();
             public string Status; // "moved", "would-move", "skipped", "error"
             public string Detail; // reason or error message
+            public string Reason;
+            public bool IsNewFolder;
+            public bool InBatchDuplicate;
         }
 
         /// <summary>Data about a duplicate found during pre-scan.</summary>
@@ -74,10 +78,12 @@ namespace AudioManager
         /// </summary>
         /// <param name="dryRun">If true, print planned actions without executing any file moves.</param>
         /// <param name="noInput">If true, skip all interactive prompts and auto-accept recommended decisions.</param>
-        public MusicIntegrator(bool dryRun = false, bool noInput = false)
+        /// <param name="jsonOutput">If true, write routing decisions as JSON to logs/routing-{timestamp}.json after dry-run.</param>
+        public MusicIntegrator(bool dryRun = false, bool noInput = false, bool jsonOutput = false)
         {
             this.dryRun = dryRun;
             this.noInput = noInput;
+            this.jsonOutput = jsonOutput;
             _libraryPath = Constants.AudioFolderPath;
             string modeLabel = dryRun ? " [DRY RUN - no files will be moved]" : "";
             Console.WriteLine($"\nIntegrating new music...{modeLabel}");
@@ -279,6 +285,9 @@ namespace AudioManager
 
                         // Determine destination directory and whether it requires creating a new artist folder
                         string destDir = GetDestDir(track, newArtistFolders, out string reason, out bool isNewFolder);
+                        entry.Reason = reason;
+                        entry.IsNewFolder = isNewFolder;
+                        entry.InBatchDuplicate = sf.InBatchDuplicate;
 
                         string destPath = Path.Combine(destDir, destFilename);
 
@@ -370,6 +379,10 @@ namespace AudioManager
                     foreach (var (_, block) in dryRunRoutingOutputs.OrderBy(x => x.destPath, StringComparer.OrdinalIgnoreCase))
                         Console.Write(block);
                 }
+
+                // Write JSON output if requested (dry-run only)
+                if (dryRun && jsonOutput)
+                    WriteJsonOutput(logEntries);
 
                 // Routing section footer
                 var routingErrors = logEntries.Where(e => e.Status == "error").ToList();
@@ -659,6 +672,59 @@ namespace AudioManager
             Console.WriteLine(dryRun
                 ? $"Would remove: {cleanedCount} empty folder(s)"
                 : $"Cleaned up: {cleanedCount} empty folder(s)");
+        }
+
+        /// <summary>
+        /// Writes dry-run routing decisions as structured JSON to logs/routing-{timestamp}.json.
+        /// Schema: array of objects with filename, artist, title, album, destination, reason,
+        /// isNewFolder, status, inBatchDuplicate, tagChanges[].
+        /// </summary>
+        private void WriteJsonOutput(List<LogEntry> entries)
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                if (!Directory.Exists(Constants.LogsPath))
+                    Directory.CreateDirectory(Constants.LogsPath);
+                string jsonPath = Path.Combine(Constants.LogsPath, $"routing-{timestamp}.json");
+
+                var sb = new StringBuilder();
+                sb.AppendLine("[");
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    var e = entries[i];
+                    sb.AppendLine("  {");
+                    sb.AppendLine($"    \"filename\": {JStr(e.Filename)},");
+                    sb.AppendLine($"    \"artist\": {JStr(e.Artists)},");
+                    sb.AppendLine($"    \"title\": {JStr(e.Title)},");
+                    sb.AppendLine($"    \"album\": {JStr(e.Album)},");
+                    sb.AppendLine($"    \"destination\": {JStr(e.Destination)},");
+                    sb.AppendLine($"    \"reason\": {JStr(e.Reason)},");
+                    sb.AppendLine($"    \"isNewFolder\": {(e.IsNewFolder ? "true" : "false")},");
+                    sb.AppendLine($"    \"status\": {JStr(e.Status)},");
+                    sb.AppendLine($"    \"inBatchDuplicate\": {(e.InBatchDuplicate ? "true" : "false")},");
+                    sb.Append($"    \"tagChanges\": [");
+                    if (e.TagChanges?.Count > 0)
+                        sb.Append(string.Join(", ", e.TagChanges.Select(t => JStr(t))));
+                    sb.AppendLine("]");
+                    sb.AppendLine(i < entries.Count - 1 ? "  }," : "  }");
+                }
+                sb.AppendLine("]");
+
+                File.WriteAllText(jsonPath, sb.ToString(), System.Text.Encoding.UTF8);
+                Console.WriteLine($"\n  JSON: {jsonPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n  [WARN] JSON output failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>JSON-escapes a string value, returning a quoted JSON string or null.</summary>
+        private static string JStr(string s)
+        {
+            if (s == null) return "null";
+            return "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n") + "\"";
         }
 
         /// <summary>
@@ -979,6 +1045,18 @@ namespace AudioManager
                         track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
                         track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
                         track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
+                    }
+
+                    // Inherit album from immediate subfolder name when tag is missing.
+                    // Files grouped under an album folder in NewMusic but lacking the album tag
+                    // would otherwise all route to Singles regardless of batch count.
+                    if (track.Album.Equals("Missing", StringComparison.OrdinalIgnoreCase)
+                        && sourcePath.StartsWith(Constants.NewMusicPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string relPath = sourcePath.Substring(Constants.NewMusicPath.Length).TrimStart(Path.DirectorySeparatorChar);
+                        int sep = relPath.IndexOf(Path.DirectorySeparatorChar);
+                        if (sep > 0)
+                            track.Album = relPath.Substring(0, sep);
                     }
 
                     if (dryRun && !track.Title.Equals("Missing") && !track.Artists.Equals("Missing"))
