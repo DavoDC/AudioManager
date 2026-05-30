@@ -105,5 +105,75 @@ namespace AudioManager
             }
             finally { RoutingFixtures.Cleanup(lib); }
         }
+
+        public static void Routing_MotivationGenre_RoutesToMotivation()
+        {
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Some Speaker", "Talk Title", genres: "Motivation"));
+                string expected = Path.Combine(lib, Constants.MotivDir);
+                Assert.Equal(expected, dest, "Motivation genre -> Motivation/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_ExistingArtist_TwoAlbumSongs_RoutesToAlbumSubfolder()
+        {
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Known Artist" });
+            try
+            {
+                // 2 songs is the minimum threshold for album subfolder routing (albumCount >= 2)
+                RoutingFixtures.AddAlbumFiles(lib, "Known Artist", "Debut Album", fileCount: 2);
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Known Artist", "Track 3", album: "Debut Album"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Known Artist", "Debut Album");
+                Assert.Equal(expected, dest, "existing artist + 2 album songs -> album subfolder (exact threshold)");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_ExistingArtist_OneAlbumSong_RoutesToSingles()
+        {
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Known Artist" });
+            try
+            {
+                // 1 album song is below the 2-song threshold -> Routes to Singles
+                RoutingFixtures.AddAlbumFiles(lib, "Known Artist", "Debut Album", fileCount: 1);
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Known Artist", "Track 2", album: "Debut Album"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Known Artist", "Singles");
+                Assert.Equal(expected, dest, "existing artist + 1 album song -> Singles (below threshold)");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_ExistingArtist_MissingAlbum_RoutesToSingles()
+        {
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Known Artist" });
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Known Artist", "Some Song", album: "Missing"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Known Artist", "Singles");
+                Assert.Equal(expected, dest, "existing artist, album=Missing -> Singles (no distinct album)");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_ExistingArtist_AlbumMatchesArtistName_RoutesToSingles()
+        {
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Known Artist" });
+            try
+            {
+                // When album == primary artist name, GetDestDir treats it as no distinct album -> Singles
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Known Artist", "Some Song", album: "Known Artist"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Known Artist", "Singles");
+                Assert.Equal(expected, dest, "existing artist, album == artist name -> Singles (no distinct album)");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
     }
 }
