@@ -12,13 +12,17 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **TIER 1 threshold:** anything that would cause a LibChecker warning belongs here, regardless of where or when it was discovered. Routing gaps, rule divergence, config omissions - all TIER 1 if LibChecker would fire on it.
 
-**ACTIVE FOCUS:** Routing test suite complete (30 unit tests + 9 manifest tests as of 2026-05-31). All active TIER 1 items resolved in code; remaining TIER 1 items require verification on next real integration batch.
+**ACTIVE FOCUS:** Routing test suite complete (all tests green as of 2026-05-31). All active TIER 1 items resolved in code; remaining TIER 1 items require verification on next real integration batch.
+
+- [ ] **[BLOCKED: do after Raphael trip] Fix MP3 filename casing to match artist ID3 tags** - several files have filenames with old/inconsistent artist casing that diverges from the ID3 tag (e.g., `Bowling For Soup - 1985.mp3` but tag says `Bowling for Soup`; `24kgoldnDaBaby - Coco.mp3` but tag says `24kGoldn`; similarly `Iann Dior` vs `iann dior`, `JAY-Z` vs `Jay-Z`, `Kota the Friend` vs `KOTA The Friend`). Fix via mp3tag on the master machine - rename files to match the ID3 artist tag casing. This WILL fix all current LibChecker casing warnings (genuine mismatches, not false positives). **Must be done before next integration so LibChecker is clean. Raphael has master copy of audio library - do not edit on e15 to avoid sync conflict.**
 
 ---
 
 ## TIER 2 - QUALITY
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
+
+- [ ] **Terminal vs markdown output - separate handling needed** - Markdown tables render correctly in `.md` files but look cluttered in terminal (raw pipes/dashes). Options to evaluate via `/think` pass: (A) auto-open the saved `.md` report in the default viewer after analysis (zero extra code, best reading experience); (B) prompt the user to open it (give full path in output); (C) add terminal-native table formatting as an alternative output path. Strong prior: option A or B is better than option C - a markdown viewer is purpose-built for this, adding a terminal table renderer duplicates effort for lower quality. Decision: `/think` pass before any implementation.
 
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.
   - **Motivation (unchanged):** Each fix session currently requires 2-3 manual dry run + force regen cycles. Every module covered by a test eliminates that cycle for that module. Real integration (May 2026) found metadata edge cases dry-run missed - tests for the same logic would have caught several earlier.
