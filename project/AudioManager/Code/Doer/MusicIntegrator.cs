@@ -1276,7 +1276,7 @@ namespace AudioManager
                     }
 
                     // Count songs for this sampled person (3+ gets own People/ folder, <3 goes to ATD Singles)
-                    int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson);
+                    int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson, _libraryPath);
                     if (personSongCount >= 3)
                     {
                         string peopleFolder = Path.Combine(peopleParent, SanitiseFolderName(sampledPerson));
@@ -1284,7 +1284,7 @@ namespace AudioManager
                         // Within People/{person}/, apply same album-vs-singles rule as Artists/ routing
                         if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase))
                         {
-                            int albumCount = CountAkiraTheDonPersonAlbumSongs(sampledPerson, track.Album);
+                            int albumCount = CountAkiraTheDonPersonAlbumSongs(sampledPerson, track.Album, _libraryPath);
                             if (albumCount >= 2)
                             {
                                 reason = $"{albumCount} songs from album '{track.Album}'";
@@ -1435,19 +1435,20 @@ namespace AudioManager
         /// Count songs for a sampled person in Akira The Don catalog (library + new batch combined).
         /// Used to determine if person gets their own People/{person}/ folder (3+ songs) or Singles/.
         /// </summary>
-        private int CountAkiraTheDonPersonSongs(string sampledPerson)
+        private int CountAkiraTheDonPersonSongs(string sampledPerson, string libraryPath = null)
         {
+            string libPath = libraryPath ?? Constants.AudioFolderPath;
             int count = 0;
 
             // Count in library (scan Musivation/Akira The Don/People/{person}/)
-            string personFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", SanitiseFolderName(sampledPerson));
+            string personFolder = Path.Combine(libPath, Constants.MusivDir, "Akira The Don", "People", SanitiseFolderName(sampledPerson));
             if (Directory.Exists(personFolder))
             {
                 count += Directory.GetFiles(personFolder, "*.mp3", SearchOption.AllDirectories).Length;
             }
 
             // Count in library Singles folder
-            string singlesFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "Singles");
+            string singlesFolder = Path.Combine(libPath, Constants.MusivDir, "Akira The Don", "Singles");
             if (Directory.Exists(singlesFolder))
             {
                 var singlesFiles = Directory.GetFiles(singlesFolder, "*.mp3", SearchOption.AllDirectories);
@@ -1515,13 +1516,14 @@ namespace AudioManager
         /// Mirrors CountAlbumSongs but for the ATD People/ folder structure.
         /// Used to decide: People/{person}/{album}/ if 2+ songs, else People/{person}/Singles/.
         /// </summary>
-        private int CountAkiraTheDonPersonAlbumSongs(string sampledPerson, string album)
+        private int CountAkiraTheDonPersonAlbumSongs(string sampledPerson, string album, string libraryPath = null)
         {
+            string libPath = libraryPath ?? Constants.AudioFolderPath;
             int count = 0;
 
             // Count in library: Musivation/Akira The Don/People/{sampledPerson}/{album}/
             string albumFolder = Path.Combine(
-                Constants.AudioFolderPath, Constants.MusivDir, "Akira The Don", "People", SanitiseFolderName(sampledPerson), SanitiseFolderName(album));
+                libPath, Constants.MusivDir, "Akira The Don", "People", SanitiseFolderName(sampledPerson), SanitiseFolderName(album));
             if (Directory.Exists(albumFolder))
             {
                 count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
