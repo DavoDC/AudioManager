@@ -147,5 +147,103 @@ namespace AudioManager
             string result = TagFixer.DetermineGenre("Generic Motivation Speaker");
             Assert.Equal("Motivation", result, "Non-Musivation artist should get Motivation genre");
         }
+
+        // ---- RemoveParentheticals - additional patterns ----
+
+        public static void RemoveParentheticals_StripsWithArtist()
+        {
+            string result = TagFixer.RemoveParentheticals("Song Title (with Guest Artist)");
+            Assert.Equal("Song Title", result, "(with X) should be stripped");
+        }
+
+        public static void RemoveParentheticals_StripsSquareBracketFeat()
+        {
+            string result = TagFixer.RemoveParentheticals("Song Title [feat. Featured Artist]");
+            Assert.Equal("Song Title", result, "[feat. X] square bracket form should be stripped");
+        }
+
+        public static void RemoveParentheticals_StripsEdit()
+        {
+            string result = TagFixer.RemoveParentheticals("Song Title (Edit)");
+            Assert.Equal("Song Title", result, "(Edit) should be stripped");
+        }
+
+        public static void RemoveParentheticals_StripsRadioEdit()
+        {
+            string result = TagFixer.RemoveParentheticals("Song Title (Radio Edit)");
+            Assert.Equal("Song Title", result, "(Radio Edit) should be stripped");
+        }
+
+        public static void RemoveParentheticals_StripsSingleVersion()
+        {
+            string result = TagFixer.RemoveParentheticals("Song Title (Single Version)");
+            Assert.Equal("Song Title", result, "(Single Version) should be stripped");
+        }
+
+        public static void RemoveParentheticals_MultipleParentheticals_BothStripped()
+        {
+            string result = TagFixer.RemoveParentheticals("Song Title (feat. Artist) (Explicit)");
+            Assert.Equal("Song Title", result, "both parentheticals should be stripped");
+        }
+
+        // ---- StripAlbumSuffixes - additional patterns ----
+
+        public static void StripAlbumSuffixes_Strips2011Remaster()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (2011 Remaster)");
+            Assert.Equal("Album Name", result, "(2011 Remaster) should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsInternationalVersion()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (International Version)");
+            Assert.Equal("Album Name", result, "(International Version) should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsDeluxeWithoutEdition()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (Deluxe)");
+            Assert.Equal("Album Name", result, "(Deluxe) without Edition suffix should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsBonusTrack()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (Bonus Track)");
+            Assert.Equal("Album Name", result, "(Bonus Track) should be stripped");
+        }
+
+        // ---- ShouldFixGenre - additional cases ----
+
+        public static void ShouldFixGenre_LootBryonSmith_MissingMusivation_NeedsFix()
+        {
+            bool result = TagFixer.ShouldFixGenre("Loot Bryon Smith", "Hip-Hop");
+            Assert.True(result, "Loot Bryon Smith without Musivation genre should need fix");
+        }
+
+        public static void ShouldFixGenre_MotivationalGenre_NeedsNormalization()
+        {
+            // "Motivational" contains "Motivation" but is not exactly "Motivation"
+            bool result = TagFixer.ShouldFixGenre("Some Speaker", "Motivational");
+            Assert.True(result, "Non-exact Motivation variant (Motivational) should need normalization");
+        }
+
+        // ---- ExtractAndFixArtists - additional patterns ----
+
+        public static void ExtractAndFixArtists_WithPattern_ExtractsFeaturedArtist()
+        {
+            var result = TagFixer.ExtractAndFixArtists("Song (with Guest Artist)", "Primary Artist");
+            Assert.True(
+                result.Contains("Guest Artist") ||
+                result.Exists(a => a.Equals("Guest Artist", System.StringComparison.OrdinalIgnoreCase)),
+                "(with X) pattern should extract the featured artist");
+        }
+
+        public static void ExtractAndFixArtists_SquareBracketFeat_ExtractsFeaturedArtist()
+        {
+            var result = TagFixer.ExtractAndFixArtists("Song [feat. Featured Artist]", "Primary Artist");
+            Assert.True(
+                result.Exists(a => a.Equals("Featured Artist", System.StringComparison.OrdinalIgnoreCase)),
+                "[feat. X] square bracket form should extract the featured artist");
+        }
     }
 }
