@@ -38,7 +38,9 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Compilation album track routing** - DECISION NEEDED - run /think on: "Where should compilation album tracks route when multiple primary artists exist?" User preference framing: tracks where the primary artist has an existing folder -> their `Singles/`; tracks where no artist folder exists -> `Compilations/<album>/` (e.g. `C:\Users\David\Audio\Compilations\`); minimize Misc; avoid single-track folders. Detection signal: compilation = multiple distinct primary artists across tracks in the same album. Applies to cases like 'Barbie The Album'.
 
-- [ ] **Album art dimensions - Phase 2 (Analyse) + Phase 3 (Enforce)** - Phase 1 (Capture) done 2026-05-31: `<CoverWidth>` and `<CoverHeight>` now written to every AudioMirror XML on force regen. Next: (2) **Analyse** - after a force regen, scan XMLs to produce a dimension distribution (histogram: how many tracks at 500x500, 600x600, 300x300, etc.) - let the data pick the minimum target; (3) **Enforce** - once a minimum is agreed, add a LibChecker rule flagging tracks below threshold.
+- [ ] **Album art dimensions - Phase 2 (Analyse) + Phase 3 (Enforce)** - Phase 1 (Capture) done 2026-05-31: `<CoverWidth>` and `<CoverHeight>` now written to every AudioMirror XML on force regen. Next phases:
+  - **(2) Analyse** - scan XMLs after a force regen to produce a dimension distribution report: histogram of common dimension pairs (500x500, 600x600, 300x300, etc.), count of tracks with no cover (0/null dimensions), count of non-square covers (W != H). Let the data determine the minimum quality target before writing any rule.
+  - **(3) Enforce** - once threshold is agreed, add LibChecker rules with tiered severity: (a) **ERROR: no cover** (0/null dimensions - always wrong); (b) **ERROR: non-square cover** (W != H - album art must always be square); (c) **WARNING: below threshold** (e.g., < 500x500 is streaming standard; 300x300 acceptable for older rips). Threshold must be configurable, not hardcoded - library has legitimate old rips. Rule (a) and (b) are unconditional; only (c) needs a threshold decision.
 
 ---
 
