@@ -187,5 +187,28 @@ namespace AudioManager
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Sources film album with OST in name should be clean");
         }
+
+        // ---- CheckArtistFolder: loose file ----
+
+        public static void LibChecker_LooseFileInArtistRoot_IsDirty()
+        {
+            // Song directly in artist folder (no Singles/ or album subfolder) - violates subfolder-before-song rule
+            var tag = new TrackTag("\\Artists\\Artist Alpha\\Artist Alpha - Song A.xml",
+                "Song A", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "Song directly in artist root (no subfolder) should be dirty");
+        }
+
+        public static void LibChecker_LooseFileInArtistRoot_SelfTitledAlbum_IsClean()
+        {
+            // Song in artist root where album name matches artist name (self-titled) - intentionally skipped
+            // This covers the edge case: Artists/Band/Band - Song.xml where Album="Band"
+            var tag = new TrackTag("\\Artists\\Artist Alpha\\Artist Alpha - Song A.xml",
+                "Song A", "Artist Alpha", "Artist Alpha", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Self-titled album in artist root should be skipped (clean)");
+        }
     }
 }

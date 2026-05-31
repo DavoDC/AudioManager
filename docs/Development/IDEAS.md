@@ -27,12 +27,12 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.
   - **Motivation (unchanged):** Each fix session currently requires 2-3 manual dry run + force regen cycles. Every module covered by a test eliminates that cycle for that module. Real integration (May 2026) found metadata edge cases dry-run missed - tests for the same logic would have caught several earlier.
   - **Infrastructure in place:** Inline `--test` flag, 20-line Assert class, test.bat, launch.bat integration. DIY - no xUnit, no separate project. Old-style csproj manual registration + no VS test runner in the build workflow makes a framework overkill.
-  - **Expansion rule:** Add a test when a real bug escapes current coverage. Not before. Signal: if total test count exceeds 50 and no bug has escaped since last expansion, the suite is adequate for current session cadence.
-  - **Expansion candidates (in value order, after routing tests are stable):**
-    - LibChecker rules: one test per rule (CheckAlbumSubfolderRule, CheckGenreVsFolder, etc.) - verify each rule fires on known-bad input and stays silent on clean input. Especially valuable for the "version/bonus" regex item in TIER 1.
-    - TagFixer full pipeline: real .mp3 test fixture -> run TagFixer -> assert ID3 tags changed correctly. Covers the file I/O layer that the existing pure-function tests don't touch.
+  - **Expansion rule:** Add a test when a real bug escapes current coverage. Not before.
+  - **Current coverage (comprehensive as of 2026-05-31, all tests green):** TagFixer pure functions and patterns, routing (fixture-based, all Artists/Misc/Musivation/Motivation paths), ParseCache (round-trip and corruption), LibChecker (all rules: album subfolder, genre-vs-folder, compilation, covers, duplicates, mismatch, loose file, Sources OST), Track.ProcessProperty, StatList frequency distribution.
+  - **Remaining expansion candidates (in value order):**
+    - **ATD routing test isolation** - `CountAkiraTheDonPersonSongs` uses `Constants.AudioFolderPath` hardcoded (not `_libraryPath`), so the "below threshold" and "People/{person}/" branches cannot be unit tested without scanning the real library. Fix: add `string libraryPath = null` parameter to CountAkiraTheDonPersonSongs and CountAkiraTheDonPersonAlbumSongs, defaulting to `Constants.AudioFolderPath`. Tests can then pass the fixture path. Same pattern as the existing test constructor for MusicIntegrator.
+    - TagFixer full pipeline: real .mp3 test fixture -> run TagFixer -> assert ID3 tags changed correctly. Covers the file I/O layer that pure-function tests don't touch.
     - Reflector: snapshot test - known track -> verify XML output format stays stable across refactors.
-    - Analyser: known library fixture -> verify report numbers are correct (track counts, genre distribution).
     - AudioMirrorCommitter: verify commit is skipped when LibChecker has hits; verify it runs on force regen + clean run.
   - **Scope discipline:** Test feature behavior, not individual function internals. "Artist casing is preserved end-to-end" not "ExtractAndFixArtists() branch 47". Internals are tested indirectly; changing internals should not break tests if behavior is unchanged.
 
