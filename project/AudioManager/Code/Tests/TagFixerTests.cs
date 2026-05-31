@@ -245,5 +245,14 @@ namespace AudioManager
                 result.Exists(a => a.Equals("Featured Artist", System.StringComparison.OrdinalIgnoreCase)),
                 "[feat. X] square bracket form should extract the featured artist");
         }
+
+        public static void ExtractAndFixArtists_NormalizesLowercaseArtistToTitleCase()
+        {
+            // Artists not in the overrides config get ToTitleCase applied
+            List<string> result = TagFixer.ExtractAndFixArtists("Song Title", "lowercase artist name");
+            Assert.True(
+                result.Exists(a => a.Equals("Lowercase Artist Name", System.StringComparison.Ordinal)),
+                "Lowercase artist should be normalized to title case");
+        }
     }
 }
