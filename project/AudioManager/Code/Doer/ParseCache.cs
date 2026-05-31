@@ -19,13 +19,19 @@ namespace AudioManager
 
         /// <summary>
         /// Try to load the parse cache. Returns false if cache is missing, stale, or corrupt.
+        /// Any filesystem error during the mtime check degrades to a miss (never crashes).
         /// </summary>
         internal static bool TryLoad(string cachePath, string mirrorPath, out List<TrackTag> tags)
         {
             tags = null;
             if (!File.Exists(cachePath)) return false;
-            DateTime cacheTime = new FileInfo(cachePath).LastWriteTime;
-            if (AnyXmlNewerThan(mirrorPath, cacheTime)) return false;
+            try
+            {
+                DateTime cacheTime = new FileInfo(cachePath).LastWriteTime;
+                // IsMirrorStale: miss if mirror is empty (Reflector crash mid-regen) or any XML is newer
+                if (IsMirrorStale(mirrorPath, cacheTime)) return false;
+            }
+            catch { return false; } // mirror path error -> degrade to miss
             return TryDeserialize(cachePath, out tags);
         }
 
@@ -89,14 +95,20 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Returns true if any .xml file under mirrorPath has a LastWriteTime newer than threshold.
-        /// Uses DirectoryInfo.GetFiles so mtime comes from the directory enumeration with no extra stats.
+        /// Returns true if the mirror is stale relative to the cache timestamp.
+        /// Stale means: (a) no XMLs found - mirror is empty or mid-regen after a crash, or
+        /// (b) at least one XML has a LastWriteTime newer than the cache.
+        /// Uses DirectoryInfo.GetFiles so mtime comes from the directory enumeration, no extra stats.
+        /// Exposed internal for tests.
         /// </summary>
-        internal static bool AnyXmlNewerThan(string mirrorPath, DateTime threshold)
+        internal static bool IsMirrorStale(string mirrorPath, DateTime cacheTime)
         {
-            return new DirectoryInfo(mirrorPath)
-                .GetFiles("*.xml", SearchOption.AllDirectories)
-                .Any(f => f.LastWriteTime > threshold);
+            var xmlFiles = new DirectoryInfo(mirrorPath)
+                .GetFiles("*.xml", SearchOption.AllDirectories);
+            // Empty mirror = Reflector crash or missing - treat as stale so Parser re-populates
+            if (!xmlFiles.Any()) return true;
+            return xmlFiles.Any(f => f.LastWriteTime > cacheTime);
         }
+
     }
 }
