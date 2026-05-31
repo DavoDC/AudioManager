@@ -17,8 +17,11 @@ namespace AudioManager
         /// Construct a parser
         /// </summary>
         /// <param name="mirrorPath">The audio mirror folder path</param>
-        public Parser(string mirrorPath)
+        /// <param name="cachePath">Override cache file path. Null uses Constants.ParseCachePath (production default).</param>
+        public Parser(string mirrorPath, string cachePath = null)
         {
+            string effectiveCachePath = cachePath ?? Constants.ParseCachePath;
+
             // Notify
             Console.Write("\nParsing audio metadata...");
 
@@ -26,7 +29,7 @@ namespace AudioManager
             audioTags = new List<TrackTag>();
 
             // Cache hit: skip all XML reads when nothing changed since last parse
-            if (ParseCache.TryLoad(Constants.ParseCachePath, mirrorPath, out var cached))
+            if (ParseCache.TryLoad(effectiveCachePath, mirrorPath, out var cached))
             {
                 audioTags = cached;
                 Console.WriteLine($" - Tags parsed: {audioTags.Count} (cache)");
@@ -62,7 +65,7 @@ namespace AudioManager
             if (parsedTotal >= 100) Console.WriteLine();
 
             // Save cache so next run can skip these reads
-            ParseCache.Save(Constants.ParseCachePath, audioTags);
+            ParseCache.Save(effectiveCachePath, audioTags);
 
             // Print number of tags parsed
             Console.WriteLine($" - Tags parsed: {audioTags.Count}");
