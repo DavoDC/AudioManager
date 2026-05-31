@@ -90,20 +90,20 @@ namespace AudioManager
             finally { if (File.Exists(path)) File.Delete(path); }
         }
 
-        public static void AnyXmlNewerThan_NoXmlFiles_ReturnsFalse()
+        public static void IsMirrorStale_EmptyMirror_ReturnsTrueToForceMiss()
         {
             string dir = Path.Combine(Path.GetTempPath(), $"am_mirror_{Guid.NewGuid():N}");
             Directory.CreateDirectory(dir);
             try
             {
-                // No XML files in directory - should return false
-                bool result = ParseCache.AnyXmlNewerThan(dir, DateTime.Now.AddHours(-1));
-                Assert.True(!result, "no XMLs should return false");
+                // Empty mirror (Reflector crash mid-regen) must force a cache miss
+                bool stale = ParseCache.IsMirrorStale(dir, DateTime.Now.AddHours(-1));
+                Assert.True(stale, "empty mirror should be stale to prevent false cache hits");
             }
             finally { Directory.Delete(dir, true); }
         }
 
-        public static void AnyXmlNewerThan_XmlOlderThanThreshold_ReturnsFalse()
+        public static void IsMirrorStale_XmlOlderThanCache_ReturnsFalse()
         {
             string dir = Path.Combine(Path.GetTempPath(), $"am_mirror_{Guid.NewGuid():N}");
             Directory.CreateDirectory(dir);
@@ -111,16 +111,15 @@ namespace AudioManager
             try
             {
                 File.WriteAllText(xml, "<x/>");
-                // Set mtime to 1 hour ago
                 File.SetLastWriteTime(xml, DateTime.Now.AddHours(-1));
-                // Threshold is "now" - XML is older than threshold
-                bool result = ParseCache.AnyXmlNewerThan(dir, DateTime.Now);
-                Assert.True(!result, "old XML should return false");
+                // Cache is "now", XML is 1h old - mirror is fresh, cache hit valid
+                bool stale = ParseCache.IsMirrorStale(dir, DateTime.Now);
+                Assert.True(!stale, "XML older than cache = mirror not stale");
             }
             finally { Directory.Delete(dir, true); }
         }
 
-        public static void AnyXmlNewerThan_XmlNewerThanThreshold_ReturnsTrue()
+        public static void IsMirrorStale_XmlNewerThanCache_ReturnsTrue()
         {
             string dir = Path.Combine(Path.GetTempPath(), $"am_mirror_{Guid.NewGuid():N}");
             Directory.CreateDirectory(dir);
@@ -128,9 +127,9 @@ namespace AudioManager
             try
             {
                 File.WriteAllText(xml, "<x/>");
-                // Threshold is 1 hour ago - XML (just created) is newer
-                bool result = ParseCache.AnyXmlNewerThan(dir, DateTime.Now.AddHours(-1));
-                Assert.True(result, "new XML should return true");
+                // Cache is 1h old, XML was just created - mirror is newer than cache
+                bool stale = ParseCache.IsMirrorStale(dir, DateTime.Now.AddHours(-1));
+                Assert.True(stale, "XML newer than cache = mirror is stale");
             }
             finally { Directory.Delete(dir, true); }
         }
