@@ -71,6 +71,7 @@
     <Compile Include="Code\Tests\RoutingFixtures.cs" />
     <Compile Include="Code\Tests\RoutingTests.cs" />
     <Compile Include="Code\Tests\ManifestRunner.cs" />
+    <Compile Include="Code\Tests\ParseCacheTests.cs" />
     <Compile Include="Code\Doer\AudioMirrorCommitter.cs" />
     <Compile Include="Code\Doer\LibChecker.cs" />
     <Compile Include="Code\Doer\AgeChecker.cs" />
@@ -80,6 +81,7 @@
     <Compile Include="Code\Doer\DecisionLog.cs" />
     <Compile Include="Code\Doer\Reflector.cs" />
     <Compile Include="Code\Doer\ReportWriter.cs" />
+    <Compile Include="Code\Doer\ParseCache.cs" />
     <Compile Include="Code\TeeWriter.cs" />
     <Compile Include="Code\Track\Track.cs" />
     <Compile Include="Code\Track\TrackTag.cs" />

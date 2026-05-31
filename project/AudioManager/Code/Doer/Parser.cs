@@ -25,7 +25,16 @@ namespace AudioManager
             // Initialise tag list
             audioTags = new List<TrackTag>();
 
-            // For every mirrored file
+            // Cache hit: skip all XML reads when nothing changed since last parse
+            if (ParseCache.TryLoad(Constants.ParseCachePath, mirrorPath, out var cached))
+            {
+                audioTags = cached;
+                Console.WriteLine($" - Tags parsed: {audioTags.Count} (cache)");
+                FinishAndPrintTimeTaken();
+                return;
+            }
+
+            // Cache miss: parse all XMLs
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
             int parsedCount = 0;
             int parsedTotal = mirrorFiles.Length;
@@ -51,6 +60,9 @@ namespace AudioManager
                     Console.Write(".");
             }
             if (parsedTotal >= 100) Console.WriteLine();
+
+            // Save cache so next run can skip these reads
+            ParseCache.Save(Constants.ParseCachePath, audioTags);
 
             // Print number of tags parsed
             Console.WriteLine($" - Tags parsed: {audioTags.Count}");
