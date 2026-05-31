@@ -4,6 +4,26 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-05-31 - Parser incremental cache (TIER 4)
+
+Parser was reading every XML file on every analysis run regardless of whether anything had changed. On a 5600-track library on spinning disk this took ~105s and dominated the total run time.
+
+**What was done:**
+- `ParseCache.cs` - flat-file cache (pipe-delimited, `logs/parse-cache.txt`, gitignored). Validity check: compare cache `LastWriteTime` vs newest XML mtime via `DirectoryInfo.GetFiles()` - returns mtimes from the directory enumeration with no extra stat calls.
+- `TrackTag`: internal 12-param constructor for cache loading (no I/O, just field assignment)
+- `Parser`: cache hit path short-circuits all XML reads; cache miss falls through to full parse + saves cache
+- `Constants.ParseCachePath`: `logs/parse-cache.txt`
+- 8 `ParseCacheTests`: round-trip (all 12 fields), empty list, multiple tracks, missing/corrupt file, mtime logic with real temp files
+
+**Results on 5653 tracks:**
+- Cache miss (first run): 105.5s
+- Cache hit (subsequent runs): 0.56s (**187x speedup**)
+- Total analysis: 108.7s -> 3.6s
+
+**Design decision:** all-or-nothing (any XML newer = full re-parse). Per-folder granularity would add complexity for marginal gain - the common case (no changes between analysis runs) is now essentially free.
+
+---
+
 ## 2026-05-28 - scripts/dev/ reorganisation + verify.bat (TIER 2 - Phase 1)
 
 Moved dev tools out of scripts/ root into scripts/dev/ so the root stays user-facing only. Added verify.bat as Claude's one-step build+test command (clean exit codes, no interactive prompt).
