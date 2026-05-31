@@ -210,5 +210,67 @@ namespace AudioManager
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Self-titled album in artist root should be skipped (clean)");
         }
+
+        // ---- Album subfolder rule: clean baseline ----
+
+        public static void LibChecker_TwoSongsInAlbumSubfolder_IsClean()
+        {
+            // 2 songs from same album both in the album subfolder (not Singles/) - correct placement
+            var tagA = new TrackTag("\\Artists\\Artist Alpha\\Great Album\\Artist Alpha - Song A.xml",
+                "Song A", "Artist Alpha", "Great Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var tagB = new TrackTag("\\Artists\\Artist Alpha\\Great Album\\Artist Alpha - Song B.xml",
+                "Song B", "Artist Alpha", "Great Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tagA, tagB });
+            Assert.True(checker.IsClean, "2 songs from same album in album subfolder should be clean");
+        }
+
+        // ---- Genre-vs-folder: clean baselines ----
+
+        public static void LibChecker_MusivationFolderWithMusivationGenre_IsClean()
+        {
+            // Track in Musivation/ with Musivation genre - correct placement
+            var tag = new TrackTag("\\Musivation\\Some Artist\\Singles\\Some Artist - Song A.xml",
+                "Song A", "Some Artist", "Test Album", "2020", "1", "Musivation",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Musivation genre in Musivation/ folder should be clean");
+        }
+
+        public static void LibChecker_MotivationFolderWithMotivationGenre_IsClean()
+        {
+            // Track in Motivation/ with Motivation genre - correct placement
+            var tag = new TrackTag("\\Motivation\\Some Artist\\Singles\\Some Artist - Song A.xml",
+                "Song A", "Some Artist", "Test Album", "2020", "1", "Motivation",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Motivation genre in Motivation/ folder should be clean");
+        }
+
+        // ---- Filename case-sensitivity (documented footgun) ----
+
+        public static void LibChecker_FilenameArtistCaseMismatch_IsDirty()
+        {
+            // CheckFilenameForStr uses case-sensitive Contains(): artist tag "Artist Beta" vs
+            // filename "artist beta - song a.xml" -> the lowercase filename won't contain "Artist Beta"
+            var tag = new TrackTag("\\Artists\\Artist Beta\\Singles\\artist beta - song a.xml",
+                "song a", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "Filename casing mismatch with artist tag should be dirty (case-sensitive check)");
+        }
+
+        // ---- Sources: Anime has no album rule ----
+
+        public static void LibChecker_SourcesFolderAnime_NoAlbumRule_IsClean()
+        {
+            // Anime subfolder has no OST requirement - intentional per CheckSourcesFolder code
+            var tag = new TrackTag("\\Sources\\Anime\\Dragon Ball Z\\Artist - Song A.xml",
+                "Song A", "Artist", "Dragon Ball Z Filler Arc", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Anime sources folder with any album name should be clean (no OST rule)");
+        }
     }
 }
