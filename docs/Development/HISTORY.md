@@ -40,6 +40,19 @@ Added a complete inline test suite for TagFixer's pure string-manipulation logic
 
 ---
 
+## 2026-05-31 - AudioMirrorCommitter re-enabled with trigger modes (TIER 3) + IDEAS/CLAUDE.md housekeeping
+
+**AudioMirrorCommitter (TIER 3):** Auto-commit is now live. Added `CommitTrigger` enum (AnalysisForceRegen / AnalysisIncremental / Integration). TryCommit() now:
+- Skips silently for incremental analysis (stale XMLs possible)
+- Auto-commits for force regen + clean LibChecker
+- Auto-commits after clean post-integration validation
+- Never pushes (user pushes manually per policy)
+All safety gates preserved: LibChecker must be clean, files must have changed.
+
+**Housekeeping:** TIER 1 ACTIVE FOCUS note updated (routing tests complete). Blank lines from deleted IDEAS items removed. CLAUDE.md verify command updated to include `--no-pause` and count note.
+
+---
+
 ## 2026-05-31 - Album art Phase 1 + dupe UX + verify.bat manifest integration
 
 **Album art Phase 1 - Capture (TIER 2):** `<CoverWidth>` and `<CoverHeight>` fields now written to every AudioMirror XML during regen. Pure byte-level JPEG/PNG dimension parser in TrackTag (no System.Drawing dependency). Existing XMLs get dimensions populated on next force regen. Enables Phase 2 (histogram analysis) without any further code changes.

@@ -12,16 +12,13 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **TIER 1 threshold:** anything that would cause a LibChecker warning belongs here, regardless of where or when it was discovered. Routing gaps, rule divergence, config omissions - all TIER 1 if LibChecker would fire on it.
 
-**ACTIVE FOCUS:** Routing tests (GetDestDir) are the top Tier 1 item - start here. Integration bugs below are code-ready; verify at next integration batch. Tests pay back every subsequent fix session.
+**ACTIVE FOCUS:** Routing test suite complete (30 unit tests + 9 manifest tests as of 2026-05-31). All active TIER 1 items resolved in code; remaining TIER 1 items require verification on next real integration batch.
 
 ---
 
 ## TIER 2 - QUALITY
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
-
-
-
 
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.
   - **Motivation (unchanged):** Each fix session currently requires 2-3 manual dry run + force regen cycles. Every module covered by a test eliminates that cycle for that module. Real integration (May 2026) found metadata edge cases dry-run missed - tests for the same logic would have caught several earlier.
@@ -35,8 +32,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
     - AudioMirrorCommitter: verify commit is skipped when LibChecker has hits; verify it runs on force regen + clean run.
   - **Scope discipline:** Test feature behavior, not individual function internals. "Artist casing is preserved end-to-end" not "ExtractAndFixArtists() branch 47". Internals are tested indirectly; changing internals should not break tests if behavior is unchanged.
 
-
-
 - [ ] **Compilation album track routing** - DECISION NEEDED - run /think on: "Where should compilation album tracks route when multiple primary artists exist?" User preference framing: tracks where the primary artist has an existing folder -> their `Singles/`; tracks where no artist folder exists -> `Compilations/<album>/` (e.g. `C:\Users\David\Audio\Compilations\`); minimize Misc; avoid single-track folders. Detection signal: compilation = multiple distinct primary artists across tracks in the same album. Applies to cases like 'Barbie The Album'.
 
 - [ ] **Album art dimensions - Phase 2 (Analyse) + Phase 3 (Enforce)** - Phase 1 (Capture) done 2026-05-31: `<CoverWidth>` and `<CoverHeight>` now written to every AudioMirror XML on force regen. Next: (2) **Analyse** - after a force regen, scan XMLs to produce a dimension distribution (histogram: how many tracks at 500x500, 600x600, 300x300, etc.) - let the data pick the minimum target; (3) **Enforce** - once a minimum is agreed, add a LibChecker rule flagging tracks below threshold.
@@ -49,13 +44,11 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 
 
-- [ ] **AudioMirrorCommitter: re-enable auto-commit with specific trigger conditions** - Auto-commit AudioMirror (`C:\Users\David\GitHubRepos\AudioMirror`) when LibChecker is clean. Specific trigger conditions: COMMIT on analysis (force regen) OR integration. DO NOT commit on analysis (non-force regen) - incremental mirror may have stale XMLs, only force regen and integration produce a fully reliable state. Commit format must match existing AudioMirror git log conventions (check `git log` in AudioMirror repo for format). Implementation: uncomment logic in `AudioMirrorCommitter.TryCommit()` (lines ~60-85), add trigger-mode parameter so caller can specify which mode triggered the run. Safety gate: if Reflector found unexpected extensions OR LibChecker reported any hits, skip commit and notify user - auto-commit only when entire pipeline is completely clean. Blocked by: TIER 1 bugs fixed first (stale XMLs from Misc Migration and library replacements must be resolved so LibChecker is clean after integration, otherwise auto-commit never fires).
 
 - [ ] **Comprehensive library audit: validate conformance, analyze patterns, unify rules** - Three tightly-coupled goals: (1) AUDIT: Scan AudioMirror XMLs against Music-Library-Rules.md; produce violations/gaps report. Confirm LibChecker catches all mandated rules. Also scan for systematic metadata brittleness surfaced by Stage 3C findings: casing inconsistencies, character illegality (special chars in filenames), and metadata-vs-folder mismatches - find edge cases BEFORE next batch integration; complements character validation by revealing existing library state. Implementation notes: FEEDBACK-Stage3C.md lines 342-345. *Partial progress (2026-04-09): rules gap analysis done, CheckAlbumSubfolderRule() + CheckGenreVsFolder() added. Remaining: run full library audit, identify gaps.* (2) ANALYSE: Extract patterns from decision XMLs + AudioMirror data (artist folder distribution, album patterns, genre consistency, file counts). Build statistical models to identify high-confidence auto-routing cases. Payback: reduces manual confirmations beyond rule-based routing. (3) UNIFY: Refactor routing rules and LibChecker validation into single `RulesEngine` - rules defined once, consumed by both MusicIntegrator and LibChecker. Prevents sync failures (current: TagFixer SKIPPED but LibChecker FLAGGED because rules diverged). All three feed each other: audit finds gaps -> patterns suggest improvements -> unified rules prevent future divergence. Blocked by: auto-routing stable first (so patterns are meaningful).
   - **Think pass first:** Before any implementation, run `/think` on the audit design. Key questions: what violation types are first-class vs derived, what output format serves both human review and future re-runs, and whether audit logic belongs in the main program or stays external. The think pass resolves this before code is written.
   - **Integration consideration:** The audit script may be worth absorbing into AudioManager itself as a `--audit` mode (alongside `--dry-run`, `--integrate`, etc.). Arguments for integration: (a) audit logic needs the same XML-parsing and rules knowledge already in the codebase - duplication risk if kept external; (b) a built-in mode can be run on demand at any time with no separate toolchain; (c) output can share the existing run log format. Arguments against: audit is infrequent and exploratory - a standalone script is lower risk to implement and easier to iterate. Decide during the think pass; if integrated, it becomes a proper `--audit` CLI flag wired into `launch.bat`.
   - **Script approach (token-saving):** Whether standalone or integrated, the audit produces a structured violations report (count, severity, representative examples per violation type) that Claude reviews as output - not by scanning raw XMLs file-by-file. Dramatically reduces token load and makes the audit repeatable without AI involvement.
-
 
 ---
 
