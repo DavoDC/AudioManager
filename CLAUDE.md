@@ -88,7 +88,7 @@ Build completes in ~2-3 seconds without blocking.
 & "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\verify.bat" --no-pause
 ```
 
-Runs build + 30 unit tests + 9 routing manifest tests. All must pass before any C# commit.
+Runs build + unit tests + routing manifest tests. All must pass before any C# commit.
 
 **NOTE: All bats support `--no-pause` (clean exit for Claude) vs no args (window stays open for human use). Always pass `--no-pause` when calling any bat from Claude.**
 
