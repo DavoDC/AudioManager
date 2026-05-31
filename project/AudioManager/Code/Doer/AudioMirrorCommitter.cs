@@ -7,28 +7,43 @@ using System.Text;
 
 namespace AudioManager
 {
+    internal enum CommitTrigger
+    {
+        AnalysisForceRegen,  // Force regen: mirror is reliable -> auto-commit if clean
+        AnalysisIncremental, // Non-force regen: mirror may have stale XMLs -> skip auto-commit
+        Integration,         // Post-integration: mirror is reliable -> auto-commit if clean
+    }
+
     /// <summary>
-    /// Commits and pushes AudioMirror repo after a clean analysis run.
-    /// Rules: only commit if LibChecker was clean AND files actually changed.
+    /// Auto-commits AudioMirror repo after a clean analysis or integration run.
+    /// Rules: only commits if LibChecker was clean AND trigger mode is reliable
+    /// (force regen or integration). Never pushes - user pushes manually.
     /// </summary>
     internal static class AudioMirrorCommitter
     {
         /// <summary>
-        /// Manual commit instructions for AudioMirror after analysis.
-        /// Auto-commit is disabled until program is more stable and trusted.
-        /// See IDEAS.md TIER 3 for future re-enable.
+        /// Auto-commit AudioMirror if LibChecker was clean and trigger is a reliable mode.
+        /// Skips silently for incremental analysis (mirror may have stale XMLs).
         /// </summary>
         /// <param name="libCheckerClean">Whether LibChecker reported zero issues.</param>
-        public static void TryCommit(bool libCheckerClean)
+        /// <param name="trigger">What triggered this commit attempt.</param>
+        public static void TryCommit(bool libCheckerClean, CommitTrigger trigger)
         {
+            // Incremental analysis produces an unreliable mirror state - skip
+            if (trigger == CommitTrigger.AnalysisIncremental)
+            {
+                Console.WriteLine("\nAudioMirror: skipping auto-commit (incremental mirror - run force regen for auto-commit).");
+                return;
+            }
+
             string repoPath = Path.GetFullPath(Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory, Constants.MirrorRepoPath));
 
-            Console.WriteLine("\nAudioMirror commit instructions:");
+            Console.WriteLine("\nAudioMirror auto-commit:");
 
             if (!libCheckerClean)
             {
-                Console.WriteLine(" - DO NOT COMMIT: LibChecker reported issues. Fix them first, then re-run analysis.");
+                Console.WriteLine(" - Skipped: LibChecker reported issues. Fix them first, then re-run.");
                 return;
             }
 
@@ -42,7 +57,7 @@ namespace AudioManager
             string statusOutput = RunGit(repoPath, "status --porcelain");
             if (string.IsNullOrWhiteSpace(statusOutput))
             {
-                Console.WriteLine(" - AudioMirror is clean (no changes to commit).");
+                Console.WriteLine(" - Clean (no changes to commit).");
                 return;
             }
 
@@ -53,35 +68,20 @@ namespace AudioManager
                 ? commitTitle
                 : commitTitle + "\n" + commitBody;
 
-            Console.WriteLine($" - AudioMirror's changes are ready to be committed!");
-            Console.WriteLine($" - Commit in GHD with the message:");
-            Console.WriteLine();
-            Console.WriteLine(fullMessage);
-            Console.WriteLine();
+            // Stage AUDIO_MIRROR folder and commit
+            RunGit(repoPath, "add AUDIO_MIRROR/");
+            string commitResult = RunGit(repoPath, $"commit -m \"{fullMessage.Replace("\"", "\\\"")}\"");
 
-            // DISABLED AUTO-COMMIT (see IDEAS.md TIER 3 to re-enable when stable)
-            // OLD CODE BELOW - commented out for future re-enable:
-            //
-            // // Stage AUDIO_MIRROR folder
-            // // RunGit(repoPath, "add AUDIO_MIRROR/");
-            // //
-            // // // Build commit message: "Apr 9 Update"
-            // // // string commitMsg = DateTime.Now.ToString("MMM d") + " Update";
-            // // // string commitResult = RunGit(repoPath, $"commit -m \"{commitMsg}\"");
-            // // // if (string.IsNullOrWhiteSpace(commitResult) || commitResult.Contains("nothing to commit"))
-            // // // {
-            // // //     Console.WriteLine(" - Nothing staged to commit.");
-            // // //     return;
-            // // // }
-            // // //
-            // // // Console.WriteLine($" - Committed: {commitMsg}");
-            // // //
-            // // // // Push
-            // // // string pushResult = RunGit(repoPath, "push");
-            // // // bool pushOk = !pushResult.Contains("error") && !pushResult.Contains("fatal");
-            // // // Console.WriteLine(pushOk
-            // // //     ? " - Pushed to remote."
-            // // //     : $" - Push may have failed. Check output: {pushResult}");
+            if (string.IsNullOrWhiteSpace(commitResult) || commitResult.Contains("nothing to commit"))
+            {
+                Console.WriteLine(" - Nothing staged to commit.");
+                return;
+            }
+
+            Console.WriteLine($" - Committed: {commitTitle}");
+            if (!string.IsNullOrWhiteSpace(commitBody))
+                Console.WriteLine(commitBody);
+            Console.WriteLine(" - Push AudioMirror manually when ready.");
         }
 
         /// <summary>

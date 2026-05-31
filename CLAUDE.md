@@ -85,10 +85,10 @@ Build completes in ~2-3 seconds without blocking.
 **After every C# code change, run tests before committing.** Tests are fast (< 1 second) and catch tag logic regressions immediately. Do not skip this step even for "obviously safe" changes.
 
 ```powershell
-& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\verify.bat"
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\verify.bat" --no-pause
 ```
 
-**Tests must be green before any commit to C# files.**
+Runs build + 30 unit tests + 9 routing manifest tests. All must pass before any C# commit.
 
 **NOTE: All bats support `--no-pause` (clean exit for Claude) vs no args (window stays open for human use). Always pass `--no-pause` when calling any bat from Claude.**
 

@@ -134,7 +134,10 @@ namespace AudioManager
 
                         // Auto-commit AudioMirror after report save
                         // Runs after report save so the commit output is not captured into the report.
-                        AudioMirrorCommitter.TryCommit(libCheckerClean);
+                        var trigger = forceMirrorRegen
+                            ? CommitTrigger.AnalysisForceRegen
+                            : CommitTrigger.AnalysisIncremental;
+                        AudioMirrorCommitter.TryCommit(libCheckerClean, trigger);
 
                         // Finish message
                         Console.WriteLine("\nFinished!\n");
@@ -189,6 +192,7 @@ namespace AudioManager
                                 if (lc.IsClean)
                                 {
                                     Console.WriteLine(" - Post-integration validation: CLEAN (no issues found)\n");
+                                    AudioMirrorCommitter.TryCommit(libCheckerClean: true, CommitTrigger.Integration);
                                 }
                                 else
                                 {
