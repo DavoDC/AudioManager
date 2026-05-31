@@ -254,5 +254,31 @@ namespace AudioManager
                 result.Exists(a => a.Equals("Lowercase Artist Name", System.StringComparison.Ordinal)),
                 "Lowercase artist should be normalized to title case");
         }
+
+        // ---- Null/empty input guards ----
+
+        public static void RemoveParentheticals_EmptyString_ReturnsEmpty()
+        {
+            string result = TagFixer.RemoveParentheticals("");
+            Assert.Equal("", result, "empty input should return empty (null guard)");
+        }
+
+        public static void StripAlbumSuffixes_EmptyString_ReturnsEmpty()
+        {
+            string result = TagFixer.StripAlbumSuffixes("");
+            Assert.Equal("", result, "empty input should return empty (null guard)");
+        }
+
+        public static void ShouldFixGenre_EmptyArtists_ReturnsFalse()
+        {
+            bool result = TagFixer.ShouldFixGenre("", "Hip-Hop");
+            Assert.True(!result, "empty artists string should not need genre fix");
+        }
+
+        public static void DetermineGenre_EmptyArtists_ReturnsEmptyString()
+        {
+            string result = TagFixer.DetermineGenre("");
+            Assert.Equal("", result, "empty artists string should return empty genre");
+        }
     }
 }
