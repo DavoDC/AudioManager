@@ -50,7 +50,7 @@ When you need to determine what something IS (compilation? artist album? genre f
 
 - **TeeWriter.WriteCharToFile** is the single source of truth for file timestamp logic. `Write(char)` and `WriteLine(string)` both delegate to it. Any TeeWriter change must preserve this. `WriteLine(string)` checks for embedded `\n` and processes char-by-char via `WriteCharToFile` - do not revert to the old single-string write path.
 
-- **RoutingConfidence.Uncertain** is dead code as of 2026-05-25. Do NOT add new uses. TIER 3 item: replace entire enum with `out bool isNewFolder` in `GetDestDir()`.
+- **RoutingConfidence enum removed 2026-05-31.** `GetDestDir()` now returns `out bool isNewFolder` (true = scan-ahead is creating a new Artists/ folder for this track). Display: `[AUTO - new folder]` vs `[AUTO]`. Do not re-add the enum; the `Uncertain` path was dead since 2026-05-25.
 
 - **LibChecker.CheckArtistFolder() uses case-sensitive String.Equals** (line 373). Windows NTFS case-insensitivity protects file routing but NOT LibChecker validation. Any artist with non-standard casing that gets a new track integrated will cause a LibChecker flag even if the file lands in the right folder. Protection: artist-name-overrides.xml (comprehensive as of 2026-05-26, audited post-May integration run).
 
@@ -65,6 +65,14 @@ When you need to determine what something IS (compilation? artist album? genre f
 - **RunScanAhead counts batch + Misc + Sources/ for artist folder threshold.** Sources/ tracks are scanned via `Path.Combine(Constants.MirrorFolderPath, Constants.SourcesDir)` with `SearchOption.AllDirectories` - same XML parsing as Misc. Sources tracks count toward the 3-song threshold but are NOT added to `_miscMigrationCandidates` - they stay in Sources/ regardless of whether the artist gets promoted. (Fix 2026-05-26: without Sources/, Common with 1 Sources/Films song + 2 batch songs still routed to Misc.)
 
 - **ExtractAndFixArtists: `" & "` in title parentheticals is always a collaborator separator, never part of an artist name.** The code splits on `" & "` before the duplicate-artist check and adds each component individually. This invariant must be preserved if featured-artist extraction is ever refactored - never add the compound "A & B" form when A and B will both be present separately. (Fix 2026-05-26: Perry Como track was producing 4 artist entries instead of 3.)
+
+- **ManifestRunner test pattern:** `new MusicIntegrator(Constants.AudioFolderPath)` (the test constructor with real library path) lets you call `GetDestDir()` against the real folder structure without triggering the integration pipeline. Use for any future routing regression test that needs the real library but no NewMusic files.
+
+- **Album tag inheritance in PreScanFiles:** When album tag is "Missing" and the file is in an immediate subfolder of NewMusic, the subfolder name is used as the album fallback. This runs BEFORE TagFixer simulation, so suffix stripping applies to inherited album names too. Location: `PreScanFiles()` in MusicIntegrator, right before the `if (dryRun && ...)` block.
+
+- **CommitTrigger enum in AudioMirrorCommitter:** AnalysisForceRegen and Integration trigger auto-commit (mirror is reliable); AnalysisIncremental skips silently (stale XMLs possible). Never pushes - user pushes manually. Safety gate: LibChecker must be clean AND files must have changed.
+
+- **verify.bat runs full suite:** build + 30 unit tests + 9 manifest tests. Always pass `--no-pause` when calling from Claude. All 39 assertions must pass before any C# commit.
 
 ---
 
