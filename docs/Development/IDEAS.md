@@ -74,8 +74,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - **Routing decision analysis mode** - Add a mode that reads decision XMLs, cross-references routing decisions against routing rules code and LibChecker rules, and flags inconsistencies. Produces a report: "these N files were routed to X but LibChecker would flag them as Y". Pairs well with the "Centralise rules" refactor. Exploratory - assess value after the first real integration run produces decision XML data to analyse.
 
-- **Leverage library structure to speed up parsing** - Parser currently scans every XML file on every run regardless of what changed. The library has a predictable folder structure (Artists/{artist}/{album}/, Musivation/, Misc/) - could use this to skip unchanged subtrees. Approach: (a) compare folder mtimes against `LastRunInfo.txt` timestamp to identify unchanged artist dirs and skip re-parsing their XMLs; (b) cache parsed tags per folder keyed on folder mtime; (c) only force full re-parse on `Recreated: True` (force regen). Payback scales with library size - already noticeable at current size, significant once library doubles. Requires benchmarking parse time vs filesystem stat calls to confirm the tradeoff is positive.
-
 - **"My Edits" tracking** - detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
 - **Album completion detection** - cross-reference library against Spotify/MusicBrainz; flag where 50%+ of an album is owned.
