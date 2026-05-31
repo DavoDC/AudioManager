@@ -88,12 +88,19 @@ AudioManager/
 └── scripts/       # Launchers (launch.bat) and utility scripts
 ```
 
+## Performance
+
+Analysis includes an incremental parse cache. On repeated runs where the library has not changed, the Parser reads a single flat cache file instead of thousands of XML files, cutting total analysis time from ~110s to ~4s on a 5600-track library.
+
+Cache is stored in `logs/` (gitignored). It is invalidated automatically whenever the AudioMirror gains new or modified XML files (e.g. after integration or force regen).
+
 ## Tech
 
 - **Language:** C# (.NET Framework 4.8)
 - **Metadata:** [TagLib#](https://github.com/mono/taglib-sharp) for ID3 tag reading and writing
 - **Architecture:** `Doer` base class - every operation is timed automatically
 - **Output:** `TeeWriter` captures console output to both screen and file simultaneously
+- **Parse cache:** `ParseCache` - mtime-based flat-file cache for incremental analysis
 
 ## Development
 
