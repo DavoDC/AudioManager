@@ -46,6 +46,9 @@ namespace AudioManager
         // Path to the integration logs folder (gitignored, written by MusicIntegrator)
         public static readonly string LogsPath = Path.Combine(RepoRoot, "logs");
 
+        // Path to the parser result cache (gitignored, in logs/)
+        public static readonly string ParseCachePath = Path.Combine(LogsPath, "parse-cache.txt");
+
         /// <summary>
         /// Library folder names
         /// </summary>
