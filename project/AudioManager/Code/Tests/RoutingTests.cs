@@ -192,5 +192,53 @@ namespace AudioManager
             }
             finally { RoutingFixtures.Cleanup(lib); }
         }
+
+        public static void Routing_AkiraTheDon_SampledPersonBelowThreshold_RoutesToATDSingles()
+        {
+            // Sampled person with 0 songs in fixture -> below 3-song threshold -> ATD/Singles/
+            // CountAkiraTheDonPersonSongs now uses _libraryPath so the fixture is isolated.
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                var track = new AudioManager.Code.Modules.Track { Artists = "Akira The Don;Test Person", Title = "Philosophy", Album = "Missing", Genres = "Musivation" };
+                string dest = integrator.GetDestDir(track, new HashSet<string>(), out _, out _);
+                string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
+                Assert.Equal(expected, dest, "ATD sampled person below 3-song threshold -> Akira The Don/Singles/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_AkiraTheDon_SampledPerson3Plus_RoutesToPeopleSingles()
+        {
+            // Sampled person with 3+ songs in fixture -> People/{person}/Singles/ (no distinct album)
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                RoutingFixtures.AddATDPeopleFiles(lib, "Test Person", personFileCount: 3);
+                var integrator = new MusicIntegrator(lib);
+                var track = new AudioManager.Code.Modules.Track { Artists = "Akira The Don;Test Person", Title = "Philosophy", Album = "Missing", Genres = "Musivation" };
+                string dest = integrator.GetDestDir(track, new HashSet<string>(), out _, out _);
+                string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", "People", "Test Person", Constants.SinglesDir);
+                Assert.Equal(expected, dest, "ATD sampled person 3+ songs, no album -> People/Test Person/Singles/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_AkiraTheDon_SampledPerson2AlbumSongs_RoutesToPeopleAlbumFolder()
+        {
+            // Sampled person with 3+ songs and 2 from same album -> People/{person}/{album}/
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                RoutingFixtures.AddATDPeopleFiles(lib, "Test Person", personFileCount: 3, albumName: "Great Album", albumFileCount: 2);
+                var integrator = new MusicIntegrator(lib);
+                var track = new AudioManager.Code.Modules.Track { Artists = "Akira The Don;Test Person", Title = "Philosophy", Album = "Great Album", Genres = "Musivation" };
+                string dest = integrator.GetDestDir(track, new HashSet<string>(), out _, out _);
+                string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", "People", "Test Person", "Great Album");
+                Assert.Equal(expected, dest, "ATD sampled person 3+ songs, 2 from album -> People/Test Person/Great Album/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
     }
 }

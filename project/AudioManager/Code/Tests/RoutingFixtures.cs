@@ -41,6 +41,27 @@ namespace AudioManager
                 File.WriteAllBytes(Path.Combine(albumDir, $"track{i + 1}.mp3"), new byte[0]);
         }
 
+        /// <summary>
+        /// Creates stub .mp3 files in Musivation/Akira The Don/People/{personName}/ under the library root.
+        /// Used to make CountAkiraTheDonPersonSongs return a controlled value (counts .mp3 files, no TagLib# reads).
+        /// If albumName is provided, also creates album subfolder with albumFileCount stub files.
+        /// </summary>
+        internal static void AddATDPeopleFiles(string libraryRoot, string personName, int personFileCount = 3, string albumName = null, int albumFileCount = 2)
+        {
+            string peopleDir = Path.Combine(libraryRoot, Constants.MusivDir, "Akira The Don", "People", personName);
+            Directory.CreateDirectory(peopleDir);
+            for (int i = 0; i < personFileCount; i++)
+                File.WriteAllBytes(Path.Combine(peopleDir, $"atd_person_{i + 1}.mp3"), new byte[0]);
+
+            if (albumName != null)
+            {
+                string albumDir = Path.Combine(peopleDir, albumName);
+                Directory.CreateDirectory(albumDir);
+                for (int i = 0; i < albumFileCount; i++)
+                    File.WriteAllBytes(Path.Combine(albumDir, $"atd_album_{i + 1}.mp3"), new byte[0]);
+            }
+        }
+
         /// <summary>Deletes the temp directory tree created by CreateLibraryFixture.</summary>
         internal static void Cleanup(string tempRoot)
         {
