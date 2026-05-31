@@ -72,7 +72,7 @@ When you need to determine what something IS (compilation? artist album? genre f
 
 - **CommitTrigger enum in AudioMirrorCommitter:** AnalysisForceRegen and Integration trigger auto-commit (mirror is reliable); AnalysisIncremental skips silently (stale XMLs possible). Never pushes - user pushes manually. Safety gate: LibChecker must be clean AND files must have changed.
 
-- **verify.bat runs full suite:** build + 30 unit tests + 9 manifest tests. Always pass `--no-pause` when calling from Claude. All 39 assertions must pass before any C# commit.
+- **verify.bat runs full suite:** build + unit tests + manifest tests. Always pass `--no-pause` when calling from Claude. All assertions must be green before any C# commit.
 
 ---
 
@@ -89,3 +89,5 @@ When you need to determine what something IS (compilation? artist album? genre f
 - **Test constructor pattern for MusicIntegrator:** `internal MusicIntegrator(string testLibraryPath)` bypasses the full pipeline, sets `_libraryPath` and initializes empty scan-ahead dicts. Use for any new module that can't be instantiated cheaply via the public constructor.
 
 - **RoutingFixtures.AddAlbumFiles uses `new byte[0]` placeholder .mp3 files.** Safe because `CountAlbumSongs` only calls `Directory.GetFiles(*.mp3)` on the library side - it never opens them with TagLib#. Do NOT use this trick for test scenarios that trigger TagLib# reads (e.g. the NewMusic batch scan path in CountAlbumSongs).
+
+- **LibChecker.CheckFilenameForStr is case-sensitive** (plain `.Contains()`, no `StringComparison.OrdinalIgnoreCase`). Any MP3 filename with different casing than the ID3 artist tag will produce a "should include" warning. `Reflector.SanitiseFilename` and `StandardiseStr` never change case - they only remove invalid chars, control chars, and underscores. Diagnosing unexpected filename warnings: read the actual AudioMirror XML for the flagged track, compare `<Artists>` value vs the mirror filename directly. Fix is to rename the MP3 file to match the tag (not a code change).
