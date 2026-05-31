@@ -175,5 +175,22 @@ namespace AudioManager
             }
             finally { RoutingFixtures.Cleanup(lib); }
         }
+
+        // ---- Akira The Don routing ----
+
+        public static void Routing_AkiraTheDon_NoSampledPerson_RoutesToATDSingles()
+        {
+            // Single-artist ATD track: no second artist entry means no "sampled person" -> Singles
+            // This path avoids CountAkiraTheDonPersonSongs (no real library scan).
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Akira The Don", "Philosophy Talk", genres: "Musivation"));
+                string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", "Singles");
+                Assert.Equal(expected, dest, "ATD with no sampled person -> Musivation/Akira The Don/Singles/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
     }
 }

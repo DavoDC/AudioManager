@@ -133,5 +133,31 @@ namespace AudioManager
             }
             finally { Directory.Delete(dir, true); }
         }
+
+        public static void TryDeserialize_TooFewFields_ReturnsFalse()
+        {
+            string path = TempCachePath();
+            try
+            {
+                // Row with 11 fields instead of the required 12 - must be rejected
+                File.WriteAllText(path, "PARSE_CACHE_V1\nfield1|field2|field3|field4|field5|field6|field7|field8|field9|field10|field11");
+                bool ok = ParseCache.TryDeserialize(path, out var tags);
+                Assert.True(!ok, "row with too few fields should return false");
+            }
+            finally { if (File.Exists(path)) File.Delete(path); }
+        }
+
+        public static void TryDeserialize_TooManyFields_ReturnsFalse()
+        {
+            string path = TempCachePath();
+            try
+            {
+                // 13 fields (e.g. a title containing '|') - must be rejected
+                File.WriteAllText(path, "PARSE_CACHE_V1\nf1|f2|f3|f4|f5|f6|f7|f8|f9|f10|f11|f12|extra");
+                bool ok = ParseCache.TryDeserialize(path, out var tags);
+                Assert.True(!ok, "row with too many fields (e.g. pipe in field value) should return false");
+            }
+            finally { if (File.Exists(path)) File.Delete(path); }
+        }
     }
 }

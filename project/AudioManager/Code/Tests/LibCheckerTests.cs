@@ -119,5 +119,73 @@ namespace AudioManager
             var checker = new LibChecker(new List<TrackTag> { ArtistTag(genres: "Motivation") });
             Assert.True(!checker.IsClean, "Motivation genre outside Motivation/ should be dirty");
         }
+
+        // ---- CheckArtistFolder ----
+
+        public static void LibChecker_ArtistInWrongFolder_IsDirty()
+        {
+            // PrimaryArtist in tag doesn't match the folder name in the RelPath
+            var tag = new TrackTag("\\Artists\\Wrong Artist\\Singles\\Correct Artist - Song A.xml",
+                "Song A", "Correct Artist", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "Artist in wrong folder (tag/folder mismatch) should be dirty");
+        }
+
+        // ---- CheckMiscFolder ----
+
+        public static void LibChecker_MiscWithThreeArtistSongs_IsDirty()
+        {
+            // 3+ songs from same artist in Misc - should have their own Artists/ folder
+            var tags = new List<TrackTag>
+            {
+                new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song A.xml",
+                    "Song A", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
+                    "00:03:00.0000000", "1", "True", "500", "500"),
+                new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song B.xml",
+                    "Song B", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
+                    "00:03:00.0000000", "1", "True", "500", "500"),
+                new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song C.xml",
+                    "Song C", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
+                    "00:03:00.0000000", "1", "True", "500", "500"),
+            };
+            var checker = new LibChecker(tags);
+            Assert.True(!checker.IsClean, "3 songs from same artist in Misc should be dirty (needs Artists/ folder)");
+        }
+
+        public static void LibChecker_ArtistHasFolderButSongInMisc_IsDirty()
+        {
+            // Artist has an Artists/ folder but one song sits in Misc/ - routing gap
+            var artistTag = new TrackTag("\\Artists\\Artist Alpha\\Singles\\Artist Alpha - Song A.xml",
+                "Song A", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var miscTag = new TrackTag("\\Miscellaneous Songs\\Artist Alpha - Song B.xml",
+                "Song B", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { artistTag, miscTag });
+            Assert.True(!checker.IsClean, "Artist with folder but song in Misc should be dirty");
+        }
+
+        // ---- CheckSourcesFolder ----
+
+        public static void LibChecker_SourcesFolderMovieAlbumWithoutOST_IsDirty()
+        {
+            // Album mentions the source folder name but doesn't include "OST"
+            var tag = new TrackTag("\\Sources\\Films\\Peacemaker\\Artist - Song A.xml",
+                "Song A", "Artist", "Peacemaker Adventures", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "Sources film album mentioning movie name without OST should be dirty");
+        }
+
+        public static void LibChecker_SourcesFolderMovieAlbumWithOST_IsClean()
+        {
+            // Album mentions the source folder name AND includes "OST" - correct
+            var tag = new TrackTag("\\Sources\\Films\\Peacemaker\\Artist - Song A.xml",
+                "Song A", "Artist", "Peacemaker OST", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Sources film album with OST in name should be clean");
+        }
     }
 }
