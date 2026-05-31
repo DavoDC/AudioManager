@@ -11,6 +11,27 @@ namespace AudioManager.Code.Modules
     internal class TrackTag : Track
     {
         /// <summary>
+        /// Construct a TrackTag from pre-parsed cache field values (no file I/O).
+        /// </summary>
+        internal TrackTag(string relPath, string title, string artists, string album,
+                          string year, string trackNumber, string genres, string length,
+                          string albumCoverCount, string compilation, string coverWidth, string coverHeight)
+        {
+            RelPath        = relPath;
+            Title          = title;
+            Artists        = artists;
+            Album          = album;
+            Year           = year;
+            TrackNumber    = trackNumber;
+            Genres         = genres;
+            Length         = length;
+            AlbumCoverCount = albumCoverCount;
+            Compilation    = compilation;
+            CoverWidth     = coverWidth;
+            CoverHeight    = coverHeight;
+        }
+
+        /// <summary>
         /// Construct a track tag
         /// </summary>
         /// <param name="mirrorFilePath">The mirror file path</param>
