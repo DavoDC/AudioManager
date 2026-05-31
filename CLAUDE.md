@@ -153,6 +153,7 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
 - **AudioMirror rebuild reliability:** Analysis (non-force regen) runs with `Recreated: False` (incremental mirror update) - NOT reliable for LibChecker pass claims or auto-commit. Only analysis (force regen) and integration produce a fully reliable mirror state. Auto-commit must only trigger on force regen or integration.
+- **Force regen = canonical fresh-data operation.** Incremental Reflector only creates XMLs for new files - it never updates XMLs for edited MP3 tags, and never removes XMLs for deleted MP3s. ParseCache (logs/parse-cache.txt) inherits this: on cache hit it serves data consistent with XMLs, not with the raw MP3s. Diagnosing stale analysis data (wrong tags, ghost tracks): run `analysis --force-regen` to rebuild from MP3s. See DevContext.md for the three-layer cache architecture.
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
 - **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually, advise the user to use Mp3tag. Do not suggest VLC or Windows file properties for tag editing.
 

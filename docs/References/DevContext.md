@@ -44,6 +44,34 @@ When you need to determine what something IS (compilation? artist album? genre f
 
 ---
 
+## ParseCache Architecture
+
+Three-layer cache system. Understanding this prevents confusion when diagnosing stale analysis output.
+
+```
+MP3 files (ground truth - C:\Users\David\Audio\)
+    ↓ Reflector refreshes (force regen = full rebuild; incremental = new files only)
+AudioMirror XMLs (Layer 1 - metadata snapshot, mtime updated on write)
+    ↓ Parser reads
+ParseCache logs/parse-cache.txt (Layer 2 - parsed TrackTag objects, flat pipe-delimited file)
+```
+
+**`IsMirrorStale(mirrorPath, cacheTime)` returns true (cache miss) when:**
+- No XML files found - mirror is empty (Reflector crashed after `Directory.Delete`, before recreating)
+- Any XML `LastWriteTime > cacheTime` - new song added or force regen ran
+
+Any filesystem error in the mtime check also degrades to a miss (never crashes).
+
+**Layer 1 limitations - Reflector incremental does NOT:**
+- Detect tag edits to existing MP3s: XML already exists → `if (!File.Exists(...))` skips it → XML retains old metadata
+- Remove XMLs for deleted MP3s: Reflector only iterates real files and creates; never deletes orphaned XMLs
+
+ParseCache faithfully inherits both limitations - it's always consistent with the XMLs, not with the raw MP3s.
+
+**Force regen removes both layers of staleness:** deletes mirror entirely, rebuilds all XMLs from MP3 reads, then Parser saves a fresh cache. Both limitations above are resolved by running `analysis --force-regen`.
+
+---
+
 ## Code Invariants
 
 - **Dry-run parity for ALL integration operations** - every step that moves or deletes files must have a dry-run branch that prints what would happen instead. `RunMiscMigration` checks `dryRun` and prints `[DRY RUN] Would move:`. Never add a new integration operation without implementing the dry-run counterpart first.
