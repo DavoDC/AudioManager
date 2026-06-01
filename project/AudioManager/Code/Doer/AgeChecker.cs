@@ -18,8 +18,12 @@ namespace AudioManager
         /// </summary>
         /// <param name="forceMirrorRegen">Whether the mirror should be regenerated regardless of age</param>
         /// <exception cref="FileLoadException">If parsing date in last run file fails</exception>
-        public AgeChecker(bool forceMirrorRegen)
+        /// <param name="forceMirrorRegen">Whether the mirror should be regenerated regardless of age.</param>
+        /// <param name="lastRunInfoPath">Override last-run file path. Null uses Constants.LastRunInfoFilePath (production default).</param>
+        public AgeChecker(bool forceMirrorRegen, string lastRunInfoPath = null)
         {
+            string effectivePath = lastRunInfoPath ?? Constants.LastRunInfoFilePath;
+
             // Notify
             Console.WriteLine($"\nChecking age of mirror...");
 
@@ -28,10 +32,10 @@ namespace AudioManager
             PrintDate("Now", curDate);
 
             // If the last run info file doesn't exist
-            if (!File.Exists(Constants.LastRunInfoFilePath))
+            if (!File.Exists(effectivePath))
             {
                 // Create with it the current date
-                File.WriteAllText(Constants.LastRunInfoFilePath, GetStrFromDate(curDate));
+                File.WriteAllText(effectivePath, GetStrFromDate(curDate));
 
                 // Notify and regenerate
                 Console.WriteLine(" - Mirror age is unknown, will regenerate!");
@@ -42,10 +46,10 @@ namespace AudioManager
             //// Else if the last run file exists:
             // Try to parse date
             DateTime mirrorCreationDate;
-            if (!DateTime.TryParse(File.ReadAllText(Constants.LastRunInfoFilePath), out mirrorCreationDate))
+            if (!DateTime.TryParse(File.ReadAllText(effectivePath), out mirrorCreationDate))
             {
                 // If date parsing fails, notify and throw error
-                string parseErr = "\nERROR: Cannot parse date in: " + Constants.LastRunInfoFilePath;
+                string parseErr = "\nERROR: Cannot parse date in: " + effectivePath;
                 throw new FileLoadException(parseErr);
             }
 
@@ -82,14 +86,14 @@ namespace AudioManager
                     RegenMirror = false;
                 }
 
-                // Notify 
+                // Notify
                 Console.WriteLine(mirrMsg);
             }
 
             // If regeneration will occur, update last run info
             if (RegenMirror)
             {
-                File.WriteAllText(Constants.LastRunInfoFilePath, GetStrFromDate(curDate));
+                File.WriteAllText(effectivePath, GetStrFromDate(curDate));
             }
 
             // Finish and print time taken
