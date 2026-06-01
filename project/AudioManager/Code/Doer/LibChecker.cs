@@ -27,8 +27,9 @@ namespace AudioManager
         /// <summary>
         /// Construct a library checker
         /// </summary>
-        /// <param name="audioTags"></param>
-        public LibChecker(List<TrackTag> audioTags)
+        /// <param name="audioTags">Track tags to validate.</param>
+        /// <param name="exceptionsPath">Override exceptions config path. Null uses Constants.LibCheckerExceptionsPath.</param>
+        public LibChecker(List<TrackTag> audioTags, string exceptionsPath = null)
         {
             // Notify
             Console.WriteLine("\nChecking library...");
@@ -37,7 +38,7 @@ namespace AudioManager
             this.audioTags = audioTags;
 
             // Load exceptions from config
-            exceptions = LoadExceptions();
+            exceptions = LoadExceptions(exceptionsPath);
 
             // Check all tags
             int totalTagHits = 0;
@@ -282,21 +283,22 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Loads exception rules from config/libchecker-exceptions.xml.
+        /// Loads exception rules from the given path (or Constants.LibCheckerExceptionsPath by default).
         /// Falls back to empty list if file not found.
         /// </summary>
-        private List<XmlElement> LoadExceptions()
+        private List<XmlElement> LoadExceptions(string exceptionsPath = null)
         {
+            string effectivePath = exceptionsPath ?? Constants.LibCheckerExceptionsPath;
             var result = new List<XmlElement>();
             try
             {
-                if (!File.Exists(Constants.LibCheckerExceptionsPath))
+                if (!File.Exists(effectivePath))
                 {
-                    Console.WriteLine($"  [WARN] Exceptions config not found: {Constants.LibCheckerExceptionsPath}");
+                    Console.WriteLine($"  [WARN] Exceptions config not found: {effectivePath}");
                     return result;
                 }
                 var doc = new XmlDocument();
-                doc.Load(Constants.LibCheckerExceptionsPath);
+                doc.Load(effectivePath);
                 foreach (XmlElement el in doc.SelectNodes("//Exception"))
                 {
                     result.Add(el);
