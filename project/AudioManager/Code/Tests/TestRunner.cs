@@ -27,19 +27,31 @@ namespace AudioManager
             {
                 foreach (var method in type.GetMethods(BindingFlags.Static | BindingFlags.Public))
                 {
+                    var capture = new StringWriter();
+                    var originalOut = Console.Out;
+                    Console.SetOut(capture);
                     try
                     {
                         method.Invoke(null, null);
+                        Console.SetOut(originalOut);
                         Out($"[PASS] {method.Name}");
                         passed++;
                     }
                     catch (TargetInvocationException tie)
                     {
+                        Console.SetOut(originalOut);
+                        string innerOutput = capture.ToString().TrimEnd();
+                        if (innerOutput.Length > 0)
+                            Out(innerOutput);
                         Out($"[FAIL] {method.Name}: {tie.InnerException?.Message ?? tie.Message}");
                         failed++;
                     }
                     catch (Exception ex)
                     {
+                        Console.SetOut(originalOut);
+                        string innerOutput = capture.ToString().TrimEnd();
+                        if (innerOutput.Length > 0)
+                            Out(innerOutput);
                         Out($"[FAIL] {method.Name}: {ex.Message}");
                         failed++;
                     }
