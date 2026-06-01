@@ -78,6 +78,7 @@
     <Compile Include="Code\Tests\TrackXMLTests.cs" />
     <Compile Include="Code\Tests\ParserTests.cs" />
     <Compile Include="Code\Tests\ReflectorTests.cs" />
+    <Compile Include="Code\Tests\AgeCheckerTests.cs" />
     <Compile Include="Code\Doer\AudioMirrorCommitter.cs" />
     <Compile Include="Code\Doer\LibChecker.cs" />
     <Compile Include="Code\Doer\AgeChecker.cs" />
