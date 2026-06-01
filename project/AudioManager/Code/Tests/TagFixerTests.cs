@@ -280,5 +280,28 @@ namespace AudioManager
             string result = TagFixer.DetermineGenre("");
             Assert.Equal("", result, "empty artists string should return empty genre");
         }
+
+        // ---- Intentionally NOT stripped (documents design boundaries) ----
+
+        public static void RemoveParentheticals_LivePattern_NotStripped()
+        {
+            // (Live) is not in the strip patterns - live performances keep their label
+            string result = TagFixer.RemoveParentheticals("Song Title (Live)");
+            Assert.Equal("Song Title (Live)", result, "(Live) should NOT be stripped - not in strip patterns");
+        }
+
+        public static void RemoveParentheticals_AcousticPattern_NotStripped()
+        {
+            // (Acoustic) is also not in the strip patterns
+            string result = TagFixer.RemoveParentheticals("Song Title (Acoustic)");
+            Assert.Equal("Song Title (Acoustic)", result, "(Acoustic) should NOT be stripped - not in strip patterns");
+        }
+
+        public static void StripAlbumSuffixes_LivePattern_NotStripped()
+        {
+            // Album "(Live at Wembley)" should not be stripped - only specific edition/remaster patterns are removed
+            string result = TagFixer.StripAlbumSuffixes("Album Name (Live at Wembley)");
+            Assert.Equal("Album Name (Live at Wembley)", result, "(Live at ...) should NOT be stripped from album names");
+        }
     }
 }
