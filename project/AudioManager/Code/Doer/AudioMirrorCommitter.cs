@@ -25,6 +25,17 @@ namespace AudioManager
         /// Auto-commit AudioMirror if LibChecker was clean and trigger is a reliable mode.
         /// Skips silently for incremental analysis (mirror may have stale XMLs).
         /// </summary>
+        /// <summary>
+        /// Returns the reason to skip auto-commit ("incremental" or "dirty"), or null if the commit
+        /// should proceed to git. Pure function - no I/O. Extracted for testability.
+        /// </summary>
+        internal static string GetSkipReason(bool libCheckerClean, CommitTrigger trigger)
+        {
+            if (trigger == CommitTrigger.AnalysisIncremental) return "incremental";
+            if (!libCheckerClean) return "dirty";
+            return null; // no skip reason - commit should proceed
+        }
+
         /// <param name="libCheckerClean">Whether LibChecker reported zero issues.</param>
         /// <param name="trigger">What triggered this commit attempt.</param>
         public static void TryCommit(bool libCheckerClean, CommitTrigger trigger)
