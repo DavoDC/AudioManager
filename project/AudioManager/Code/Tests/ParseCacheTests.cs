@@ -159,5 +159,23 @@ namespace AudioManager
             }
             finally { if (File.Exists(path)) File.Delete(path); }
         }
+
+        public static void RoundTrip_PipeInFieldValue_BreaksRoundTrip()
+        {
+            // Known limitation: the '|' separator is not escaped, so pipe in any field
+            // value produces wrong field count on deserialization (returns false, not corrupted data).
+            // This test documents the behavior so it's intentional, not accidental.
+            string path = TempCachePath();
+            try
+            {
+                var tag = new TrackTag("Artists/X/test.xml", "Title|With|Pipes", "Artist",
+                    "Album", "2020", "1", "Pop", "00:03:30.0000000", "1", "True", "500", "499");
+                ParseCache.Save(path, new System.Collections.Generic.List<TrackTag> { tag });
+                bool ok = ParseCache.TryDeserialize(path, out var loaded);
+                Assert.True(!ok,
+                    "pipe character in field value breaks the round-trip (known limitation of the flat-file format)");
+            }
+            finally { if (File.Exists(path)) File.Delete(path); }
+        }
     }
 }
