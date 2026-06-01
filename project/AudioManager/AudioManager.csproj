@@ -82,6 +82,7 @@
     <Compile Include="Code\Tests\TeeWriterTests.cs" />
     <Compile Include="Code\Tests\AudioMirrorCommitterTests.cs" />
     <Compile Include="Code\Tests\LibCheckerExceptionTests.cs" />
+    <Compile Include="Code\Tests\ManifestRunnerTests.cs" />
     <Compile Include="Code\Doer\AudioMirrorCommitter.cs" />
     <Compile Include="Code\Doer\LibChecker.cs" />
     <Compile Include="Code\Doer\AgeChecker.cs" />

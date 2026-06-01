@@ -263,6 +263,22 @@ namespace AudioManager
 
         // ---- Sources: Anime has no album rule ----
 
+        public static void LibChecker_MiscWithTwoArtistSongs_IsClean()
+        {
+            // 2 songs from same artist in Misc is fine (trio rule fires at 3+)
+            var tags = new List<TrackTag>
+            {
+                new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song A.xml",
+                    "Song A", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
+                    "00:03:00.0000000", "1", "True", "500", "500"),
+                new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song B.xml",
+                    "Song B", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
+                    "00:03:00.0000000", "1", "True", "500", "500"),
+            };
+            var checker = new LibChecker(tags);
+            Assert.True(checker.IsClean, "2 songs from same artist in Misc should be clean (below 3-song threshold)");
+        }
+
         public static void LibChecker_SourcesFolderAnime_NoAlbumRule_IsClean()
         {
             // Anime subfolder has no OST requirement - intentional per CheckSourcesFolder code
