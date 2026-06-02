@@ -86,8 +86,7 @@ namespace AudioManager
 
                 if (ok)
                 {
-                    Console.WriteLine($"[PASS] {label}");
-                    Console.WriteLine($"       -> {entry.ExpectedDest}");
+                    Console.WriteLine($"[PASS] {label} -> {entry.ExpectedDest}");
                     passed++;
                 }
                 else
@@ -96,9 +95,9 @@ namespace AudioManager
                     Console.WriteLine($"       Expected: {entry.ExpectedDest}");
                     Console.WriteLine($"       Actual:   {GetRelativeDest(actualAbsolute)}");
                     Console.WriteLine($"       Reason:   {reason}");
+                    Console.WriteLine();
                     failed++;
                 }
-                Console.WriteLine();
             }
 
             Console.WriteLine("-------------------------------");
