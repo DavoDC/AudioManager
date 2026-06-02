@@ -15,8 +15,11 @@ namespace AudioManager
     /// </summary>
     internal static class ManifestRunner
     {
-        internal static bool Run(string manifestPath)
+        internal static bool Run(string manifestPath) => Run(manifestPath, out _, out _);
+
+        internal static bool Run(string manifestPath, out int passed, out int failed)
         {
+            passed = 0; failed = 0;
             Console.WriteLine("\n###### Routing Manifest ######\n");
 
             if (!File.Exists(manifestPath))
@@ -65,7 +68,6 @@ namespace AudioManager
             // Create integrator with real library path (no pipeline execution)
             var integrator = new MusicIntegrator(Constants.AudioFolderPath);
 
-            int passed = 0, failed = 0;
             foreach (var entry in entries)
             {
                 var track = new Track

@@ -7,7 +7,7 @@ namespace AudioManager
 {
     internal static class TestRunner
     {
-        internal static bool Run()
+        internal static bool Run(out int passed, out int failed)
         {
             string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
             var sb = new StringBuilder();
@@ -21,7 +21,7 @@ namespace AudioManager
             Out("\n###### AudioManager Tests ######\n");
 
             var testTypes = new[] { typeof(TagFixerTests), typeof(RoutingTests), typeof(ParseCacheTests), typeof(LibCheckerTests), typeof(TrackTests), typeof(StatListTests), typeof(TrackXMLTests), typeof(ParserTests), typeof(ReflectorTests), typeof(AgeCheckerTests), typeof(TeeWriterTests), typeof(AudioMirrorCommitterTests), typeof(LibCheckerExceptionTests), typeof(ManifestRunnerTests), typeof(IntegrationTests) };
-            int passed = 0, failed = 0;
+            passed = 0; failed = 0;
 
             foreach (var type in testTypes)
             {
