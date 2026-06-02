@@ -83,6 +83,22 @@ namespace AudioManager
             Assert.True(!checker.IsClean, "feat. remaining in title should be dirty");
         }
 
+        public static void LibChecker_RadioEditInTitle_IsDirty()
+        {
+            // "(Radio Edit)" not stripped - should still be flagged
+            var tag = ArtistTag(title: "Some Song (Radio Edit)");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "(Radio Edit) remaining in title should be dirty");
+        }
+
+        public static void LibChecker_AlbumWithEditionWord_IsClean()
+        {
+            // "Edition" in album name contains "edit" as substring - must NOT be flagged
+            var tag = ArtistTag(album: "25th Anniversary Deluxe Edition");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "album with 'Edition' word should be clean (not a false positive)");
+        }
+
         public static void LibChecker_TwoAlbumSongsInSingles_IsDirty()
         {
             // 2+ songs from same album must be in an album subfolder, not Singles/

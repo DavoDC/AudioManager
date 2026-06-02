@@ -262,6 +262,11 @@ namespace AudioManager
                     string pattern = @"(?:^|[\s\-\(\)\[\]\/,])" + Regex.Escape(unwanted.ToLower());
                     foundUnwanted = Regex.IsMatch(propValue, pattern);
                 }
+                else if (unwanted.ToLower() == "edit")
+                {
+                    // Word-boundary match: "Radio Edit" flags but "Edition" does not
+                    foundUnwanted = Regex.IsMatch(propValue, @"\bedit\b");
+                }
                 else
                 {
                     // For other unwanted strings, use simple Contains check
