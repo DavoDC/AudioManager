@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-02 - Reflector incremental: refresh stale XMLs when MP3 is newer (TIER 3)
+
+Incremental Reflector was skipping any XML that already existed, even if the underlying MP3 had been modified in Mp3tag or another tool since the XML was last written. Stale tag data (wrong casing, old album name, etc.) would persist in reports until the next force regen.
+
+**What was done:** `Reflector.CreateFile()` - added mtime comparison via new `IsStaleMirrorXml(mp3Path, xmlPath)` static method. When the MP3 is newer than its XML, the XML is overwritten with the real MP3 path, triggering a fresh tag read on this analysis run. Counter added to PrintStats ("XMLs refreshed: N", shown only when > 0). 2 new tests in ReflectorTests.cs.
+
+Orphaned XML incremental cleanup was investigated simultaneously: force regen (`Directory.Delete(mirrorPath, true)`) already removes all orphaned XMLs completely. The incremental case is only relevant if a user deletes MP3s then runs incremental (not force regen) - this is not the expected workflow. Closed as won't-fix.
+
+---
+
 ## 2026-06-02 - Audit libchecker-exceptions.xml: one bug-fix removed, all remaining genuine (TIER 4)
 
 Audited all 12 exceptions. Found one bug-fix workaround: `<Exception unwanted="edit"><Album contains="Edition"/>` was needed because `Contains("edit")` incorrectly flagged albums with "Edition" (e.g., "Deluxe Edition", "25th Anniversary Edition") as having unwanted "edit" content. The other 11 exceptions are all genuine track-specific exemptions (official titles containing flagged words, intentional kept versions, special content).

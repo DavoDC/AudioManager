@@ -79,11 +79,12 @@ namespace AudioManager
         /// Populate folder structure with mirrored files
         /// </summary>
         /// <returns>Statistics tuple</returns>
-        private Tuple<int, int, List<string>> CreateFiles()
+        private Tuple<int, int, int, List<string>> CreateFiles()
         {
             // Holders
             int mp3FileCount = 0;
             int sanitisationCount = 0;
+            int refreshedCount = 0;
             List<string> nonMP3Files = new List<string>();
 
             // For every actual file
@@ -101,27 +102,31 @@ namespace AudioManager
                 }
 
                 // Otherwise, process MP3 file
-                if (CreateFile(realFilePath, relativePath))
-                {
+                if (CreateFile(realFilePath, relativePath, out bool refreshed))
                     sanitisationCount++;
-                }
+                if (refreshed)
+                    refreshedCount++;
 
                 mp3FileCount++;
             }
 
             // Return holders
-            return Tuple.Create(mp3FileCount, sanitisationCount, nonMP3Files);
+            return Tuple.Create(mp3FileCount, sanitisationCount, refreshedCount, nonMP3Files);
         }
 
 
         /// <summary>
-        /// Create a mirrored file (the file contents are just the real path at this stage)
+        /// Create a mirrored file (the file contents are just the real path at this stage).
+        /// In incremental mode, also refreshes the XML when the MP3 has been modified since last analysis.
         /// </summary>
-        /// <param name="filePath">The actual file path</param>
+        /// <param name="realFilePath">The actual MP3 file path</param>
         /// <param name="relativePath">The relative file path</param>
+        /// <param name="refreshed">Output: true if an existing XML was overwritten because the MP3 was newer</param>
         /// <returns>True if the filename was sanitised</returns>
-        private bool CreateFile(string realFilePath, string relativePath)
+        private bool CreateFile(string realFilePath, string relativePath, out bool refreshed)
         {
+            refreshed = false;
+
             // Sanitisation flag
             bool sanitised = false;
 
@@ -145,15 +150,31 @@ namespace AudioManager
             // Change extension
             fullMirrorPath = Path.ChangeExtension(fullMirrorPath, ".xml");
 
-            // If the mirrored file doesn't exist already
             if (!File.Exists(fullMirrorPath))
             {
-                // Create mirror file containing real path
+                // XML doesn't exist: create it containing the real path
                 File.WriteAllText(fullMirrorPath, realFilePath);
+            }
+            else if (IsStaleMirrorXml(realFilePath, fullMirrorPath))
+            {
+                // MP3 was modified after the XML was written (e.g., tag edit in Mp3tag):
+                // overwrite with the real path so this run re-reads fresh tag data
+                File.WriteAllText(fullMirrorPath, realFilePath);
+                refreshed = true;
             }
 
             // Return sanitised flag
             return sanitised;
+        }
+
+        /// <summary>
+        /// Returns true if the MP3 file has been modified more recently than its mirror XML,
+        /// indicating that cached tag data in the XML is stale and should be refreshed.
+        /// </summary>
+        internal static bool IsStaleMirrorXml(string mp3Path, string xmlPath)
+        {
+            if (!File.Exists(xmlPath)) return false;
+            return File.GetLastWriteTimeUtc(mp3Path) > File.GetLastWriteTimeUtc(xmlPath);
         }
 
 
@@ -161,12 +182,13 @@ namespace AudioManager
         /// Print info about completed mirroring process
         /// </summary>
         /// <param name="statisticsInfo"></param>
-        private void PrintStats(Tuple<int, int, List<string>> statisticsInfo)
+        private void PrintStats(Tuple<int, int, int, List<string>> statisticsInfo)
         {
             // Extract info items
             int mp3FileCount = statisticsInfo.Item1;
             int sanitisedFileNames = statisticsInfo.Item2;
-            List<string> nonMP3Files = statisticsInfo.Item3;
+            int refreshedCount = statisticsInfo.Item3;
+            List<string> nonMP3Files = statisticsInfo.Item4;
 
             // Print mirror path
             Console.WriteLine($" - Path: '{mirrorPath}'");
@@ -188,6 +210,10 @@ namespace AudioManager
 
             // Print sanitisation count
             Console.WriteLine($" - MP3 filenames sanitised: {sanitisedFileNames}");
+
+            // Print refreshed count (only show when > 0 to avoid noise in normal runs)
+            if (refreshedCount > 0)
+                Console.WriteLine($" - XMLs refreshed (MP3 updated since last analysis): {refreshedCount}");
 
             // Print recreation setting
             Console.WriteLine($" - Recreated: {AgeChecker.RegenMirror}");
