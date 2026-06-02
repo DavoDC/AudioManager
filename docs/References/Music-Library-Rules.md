@@ -143,4 +143,4 @@ Tracks discovered through a specific form of media. **CRITICAL DISTINCTION:**
 ## Known Gotchas
 - Jay-Z: folder is `Jay-Z` - TPE1 and filename must match exactly (not `JAY-Z`)
 - `mike.` artist: folder name is `mike` (no trailing dot - Windows limitation)
-- Album names containing `Edition` (e.g. `One Of The Boys (15th Anniversary Edition)`) are fine to keep - LibChecker has an exception for this
+- Album names containing `Edition` (e.g. `One Of The Boys (15th Anniversary Edition)`) are fine to keep - LibChecker uses word-boundary matching for `edit` so `Edition` is never a false positive

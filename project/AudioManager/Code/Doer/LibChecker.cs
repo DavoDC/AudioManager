@@ -79,6 +79,9 @@ namespace AudioManager
             // Check Miscellaneous Songs folder
             CheckMiscFolder(artistsWithAudioFolder);
 
+            // Check Compilations folder
+            CheckCompilationsFolder(artistsWithAudioFolder);
+
             // Check Musivation and Motivation folders
             CheckMainFolderForGenre(Constants.MusivDir, Constants.MusivDir);
             CheckMainFolderForGenre(Constants.MotivDir, Constants.MotivDir);
@@ -470,6 +473,30 @@ namespace AudioManager
                 {
                     string artistMsg = $"  - '{curMiscArtist}' has an {Constants.ArtistsDir} folder but has a song";
                     Console.WriteLine(artistMsg + $" in the {Constants.MiscDir} folder!");
+                    totalHits++;
+                }
+            }
+
+            PrintTotalHits(totalHits);
+        }
+
+        /// <summary>
+        /// Checks the Compilations folder: any track whose primary artist already has an Artists/
+        /// folder should have been routed to Artists/{artist}/Singles/, not Compilations/.
+        /// </summary>
+        private void CheckCompilationsFolder(List<string> artistsWithAudioFolder)
+        {
+            Console.WriteLine($" - Checking {Constants.CompilationsDir} folder...");
+
+            var compilationTags = FilterTagsByMainFolder(Constants.CompilationsDir);
+
+            int totalHits = 0;
+            foreach (TrackTag tag in compilationTags)
+            {
+                string primaryArtist = tag.PrimaryArtist;
+                if (artistsWithAudioFolder.Contains(primaryArtist))
+                {
+                    Console.WriteLine($"  - '{primaryArtist}' has an {Constants.ArtistsDir} folder but has a track in {Constants.CompilationsDir}/");
                     totalHits++;
                 }
             }
