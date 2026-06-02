@@ -22,8 +22,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-- [ ] **Terminal vs markdown output - separate handling needed** - Markdown tables render correctly in `.md` files but look cluttered in terminal (raw pipes/dashes). Options to evaluate via `/think` pass: (A) auto-open the saved `.md` report in the default viewer after analysis (zero extra code, best reading experience); (B) prompt the user to open it (give full path in output); (C) add terminal-native table formatting as an alternative output path. Strong prior: option A or B is better than option C - a markdown viewer is purpose-built for this, adding a terminal table renderer duplicates effort for lower quality. Decision: `/think` pass before any implementation.
-
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.
   - **Motivation (unchanged):** Each fix session currently requires 2-3 manual dry run + force regen cycles. Every module covered by a test eliminates that cycle for that module. Real integration (May 2026) found metadata edge cases dry-run missed - tests for the same logic would have caught several earlier.
   - **Infrastructure in place:** Inline `--test` flag, 20-line Assert class, test.bat, launch.bat integration. DIY - no xUnit, no separate project. Old-style csproj manual registration + no VS test runner in the build workflow makes a framework overkill.
