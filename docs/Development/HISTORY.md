@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-02 - Decided NOT to remove .md integration logs (TIER 4 evaluation)
+
+Evaluated: `.md integration logs` vs `decision XMLs`. Finding: they're complementary, not redundant. .md logs contain TagFixer changes per file, duplicate resolution details, confidence report, and full narrative - information the structured decision XMLs don't capture. Decision XMLs are machine-readable routing records; .md logs are human audit trails. Both serve distinct purposes. Keep both. Item closed.
+
+---
+
 ## 2026-06-02 - Library audit complete: LibChecker covers all Music-Library-Rules.md rules (TIER 3)
 
 **Think-pass finding:** LibChecker already IS the audit tool. Running `analysis --force-regen` validates the entire library. Gap audit found one missing check: Compilations/ folder was never validated after being added as a routing destination.
