@@ -1,5 +1,6 @@
 ﻿using AudioManager.Code.Modules;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TagList = System.Collections.Generic.List<AudioManager.Code.Modules.TrackTag>;
@@ -56,6 +57,9 @@ namespace AudioManager
             // Print age stats
             PrintAgeStats(audioTags);
 
+            // Print cover art stats
+            PrintCoverArtStatistics(audioTags);
+
             // Finish and print time taken
             Console.WriteLine("");
             FinishAndPrintTimeTaken();
@@ -90,6 +94,54 @@ namespace AudioManager
 
             double avgFileMB = Math.Round((totalBytes / (double)audioTags.Count) / 1_048_576, 2);
             Console.WriteLine($" - Average file size: {avgFileMB} MB");
+        }
+
+        /// <summary>
+        /// Prints cover art dimension statistics: coverage, non-square counts, and dimension histogram.
+        /// Data is only meaningful after a force regen (old-format XMLs return empty width/height).
+        /// </summary>
+        private static void PrintCoverArtStatistics(TagList audioTags)
+        {
+            Console.WriteLine($"\n# Cover Art Statistics");
+
+            int total = audioTags.Count;
+
+            // Categorise by width value
+            int missingData = audioTags.Count(t => string.IsNullOrEmpty(t.CoverWidth));
+            int noCover     = audioTags.Count(t => t.CoverWidth == "0");
+            int badFormat   = audioTags.Count(t => t.CoverWidth == "Unknown");
+            int hasKnownDim = total - missingData - noCover - badFormat;
+
+            if (missingData > 0)
+                Console.WriteLine($" - [!] Cover data missing for {missingData} track(s) - run force regen to populate");
+
+            Console.WriteLine($" - Has cover (known dims): {hasKnownDim}/{total}");
+            Console.WriteLine($" - No cover (Width=0):     {noCover}");
+            Console.WriteLine($" - Unknown format:          {badFormat}");
+
+            // Non-square covers among tracks with known dimensions
+            int nonSquare = audioTags.Count(t =>
+            {
+                if (!int.TryParse(t.CoverWidth, out int w) || !int.TryParse(t.CoverHeight, out int h)) return false;
+                return w > 0 && h > 0 && w != h;
+            });
+            if (hasKnownDim > 0)
+                Console.WriteLine($" - Non-square covers:      {nonSquare}");
+
+            // Dimension distribution histogram (top 10)
+            var dimGroups = audioTags
+                .Where(t => int.TryParse(t.CoverWidth, out int w) && int.TryParse(t.CoverHeight, out int h) && w > 0 && h > 0)
+                .GroupBy(t => $"{t.CoverWidth}x{t.CoverHeight}")
+                .OrderByDescending(g => g.Count())
+                .Take(10)
+                .ToList();
+
+            if (dimGroups.Count > 0)
+            {
+                Console.WriteLine($"\n  Dimension distribution:");
+                foreach (var g in dimGroups)
+                    Console.WriteLine($"   {g.Key,12}  {g.Count(),5} tracks");
+            }
         }
 
         /// <summary>

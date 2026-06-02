@@ -16,6 +16,16 @@ verify.bat was doing bat-level work: running `--test` and `--routing-manifest` i
 
 ---
 
+## 2026-06-02 - Album art Phase 2 (Analyse): dimension stats in analysis report (TIER 2)
+
+Phase 1 captured `<AlbumCover><Width>/<Height>` in every XML (via force regen). Phase 2 implements the dimension analysis.
+
+**What was done:** `Analyser.PrintCoverArtStatistics()` - new section in the analysis report: tracks with cover vs. no cover vs. unknown format, non-square cover count, and a top-10 dimension histogram (e.g. "800x800: 3521 tracks"). Shows a warning when dimensions are missing (old-format XMLs pre-force-regen). Data is meaningful only after force regen migrates existing XMLs to the new `<AlbumCover>` format.
+
+Phase 3 (Enforce: LibChecker rules for no-cover, non-square, below-threshold) remains in IDEAS.md pending threshold decision from real data.
+
+---
+
 ## 2026-06-02 - Report path: print full absolute path for ctrl+click in terminal (TIER 2)
 
 Markdown reports rendered correctly in `.md` files but the terminal printed a relative display path (`reports\2026\file.md`) which couldn't be ctrl+clicked in Windows Terminal.
