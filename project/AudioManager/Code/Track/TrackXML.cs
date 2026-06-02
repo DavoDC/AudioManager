@@ -38,10 +38,12 @@ namespace AudioManager.Code.Modules
                     SetElementValue("TrackNumber", tag.TrackNumber);
                     SetElementValue("Genres", tag.Genres);
                     SetElementValue("Length", tag.Length);
-                    SetElementValue("AlbumCoverCount", tag.AlbumCoverCount);
+                    var coverEl = xmlDoc.CreateElement("AlbumCover");
+                    rootElement.AppendChild(coverEl);
+                    SetChildElement(coverEl, "Count", tag.AlbumCoverCount);
+                    SetChildElement(coverEl, "Width", tag.CoverWidth);
+                    SetChildElement(coverEl, "Height", tag.CoverHeight);
                     SetElementValue("Compilation", tag.Compilation);
-                    SetElementValue("CoverWidth", tag.CoverWidth);
-                    SetElementValue("CoverHeight", tag.CoverHeight);
 
                     // Save file
                     xmlDoc.Save(mirrorFilePath);
@@ -60,10 +62,10 @@ namespace AudioManager.Code.Modules
                     TrackNumber = GetElementValue("TrackNumber");
                     Genres = GetElementValue("Genres");
                     Length = GetElementValue("Length");
-                    AlbumCoverCount = GetElementValue("AlbumCoverCount");
-                    Compilation = GetElementValue("Compilation");
-                    CoverWidth  = GetElementValue("CoverWidth");
-                    CoverHeight = GetElementValue("CoverHeight");
+                    AlbumCoverCount = GetElementValue("AlbumCover/Count");
+                    CoverWidth      = GetElementValue("AlbumCover/Width");
+                    CoverHeight     = GetElementValue("AlbumCover/Height");
+                    Compilation     = GetElementValue("Compilation");
                 }
             }
             catch (Exception)
@@ -74,6 +76,17 @@ namespace AudioManager.Code.Modules
                 errMsg += $"\n'mirrorFilePath' was: {mirrorFilePath}";
                 throw new XmlException(errMsg);
             }
+        }
+
+
+        /// <summary>
+        /// Appends a new child element with the given value to the specified parent element.
+        /// </summary>
+        private void SetChildElement(XmlElement parent, string childName, string childValue)
+        {
+            var el = xmlDoc.CreateElement(childName);
+            el.InnerText = childValue;
+            parent.AppendChild(el);
         }
 
 
