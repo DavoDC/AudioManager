@@ -32,6 +32,7 @@ Ensures the library conforms to organization rules:
 - **Artist folder structure** - Artists with 3+ songs have dedicated folders
 - **Album subfolders** - 2+ songs from same album → album subfolder; 1 song → Singles/
 - **Misc folder review** - warns if Misc folder has grown too large
+- **Compilations validation** - tracks in Compilations/ whose artist has an Artists/ folder are flagged as misrouted
 - **Genre consistency** - Musivation/Motivation folders have matching genre tag
 - **Sources validation** - soundtrack tracks properly named and organized
 
@@ -42,6 +43,7 @@ Run: `AudioManager.exe analysis` (includes LibChecker in the pipeline)
 - Total playback hours, library size on disk, average file size
 - Average and median song length and track age
 - Percentage and count breakdown of: artists, genres, release years, decades
+- Cover art quality: coverage count, non-square cover detection, dimension histogram (top 10 dimension pairs)
 
 For listening statistics, visit [LastFM](https://www.last.fm/user/david369music).
 
@@ -61,9 +63,9 @@ Run: `AudioManager.exe tagfix [--dry-run]`
 
 ### Step 2: Integration (MusicIntegrator)
 Routes cleaned files into the library:
-- Scan-ahead identifies artists hitting the 3-song threshold (routes to `Artists/` instead of `Misc`)
-- Auto-routes to destination folders based on metadata: Artists (with album subfolders), Musivation, Motivation, Misc
-- Optional folder picker for ambiguous routes (Films/Shows/Anime media, Compilations)
+- Scan-ahead identifies artists hitting the 3-song threshold (routes to `Artists/` instead of `Misc`) and detects various-artist compilation albums (routes to `Compilations/`)
+- Auto-routes to destination folders based on metadata: Artists (with album subfolders), Compilations, Musivation, Motivation, Misc
+- Optional folder picker for Films/Shows/Anime media tracks
 
 Run: `AudioManager.exe integrate [--dry-run]`
 
@@ -93,6 +95,8 @@ AudioManager/
 Analysis includes an incremental parse cache. On repeated runs where the library has not changed, the Parser reads a single flat cache file instead of thousands of XML files, cutting total analysis time from ~110s to ~4s on a 5600-track library.
 
 Cache is stored in `logs/` (gitignored). It is invalidated automatically whenever the AudioMirror gains new or modified XML files (e.g. after integration or force regen).
+
+Incremental Reflector also refreshes individual XMLs when their underlying MP3 has been modified since last analysis (e.g. after a tag edit in Mp3tag), so fresh tags appear without needing a full force regen.
 
 ## Tech
 
