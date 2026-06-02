@@ -23,6 +23,8 @@ namespace AudioManager
         private Dictionary<string, int> _scanAheadBatchCounts;
         private Dictionary<string, int> _scanAheadMiscCounts;
         private Dictionary<string, int> _scanAheadSourcesCounts;
+        // Album names with 3+ distinct primary artists in the batch - routed to Compilations/ when no artist folder
+        private HashSet<string> _compilationAlbums;
         private string _libraryPath;
 
 
@@ -150,7 +152,7 @@ namespace AudioManager
                     var routeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                     foreach (var sf in scannedFiles.Where(s => s.IsReadable && s.Duplicate?.SkipRouting != true))
                     {
-                        string preDestDir = GetDestDir(sf.Track, newArtistFolders, out string preReason, out bool _preIsNewFolder);
+                        string preDestDir = GetDestDir(sf.Track, newArtistFolders, _compilationAlbums, out string preReason, out bool _preIsNewFolder);
                         string cat = GetRouteCategory(preDestDir);
                         routeCounts[cat] = routeCounts.ContainsKey(cat) ? routeCounts[cat] + 1 : 1;
                     }
@@ -284,7 +286,7 @@ namespace AudioManager
                         string destFilename = sanitisedArtists + " - " + sanitisedTitle + ".mp3";
 
                         // Determine destination directory and whether it requires creating a new artist folder
-                        string destDir = GetDestDir(track, newArtistFolders, out string reason, out bool isNewFolder);
+                        string destDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out string reason, out bool isNewFolder);
                         entry.Reason = reason;
                         entry.IsNewFolder = isNewFolder;
                         entry.InBatchDuplicate = sf.InBatchDuplicate;
@@ -419,6 +421,7 @@ namespace AudioManager
             _scanAheadBatchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _scanAheadMiscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _scanAheadSourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -432,8 +435,9 @@ namespace AudioManager
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             Console.Write($"\nScan-ahead: reading {batchFiles.Length} file(s)...");
 
-            // Count artists in the incoming batch
+            // Count artists in the incoming batch; also map album -> distinct primary artists for compilation detection
             var batchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var albumArtists = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             foreach (var f in batchFiles)
             {
                 try
@@ -445,6 +449,13 @@ namespace AudioManager
                         string primary = Track.ProcessProperty(artists)[0].Trim();
                         if (string.IsNullOrEmpty(primary)) continue;
                         batchCounts[primary] = batchCounts.ContainsKey(primary) ? batchCounts[primary] + 1 : 1;
+                        string album = tf.Tag.Album;
+                        if (!string.IsNullOrEmpty(album) && !album.Equals("Missing", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (!albumArtists.ContainsKey(album))
+                                albumArtists[album] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            albumArtists[album].Add(primary);
+                        }
                     }
                 }
                 catch { /* skip unreadable files */ }
@@ -539,6 +550,22 @@ namespace AudioManager
             {
                 Console.WriteLine($"\nScan-ahead: {result.Count} artist(s) will hit 3-song threshold:");
                 foreach (var line in previewLines) Console.WriteLine(line);
+                Console.WriteLine();
+            }
+
+            // Detect compilation albums: 3+ distinct primary artists on same album in this batch
+            var compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kvp in albumArtists)
+            {
+                if (kvp.Value.Count >= 3)
+                    compilationAlbums.Add(kvp.Key);
+            }
+            _compilationAlbums = compilationAlbums;
+            if (compilationAlbums.Count > 0)
+            {
+                Console.WriteLine($"Scan-ahead: {compilationAlbums.Count} compilation album(s) detected:");
+                foreach (var album in compilationAlbums)
+                    Console.WriteLine($"  - '{album}' ({albumArtists[album].Count} distinct artists) -> Compilations/{album}/");
                 Console.WriteLine();
             }
 
@@ -1245,10 +1272,11 @@ namespace AudioManager
         /// </summary>
         /// <param name="track">The track to route.</param>
         /// <param name="newArtistFolders">Scan-ahead result: artists getting new folders this batch.</param>
+        /// <param name="compilationAlbums">Scan-ahead result: album names with 3+ distinct primary artists in the batch.</param>
         /// <param name="reason">Output: human-readable reason for the proposed destination.</param>
         /// <param name="isNewFolder">Output: true if routing creates a new Artists/ folder (scan-ahead promoted artist).</param>
         /// <returns>The full destination directory path.</returns>
-        internal string GetDestDir(Track track, HashSet<string> newArtistFolders, out string reason, out bool isNewFolder)
+        internal string GetDestDir(Track track, HashSet<string> newArtistFolders, HashSet<string> compilationAlbums, out string reason, out bool isNewFolder)
         {
             // Special case: Akira The Don (check by artist name, not genre, since genre may not be set in dry-run)
             string primaryArtist = track.PrimaryArtist;
@@ -1370,6 +1398,17 @@ namespace AudioManager
                     isNewFolder = scanAheadNewFolder;
                     return Path.Combine(artistFolder, "Singles");
                 }
+            }
+
+            // Compilation album: 3+ distinct primary artists on same album in batch -> Compilations/{album}/
+            if (compilationAlbums != null &&
+                !string.IsNullOrEmpty(track.Album) &&
+                !track.Album.Equals("Missing", StringComparison.OrdinalIgnoreCase) &&
+                compilationAlbums.Contains(track.Album))
+            {
+                reason = $"Compilation album (3+ distinct artists in batch); no artist folder -> Compilations/{track.Album}/";
+                isNewFolder = false;
+                return Path.Combine(_libraryPath, Constants.CompilationsDir, SanitiseFolderName(track.Album));
             }
 
             int scanBatch = (_scanAheadBatchCounts != null && _scanAheadBatchCounts.TryGetValue(primaryArtist2, out int sb2)) ? sb2 : 0;

@@ -79,7 +79,7 @@ namespace AudioManager
                     Year    = "Missing",
                 };
 
-                string actualAbsolute = integrator.GetDestDir(track, newArtistFolders, out string reason, out bool isNewFolder);
+                string actualAbsolute = integrator.GetDestDir(track, newArtistFolders, new HashSet<string>(), out string reason, out bool isNewFolder);
                 string actualRel  = NormalizeDest(GetRelativeDest(actualAbsolute));
                 string expectedRel = NormalizeDest(entry.ExpectedDest);
 

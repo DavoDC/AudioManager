@@ -53,12 +53,13 @@ namespace AudioManager
         /// Library folder names
         /// </summary>
 
-        public const string MiscDir    = "Miscellaneous Songs";
-        public const string ArtistsDir = "Artists";
-        public const string MusivDir   = "Musivation";
-        public const string MotivDir   = "Motivation";
-        public const string SourcesDir = "Sources";
-        public const string SinglesDir = "Singles";
+        public const string MiscDir          = "Miscellaneous Songs";
+        public const string ArtistsDir      = "Artists";
+        public const string CompilationsDir = "Compilations";
+        public const string MusivDir        = "Musivation";
+        public const string MotivDir        = "Motivation";
+        public const string SourcesDir      = "Sources";
+        public const string SinglesDir      = "Singles";
 
         /// <summary>
         /// Mirror Management
