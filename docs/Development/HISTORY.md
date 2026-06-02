@@ -4,6 +4,19 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-02 - Library audit complete: LibChecker covers all Music-Library-Rules.md rules (TIER 3)
+
+**Think-pass finding:** LibChecker already IS the audit tool. Running `analysis --force-regen` validates the entire library. Gap audit found one missing check: Compilations/ folder was never validated after being added as a routing destination.
+
+**What was done:**
+- `LibChecker.CheckCompilationsFolder()` - new check: if a track is in Compilations/ but its primary artist has an Artists/ folder, that's a routing mismatch (should be in Artists/{artist}/Singles/). Parallel to existing CheckMiscFolder "artist has folder but song in Misc" rule.
+- `LibChecker` constructor - wired in after CheckMiscFolder.
+- `LibCheckerTests.cs` - 2 new tests: clean case (no artist folder), dirty case (artist has folder but track in Compilations/).
+- `Music-Library-Rules.md` - updated stale "LibChecker has an exception for Edition" note to reflect word-boundary fix.
+- `IDEAS.md` - AUDIT sub-goal closed; ANALYSE and UNIFY extracted as separate TIER 4 items.
+
+---
+
 ## 2026-06-02 - Reflector incremental: refresh stale XMLs when MP3 is newer (TIER 3)
 
 Incremental Reflector was skipping any XML that already existed, even if the underlying MP3 had been modified in Mp3tag or another tool since the XML was last written. Stale tag data (wrong casing, old album name, etc.) would persist in reports until the next force regen.

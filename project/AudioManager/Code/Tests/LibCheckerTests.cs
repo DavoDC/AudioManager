@@ -304,5 +304,30 @@ namespace AudioManager
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Anime sources folder with any album name should be clean (no OST rule)");
         }
+
+        // ---- CheckCompilationsFolder ----
+
+        public static void LibChecker_CompilationTrack_NoArtistFolder_IsClean()
+        {
+            // Track in Compilations/ whose artist has no Artists/ folder - correct routing
+            var tag = new TrackTag("\\Compilations\\Barbie The Album\\Nicki Minaj - Barbie World.xml",
+                "Barbie World", "Nicki Minaj", "Barbie The Album", "2023", "5", "Pop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Compilations/ track with no corresponding Artists/ folder should be clean");
+        }
+
+        public static void LibChecker_CompilationTrack_ArtistHasFolder_IsDirty()
+        {
+            // Artist has an Artists/ folder AND a track in Compilations/ - should have gone to Artists/
+            var artistFolderTag = new TrackTag("\\Artists\\Nicki Minaj\\Singles\\Nicki Minaj - Super Bass.xml",
+                "Super Bass", "Nicki Minaj", "Pink Friday", "2010", "1", "Rap",
+                "00:03:30.0000000", "1", "True", "500", "500");
+            var compilationTag = new TrackTag("\\Compilations\\Barbie The Album\\Nicki Minaj - Barbie World.xml",
+                "Barbie World", "Nicki Minaj", "Barbie The Album", "2023", "5", "Pop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { artistFolderTag, compilationTag });
+            Assert.True(!checker.IsClean, "Artist has Artists/ folder but track is in Compilations/ -> should be dirty");
+        }
     }
 }
