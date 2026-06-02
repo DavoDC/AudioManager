@@ -1,8 +1,11 @@
+using System;
+using System.IO;
+
 namespace AudioManager
 {
     /// <summary>
-    /// Tests for Reflector.SanitiseFilename - a pure static function called by TagFixer,
-    /// MusicIntegrator, and LibChecker for all filename and folder-name sanitization.
+    /// Tests for Reflector pure static functions: SanitiseFilename and IsStaleMirrorXml.
+    /// Full mirror creation is not tested here (requires real library path).
     /// </summary>
     internal static class ReflectorTests
     {
@@ -59,6 +62,40 @@ namespace AudioManager
         {
             Assert.Equal("Artist_Album", Reflector.SanitiseFilename("Artist/Album"),
                 "forward slash is an invalid filename char -> replaced with underscore");
+        }
+
+        // ---- IsStaleMirrorXml ----
+
+        public static void IsStaleMirrorXml_Mp3Newer_ReturnsTrue()
+        {
+            string tmp = Path.Combine(Path.GetTempPath(), "am_stale_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tmp);
+            try
+            {
+                string mp3 = Path.Combine(tmp, "track.mp3");
+                string xml = Path.Combine(tmp, "track.xml");
+                File.WriteAllText(xml, "old data");
+                File.SetLastWriteTimeUtc(xml, DateTime.UtcNow.AddMinutes(-5));
+                File.WriteAllText(mp3, "");  // MP3 written after XML
+                Assert.True(Reflector.IsStaleMirrorXml(mp3, xml), "MP3 newer than XML -> stale");
+            }
+            finally { Directory.Delete(tmp, true); }
+        }
+
+        public static void IsStaleMirrorXml_XmlNewer_ReturnsFalse()
+        {
+            string tmp = Path.Combine(Path.GetTempPath(), "am_stale_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tmp);
+            try
+            {
+                string mp3 = Path.Combine(tmp, "track.mp3");
+                string xml = Path.Combine(tmp, "track.xml");
+                File.WriteAllText(mp3, "");
+                File.SetLastWriteTimeUtc(mp3, DateTime.UtcNow.AddMinutes(-5));
+                File.WriteAllText(xml, "fresh data");  // XML written after MP3
+                Assert.True(!Reflector.IsStaleMirrorXml(mp3, xml), "XML newer than MP3 -> not stale");
+            }
+            finally { Directory.Delete(tmp, true); }
         }
     }
 }
