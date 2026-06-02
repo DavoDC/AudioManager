@@ -50,7 +50,7 @@ Three-layer cache system. Understanding this prevents confusion when diagnosing 
 
 ```
 MP3 files (ground truth - C:\Users\David\Audio\)
-    ↓ Reflector refreshes (force regen = full rebuild; incremental = new files only)
+    ↓ Reflector refreshes (force regen = full rebuild; incremental = new files + stale XMLs refreshed)
 AudioMirror XMLs (Layer 1 - metadata snapshot, mtime updated on write)
     ↓ Parser reads
 ParseCache logs/parse-cache.txt (Layer 2 - parsed TrackTag objects, flat pipe-delimited file)
@@ -131,3 +131,5 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 - **Pure-decision extraction for I/O-gated logic.** `AudioMirrorCommitter.GetSkipReason(bool, CommitTrigger)` was extracted from the void `TryCommit` so the commit-gate safety rules (skip-on-incremental, skip-on-dirty, proceed-when-clean) are unit-testable without a git repo. When a void method's risk lives in its decision rather than its side effects, extract the decision as a pure function and test that.
 
 - **Stub `.mp3` files work for count-only paths.** `RoutingFixtures` creates `new byte[0]` placeholder .mp3 files. Safe only where the code calls `Directory.GetFiles(*.mp3).Length` without opening them (library-side counts). The ATD `Singles/` TagLib# scan is bypassed in tests because the fixture creates no `Singles/` folder - `Directory.Exists` returns false before any read.
+
+- **`--verify` flag pattern for combining test modes.** When two test runners need to be called and their results combined, add a `--verify <manifestPath>` handler in Program.cs that calls each runner with out-params `(out int passed, out int failed)`, short-circuits on first failure, then prints a combined banner. The bat calls `--verify` and exits. The runners keep their original `Run()` signatures for backward compat via overloads. Applied 2026-06-02 to combine `--test` (TestRunner) + `--routing-manifest` (ManifestRunner). Use this pattern for any future multi-mode verification step.
