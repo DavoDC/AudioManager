@@ -16,6 +16,20 @@ verify.bat was doing bat-level work: running `--test` and `--routing-manifest` i
 
 ---
 
+## 2026-06-02 - Compilation album routing to Compilations/{album}/ (TIER 2)
+
+Various-artist compilation albums (e.g. "Barbie The Album") were routing all tracks to Misc because no single artist owned the album. This was the highest-friction routing gap: every compilation track required manual intervention.
+
+**What was done:**
+- `Constants.cs` - added `CompilationsDir = "Compilations"`
+- `MusicIntegrator.RunScanAhead()` - added album->distinct artists tracking in the existing TagLib scan pass; detects compilation albums (3+ distinct primary artists on same album) with no extra file reads
+- `MusicIntegrator.GetDestDir()` - added `compilationAlbums` parameter (matches `newArtistFolders` pattern); routes compilation tracks with no artist folder to `Compilations/{albumName}/`; tracks where artist has a folder still route normally to `Artists/{artist}/Singles/`
+- `RoutingTests.cs` - 3 new tests: no-folder routes to Compilations/, has-folder routes to Artists/Singles/, non-compilation album still Misc
+
+**Result:** Compilation tracks are fully auto-routed. 155/155 tests passing.
+
+---
+
 ## 2026-05-31 - Parser incremental cache (TIER 4)
 
 Parser was reading every XML file on every analysis run regardless of whether anything had changed. On a 5600-track library on spinning disk this took ~105s and dominated the total run time.
