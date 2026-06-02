@@ -9,6 +9,10 @@
     <Title contains="..." />
     <Title equals="..." />
   Comparisons are case-sensitive to match tag values exactly.
+
+  Audited 2026-06-02: all remaining exceptions are genuine track-specific exemptions.
+  Bug-fix workaround (edit/Edition) removed - LibChecker now uses word-boundary
+  matching for "edit" so "Edition" is never a false positive without needing an exception.
 -->
 <Exceptions>
 
@@ -30,11 +34,6 @@
   <!-- Dr. Dre / Eminem - intentional edit -->
   <Exception unwanted="edit">
     <Title contains="Medicine Man" />
-  </Exception>
-
-  <!-- Anniversary/deluxe editions are fine to keep -->
-  <Exception unwanted="edit">
-    <Album contains="Edition" />
   </Exception>
 
   <!-- Kid Cudi track title that happens to contain 'soundtrack' -->
