@@ -63,7 +63,7 @@ namespace AudioManager
 
         public static void TrackXML_ReadMissingElement_ReturnsEmpty()
         {
-            // When an XML element is absent (e.g. old mirror files pre-CoverWidth), read returns ""
+            // When XML elements are absent (e.g. old mirror files pre-AlbumCover grouping), read returns ""
             string path = TempXmlPath();
             try
             {

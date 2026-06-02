@@ -21,7 +21,11 @@ Each track is an individual `.xml` file. Structure:
   <TrackNumber>1</TrackNumber>
   <Genres>Rap; Hip Hop</Genres>
   <Length>00:04:38.9520000</Length>
-  <AlbumCoverCount>1</AlbumCoverCount>
+  <AlbumCover>
+    <Count>1</Count>
+    <Width>800</Width>
+    <Height>800</Height>
+  </AlbumCover>
   <Compilation>True</Compilation>
 </Track>
 ```
