@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-02 - Audit libchecker-exceptions.xml: one bug-fix removed, all remaining genuine (TIER 4)
+
+Audited all 12 exceptions. Found one bug-fix workaround: `<Exception unwanted="edit"><Album contains="Edition"/>` was needed because `Contains("edit")` incorrectly flagged albums with "Edition" (e.g., "Deluxe Edition", "25th Anniversary Edition") as having unwanted "edit" content. The other 11 exceptions are all genuine track-specific exemptions (official titles containing flagged words, intentional kept versions, special content).
+
+**What was done:** `LibChecker.CheckProperty()` - added word-boundary matching (`\bedit\b`) for the "edit" unwanted check (same pattern already used for feat./ft.). "Edition" now never matches; "Radio Edit" still matches. Removed the broad `<Exception unwanted="edit"><Album contains="Edition"/>` from exceptions.xml. Added 2 tests. exceptions.xml header updated with audit date and clean status.
+
+---
+
 ## 2026-06-02 - Thin verify.bat: aggregation moved into exe as `--verify` flag (TIER 3)
 
 verify.bat was doing bat-level work: running `--test` and `--routing-manifest` in separate subprocess calls, capturing output to temp files, parsing "Results:" lines with `for /f tokens=2,4 findstr`, and combining pass/fail counts via `set /a`. 60 lines of bat logic.
