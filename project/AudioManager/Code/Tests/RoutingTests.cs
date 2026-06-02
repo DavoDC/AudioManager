@@ -14,9 +14,13 @@ namespace AudioManager
             return new Track { Artists = artist, Title = title, Album = album, Genres = genres };
         }
 
-        private static string GetDest(MusicIntegrator integrator, Track track, HashSet<string> newArtistFolders = null)
+        private static string GetDest(MusicIntegrator integrator, Track track,
+            HashSet<string> newArtistFolders = null, HashSet<string> compilationAlbums = null)
         {
-            return integrator.GetDestDir(track, newArtistFolders ?? new HashSet<string>(), out _, out _);
+            return integrator.GetDestDir(track,
+                newArtistFolders ?? new HashSet<string>(),
+                compilationAlbums ?? new HashSet<string>(),
+                out _, out _);
         }
 
         // ---- tests ----
@@ -202,7 +206,7 @@ namespace AudioManager
             {
                 var integrator = new MusicIntegrator(lib);
                 var track = new AudioManager.Code.Modules.Track { Artists = "Akira The Don;Test Person", Title = "Philosophy", Album = "Missing", Genres = "Musivation" };
-                string dest = integrator.GetDestDir(track, new HashSet<string>(), out _, out _);
+                string dest = integrator.GetDestDir(track, new HashSet<string>(), new HashSet<string>(), out _, out _);
                 string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", Constants.SinglesDir);
                 Assert.Equal(expected, dest, "ATD sampled person below 3-song threshold -> Akira The Don/Singles/");
             }
@@ -218,7 +222,7 @@ namespace AudioManager
                 RoutingFixtures.AddATDPeopleFiles(lib, "Test Person", personFileCount: 3);
                 var integrator = new MusicIntegrator(lib);
                 var track = new AudioManager.Code.Modules.Track { Artists = "Akira The Don;Test Person", Title = "Philosophy", Album = "Missing", Genres = "Musivation" };
-                string dest = integrator.GetDestDir(track, new HashSet<string>(), out _, out _);
+                string dest = integrator.GetDestDir(track, new HashSet<string>(), new HashSet<string>(), out _, out _);
                 string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", "People", "Test Person", Constants.SinglesDir);
                 Assert.Equal(expected, dest, "ATD sampled person 3+ songs, no album -> People/Test Person/Singles/");
             }
@@ -234,9 +238,55 @@ namespace AudioManager
                 RoutingFixtures.AddATDPeopleFiles(lib, "Test Person", personFileCount: 3, albumName: "Great Album", albumFileCount: 2);
                 var integrator = new MusicIntegrator(lib);
                 var track = new AudioManager.Code.Modules.Track { Artists = "Akira The Don;Test Person", Title = "Philosophy", Album = "Great Album", Genres = "Musivation" };
-                string dest = integrator.GetDestDir(track, new HashSet<string>(), out _, out _);
+                string dest = integrator.GetDestDir(track, new HashSet<string>(), new HashSet<string>(), out _, out _);
                 string expected = Path.Combine(lib, Constants.MusivDir, "Akira The Don", "People", "Test Person", "Great Album");
                 Assert.Equal(expected, dest, "ATD sampled person 3+ songs, 2 from album -> People/Test Person/Great Album/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_CompilationAlbum_NoArtistFolder_RoutesToCompilations()
+        {
+            // 3+ distinct primary artists on same album, no artist folders -> Compilations/{album}/
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                var albumSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Barbie The Album" };
+                string dest = GetDest(integrator, MakeTrack("Nicki Minaj", "Barbie World", album: "Barbie The Album"),
+                    compilationAlbums: albumSet);
+                string expected = Path.Combine(lib, Constants.CompilationsDir, "Barbie The Album");
+                Assert.Equal(expected, dest, "compilation album, no artist folder -> Compilations/{album}/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_CompilationAlbum_ArtistHasFolder_RoutesToArtistSingles()
+        {
+            // Artist has a folder: compilation flag does not override existing folder routing
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Nicki Minaj" });
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                var albumSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Barbie The Album" };
+                string dest = GetDest(integrator, MakeTrack("Nicki Minaj", "Barbie World", album: "Barbie The Album"),
+                    compilationAlbums: albumSet);
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Nicki Minaj", "Singles");
+                Assert.Equal(expected, dest, "compilation album but artist has folder -> Artists/{artist}/Singles/");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_NonCompilationAlbum_NoArtistFolder_RoutesToMisc()
+        {
+            // Same album, no artist folder, NOT in compilationAlbums set -> still Misc
+            string lib = RoutingFixtures.CreateLibraryFixture();
+            try
+            {
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Solo Artist", "Solo Song", album: "Solo Album"));
+                string expected = Path.Combine(lib, Constants.MiscDir);
+                Assert.Equal(expected, dest, "album not in compilationAlbums -> Misc");
             }
             finally { RoutingFixtures.Cleanup(lib); }
         }
