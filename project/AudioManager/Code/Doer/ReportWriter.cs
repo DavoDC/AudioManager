@@ -47,7 +47,7 @@ namespace AudioManager
             string fullPath = Path.Combine(folder, filename);
             File.WriteAllText(fullPath, header + reportContent);
 
-            Console.WriteLine($"\nReport saved: {displayPath}");
+            Console.WriteLine($"\nReport saved: {fullPath}");
         }
 
         /// <summary>
