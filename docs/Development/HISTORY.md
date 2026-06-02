@@ -16,6 +16,14 @@ verify.bat was doing bat-level work: running `--test` and `--routing-manifest` i
 
 ---
 
+## 2026-06-02 - Report path: print full absolute path for ctrl+click in terminal (TIER 2)
+
+Markdown reports rendered correctly in `.md` files but the terminal printed a relative display path (`reports\2026\file.md`) which couldn't be ctrl+clicked in Windows Terminal.
+
+**What was done:** `ReportWriter.Save()` - changed `displayPath` to `fullPath` in the console output. Full absolute path is now printed, making it immediately ctrl+clickable in Windows Terminal (opens in default `.md` viewer). One-line change.
+
+---
+
 ## 2026-06-02 - Compilation album routing to Compilations/{album}/ (TIER 2)
 
 Various-artist compilation albums (e.g. "Barbie The Album") were routing all tracks to Misc because no single artist owned the album. This was the highest-friction routing gap: every compilation track required manual intervention.
