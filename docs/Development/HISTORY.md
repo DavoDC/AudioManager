@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-02 - Thin verify.bat: aggregation moved into exe as `--verify` flag (TIER 3)
+
+verify.bat was doing bat-level work: running `--test` and `--routing-manifest` in separate subprocess calls, capturing output to temp files, parsing "Results:" lines with `for /f tokens=2,4 findstr`, and combining pass/fail counts via `set /a`. 60 lines of bat logic.
+
+**What was done:**
+- `TestRunner.Run()` - added `out int passed, out int failed` params (return type stays bool)
+- `ManifestRunner.Run()` - added overload with out params; original signature delegates to it
+- `Program.cs` - added `--verify <manifestPath>` handler: runs TestRunner, short-circuits on unit fail, runs ManifestRunner, prints combined `[VERIFY] OK Total: X passed, Y failed` banner, exits with correct code
+- `scripts/dev/verify.bat` - rewritten from 60 lines to 18 lines: build, run `--verify`, exit
+
+---
+
 ## 2026-05-31 - Parser incremental cache (TIER 4)
 
 Parser was reading every XML file on every analysis run regardless of whether anything had changed. On a 5600-track library on spinning disk this took ~105s and dominated the total run time.
