@@ -62,13 +62,13 @@ ParseCache logs/parse-cache.txt (Layer 2 - parsed TrackTag objects, flat pipe-de
 
 Any filesystem error in the mtime check also degrades to a miss (never crashes).
 
-**Layer 1 limitations - Reflector incremental does NOT:**
-- Detect tag edits to existing MP3s: XML already exists → `if (!File.Exists(...))` skips it → XML retains old metadata
-- Remove XMLs for deleted MP3s: Reflector only iterates real files and creates; never deletes orphaned XMLs
+**Reflector incremental behavior (Layer 1):**
+- **Detects tag edits to existing MP3s (fixed 2026-06-02):** `IsStaleMirrorXml(mp3Path, xmlPath)` compares `MP3.LastWriteTimeUtc` vs `XML.LastWriteTimeUtc`. If MP3 is newer, overwrites XML with real path, triggering a fresh tag read on that analysis run. Counter shown in output only when > 0 (no noise on normal runs).
+- **Does NOT remove XMLs for deleted MP3s:** Reflector only iterates real files and creates; never deletes orphaned XMLs. Force regen fully handles this (deletes mirror entirely, rebuilds). Won't-fix for incremental mode - the expected workflow for library deletions is always followed by force regen.
 
-ParseCache faithfully inherits both limitations - it's always consistent with the XMLs, not with the raw MP3s.
+ParseCache inherits the second limitation - a deleted MP3's cached data persists until force regen. Stale XML entries (first limitation) no longer affect ParseCache after the 2026-06-02 fix.
 
-**Force regen removes both layers of staleness:** deletes mirror entirely, rebuilds all XMLs from MP3 reads, then Parser saves a fresh cache. Both limitations above are resolved by running `analysis --force-regen`.
+**Force regen removes all staleness:** deletes mirror entirely, rebuilds all XMLs from MP3 reads, then Parser saves a fresh cache.
 
 ---
 
@@ -91,6 +91,8 @@ ParseCache faithfully inherits both limitations - it's always consistent with th
 - **BuildMirrorIndex() is the pattern for any batch-vs-library comparison.** Pre-load all AudioMirror XMLs into Dictionary<string,string> (normalised "primary\0title" -> xmlPath) once before the loop. O(mirror) setup, O(1) per-file lookup. Never do a full Directory.GetFiles scan inside a per-file loop - that's O(mirror x batch) and caused a ~1min silent hang on a 5531-track library with 126 batch files.
 
 - **RunScanAhead counts batch + Misc + Sources/ for artist folder threshold.** Sources/ tracks are scanned via `Path.Combine(Constants.MirrorFolderPath, Constants.SourcesDir)` with `SearchOption.AllDirectories` - same XML parsing as Misc. Sources tracks count toward the 3-song threshold but are NOT added to `_miscMigrationCandidates` - they stay in Sources/ regardless of whether the artist gets promoted. (Fix 2026-05-26: without Sources/, Common with 1 Sources/Films song + 2 batch songs still routed to Misc.)
+
+- **RunScanAhead detects compilation albums (added 2026-06-02):** In the same TagLib# loop that builds `batchCounts`, it maps `album → HashSet<primaryArtist>`. Albums with 3+ distinct primary artists are stored in `_compilationAlbums`. GetDestDir receives `compilationAlbums` as an explicit parameter (like `newArtistFolders`) and routes qualifying tracks to `Compilations/{album}/` when the primary artist has no Artists/ folder. Tests pass `compilationAlbums` directly via the updated `GetDestDir` signature.
 
 - **ExtractAndFixArtists: `" & "` in title parentheticals is always a collaborator separator, never part of an artist name.** The code splits on `" & "` before the duplicate-artist check and adds each component individually. This invariant must be preserved if featured-artist extraction is ever refactored - never add the compound "A & B" form when A and B will both be present separately. (Fix 2026-05-26: Perry Como track was producing 4 artist entries instead of 3.)
 
