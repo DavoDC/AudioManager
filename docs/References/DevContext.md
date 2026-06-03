@@ -31,7 +31,6 @@ When you need to determine what something IS (compilation? artist album? genre f
    - Renames files to `{artist} - {title}.mp3` format
    - Sets TCMP=1 (prevents iTunes album grouping)
    - Sets genre for Musivation/Motivation tracks per Music-Library-Rules.md
-   - **Current state:** User manually cleans tags in MP3Tag before integration (TIER 0 blocker). TagFixer exists but automation blocked on library safety review.
 
 2. **Integration (routing phase):** Routes cleaned files to library destinations:
    - Applies rules from Music-Library-Rules.md (Artists folder, Compilations, Musivation, Motivation, Sources, Miscellaneous)

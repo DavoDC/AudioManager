@@ -32,7 +32,7 @@ Ensures the library conforms to organization rules:
 - **Artist folder structure** - Artists with 3+ songs have dedicated folders
 - **Album subfolders** - 2+ songs from same album → album subfolder; 1 song → Singles/
 - **Misc folder review** - warns if Misc folder has grown too large
-- **Compilations validation** - tracks in Compilations/ whose artist has an Artists/ folder are flagged as misrouted
+- **Compilations validation** - tracks in Compilations/ whose artist has an Artists/ folder are flagged as misrouted, unless the album is a genuine various-artist compilation (3+ distinct primary artists in that album)
 - **Genre consistency** - Musivation/Motivation folders have matching genre tag
 - **Sources validation** - soundtrack tracks properly named and organized
 
