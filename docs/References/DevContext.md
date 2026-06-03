@@ -111,6 +111,10 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 ## Repo Patterns
 
+- **TrackXML : Track is known design debt (TIER 2 in IDEAS.md).** Do not model new serialization code on this inheritance. Any new XML field should wait for the XML refactor item. The target design is `internal static class TrackXML` with `Read(path, TrackTag)` and `Write(path, TrackTag)` using `XDocument` (System.Xml.Linq). `XDocument` is strictly cleaner: `r.Element("Title")?.Value ?? ""` vs XPath strings, and the write path is one `new XDocument(new XElement("Track", ...))` expression.
+
+- **ParseCache Extract() pattern (TIER 2 prerequisite).** When the XML refactor ships, replace `private const int FieldCount = 12` with a static `string[] Extract(TrackTag t)` method returning all fields in order. `FieldCount` becomes `Extract(null).Length`. Save uses `string.Join(Sep, Extract(t))`. Deserialize validates `parts.Length == FieldCount`. One edit to add a field, no sync risk.
+
 - **artist-name-overrides.xml is loaded at runtime** (XmlDocument.Load at first call, cached per process). No rebuild needed when adding entries - changes take effect on next exe run.
 
 - **Colons in ID3 album tags become underscores in folder/filenames** via Path.GetInvalidFileNameChars() in SanitiseFilename. The ID3 tag itself retains the colon. Expected behavior, not a bug.
