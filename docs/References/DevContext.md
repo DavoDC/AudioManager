@@ -73,6 +73,10 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 ## Code Invariants
 
+- **Routing-LibChecker threshold parity.** When a new routing destination is added to `GetDestDir()` (e.g. Compilations/ with "3+ distinct artists" threshold), the LibChecker rule that validates that destination MUST use the same detection threshold. Mismatch = routing<->LibChecker divergence: tracks correctly routed get falsely flagged. Discovered 2026-06-03: `CheckCompilationsFolder` was flagging genuine compilations because it lacked the 3+ distinct artist check that `RunScanAhead` uses.
+
+- **ParseCache is tightly coupled to TrackTag field count.** The 12-param cache constructor in `TrackTag` and the ParseCache serialize/deserialize format must stay in sync. Any Track.cs schema change (add/remove fields, e.g. Phase 2.5 cover art redesign) requires updating the cache constructor and `ParseCache.cs` field count. The cache auto-invalidates on any new/modified XML, so stale data is never silently served - but a field count mismatch will cause `TryDeserialize` to return false on every read (always cache miss) until fixed.
+
 - **Dry-run parity for ALL integration operations** - every step that moves or deletes files must have a dry-run branch that prints what would happen instead. `RunMiscMigration` checks `dryRun` and prints `[DRY RUN] Would move:`. Never add a new integration operation without implementing the dry-run counterpart first.
 
 - **TeeWriter.WriteCharToFile** is the single source of truth for file timestamp logic. `Write(char)` and `WriteLine(string)` both delegate to it. Any TeeWriter change must preserve this. `WriteLine(string)` checks for embedded `\n` and processes char-by-char via `WriteCharToFile` - do not revert to the old single-string write path.
