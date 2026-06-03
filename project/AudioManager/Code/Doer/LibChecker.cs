@@ -482,7 +482,9 @@ namespace AudioManager
 
         /// <summary>
         /// Checks the Compilations folder: any track whose primary artist already has an Artists/
-        /// folder should have been routed to Artists/{artist}/Singles/, not Compilations/.
+        /// folder should have been routed to Artists/{artist}/Singles/, not Compilations/ -
+        /// UNLESS the album is a genuine various-artist compilation (3+ distinct primary artists
+        /// in that album folder). Genuine compilations are correctly placed in Compilations/.
         /// </summary>
         private void CheckCompilationsFolder(List<string> artistsWithAudioFolder)
         {
@@ -490,10 +492,24 @@ namespace AudioManager
 
             var compilationTags = FilterTagsByMainFolder(Constants.CompilationsDir);
 
+            // Albums with 3+ distinct primary artists are genuine various-artist compilations.
+            // Routing to Compilations/ is correct even when an artist has an Artists/ folder.
+            var genuineCompilationAlbums = compilationTags
+                .GroupBy(t => GetRelPathPart(t, 2))
+                .Where(g => g.Select(t => t.PrimaryArtist)
+                             .Distinct(StringComparer.OrdinalIgnoreCase)
+                             .Count() >= 3)
+                .Select(g => g.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             int totalHits = 0;
             foreach (TrackTag tag in compilationTags)
             {
                 string primaryArtist = tag.PrimaryArtist;
+                string albumFolder = GetRelPathPart(tag, 2);
+
+                if (genuineCompilationAlbums.Contains(albumFolder)) continue;
+
                 if (artistsWithAudioFolder.Contains(primaryArtist))
                 {
                     Console.WriteLine($"  - '{primaryArtist}' has an {Constants.ArtistsDir} folder but has a track in {Constants.CompilationsDir}/");

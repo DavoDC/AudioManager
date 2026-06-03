@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-03 - LibChecker genuine compilation exemption + deep-dive fixes
+
+**LibChecker.CheckCompilationsFolder fix (TIER 1 blocker):** The rule was flagging ANY track in Compilations/ if the artist has an Artists/ folder. This produced 29 hits in the 2026-06-03 run (26x 2Pac + 2x Ice Cube + 1x Eminem) blocking the AudioMirror commit. Root cause: the routing logic correctly places tracks in Compilations/ when an album has 3+ distinct primary artists (genuine various-artist compilation), but LibChecker had no equivalent check - it applied the "has Artists/ folder -> misrouted" rule unconditionally.
+
+**Fix:** `CheckCompilationsFolder` now first identifies genuine various-artist compilations (albums in Compilations/ with 3+ distinct primary artists) and skips them. Only tracks in single/dual-artist albums are flagged. New test: `LibChecker_GenuineCompilation_ArtistHasFolder_IsClean`. All tests passing.
+
+**DevContext.md staleness:** Removed sentence claiming "User manually cleans tags in MP3Tag before integration (TIER 0 blocker)." TagFixer has been fully automated since May 2025.
+
+---
+
 ## 2026-06-02 - Decided NOT to remove .md integration logs (TIER 4 evaluation)
 
 Evaluated: `.md integration logs` vs `decision XMLs`. Finding: they're complementary, not redundant. .md logs contain TagFixer changes per file, duplicate resolution details, confidence report, and full narrative - information the structured decision XMLs don't capture. Decision XMLs are machine-readable routing records; .md logs are human audit trails. Both serve distinct purposes. Keep both. Item closed.
