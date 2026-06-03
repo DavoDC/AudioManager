@@ -320,6 +320,7 @@ namespace AudioManager
         public static void LibChecker_CompilationTrack_ArtistHasFolder_IsDirty()
         {
             // Artist has an Artists/ folder AND a track in Compilations/ - should have gone to Artists/
+            // The album has only 1 distinct artist so it is NOT a genuine compilation -> dirty.
             var artistFolderTag = new TrackTag("\\Artists\\Nicki Minaj\\Singles\\Nicki Minaj - Super Bass.xml",
                 "Super Bass", "Nicki Minaj", "Pink Friday", "2010", "1", "Rap",
                 "00:03:30.0000000", "1", "True", "500", "500");
@@ -327,7 +328,28 @@ namespace AudioManager
                 "Barbie World", "Nicki Minaj", "Barbie The Album", "2023", "5", "Pop",
                 "00:03:00.0000000", "1", "True", "500", "500");
             var checker = new LibChecker(new List<TrackTag> { artistFolderTag, compilationTag });
-            Assert.True(!checker.IsClean, "Artist has Artists/ folder but track is in Compilations/ -> should be dirty");
+            Assert.True(!checker.IsClean, "Artist has Artists/ folder but track is in Compilations/ (single-artist album) -> should be dirty");
+        }
+
+        public static void LibChecker_GenuineCompilation_ArtistHasFolder_IsClean()
+        {
+            // Genuine various-artist compilation (3+ distinct primary artists in the album folder).
+            // Artist A has an Artists/ folder but the compilation album is legitimately various-artist.
+            // Should NOT be flagged: routing to Compilations/ was correct.
+            var artistFolderTag = new TrackTag("\\Artists\\2Pac\\Singles\\2Pac - Me Against The World.xml",
+                "Me Against The World", "2Pac", "Me Against The World", "1995", "1", "Rap",
+                "00:05:00.0000000", "1", "True", "800", "800");
+            var compTag1 = new TrackTag("\\Compilations\\Now Hip Hop Vol1\\2Pac - Hit Em Up.xml",
+                "Hit Em Up", "2Pac", "Now Hip Hop Vol1", "2000", "1", "Rap",
+                "00:05:00.0000000", "1", "True", "800", "800");
+            var compTag2 = new TrackTag("\\Compilations\\Now Hip Hop Vol1\\Eminem - Lose Yourself.xml",
+                "Lose Yourself", "Eminem", "Now Hip Hop Vol1", "2000", "2", "Rap",
+                "00:05:00.0000000", "1", "True", "800", "800");
+            var compTag3 = new TrackTag("\\Compilations\\Now Hip Hop Vol1\\Kanye West - Gold Digger.xml",
+                "Gold Digger", "Kanye West", "Now Hip Hop Vol1", "2000", "3", "Rap",
+                "00:05:00.0000000", "1", "True", "800", "800");
+            var checker = new LibChecker(new List<TrackTag> { artistFolderTag, compTag1, compTag2, compTag3 });
+            Assert.True(checker.IsClean, "Genuine compilation (3+ distinct artists) is correctly in Compilations/ even if one artist has Artists/ folder");
         }
     }
 }
