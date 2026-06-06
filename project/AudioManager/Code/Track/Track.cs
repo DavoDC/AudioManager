@@ -1,122 +1,36 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace AudioManager.Code.Modules
 {
-    /// <summary>
-    /// An audio track's metadata
-    /// </summary>
     internal class Track
     {
-        // The track's relative path within the music library folder
-        private string relPath;
-        public string RelPath
-        {
-            get => relPath;
-            set => relPath = value;
-        }
+        public string RelPath { get; set; }
+        public string Title { get; set; }
+        public string Artists { get; set; }
 
-        // The track's title
-        private string title;
-        public string Title
-        {
-            get => title;
-            set => title = value;
-        }
-
-        // The track's artists (concatenated)
-        private string artists;
-        public string Artists
-        {
-            get => artists;
-            set => artists = value;
-        }
-
-        // The track's primary artist
         public string PrimaryArtist
-        { 
+        {
             get => Track.ProcessProperty(Artists)[0];
         }
 
-        // The track's album
-        private string album;
-        public string Album
-        { 
-            get => album;
-            set => album = value;
-        }
+        public string Album { get; set; }
+        public string Year { get; set; }
+        public string TrackNumber { get; set; }
+        public string Genres { get; set; }
+        public string Length { get; set; }
+        public string AlbumCoverCount { get; set; }
 
-        // The track's year
-        private string year;
-        public string Year
-        { 
-            get => year;
-            set => year = value;
-        }
+        // "0" = no art, "Unknown" = art present but format unrecognised
+        public string CoverWidth { get; set; }
+        public string CoverHeight { get; set; }
+        public string Compilation { get; set; }
 
-        // The track's number (disc order)
-        private string trackNumber;
-        public string TrackNumber
-        { 
-            get => trackNumber;
-            set => trackNumber = value;
-        }
-
-        // The track's genres (concatenated)
-        private string genres;
-        public string Genres
-        {
-            get => genres;
-            set => genres = value;
-        }
-
-        // The track's duration
-        private string length;
-        public string Length
-        { 
-            get => length;
-            set => length = value;
-        }
-
-        // The track's album cover count
-        private string albumCoverCount;
-        public string AlbumCoverCount
-        {
-            get => albumCoverCount;
-            set => albumCoverCount = value;
-        }
-
-        // Album art width in pixels ("0" = no art, "Unknown" = art present but format unrecognised)
-        private string coverWidth;
-        public string CoverWidth
-        {
-            get => coverWidth;
-            set => coverWidth = value;
-        }
-
-        // Album art height in pixels
-        private string coverHeight;
-        public string CoverHeight
-        {
-            get => coverHeight;
-            set => coverHeight = value;
-        }
-
-        // The track's compilation status (i.e. whether its album is a compilation of songs by various artists)
-        private string compilation;
-        public string Compilation
-        {
-            get => compilation;
-            set => compilation = value;
-        }
-
-        /// <returns>A concise string representation of this track</returns>
         public override string ToString()
         {
             return $"{Artists} - {Title}";
         }
 
-        /// <returns>A string representation of all track properties.</returns>
         public string ToAllPropertiesString()
         {
             return $"RelPath: {RelPath ?? "NULL"}\n" +
@@ -132,11 +46,6 @@ namespace AudioManager.Code.Modules
                    $"Compilation: {Compilation ?? "NULL"}";
         }
 
-        /// <summary>
-        /// Splits a concatenated property string (e.g. artists) into individual values.
-        /// </summary>
-        /// <param name="full">The full string, possibly concatenated with separators.</param>
-        /// <returns>An array of trimmed values extracted from the input string.</returns>
         public static string[] ProcessProperty(string full)
         {
             char[] separators = { ';', ',' };
@@ -148,9 +57,6 @@ namespace AudioManager.Code.Modules
             return full.Split(selectedSeparator).Select(a => a.Trim()).ToArray();
         }
 
-        /// <summary>
-        /// Prints all properties of this track.
-        /// </summary>
         public void PrintAllProperties()
         {
             Console.WriteLine(ToAllPropertiesString());
