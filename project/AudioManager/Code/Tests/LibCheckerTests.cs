@@ -16,7 +16,7 @@ namespace AudioManager
             string filename = $"{artist} - {title}.xml";
             string relPath = $"\\Artists\\{artist}\\Singles\\{filename}";
             return new TrackTag(relPath, title, artist, album, "2020", "1", genres,
-                "00:03:00.0000000", albumCoverCount, compilation, "500", "500");
+                "00:03:00.0000000", albumCoverCount, compilation, "1200", "1200");
         }
 
         // ---- IsClean baseline ----
@@ -64,10 +64,10 @@ namespace AudioManager
             // Same title + artist in two different files = duplicate
             var tagA = new TrackTag("\\Artists\\Artist Alpha\\Singles\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var tagB = new TrackTag("\\Artists\\Artist Alpha\\Singles\\Artist Alpha - Song A (2).xml",
                 "Song A", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tagA, tagB });
             Assert.True(!checker.IsClean, "Duplicate title+artist should be dirty");
         }
@@ -78,7 +78,7 @@ namespace AudioManager
             var tag = new TrackTag(
                 "\\Artists\\Known Artist\\Singles\\Known Artist - Song (feat. Someone).xml",
                 "Song (feat. Someone)", "Known Artist", "Test Album", "2020", "1",
-                "Hip-Hop", "00:03:00.0000000", "1", "True", "500", "500");
+                "Hip-Hop", "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(!checker.IsClean, "feat. remaining in title should be dirty");
         }
@@ -104,10 +104,10 @@ namespace AudioManager
             // 2+ songs from same album must be in an album subfolder, not Singles/
             var tagA = new TrackTag("\\Artists\\Artist Alpha\\Singles\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Real Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var tagB = new TrackTag("\\Artists\\Artist Alpha\\Singles\\Artist Alpha - Song B.xml",
                 "Song B", "Artist Alpha", "Real Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tagA, tagB });
             Assert.True(!checker.IsClean, "Two songs from same album in Singles/ should be dirty (use album subfolder)");
         }
@@ -117,7 +117,7 @@ namespace AudioManager
             // 1 song in album subfolder - should be in Singles/ instead
             var tag = new TrackTag("\\Artists\\Artist Alpha\\Real Album\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Real Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(!checker.IsClean, "Single song in album subfolder (should be Singles/) should be dirty");
         }
@@ -143,7 +143,7 @@ namespace AudioManager
             // PrimaryArtist in tag doesn't match the folder name in the RelPath
             var tag = new TrackTag("\\Artists\\Wrong Artist\\Singles\\Correct Artist - Song A.xml",
                 "Song A", "Correct Artist", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(!checker.IsClean, "Artist in wrong folder (tag/folder mismatch) should be dirty");
         }
@@ -157,13 +157,13 @@ namespace AudioManager
             {
                 new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song A.xml",
                     "Song A", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
-                    "00:03:00.0000000", "1", "True", "500", "500"),
+                    "00:03:00.0000000", "1", "True", "1200", "1200"),
                 new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song B.xml",
                     "Song B", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
-                    "00:03:00.0000000", "1", "True", "500", "500"),
+                    "00:03:00.0000000", "1", "True", "1200", "1200"),
                 new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song C.xml",
                     "Song C", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
-                    "00:03:00.0000000", "1", "True", "500", "500"),
+                    "00:03:00.0000000", "1", "True", "1200", "1200"),
             };
             var checker = new LibChecker(tags);
             Assert.True(!checker.IsClean, "3 songs from same artist in Misc should be dirty (needs Artists/ folder)");
@@ -174,10 +174,10 @@ namespace AudioManager
             // Artist has an Artists/ folder but one song sits in Misc/ - routing gap
             var artistTag = new TrackTag("\\Artists\\Artist Alpha\\Singles\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var miscTag = new TrackTag("\\Miscellaneous Songs\\Artist Alpha - Song B.xml",
                 "Song B", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { artistTag, miscTag });
             Assert.True(!checker.IsClean, "Artist with folder but song in Misc should be dirty");
         }
@@ -189,7 +189,7 @@ namespace AudioManager
             // Album mentions the source folder name but doesn't include "OST"
             var tag = new TrackTag("\\Sources\\Films\\Peacemaker\\Artist - Song A.xml",
                 "Song A", "Artist", "Peacemaker Adventures", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(!checker.IsClean, "Sources film album mentioning movie name without OST should be dirty");
         }
@@ -199,7 +199,7 @@ namespace AudioManager
             // Album mentions the source folder name AND includes "OST" - correct
             var tag = new TrackTag("\\Sources\\Films\\Peacemaker\\Artist - Song A.xml",
                 "Song A", "Artist", "Peacemaker OST", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Sources film album with OST in name should be clean");
         }
@@ -211,7 +211,7 @@ namespace AudioManager
             // Song directly in artist folder (no Singles/ or album subfolder) - violates subfolder-before-song rule
             var tag = new TrackTag("\\Artists\\Artist Alpha\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(!checker.IsClean, "Song directly in artist root (no subfolder) should be dirty");
         }
@@ -222,7 +222,7 @@ namespace AudioManager
             // This covers the edge case: Artists/Band/Band - Song.xml where Album="Band"
             var tag = new TrackTag("\\Artists\\Artist Alpha\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Artist Alpha", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Self-titled album in artist root should be skipped (clean)");
         }
@@ -234,10 +234,10 @@ namespace AudioManager
             // 2 songs from same album both in the album subfolder (not Singles/) - correct placement
             var tagA = new TrackTag("\\Artists\\Artist Alpha\\Great Album\\Artist Alpha - Song A.xml",
                 "Song A", "Artist Alpha", "Great Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var tagB = new TrackTag("\\Artists\\Artist Alpha\\Great Album\\Artist Alpha - Song B.xml",
                 "Song B", "Artist Alpha", "Great Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tagA, tagB });
             Assert.True(checker.IsClean, "2 songs from same album in album subfolder should be clean");
         }
@@ -249,7 +249,7 @@ namespace AudioManager
             // Track in Musivation/ with Musivation genre - correct placement
             var tag = new TrackTag("\\Musivation\\Some Artist\\Singles\\Some Artist - Song A.xml",
                 "Song A", "Some Artist", "Test Album", "2020", "1", "Musivation",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Musivation genre in Musivation/ folder should be clean");
         }
@@ -259,7 +259,7 @@ namespace AudioManager
             // Track in Motivation/ with Motivation genre - correct placement
             var tag = new TrackTag("\\Motivation\\Some Artist\\Singles\\Some Artist - Song A.xml",
                 "Song A", "Some Artist", "Test Album", "2020", "1", "Motivation",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Motivation genre in Motivation/ folder should be clean");
         }
@@ -272,7 +272,7 @@ namespace AudioManager
             // filename "artist beta - song a.xml" -> the lowercase filename won't contain "Artist Beta"
             var tag = new TrackTag("\\Artists\\Artist Beta\\Singles\\artist beta - song a.xml",
                 "song a", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(!checker.IsClean, "Filename casing mismatch with artist tag should be dirty (case-sensitive check)");
         }
@@ -286,10 +286,10 @@ namespace AudioManager
             {
                 new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song A.xml",
                     "Song A", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
-                    "00:03:00.0000000", "1", "True", "500", "500"),
+                    "00:03:00.0000000", "1", "True", "1200", "1200"),
                 new TrackTag("\\Miscellaneous Songs\\Artist Beta - Song B.xml",
                     "Song B", "Artist Beta", "Test Album", "2020", "1", "Hip-Hop",
-                    "00:03:00.0000000", "1", "True", "500", "500"),
+                    "00:03:00.0000000", "1", "True", "1200", "1200"),
             };
             var checker = new LibChecker(tags);
             Assert.True(checker.IsClean, "2 songs from same artist in Misc should be clean (below 3-song threshold)");
@@ -300,7 +300,7 @@ namespace AudioManager
             // Anime subfolder has no OST requirement - intentional per CheckSourcesFolder code
             var tag = new TrackTag("\\Sources\\Anime\\Dragon Ball Z\\Artist - Song A.xml",
                 "Song A", "Artist", "Dragon Ball Z Filler Arc", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Anime sources folder with any album name should be clean (no OST rule)");
         }
@@ -312,7 +312,7 @@ namespace AudioManager
             // Track in Compilations/ whose artist has no Artists/ folder - correct routing
             var tag = new TrackTag("\\Compilations\\Barbie The Album\\Nicki Minaj - Barbie World.xml",
                 "Barbie World", "Nicki Minaj", "Barbie The Album", "2023", "5", "Pop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { tag });
             Assert.True(checker.IsClean, "Compilations/ track with no corresponding Artists/ folder should be clean");
         }
@@ -323,10 +323,10 @@ namespace AudioManager
             // The album has only 1 distinct artist so it is NOT a genuine compilation -> dirty.
             var artistFolderTag = new TrackTag("\\Artists\\Nicki Minaj\\Singles\\Nicki Minaj - Super Bass.xml",
                 "Super Bass", "Nicki Minaj", "Pink Friday", "2010", "1", "Rap",
-                "00:03:30.0000000", "1", "True", "500", "500");
+                "00:03:30.0000000", "1", "True", "1200", "1200");
             var compilationTag = new TrackTag("\\Compilations\\Barbie The Album\\Nicki Minaj - Barbie World.xml",
                 "Barbie World", "Nicki Minaj", "Barbie The Album", "2023", "5", "Pop",
-                "00:03:00.0000000", "1", "True", "500", "500");
+                "00:03:00.0000000", "1", "True", "1200", "1200");
             var checker = new LibChecker(new List<TrackTag> { artistFolderTag, compilationTag });
             Assert.True(!checker.IsClean, "Artist has Artists/ folder but track is in Compilations/ (single-artist album) -> should be dirty");
         }
@@ -360,8 +360,48 @@ namespace AudioManager
             // Without the bounds guard, GetRelPathPart(tag, 2) throws IndexOutOfRangeException.
             // With the guard it returns "" and path-based rules silently skip the tag.
             var shortPathTag = new TrackTag("\\file.xml", "Song", "Artist", "Album",
-                "2020", "1", "Hip-Hop", "00:03:00.0000000", "1", "True", "500", "500");
+                "2020", "1", "Hip-Hop", "00:03:00.0000000", "1", "True", "1200", "1200");
             new LibChecker(new List<TrackTag> { shortPathTag });
+        }
+
+        // ---- CheckAlbumCoverDimensions ----
+
+        public static void LibChecker_LowResCover_IsDirty()
+        {
+            var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
+                "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "500", "500");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "500x500 cover art should be dirty (below 800px standard)");
+        }
+
+        public static void LibChecker_ExactThresholdCover_IsClean()
+        {
+            var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
+                "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "800", "800");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "800x800 cover art (exactly at threshold) should be clean");
+        }
+
+        public static void LibChecker_NonSquareLowRes_IsDirty()
+        {
+            // min(600, 1200) = 600 < 800 - dirty even if one dimension is large
+            var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
+                "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "600", "1200");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "600x1200 cover art should be dirty (min dimension 600 is below 800)");
+        }
+
+        public static void LibChecker_UnknownFormatCover_IsClean()
+        {
+            // "Unknown" dimensions (unrecognised image format) must not be flagged
+            var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
+                "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
+                "00:03:00.0000000", "1", "True", "Unknown", "Unknown");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Cover with Unknown dimensions should be clean (unrecognised format, skip)");
         }
     }
 }

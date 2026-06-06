@@ -58,6 +58,9 @@ namespace AudioManager
                 // Check album cover counts
                 totalTagHits += CheckAlbumCoverCount(tag);
 
+                // Check album cover dimensions (must be >= 800px)
+                totalTagHits += CheckAlbumCoverDimensions(tag);
+
                 // Check compilation status
                 if(!bool.Parse(tag.Compilation))
                 {
@@ -234,6 +237,27 @@ namespace AudioManager
             catch (Exception ex)
             {
                 HandleLibCheckerException(ex, tag);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Warns if album cover dimensions are below the library standard (800px minimum).
+        /// Skips tracks with no cover (caught by count check) or unrecognised-format covers.
+        /// </summary>
+        private int CheckAlbumCoverDimensions(TrackTag tag)
+        {
+            if (tag.AlbumCoverCount == "0") return 0;
+            if (tag.CoverWidth == "Unknown" || tag.CoverHeight == "Unknown") return 0;
+
+            if (int.TryParse(tag.CoverWidth, out int w) && int.TryParse(tag.CoverHeight, out int h))
+            {
+                if (w > 0 && h > 0 && Math.Min(w, h) < 800)
+                {
+                    Console.WriteLine($"  - '{tag.RelPath}' has low-res album art: {w}x{h} (below 800px library standard)");
+                    return 1;
+                }
             }
 
             return 0;
