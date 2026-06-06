@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-06 - Track.cs backing fields replaced with auto-properties
+
+Removed all 12 explicit private backing fields from `Track.cs` and replaced with auto-properties. ~80 lines of boilerplate removed, zero behavior change. Tests all green.
+
+**Issue 2 retraction:** The original IDEAS.md XML refactor included "delete the dead MP3-path branch in TrackTag" as Issue 2. This was a misdiagnosis. `Reflector.CreateFile()` writes the real MP3 file path to new and stale mirror files via `File.WriteAllText(fullMirrorPath, realFilePath)`. `TrackTag`'s constructor reads this, detects a valid file path, takes the TagLib# branch to extract tag data, then overwrites the mirror with XML. This is the primary path for all new files and any file whose tags are edited in Mp3tag. The branch is live - removing it would silently break all new integrations. Issue 2 removed from the refactor scope.
+
+---
+
 ## 2026-06-03 - LibChecker genuine compilation exemption + deep-dive fixes
 
 **LibChecker.CheckCompilationsFolder fix (TIER 1 blocker):** The rule was flagging ANY track in Compilations/ if the artist has an Artists/ folder. This produced 29 hits in the 2026-06-03 run (26x 2Pac + 2x Ice Cube + 1x Eminem) blocking the AudioMirror commit. Root cause: the routing logic correctly places tracks in Compilations/ when an album has 3+ distinct primary artists (genuine various-artist compilation), but LibChecker had no equivalent check - it applied the "has Artists/ folder -> misrouted" rule unconditionally.
