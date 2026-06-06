@@ -35,6 +35,7 @@ namespace AudioManager.Code.Modules
             try
             {
                 new XDocument(
+                    new XDeclaration("1.0", "utf-8", null),
                     new XElement("Track",
                         new XElement("Title",       t.Title),
                         new XElement("Artists",     t.Artists),
