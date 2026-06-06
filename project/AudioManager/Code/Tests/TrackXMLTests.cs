@@ -18,14 +18,18 @@ namespace AudioManager
                          "Album Name", "2020", "3", "Hip-Hop", "00:03:30.0000000",
                          "1", "True", "500", "499");
 
+        private static TrackTag BlankTag() =>
+            new TrackTag("", "", "", "", "", "", "", "", "", "", "", "");
+
         public static void TrackXML_RoundTrip_AllFieldsPreserved()
         {
             string path = TempXmlPath();
             try
             {
                 var tag = SampleTag();
-                new TrackXML(path, tag);            // write
-                var loaded = new TrackXML(path);    // read back
+                TrackXML.Write(path, tag);          // write
+                var loaded = BlankTag();
+                TrackXML.Read(path, loaded);        // read back
 
                 Assert.Equal("Song Title",         loaded.Title,           "Title");
                 Assert.Equal("Artist Name",        loaded.Artists,         "Artists");
@@ -44,15 +48,16 @@ namespace AudioManager
 
         public static void TrackXML_RoundTrip_SpecialCharsInFields_Preserved()
         {
-            // XmlDocument encodes &, <, > on write and decodes on read - must be lossless
+            // XDocument encodes &, <, > on write and decodes on read - must be lossless
             string path = TempXmlPath();
             try
             {
                 var tag = new TrackTag("Artists/X/test.xml", "Track & Roll",
                     "Artist <Name>", "Album \"Quoted\"", "2020", "1", "Pop",
                     "00:03:00.0000000", "1", "True", "500", "500");
-                new TrackXML(path, tag);
-                var loaded = new TrackXML(path);
+                TrackXML.Write(path, tag);
+                var loaded = BlankTag();
+                TrackXML.Read(path, loaded);
 
                 Assert.Equal("Track & Roll",       loaded.Title,   "ampersand in title preserved");
                 Assert.Equal("Artist <Name>",      loaded.Artists, "angle bracket in artists preserved");
@@ -68,7 +73,8 @@ namespace AudioManager
             try
             {
                 File.WriteAllText(path, "<Track><Title>Song A</Title><Artists>Artist A</Artists></Track>");
-                var loaded = new TrackXML(path);
+                var loaded = BlankTag();
+                TrackXML.Read(path, loaded);
                 Assert.Equal("Song A",  loaded.Title,       "Title present in XML");
                 Assert.Equal("Artist A", loaded.Artists,    "Artists present in XML");
                 Assert.Equal("",        loaded.CoverWidth,  "missing CoverWidth returns empty");

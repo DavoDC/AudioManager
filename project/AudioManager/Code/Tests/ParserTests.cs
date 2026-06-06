@@ -15,7 +15,7 @@ namespace AudioManager
 
         private static void WriteXml(string dir, string filename, TrackTag tag)
         {
-            new TrackXML(Path.Combine(dir, filename), tag);
+            TrackXML.Write(Path.Combine(dir, filename), tag);
         }
 
         private static TrackTag MakeTag(string title, string artists = "Artist A") =>

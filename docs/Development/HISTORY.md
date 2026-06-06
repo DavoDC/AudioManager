@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-06 - TrackXML IS-A design debt resolved
+
+Replaced `internal class TrackXML : Track` (wrong inheritance - a serializer is not a Track subtype) with `internal static class TrackXML` containing two static methods: `Read(string path, TrackTag t)` and `Write(string path, TrackTag t)`. Uses `XDocument`/`XElement` (System.Xml.Linq) throughout - no XmlDocument, no XPath string lookups, no SetElementValue/GetElementValue wrappers. Null-safe element reads via `?.Value ?? ""`.
+
+Call sites updated: `TrackTag` constructor now calls `TrackXML.Read(mirrorFilePath, this)` (one line) and `TrackXML.Write(mirrorFilePath, this)` (one line). `IntegrationTests.cs` and `ParserTests.cs` write calls updated to `TrackXML.Write(path, tag)`. `TrackXMLTests.cs` rewritten: now tests write-then-read round-trip (all 11 fields, special chars, missing elements) rather than testing internal class state.
+
+Tests: 165 passing (0 failed). No force regen required - XML file format is identical.
+
+---
+
 ## 2026-06-06 - ParseCache.Extract() replaces FieldCount magic constant
 
 Added `internal static string[] Extract(TrackTag t)` to ParseCache. Returns all 12 cache fields in serialization order when given a real tag; returns an empty 12-element array for `null`. `FieldCount` is now derived from `Extract(null).Length`. `Save()` uses `string.Join(Sep, Extract(t))`. Adding a field in Phase 2.5 now requires one edit to `Extract()` - Save() and field-count validation in TryDeserialize() update automatically.
