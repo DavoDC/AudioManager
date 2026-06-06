@@ -12,17 +12,17 @@ namespace AudioManager.Code.Modules
             {
                 var root = XDocument.Load(path).Root;
                 var cover        = root.Element("AlbumCover");
-                t.Title          = root.Element("Title")?.Value ?? "";
-                t.Artists        = root.Element("Artists")?.Value ?? "";
-                t.Album          = root.Element("Album")?.Value ?? "";
-                t.Year           = root.Element("Year")?.Value ?? "";
-                t.TrackNumber    = root.Element("TrackNumber")?.Value ?? "";
-                t.Genres         = root.Element("Genres")?.Value ?? "";
-                t.Length         = root.Element("Length")?.Value ?? "";
-                t.AlbumCoverCount = cover?.Element("Count")?.Value ?? "";
-                t.CoverWidth     = cover?.Element("Width")?.Value ?? "";
-                t.CoverHeight    = cover?.Element("Height")?.Value ?? "";
-                t.Compilation    = root.Element("Compilation")?.Value ?? "";
+                t.Title          = root.Element("Title").Value;
+                t.Artists        = root.Element("Artists").Value;
+                t.Album          = root.Element("Album").Value;
+                t.Year           = root.Element("Year").Value;
+                t.TrackNumber    = root.Element("TrackNumber").Value;
+                t.Genres         = root.Element("Genres").Value;
+                t.Length         = root.Element("Length").Value;
+                t.AlbumCoverCount = cover.Element("Count").Value;
+                t.CoverWidth     = cover.Element("Width").Value;
+                t.CoverHeight    = cover.Element("Height").Value;
+                t.Compilation    = root.Element("Compilation").Value;
             }
             catch (Exception ex)
             {

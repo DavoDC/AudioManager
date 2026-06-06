@@ -1,6 +1,7 @@
 using AudioManager.Code.Modules;
 using System;
 using System.IO;
+using System.Xml;
 
 namespace AudioManager
 {
@@ -66,20 +67,23 @@ namespace AudioManager
             finally { if (File.Exists(path)) File.Delete(path); }
         }
 
-        public static void TrackXML_ReadMissingElement_ReturnsEmpty()
+        public static void TrackXML_ReadMissingElement_Throws()
         {
-            // When XML elements are absent (e.g. old mirror files pre-AlbumCover grouping), read returns ""
+            // Strict schema enforcement: all elements required. Missing elements throw XmlException.
             string path = TempXmlPath();
             try
             {
                 File.WriteAllText(path, "<Track><Title>Song A</Title><Artists>Artist A</Artists></Track>");
                 var loaded = BlankTag();
-                TrackXML.Read(path, loaded);
-                Assert.Equal("Song A",  loaded.Title,       "Title present in XML");
-                Assert.Equal("Artist A", loaded.Artists,    "Artists present in XML");
-                Assert.Equal("",        loaded.CoverWidth,  "missing CoverWidth returns empty");
-                Assert.Equal("",        loaded.CoverHeight, "missing CoverHeight returns empty");
-                Assert.Equal("",        loaded.Album,       "missing Album returns empty");
+                try
+                {
+                    TrackXML.Read(path, loaded);
+                    Assert.True(false, "Expected XmlException for missing AlbumCover element");
+                }
+                catch (XmlException)
+                {
+                    // Expected - missing required element throws
+                }
             }
             finally { if (File.Exists(path)) File.Delete(path); }
         }

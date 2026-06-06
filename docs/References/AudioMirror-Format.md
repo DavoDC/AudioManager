@@ -11,7 +11,7 @@
 
 ## XML Format
 
-Each track is an individual `.xml` file. Current structure (as of 2026-06-03):
+Each track is an individual `.xml` file. **Final schema (locked 2026-06-06):**
 ```xml
 <Track>
   <Title>Song Name</Title>
@@ -21,7 +21,6 @@ Each track is an individual `.xml` file. Current structure (as of 2026-06-03):
   <TrackNumber>1</TrackNumber>
   <Genres>Rap; Hip Hop</Genres>
   <Length>00:04:38.9520000</Length>
-  <AlbumCoverCount>1</AlbumCoverCount>
   <AlbumCover>
     <Count>1</Count>
     <Width>800</Width>
@@ -31,19 +30,7 @@ Each track is an individual `.xml` file. Current structure (as of 2026-06-03):
 </Track>
 ```
 
-**Planned schema redesign (Phase 2.5 - see IDEAS.md):** The current `AlbumCoverCount` + `AlbumCover/Count/Width/Height` structure is broken for tracks with 2+ covers (only one Width/Height pair is stored). Target schema replaces it with a zero-to-N collection:
-```xml
-<!-- typical: one cover -->
-<CoverArt><Cover width="800" height="800" /></CoverArt>
-<!-- two covers -->
-<CoverArt>
-  <Cover width="800" height="800" />
-  <Cover width="500" height="500" />
-</CoverArt>
-<!-- no cover -->
-<CoverArt />
-```
-Update this doc once the redesign is implemented (force regen required).
+**Schema policy:** This is the only supported schema. AudioManager enforces strict parsing - all fields are required. No backwards compatibility with old formats. Schema changes require full library regeneration.
 
 ## Folder Structure
 
