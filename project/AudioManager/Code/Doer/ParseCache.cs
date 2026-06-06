@@ -15,7 +15,15 @@ namespace AudioManager
     {
         private const string Header = "PARSE_CACHE_V1";
         private const char Sep = '|';
-        private const int FieldCount = 12;
+        private static readonly int FieldCount = Extract(null).Length;
+
+        // Returns fields in cache serialization order. Extract(null) returns an empty 12-element
+        // array whose length is the authoritative field count - one edit here updates Save + validation.
+        internal static string[] Extract(TrackTag t) => t == null
+            ? new string[12]
+            : new[] { t.RelPath, t.Title, t.Artists, t.Album,
+                      t.Year, t.TrackNumber, t.Genres, t.Length,
+                      t.AlbumCoverCount, t.Compilation, t.CoverWidth, t.CoverHeight };
 
         /// <summary>
         /// Try to load the parse cache. Returns false if cache is missing, stale, or corrupt.
@@ -50,12 +58,7 @@ namespace AudioManager
                 {
                     w.WriteLine(Header);
                     foreach (var t in tags)
-                    {
-                        w.WriteLine(string.Join(Sep.ToString(),
-                            t.RelPath, t.Title, t.Artists, t.Album,
-                            t.Year, t.TrackNumber, t.Genres, t.Length,
-                            t.AlbumCoverCount, t.Compilation, t.CoverWidth, t.CoverHeight));
-                    }
+                        w.WriteLine(string.Join(Sep.ToString(), Extract(t)));
                 }
             }
             catch { /* cache write failures must not break the pipeline */ }
