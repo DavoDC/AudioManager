@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-06 - CountAlbumSongs batch-side optimization
+
+`CountAlbumSongs` was re-opening every NewMusic MP3 with TagLib# on each call (O(N*M) reads per integration run). `RunScanAhead` already does one full TagLib pass over the batch. Added `_scanAheadBatchAlbumCounts` (primaryArtist -> album -> count) populated during that existing pass. `CountAlbumSongs` now does an O(1) dict lookup for the batch-side count; the library-side (album subfolder scan) is unchanged. All tests green.
+
+---
+
 ## 2026-06-06 - DecisionLog.cs dead code deleted
 
 `DecisionLog` was unused in production since the 2026-05-25 TeeWriter refactor. The TIER-4 "decision XML analysis" feature it was built for was never scheduled and had no concrete next steps. Deleted: `DecisionLog.cs`, its `<Compile>` csproj entry, and `DecisionLog_SaveWithNoDecisions_ReturnsNull` test from `ManifestRunnerTests.cs`. 164 tests remain, all passing.
