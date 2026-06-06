@@ -177,5 +177,35 @@ namespace AudioManager
             }
             finally { if (File.Exists(path)) File.Delete(path); }
         }
+
+        // ---- Extract() ----
+
+        public static void Extract_NullArg_Returns12Elements()
+        {
+            // Extract(null) defines the schema length; FieldCount is derived from it.
+            // Regression: if Extract's field list changes, this test catches the count change.
+            var schema = ParseCache.Extract(null);
+            Assert.Equal("12", schema.Length.ToString(), "Extract(null) must return exactly 12 elements (one per cache field)");
+        }
+
+        public static void Extract_ValidTag_ReturnsFieldsInCacheOrder()
+        {
+            // Verifies field order in Extract matches what TryDeserialize reads back positionally.
+            // If the order drifts between Extract and TryDeserialize, round-trips silently corrupt data.
+            var tag = MakeSample("E");
+            var fields = ParseCache.Extract(tag);
+            Assert.Equal(tag.RelPath,        fields[0],  "index 0 = RelPath");
+            Assert.Equal(tag.Title,          fields[1],  "index 1 = Title");
+            Assert.Equal(tag.Artists,        fields[2],  "index 2 = Artists");
+            Assert.Equal(tag.Album,          fields[3],  "index 3 = Album");
+            Assert.Equal(tag.Year,           fields[4],  "index 4 = Year");
+            Assert.Equal(tag.TrackNumber,    fields[5],  "index 5 = TrackNumber");
+            Assert.Equal(tag.Genres,         fields[6],  "index 6 = Genres");
+            Assert.Equal(tag.Length,         fields[7],  "index 7 = Length");
+            Assert.Equal(tag.AlbumCoverCount,fields[8],  "index 8 = AlbumCoverCount");
+            Assert.Equal(tag.Compilation,    fields[9],  "index 9 = Compilation");
+            Assert.Equal(tag.CoverWidth,     fields[10], "index 10 = CoverWidth");
+            Assert.Equal(tag.CoverHeight,    fields[11], "index 11 = CoverHeight");
+        }
     }
 }
