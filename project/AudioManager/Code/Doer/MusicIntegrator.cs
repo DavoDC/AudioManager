@@ -23,6 +23,8 @@ namespace AudioManager
         private Dictionary<string, int> _scanAheadBatchCounts;
         private Dictionary<string, int> _scanAheadMiscCounts;
         private Dictionary<string, int> _scanAheadSourcesCounts;
+        // primaryArtist -> album -> count; avoids O(N*M) TagLib re-reads in CountAlbumSongs batch side
+        private Dictionary<string, Dictionary<string, int>> _scanAheadBatchAlbumCounts;
         // Album names with 3+ distinct primary artists in the batch - routed to Compilations/ when no artist folder
         private HashSet<string> _compilationAlbums;
         private string _libraryPath;
@@ -437,6 +439,7 @@ namespace AudioManager
 
             // Count artists in the incoming batch; also map album -> distinct primary artists for compilation detection
             var batchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var batchAlbumCounts = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
             var albumArtists = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             foreach (var f in batchFiles)
             {
@@ -455,6 +458,10 @@ namespace AudioManager
                             if (!albumArtists.ContainsKey(album))
                                 albumArtists[album] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                             albumArtists[album].Add(primary);
+                            if (!batchAlbumCounts.ContainsKey(primary))
+                                batchAlbumCounts[primary] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                            var byAlbum = batchAlbumCounts[primary];
+                            byAlbum[album] = byAlbum.ContainsKey(album) ? byAlbum[album] + 1 : 1;
                         }
                     }
                 }
@@ -578,6 +585,7 @@ namespace AudioManager
 
             // Store counts so GetDestDir can build a full routing reason for Misc fallback
             _scanAheadBatchCounts = batchCounts;
+            _scanAheadBatchAlbumCounts = batchAlbumCounts;
             _scanAheadMiscCounts = miscCounts;
             _scanAheadSourcesCounts = sourcesCounts;
 
@@ -1438,33 +1446,12 @@ namespace AudioManager
                 count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
             }
 
-            // Count in new batch (scan NewMusic for files with matching artist + album)
-            if (Directory.Exists(Constants.NewMusicPath))
+            // Count in new batch (use scan-ahead data built by RunScanAhead - avoids re-reading every MP3 with TagLib)
+            if (_scanAheadBatchAlbumCounts != null &&
+                _scanAheadBatchAlbumCounts.TryGetValue(artist, out var byAlbum) &&
+                byAlbum.TryGetValue(album, out int batchCount))
             {
-                var newMusicFiles = Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories);
-                foreach (var filePath in newMusicFiles)
-                {
-                    try
-                    {
-                        using (TagLib.File tagFile = TagLib.File.Create(filePath))
-                        {
-                            var tag = tagFile.Tag;
-                            string fileArtists = tag.JoinedPerformers ?? "";
-                            string fileAlbum = tag.Album ?? "";
-
-                            if (!fileAlbum.Equals("Missing", StringComparison.OrdinalIgnoreCase) &&
-                                fileAlbum.Equals(album, StringComparison.OrdinalIgnoreCase) &&
-                                fileArtists.IndexOf(artist, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                count++;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // Skip files that can't be read
-                    }
-                }
+                count += batchCount;
             }
 
             return count;
