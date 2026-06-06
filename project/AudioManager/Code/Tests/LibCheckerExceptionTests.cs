@@ -19,7 +19,7 @@ namespace AudioManager
         private static TrackTag FeatTag() =>
             new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song (feat. Someone).xml",
                 "Song (feat. Someone)", "Known Artist", "Test Album", "2020", "1",
-                "Hip-Hop", "00:03:00.0000000", "1", "True", "500", "500");
+                "Hip-Hop", "00:03:00.0000000", "1", "True", "1200", "1200");
 
         public static void LibChecker_ExceptionWhitelists_UnwantedFeat_IsClean()
         {
