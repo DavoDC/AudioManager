@@ -32,7 +32,7 @@ namespace AudioManager
 
                 // Step 1: Write XML via TrackXML (using pre-parsed constructor to avoid filesystem reads)
                 var tag = new TrackTag(xmlPath, "Song A", "Artist A", "Test Album",
-                    "2020", "1", "Hip-Hop", "00:03:00.0000000", "1", "True", "500", "500");
+                    "2020", "1", "Hip-Hop", "00:03:00.0000000", "1", "True", "1200", "1200");
                 TrackXML.Write(xmlPath, tag);
 
                 // Step 2: Parse via Parser (reads AUDIO_MIRROR dir, saves to temp cache)
