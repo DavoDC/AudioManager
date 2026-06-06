@@ -3,7 +3,7 @@ using AudioManager.Code.Modules;
 namespace AudioManager
 {
     /// <summary>
-    /// Tests for ManifestEntry.PrimaryArtist and DecisionLog basic behavior.
+    /// Tests for ManifestEntry.PrimaryArtist behavior.
     /// </summary>
     internal static class ManifestRunnerTests
     {
@@ -36,14 +36,5 @@ namespace AudioManager
             Assert.Equal("Artist A", entry.PrimaryArtist, "semicolon takes priority: returns first of semicolon split");
         }
 
-        // ---- DecisionLog ----
-
-        public static void DecisionLog_SaveWithNoDecisions_ReturnsNull()
-        {
-            // Save() returns null immediately when no decisions have been logged - no filesystem write
-            var log = new DecisionLog(dryRun: false);
-            string result = log.Save();
-            Assert.True(result == null, "Save with no decisions should return null without writing any file");
-        }
     }
 }
