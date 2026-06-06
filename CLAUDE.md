@@ -157,6 +157,20 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
 - **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually, advise the user to use Mp3tag. Do not suggest VLC or Windows file properties for tag editing.
 
+## Audit Metadata in Version Control
+
+**AudioMirror audit metadata (LastRunInfo.txt) is as much part of the artifact as the data itself.** It lives in git because:
+- Answers "when was this mirror regenerated?" for every commit
+- Enables audit trail and diagnostics (regen failed? cache stale? force-regen active?)
+- Changes on every force-regen, so commits on every regen are expected and acceptable
+- Not noise - metadata IS the artifact state
+
+Treat it like you treat the XML files: version-control it, don't relegate it to ephemeral-only.
+
+## Avoid Output-Capture for Control Flow
+
+**Never use string-search of stdout to gate decisions.** Example: detecting "LibChecker: Clean" by grepping Program.cs's captured output. This couples output format to control logic - if LibChecker's message changes, the detection breaks. Better: return explicit status codes or enums from modules, not relying on stdout parsing for branching logic.
+
 ## Critical Safety Rule
 
 **Only the user (David) runs real integration.** Real integration moves files from NewMusic into the library - user must manually trigger via `launch.bat` for data safety and auditability.
