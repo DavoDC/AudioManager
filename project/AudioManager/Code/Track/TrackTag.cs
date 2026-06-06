@@ -50,23 +50,7 @@ namespace AudioManager.Code.Modules
                 // Then the mirror file already has XML content
                 // So load metadata from XML instead
                 
-                // Read in XML data
-                TrackXML xmlFileIn = new TrackXML(mirrorFilePath);
-
-                // Set tag properties using XML file data
-                Title = xmlFileIn.Title;
-                Artists = xmlFileIn.Artists;
-                Album = xmlFileIn.Album;
-                Year = xmlFileIn.Year;
-                TrackNumber = xmlFileIn.TrackNumber;
-                Genres = xmlFileIn.Genres;
-                Length = xmlFileIn.Length;
-                AlbumCoverCount = xmlFileIn.AlbumCoverCount;
-                Compilation = xmlFileIn.Compilation;
-                CoverWidth  = xmlFileIn.CoverWidth  ?? "Unknown";
-                CoverHeight = xmlFileIn.CoverHeight ?? "Unknown";
-
-                // Stop
+                TrackXML.Read(mirrorFilePath, this);
                 return;
             }
 
@@ -106,8 +90,7 @@ namespace AudioManager.Code.Modules
                 CoverHeight = "0";
             }
 
-            // Overwrite mirror file contents with metadata
-            TrackXML xmlFileOut = new TrackXML(mirrorFilePath, this);
+            TrackXML.Write(mirrorFilePath, this);
         }
 
         /// <summary>
