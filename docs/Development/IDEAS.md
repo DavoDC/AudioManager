@@ -33,10 +33,9 @@ Items are tiered by priority. Do not advance to the next tier until the current 
     - LibChecker exceptions mechanism: **done** - `LibCheckerExceptionTests.cs` covers wildcard, specific-match, and non-match cases (3 tests, all passing as of 2026-06-01).
   - **Scope discipline:** Test feature behavior, not individual function internals. "Artist casing is preserved end-to-end" not "ExtractAndFixArtists() branch 47". Internals are tested indirectly; changing internals should not break tests if behavior is unchanged.
 
-- [ ] **Album art dimensions - Phase 3 (Schema redesign + Enforce)** - Phases 1 (Capture 2026-05-31) and 2 (Analyse 2026-06-02) done. Analysis run 2026-06-03: 5653/5653 covers present, 97 non-square. Histogram: 800x800=3038, 1200x1200=1712, 1000x1000=431, 500x500=84, 600x600=41, 700x700=26.
-  - **Phase 2.5 (Schema redesign - do XML refactor above first):** Current schema stores only one Width/Height pair regardless of how many covers exist - when Count=2, whose dimensions are stored? Undefined. Redesign to zero-to-N collection: `<CoverArt>` wrapper with zero or more `<Cover width="N" height="N" />` child elements. Count is implicit (child element count - never stored separately). Changes: remove `AlbumCoverCount` / `CoverWidth` / `CoverHeight` fields from Track.cs, replace `<AlbumCover>` element with `<CoverArt>`/`<Cover width height>`, update XML writer (TrackXML), parser, TrackTag cache constructor / ParseCache Extract() method, TrackXML tests, AudioMirror-Format.md. Force regen required.
-  - **Phase 3 (Enforce):** LibChecker rules after schema redesign: (a) **ERROR: no Cover children** (missing cover - always wrong); (b) **ERROR: any Cover where width != height** (non-square); (c) **WARNING: any Cover where min(width,height) < 800** (below library standard). Threshold rationale: 800x800 is 53.7% of the library - it is the established norm, not an arbitrary bar. Tracks below 800x800 = 151 (2.7%), likely old rips - WARNING not ERROR, exception-list suppressible. Do NOT use 500x500 as threshold; the data shows 800 is correct. Configurable in LibChecker config, not hardcoded.
-  - 97 non-square covers flagged in 2026-06-03 run - investigate as separate task once Phase 3 rules are live (may be legitimate or fixable via mp3tag).
+- [x] **Album art dimensions - Phases 1-2 (Capture + Analyse)** - DONE. Analysis run 2026-06-03: 5653/5653 covers present, 97 non-square. Histogram: 800x800=3038, 1200x1200=1712, 1000x1000=431, 500x500=84, 600x600=41, 700x700=26. Schema locked 2026-06-06: `<AlbumCover><Count>N</Count><Width>W</Width><Height>H</Height></AlbumCover>`. No redesign; simple nested structure is sufficient. Strict parsing enforced in TrackXML.
+  - **Future (Phase 3):** After schema is canonical (force regen complete), add LibChecker rules: (a) **ERROR: missing AlbumCover element**; (b) **WARNING: any Cover where min(Width,Height) < 800** (below library standard). Threshold: 800x800 is 53.7% of library - established norm. Tracks <800 = 151 (2.7%) - likely old rips, exception-list suppressible.
+  - 97 non-square covers flagged in 2026-06-03 run - investigate after Phase 3 rules live (may be legitimate or fixable via mp3tag).
 
 ---
 
@@ -51,6 +50,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 ## TIER 4 - FUTURE
 
 **Goal: exploratory features and advanced enhancements, tackled after core tiers are stable.**
+
+- **AudioMirror schema formalization (XSD)** - Formalise the current XML schema (AudioMirror-Format.md) as an XSD file (`AudioMirror-Schema.xsd` at repo root). Not needed now; would be valuable if AudioManager becomes a library or other tools consume the format. Minimal benefit for internal-use-only repo. Consider if schema ever diverges across users or if external tooling emerges.
 
 - **Pattern analysis: extract routing patterns from decision XMLs + AudioMirror data** - Artist folder distribution, album patterns, genre consistency. Build statistical models to identify high-confidence auto-routing cases. Blocked by: need real integration decision XML data from multiple runs.
 
