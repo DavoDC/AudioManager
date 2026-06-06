@@ -148,19 +148,8 @@ namespace AudioManager
                 Console.WriteLine($"Files in batch: {routeableCount}");
 
                 // Dry-run: pre-compute route distribution and show before per-file output
-                // Lets user spot anomalies (e.g. unexpectedly high Misc count) before reading 100 lines
                 if (dryRun && routeableCount > 1)
-                {
-                    var routeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var sf in scannedFiles.Where(s => s.IsReadable && s.Duplicate?.SkipRouting != true))
-                    {
-                        string preDestDir = GetDestDir(sf.Track, newArtistFolders, _compilationAlbums, out string preReason, out bool _preIsNewFolder);
-                        string cat = GetRouteCategory(preDestDir);
-                        routeCounts[cat] = routeCounts.ContainsKey(cat) ? routeCounts[cat] + 1 : 1;
-                    }
-                    var summaryParts = routeCounts.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}");
-                    Console.WriteLine($"Routes: {string.Join("  |  ", summaryParts)}");
-                }
+                    PrintRouteDistributionPreview(scannedFiles, newArtistFolders);
                 Console.WriteLine();
 
                 // 3a: Execute all duplicate decisions together so their outputs are grouped
@@ -388,27 +377,7 @@ namespace AudioManager
                 if (dryRun && jsonOutput)
                     WriteJsonOutput(logEntries);
 
-                // Routing section footer
-                var routingErrors = logEntries.Where(e => e.Status == "error").ToList();
-                if (routingErrors.Count > 0)
-                {
-                    Console.WriteLine($"[ERRORS: {routingErrors.Count}]");
-                    foreach (var e in routingErrors) Console.WriteLine($" {e.Filename}: {e.Detail}");
-                    Console.WriteLine();
-                }
-                Console.WriteLine(dryRun ? $"Routed: {movedCount}  |  Skipped: {skippedCount}" : $"Moved: {movedCount}  |  Skipped: {skippedCount}");
-                Console.WriteLine();
-                Console.WriteLine($"Routing - time taken: {Doer.ConvertTimeSpanToString(routingStopwatch.Elapsed)}");
-
-                if (!dryRun)
-                    PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
-
-                RunMiscMigration();
-                CleanupNewMusicFolder();
-
-                Console.WriteLine("\n============================================================");
-                Console.WriteLine("Finished");
-                Console.WriteLine("============================================================");
+                PrintRoutingResultsAndFinish(logEntries, movedCount, skippedCount, totalFiles, routingStopwatch);
             }
             finally
             {
@@ -590,6 +559,51 @@ namespace AudioManager
             _scanAheadSourcesCounts = sourcesCounts;
 
             return result;
+        }
+
+        /// <summary>
+        /// Prints the route distribution summary line (e.g. "Routes: Artists: 5 | Misc: 3").
+        /// Called during dry-run only, before per-file routing output, so the user can spot anomalies.
+        /// </summary>
+        private void PrintRouteDistributionPreview(List<ScannedFile> scannedFiles, HashSet<string> newArtistFolders)
+        {
+            var routeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sf in scannedFiles.Where(s => s.IsReadable && s.Duplicate?.SkipRouting != true))
+            {
+                string preDestDir = GetDestDir(sf.Track, newArtistFolders, _compilationAlbums, out _, out _);
+                string cat = GetRouteCategory(preDestDir);
+                routeCounts[cat] = routeCounts.ContainsKey(cat) ? routeCounts[cat] + 1 : 1;
+            }
+            var summaryParts = routeCounts.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}");
+            Console.WriteLine($"Routes: {string.Join("  |  ", summaryParts)}");
+        }
+
+        /// <summary>
+        /// Prints routing errors, the moved/skipped count, timing, confidence report (real run), then
+        /// runs Misc migration, folder cleanup, and the "Finished" banner.
+        /// </summary>
+        private void PrintRoutingResultsAndFinish(List<LogEntry> logEntries, int movedCount, int skippedCount, int totalFiles, System.Diagnostics.Stopwatch routingStopwatch)
+        {
+            var routingErrors = logEntries.Where(e => e.Status == "error").ToList();
+            if (routingErrors.Count > 0)
+            {
+                Console.WriteLine($"[ERRORS: {routingErrors.Count}]");
+                foreach (var e in routingErrors) Console.WriteLine($" {e.Filename}: {e.Detail}");
+                Console.WriteLine();
+            }
+            Console.WriteLine(dryRun ? $"Routed: {movedCount}  |  Skipped: {skippedCount}" : $"Moved: {movedCount}  |  Skipped: {skippedCount}");
+            Console.WriteLine();
+            Console.WriteLine($"Routing - time taken: {Doer.ConvertTimeSpanToString(routingStopwatch.Elapsed)}");
+
+            if (!dryRun)
+                PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
+
+            RunMiscMigration();
+            CleanupNewMusicFolder();
+
+            Console.WriteLine("\n============================================================");
+            Console.WriteLine("Finished");
+            Console.WriteLine("============================================================");
         }
 
         /// <summary>
