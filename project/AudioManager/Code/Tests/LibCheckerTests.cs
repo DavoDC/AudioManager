@@ -351,5 +351,17 @@ namespace AudioManager
             var checker = new LibChecker(new List<TrackTag> { artistFolderTag, compTag1, compTag2, compTag3 });
             Assert.True(checker.IsClean, "Genuine compilation (3+ distinct artists) is correctly in Compilations/ even if one artist has Artists/ folder");
         }
+
+        // ---- Malformed RelPath (bounds guard) ----
+
+        public static void LibChecker_MalformedRelPath_DoesNotThrow()
+        {
+            // "\\file.xml".Split('\\') gives ["", "file.xml"] - only 2 parts.
+            // Without the bounds guard, GetRelPathPart(tag, 2) throws IndexOutOfRangeException.
+            // With the guard it returns "" and path-based rules silently skip the tag.
+            var shortPathTag = new TrackTag("\\file.xml", "Song", "Artist", "Album",
+                "2020", "1", "Hip-Hop", "00:03:00.0000000", "1", "True", "500", "500");
+            new LibChecker(new List<TrackTag> { shortPathTag });
+        }
     }
 }

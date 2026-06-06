@@ -728,7 +728,8 @@ namespace AudioManager
         /// <returns>The desired relative path part</returns>
         private string GetRelPathPart(TrackTag tag, int pos)
         {
-            return GetPathParts(tag)[pos];
+            var parts = GetPathParts(tag);
+            return pos < parts.Length ? parts[pos] : string.Empty;
         }
 
         /// <param name="tag">The audio tag</param>
