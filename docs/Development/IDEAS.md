@@ -44,8 +44,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: close structural gaps and improve developer experience. Non-blocking.**
 
-- [ ] **Delete DecisionLog.cs dead code** - Class is retained but unused since 2026-05-25 TeeWriter refactor (HISTORY.md). TIER 4 "decision XML analysis" that would have used it has never been scheduled. Remove the class and its csproj entry.
-
 - [ ] **MusicIntegrator constructor decomposition** - The public constructor is 400+ lines handling: TagFixer, scan-ahead, pre-scan, duplicate review, routing loop, dry-run output, JSON output, confidence report, misc migration, cleanup. Each phase should be its own private method. The constructor becomes a 15-line orchestrator. Purely a readability improvement; no behavior change.
 
 - [ ] **CountAlbumSongs NewMusic re-reads** - `CountAlbumSongs` opens every NewMusic MP3 with TagLib# for each call. Called inside `GetDestDir` which runs once per file. For a batch of N files with M distinct albums, this is O(N x M) TagLib reads. RunScanAhead already built `batchCounts` from one TagLib pass. The batch-side count (how many tracks from this album are in this batch) should be derived from scan-ahead data, not re-read. Library-side count (album subfolder on disk) stays as-is.

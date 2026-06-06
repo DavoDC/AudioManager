@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-06 - DecisionLog.cs dead code deleted
+
+`DecisionLog` was unused in production since the 2026-05-25 TeeWriter refactor. The TIER-4 "decision XML analysis" feature it was built for was never scheduled and had no concrete next steps. Deleted: `DecisionLog.cs`, its `<Compile>` csproj entry, and `DecisionLog_SaveWithNoDecisions_ReturnsNull` test from `ManifestRunnerTests.cs`. 164 tests remain, all passing.
+
+---
+
 ## 2026-06-06 - TrackXML IS-A design debt resolved
 
 Replaced `internal class TrackXML : Track` (wrong inheritance - a serializer is not a Track subtype) with `internal static class TrackXML` containing two static methods: `Read(string path, TrackTag t)` and `Write(string path, TrackTag t)`. Uses `XDocument`/`XElement` (System.Xml.Linq) throughout - no XmlDocument, no XPath string lookups, no SetElementValue/GetElementValue wrappers. Null-safe element reads via `?.Value ?? ""`.
