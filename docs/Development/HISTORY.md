@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-06 - ParseCache.Extract() replaces FieldCount magic constant
+
+Added `internal static string[] Extract(TrackTag t)` to ParseCache. Returns all 12 cache fields in serialization order when given a real tag; returns an empty 12-element array for `null`. `FieldCount` is now derived from `Extract(null).Length`. `Save()` uses `string.Join(Sep, Extract(t))`. Adding a field in Phase 2.5 now requires one edit to `Extract()` - Save() and field-count validation in TryDeserialize() update automatically.
+
+Two new tests: `Extract_NullArg_Returns12Elements` (schema length contract) and `Extract_ValidTag_ReturnsFieldsInCacheOrder` (pins positional order so drift from TryDeserialize is caught immediately).
+
+---
+
 ## 2026-06-06 - Track.cs backing fields replaced with auto-properties
 
 Removed all 12 explicit private backing fields from `Track.cs` and replaced with auto-properties. ~80 lines of boilerplate removed, zero behavior change. Tests all green.
