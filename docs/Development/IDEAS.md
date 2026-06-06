@@ -46,8 +46,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **MusicIntegrator constructor decomposition** - The public constructor is 400+ lines handling: TagFixer, scan-ahead, pre-scan, duplicate review, routing loop, dry-run output, JSON output, confidence report, misc migration, cleanup. Each phase should be its own private method. The constructor becomes a 15-line orchestrator. Purely a readability improvement; no behavior change.
 
-- [ ] **CountAlbumSongs NewMusic re-reads** - `CountAlbumSongs` opens every NewMusic MP3 with TagLib# for each call. Called inside `GetDestDir` which runs once per file. For a batch of N files with M distinct albums, this is O(N x M) TagLib reads. RunScanAhead already built `batchCounts` from one TagLib pass. The batch-side count (how many tracks from this album are in this batch) should be derived from scan-ahead data, not re-read. Library-side count (album subfolder on disk) stays as-is.
-
 ---
 
 ## TIER 4 - FUTURE
