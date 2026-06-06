@@ -47,6 +47,16 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **MusicIntegrator constructor decomposition** - The public constructor is 400+ lines handling: TagFixer, scan-ahead, pre-scan, duplicate review, routing loop, dry-run output, JSON output, confidence report, misc migration, cleanup. Each phase should be its own private method. The constructor becomes a 15-line orchestrator. Purely a readability improvement; no behavior change.
 
+- [ ] **LibChecker detection via output capture is fragile** - Program.cs line 150 detects "LibChecker: Clean" by searching captureWriter output. If LibChecker output format changes, detection breaks. Should be: LibChecker returns a bool or status enum, not relying on string search. This couples the output format to the detection logic.
+
+- [ ] **XML file write should use temp-file pattern** - TrackXML.Write() calls .Save() directly on the target path. If the process crashes mid-write, the XML file is corrupted. Better: write to a temp file, then atomic move/rename. Protects against partial writes.
+
+- [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
+
+- [ ] **ReportWriter timestamps accumulate on disk** - Every analysis run creates a new timestamped report. Over many runs, the reports/ directory grows unbounded. Consider: (a) cleanup policy (keep last N or last N days), (b) compress old reports, or (c) store in a database instead of individual files.
+
+- [ ] **Stub-file pattern in Reflector is vestigial** - Reflector creates text files with just MP3 paths (line 156 in Reflector.cs), but these are immediately overwritten by TrackXML with actual XML content. The stubs are never read as input - they're just a temporary placeholder. Current architecture: Reflector writes stub, Parser reads MP3 via TagLib#, TrackXML overwrites stub with XML. Alternative: Reflector could directly call TrackXML, skipping the stub stage. Requires: Reflector knowing how to extract ID3 tags (it currently doesn't). Lower priority - works as-is, but worth considering if parsing performance becomes an issue.
+
 ---
 
 ## TIER 4 - FUTURE
@@ -67,6 +77,16 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 
 - **Routing decision analysis mode** - Add a mode that reads decision XMLs, cross-references routing decisions against routing rules code and LibChecker rules, and flags inconsistencies. Produces a report: "these N files were routed to X but LibChecker would flag them as Y". Pairs well with the "Centralise rules" refactor. Exploratory - assess value after the first real integration run produces decision XML data to analyse.
+
+- **Pipeline transaction semantics** - Current analysis pipeline has no rollback: Reflector writes stubs, Parser reads MP3s and caches, TrackXML writes XMLs, Analyser generates stats. If a crash occurs between stages, the mirror is in a partial state. Consider: (a) write all XMLs to a staging directory, then atomic move to real directory on success, or (b) add a "verify mirror consistency" stage before auto-commit. Incident prevention: add integration test that simulates crash mid-pipeline and checks recovery.
+
+- **ParseCache format is not version-resilient** - ParseCache uses header "PARSE_CACHE_V1" but no version bump mechanism if the schema changes. If a new field is added to TrackTag (e.g., new metadata), old cache files become invalid but are still loaded as V1. Consider: include schema version in header ("PARSE_CACHE_V2_SCHEMA_XYZ") so old caches are clearly stale and rejected.
+
+- **Analyser report generation is not incremental** - Every analysis run re-generates the full stats report from all 5653 tags. For a library of this size, could optimize: cache decade/genre/artist histograms from previous run, only update changed tags. Possible only if cache includes enough metadata. Low priority - current performance acceptable.
+
+- **LibChecker has hardcoded folder names** - References Compilations/, Musivation/, Motivation/, Artists/, Miscellaneous Songs/, Sources/ as string literals in code. If folder structure changes, these hardcodes break. Consider: read expected folders from configuration file (e.g. library-structure.json) instead of hardcoding.
+
+- **No dry-run mode for analysis** - Integration has --dry-run, but analysis does not. If you want to see what a force-regen would do without actually writing files, you can't. Lower priority - force-regen is generally safe and the preview would just be "will regenerate X files", not particularly informative.
 
 - **"My Edits" tracking** - detect locally edited songs by comparing duration to official track (>3-4s diff = protected from overwrite).
 - **Parody/original song pairing detection** - flag songs where a parody and its original are both in the library.
