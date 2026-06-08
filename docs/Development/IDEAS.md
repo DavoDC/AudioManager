@@ -35,10 +35,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
     - LibChecker exceptions mechanism: **done** - `LibCheckerExceptionTests.cs` covers wildcard, specific-match, and non-match cases (3 tests, all passing as of 2026-06-01).
   - **Scope discipline:** Test feature behavior, not individual function internals. "Artist casing is preserved end-to-end" not "ExtractAndFixArtists() branch 47". Internals are tested indirectly; changing internals should not break tests if behavior is unchanged.
 
-- [x] **Album art dimensions - Phases 1-2 (Capture + Analyse)** - DONE. Analysis run 2026-06-03: 5653/5653 covers present, 97 non-square. Histogram: 800x800=3038, 1200x1200=1712, 1000x1000=431, 500x500=84, 600x600=41, 700x700=26. Schema locked 2026-06-06: `<AlbumCover><Count>N</Count><Width>W</Width><Height>H</Height></AlbumCover>`. No redesign; simple nested structure is sufficient. Strict parsing enforced in TrackXML.
-  - **Phase 3 (done 2026-06-06):** LibChecker rule added: WARNING for any Cover where min(Width,Height) < 800. 4 tests: low-res dirty, exact threshold clean, non-square low-res dirty, Unknown-format clean. The ~151 sub-800 tracks in the real library will now surface on the next analysis run - suppressible via exception config.
-  - 97 non-square covers flagged in 2026-06-03 run - investigate after Phase 3 rules live (may be legitimate or fixable via mp3tag).
-
 ---
 
 ## TIER 3 - POLISH

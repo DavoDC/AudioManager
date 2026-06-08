@@ -42,6 +42,14 @@ Removed all 12 explicit private backing fields from `Track.cs` and replaced with
 
 ---
 
+## 2026-06-06 - Album art schema lock + Phase 3: LibChecker sub-800 enforcement
+
+**Schema lock:** Refined the flat `<CoverWidth>/<CoverHeight>` fields (Phase 1) into a nested `<AlbumCover><Count>N</Count><Width>W</Width><Height>H</Height></AlbumCover>` structure. Simple nested structure is sufficient; no redesign required. Strict parsing enforced in TrackXML. Analysis run 2026-06-03 data: 5653/5653 covers present, 97 non-square. Histogram: 800x800=3038, 1200x1200=1712, 1000x1000=431, 500x500=84, 600x600=41, 700x700=26.
+
+**Phase 3 (Enforce):** LibChecker rule added - WARNING for any cover where `min(Width,Height) < 800`. 4 tests: low-res dirty, exact threshold (800) clean, non-square low-res dirty, Unknown-format clean. The ~151 sub-800 tracks in the real library will surface on the next analysis run; suppressible via exception config. 97 non-square covers also flagged - investigate in next analysis run (may be legitimate or fixable via mp3tag).
+
+---
+
 ## 2026-06-03 - LibChecker genuine compilation exemption + deep-dive fixes
 
 **LibChecker.CheckCompilationsFolder fix (TIER 1 blocker):** The rule was flagging ANY track in Compilations/ if the artist has an Artists/ folder. This produced 29 hits in the 2026-06-03 run (26x 2Pac + 2x Ice Cube + 1x Eminem) blocking the AudioMirror commit. Root cause: the routing logic correctly places tracks in Compilations/ when an album has 3+ distinct primary artists (genuine various-artist compilation), but LibChecker had no equivalent check - it applied the "has Artists/ folder -> misrouted" rule unconditionally.
