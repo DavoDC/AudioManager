@@ -57,6 +57,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Stub-file pattern in Reflector is vestigial** - Reflector creates text files with just MP3 paths (line 156 in Reflector.cs), but these are immediately overwritten by TrackXML with actual XML content. The stubs are never read as input - they're just a temporary placeholder. Current architecture: Reflector writes stub, Parser reads MP3 via TagLib#, TrackXML overwrites stub with XML. Alternative: Reflector could directly call TrackXML, skipping the stub stage. Requires: Reflector knowing how to extract ID3 tags (it currently doesn't). Lower priority - works as-is, but worth considering if parsing performance becomes an issue.
 
+- [ ] **Album art stats in terminal output - reduce verbosity** - the album art width/height histogram (e.g., "800x800=3038, 1200x1200=1712...") is printed on every analysis run. Now that LibChecker flags sub-800 covers, the full histogram adds noise. Options: (a) collapse to one line ("N tracks below 800px, M non-square"), (b) move full histogram to report file only and print summary to terminal, (c) add `--verbose` flag to show full histogram on demand. Goal: terminal output stays scannable without losing the detail.
+
 ---
 
 ## TIER 4 - FUTURE
@@ -94,6 +96,12 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - **Fuzzy artist name matching** - handle artist name variations during routing ("The Beatles" vs "Beatles", featured artist formatting differences). Only matters at scale.
 - **Fuzzy duplicate title matching** - extend the pre-integration duplicate check to catch near-matches (e.g. "Song (feat. X)" vs "Song", "Song - Remix" vs "Song"). Approach: normalise both sides before comparison by stripping featured artist parentheticals, stripping remix/edit/version suffixes, collapsing whitespace. Blocked by: the exact-match duplicate check must be in place first.
 - **Neural network routing (exploratory)** - Train a simple neural network on AudioMirror library commit history and routing decisions to learn implicit routing patterns instead of defining everything statically. Model input: track metadata (artist, album, tags, file structure). Model output: routing destination. Payback: reduces boilerplate routing rules, evolves with library patterns. Very low priority, exploratory phase only - assess whether domain patterns are learnable and whether ML overhead justifies the benefit.
+
+- **Album art remediation (Phase 4) - fix sub-800 covers** - LibChecker now flags covers below 800x800. Phase 4: act on those flags. Decision needed first: (a) upscale existing art in-place (no internet, quality risk), (b) fetch higher-res art from MusicBrainz/Cover Art Archive (internet required, best quality), (c) manual mp3tag workflow with no automation. If (a) or (c) is sufficient, implement as AM CLI command. If (b), evaluate: AM integration vs. standalone accept/reject tool with minimal GUI. First step: spot-check how many of the ~151 sub-800 tracks have art that can be upscaled vs. truly needs a fresh fetch.
+
+- **Lyrics enrichment - fetch and embed lyrics from external sources** - Connect to a metadata source (Genius API, MusicBrainz, or AZLyrics) to fetch lyrics and embed in ID3 tags (`USLT` frame). New mode: `--enrich-lyrics`. Prerequisite for lyric search. Design choice: batch all tracks vs. on-demand per track (start on-demand, expand to batch later). Add `<Lyrics>` element to AudioMirror XML schema alongside existing metadata.
+
+- **Fuzzy lyric search** - Search the library by lyric fragment. Match partial/approximate text against `<Lyrics>` elements in AudioMirror XMLs. New mode: `--search-lyrics "some fragment"`. Output: ranked matches. Implementation: normalise text (lowercase, strip punctuation), then Levenshtein distance or n-gram similarity for fuzzy matching. Depends on lyrics enrichment being in place first.
 
 ---
 
