@@ -59,7 +59,8 @@ namespace AudioManager
                 totalTagHits += CheckAlbumCoverCount(tag);
 
                 // Check album cover dimensions (must be >= 800px)
-                totalTagHits += CheckAlbumCoverDimensions(tag);
+                // TODO: temporarily disabled - re-enable after album art remediation (see IDEAS.md TIER 2)
+                // totalTagHits += CheckAlbumCoverDimensions(tag);
 
                 // Check compilation status
                 if(!bool.Parse(tag.Compilation))

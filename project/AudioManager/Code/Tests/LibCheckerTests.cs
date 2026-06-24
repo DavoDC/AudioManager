@@ -364,16 +364,17 @@ namespace AudioManager
             new LibChecker(new List<TrackTag> { shortPathTag });
         }
 
-        // ---- CheckAlbumCoverDimensions ----
+        // ---- CheckAlbumCoverDimensions ---- (check temporarily disabled 2026-06-24, re-enable with check)
 
-        public static void LibChecker_LowResCover_IsDirty()
-        {
-            var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
-                "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "500", "500");
-            var checker = new LibChecker(new List<TrackTag> { tag });
-            Assert.True(!checker.IsClean, "500x500 cover art should be dirty (below 800px standard)");
-        }
+        // TODO: temporarily disabled - uncomment when CheckAlbumCoverDimensions is re-enabled (see IDEAS.md TIER 2)
+        //public static void LibChecker_LowResCover_IsDirty()
+        //{
+        //    var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
+        //        "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
+        //        "00:03:00.0000000", "1", "True", "500", "500");
+        //    var checker = new LibChecker(new List<TrackTag> { tag });
+        //    Assert.True(!checker.IsClean, "500x500 cover art should be dirty (below 800px standard)");
+        //}
 
         public static void LibChecker_ExactThresholdCover_IsClean()
         {
@@ -384,15 +385,16 @@ namespace AudioManager
             Assert.True(checker.IsClean, "800x800 cover art (exactly at threshold) should be clean");
         }
 
-        public static void LibChecker_NonSquareLowRes_IsDirty()
-        {
-            // min(600, 1200) = 600 < 800 - dirty even if one dimension is large
-            var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
-                "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
-                "00:03:00.0000000", "1", "True", "600", "1200");
-            var checker = new LibChecker(new List<TrackTag> { tag });
-            Assert.True(!checker.IsClean, "600x1200 cover art should be dirty (min dimension 600 is below 800)");
-        }
+        // TODO: temporarily disabled - uncomment when CheckAlbumCoverDimensions is re-enabled (see IDEAS.md TIER 2)
+        //public static void LibChecker_NonSquareLowRes_IsDirty()
+        //{
+        //    // min(600, 1200) = 600 < 800 - dirty even if one dimension is large
+        //    var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
+        //        "Song A", "Known Artist", "Test Album", "2020", "1", "Hip-Hop",
+        //        "00:03:00.0000000", "1", "True", "600", "1200");
+        //    var checker = new LibChecker(new List<TrackTag> { tag });
+        //    Assert.True(!checker.IsClean, "600x1200 cover art should be dirty (min dimension 600 is below 800)");
+        //}
 
         public static void LibChecker_UnknownFormatCover_IsClean()
         {
