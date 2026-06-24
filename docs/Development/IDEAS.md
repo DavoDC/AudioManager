@@ -45,6 +45,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **LibChecker detection via output capture is fragile** - Program.cs line 150 detects "LibChecker: Clean" by searching captureWriter output. If LibChecker output format changes, detection breaks. Should be: LibChecker returns a bool or status enum, not relying on string search. This couples the output format to the detection logic.
 
+- [ ] **TrackXML.Write should use LF line endings** - `XDocument.Save(path)` on Windows writes CRLF, but `.gitattributes` forces `*.xml eol=lf` storage. Every force-regen marks all 5,000+ XMLs as dirty until committed. Fix: replace `.Save(path)` with an `XmlWriter` configured with `NewLineChars = "\n"` (one-line change in `TrackXML.cs:52`). This eliminates the "5,654 dirty files" state after every regen, even without fixing the AudioMirrorCommitter hang.
+
 - [ ] **XML file write should use temp-file pattern** - TrackXML.Write() calls .Save() directly on the target path. If the process crashes mid-write, the XML file is corrupted. Better: write to a temp file, then atomic move/rename. Protects against partial writes.
 
 - [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
