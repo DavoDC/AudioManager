@@ -151,6 +151,8 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 
 - **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
 
+- **AudioMirror dirty state after force-regen = expected, not corruption.** XDocument.Save() writes CRLF; .gitattributes enforces eol=lf storage - so every regen leaves all XMLs "modified" until committed. If AudioMirrorCommitter hangs (known bug), manually run `git -C "<AudioMirror path>" add -A && git commit`. See IDEAS TIER 3 for the one-line write-site fix (XmlWriterSettings NewLineChars).
+- **Temporarily disabled checks need tests commented out too.** When a LibChecker check is commented out, its unit tests must also be commented (not deleted) - both re-enable together. Leaving tests active causes false failures.
 - **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
 - **AudioMirror rebuild reliability:** Analysis (non-force regen) runs with `Recreated: False` (incremental mirror update) - NOT reliable for LibChecker pass claims or auto-commit. Only analysis (force regen) and integration produce a fully reliable mirror state. Auto-commit must only trigger on force regen or integration.
 - **Force regen = canonical fresh-data operation.** Incremental Reflector creates XMLs for new MP3s and refreshes XMLs when the underlying MP3 is newer than its XML (tag edits in Mp3tag). It does NOT remove XMLs for deleted MP3s - force regen handles deletion cleanup (deletes mirror entirely, rebuilds). ParseCache (logs/parse-cache.txt) serves data consistent with XMLs. Diagnosing ghost tracks (deleted MP3 appears in report): run `analysis --force-regen`. See DevContext.md for the three-layer cache architecture.
@@ -178,6 +180,12 @@ Treat it like you treat the XML files: version-control it, don't relegate it to 
 **Claude CAN run (read-only, no file moves):**
 - `analysis` (and `analysis --force-regen`) - reads library, generates report, no writes except AudioMirror XML regen
 - `integrate --dry-run` - previews routing decisions without touching any files
+
+**Always add `--no-auto-commit` when Claude runs force-regen.** AudioMirrorCommitter fires automatically and commits before the diff can be reviewed. Use:
+```
+& "...\AudioManager.exe" analysis --force-regen --no-input --no-auto-commit
+```
+After the run: check `git -C AudioMirror diff HEAD`, confirm the diff looks correct, then commit AudioMirror manually.
 
 **Claude CANNOT run:**
 - `integrate` (real) - moves files, irreversible
