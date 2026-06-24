@@ -34,7 +34,7 @@ namespace AudioManager.Code.Modules
         {
             try
             {
-                new XDocument(
+                var doc = new XDocument(
                     new XDeclaration("1.0", "utf-8", null),
                     new XElement("Track",
                         new XElement("Title",       t.Title),
@@ -48,8 +48,17 @@ namespace AudioManager.Code.Modules
                             new XElement("Count",  t.AlbumCoverCount),
                             new XElement("Width",  t.CoverWidth),
                             new XElement("Height", t.CoverHeight)),
-                        new XElement("Compilation", t.Compilation)))
-                .Save(path);
+                        new XElement("Compilation", t.Compilation)));
+
+                var settings = new XmlWriterSettings
+                {
+                    Indent = true,
+                    NewLineChars = "\n",
+                    NewLineHandling = NewLineHandling.Replace,
+                    Encoding = new System.Text.UTF8Encoding(false)
+                };
+                using (var writer = XmlWriter.Create(path, settings))
+                    doc.Save(writer);
             }
             catch (Exception ex)
             {
