@@ -65,6 +65,7 @@ namespace AudioManager
                 bool dryRun = false;
                 bool noInput = false;
                 bool jsonOutput = false;
+                bool noAutoCommit = false;
                 bool interactiveMode = false;
                 if (args.Length > 0)
                 {
@@ -73,6 +74,7 @@ namespace AudioManager
                     dryRun = args.Any(a => a.Equals("--dry-run", StringComparison.OrdinalIgnoreCase));
                     noInput = args.Any(a => a.Equals("--no-input", StringComparison.OrdinalIgnoreCase));
                     jsonOutput = args.Any(a => a.Equals("--json-output", StringComparison.OrdinalIgnoreCase));
+                    noAutoCommit = args.Any(a => a.Equals("--no-auto-commit", StringComparison.OrdinalIgnoreCase));
 
                     if (modeArg == "analysis" || modeArg == "analyse" || modeArg == "analyze")
                     {
@@ -156,7 +158,10 @@ namespace AudioManager
                         var trigger = forceMirrorRegen
                             ? CommitTrigger.AnalysisForceRegen
                             : CommitTrigger.AnalysisIncremental;
-                        AudioMirrorCommitter.TryCommit(libCheckerClean, trigger);
+                        if (noAutoCommit)
+                            Console.WriteLine("\nAudioMirror auto-commit: skipped (--no-auto-commit).");
+                        else
+                            AudioMirrorCommitter.TryCommit(libCheckerClean, trigger);
 
                         // Finish message
                         Console.WriteLine("\nFinished!\n");
@@ -211,7 +216,10 @@ namespace AudioManager
                                 if (lc.IsClean)
                                 {
                                     Console.WriteLine(" - Post-integration validation: CLEAN (no issues found)\n");
-                                    AudioMirrorCommitter.TryCommit(libCheckerClean: true, CommitTrigger.Integration);
+                                    if (noAutoCommit)
+                                        Console.WriteLine("AudioMirror auto-commit: skipped (--no-auto-commit).");
+                                    else
+                                        AudioMirrorCommitter.TryCommit(libCheckerClean: true, CommitTrigger.Integration);
                                 }
                                 else
                                 {
