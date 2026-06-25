@@ -55,7 +55,7 @@ namespace AudioManager.Code.Modules
                     Indent = true,
                     NewLineChars = "\n",
                     NewLineHandling = NewLineHandling.Replace,
-                    Encoding = new System.Text.UTF8Encoding(false)
+                    Encoding = new System.Text.UTF8Encoding(true)
                 };
                 using (var writer = XmlWriter.Create(path, settings))
                     doc.Save(writer);
