@@ -91,7 +91,11 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 - **RunScanAhead must check ALL routing destinations, not just Artists/.** Artists homed in Musivation/ (e.g. Akira The Don) have no Artists/{name}/ folder - scan-ahead used to falsely flag them as needing a new Artists/ folder. Fix (2026-05-26): also check Directory.Exists(Musivation/{artist}/). Any future alternative routing home must be added to this check or it will generate wrong scan-ahead messages and incorrect Misc migration paths.
 
-- **BuildMirrorIndex() is the pattern for any batch-vs-library comparison.** Pre-load all AudioMirror XMLs into Dictionary<string,string> (normalised "primary\0title" -> xmlPath) once before the loop. O(mirror) setup, O(1) per-file lookup. Never do a full Directory.GetFiles scan inside a per-file loop - that's O(mirror x batch) and caused a ~1min silent hang on a 5531-track library with 126 batch files.
+- **BuildMirrorIndex() is the pattern for any batch-vs-library comparison.** Pre-load all AudioMirror XMLs into Dictionary<string,string> (normalised "primary\0title" -> xmlPath) once before the loop. O(mirror) setup, O(1) per-file lookup. Never do a full Directory.GetFiles scan inside a per-file loop - that's O(mirror x batch) and caused a ~1min silent hang on a 5531-track library with 126 batch files. Uses `Parallel.ForEach` + `ConcurrentDictionary` (2026-06-27): `XmlDocument` is local per iteration, alias dicts are read-only, safe to parallelize.
+
+- **`_batchTagCache` is populated by RunScanAhead and consumed by PreScanFiles** (2026-06-27). Stores raw tag data from the first TagLib pass so PreScanFiles skips its own read. Two invariants: (1) cache entries use raw (un-normalized) values - PreScanFiles does its own normalization; (2) the fallback path `TagLib.File.Create` must stay for files that RunScanAhead skipped due to read errors. In test constructors: initialize as `new Dictionary<...>()` not null (same rule as other scan-ahead fields).
+
+- **`NormaliseTitleForDedup()` is applied on BOTH sides of every dedup key** (2026-06-27). Applied in `GetAliasExpandedKeys` (index build) and `FindDuplicateInMirror` (lookup). Strips `(feat./ft./featuring X)` only - not (Remix), (Edit), (Live) which are distinct tracks. Rationale: library tags may predate TagFixer cleanup; incoming batch has already been cleaned; without normalization, "Song (feat. X)" in library silently fails to match "Song" in batch.
 
 - **RunScanAhead counts batch + Misc + Sources/ for artist folder threshold.** Sources/ tracks are scanned via `Path.Combine(Constants.MirrorFolderPath, Constants.SourcesDir)` with `SearchOption.AllDirectories` - same XML parsing as Misc. Sources tracks count toward the 3-song threshold but are NOT added to `_miscMigrationCandidates` - they stay in Sources/ regardless of whether the artist gets promoted. (Fix 2026-05-26: without Sources/, Common with 1 Sources/Films song + 2 batch songs still routed to Misc.)
 
@@ -114,6 +118,8 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 - **CommitTrigger enum in AudioMirrorCommitter:** AnalysisForceRegen and Integration trigger auto-commit (mirror is reliable); AnalysisIncremental skips silently (stale XMLs possible). Never pushes - user pushes manually. Safety gate: LibChecker must be clean AND files must have changed.
 
 - **verify.bat runs full suite:** build + unit tests + manifest tests. Always pass `--no-pause` when calling from Claude. All assertions must be green before any C# commit.
+
+- **Parser parallel reads: order of `audioTags` list is non-deterministic** (2026-06-27). `Parallel.ForEach` into `ConcurrentBag` gives no ordering guarantee. All consumers (LibChecker, Analyser, ParseCache) iterate the full list without order dependency - this is fine. Do NOT add any code that relies on `audioTags` order matching mirror folder traversal order.
 
 ---
 

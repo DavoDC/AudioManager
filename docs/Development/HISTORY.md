@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - Parallel XML reads in BuildMirrorIndex and Parser
+
+`BuildMirrorIndex` (integration dedup phase): `Parallel.ForEach` over 5,000+ mirror XMLs using `ConcurrentDictionary`. `XmlDocument` is instantiated locally per iteration; aliases are read-only. Expected 3-6x speedup on multi-core hardware for the dedup indexing phase.
+
+`Parser` (analysis cache miss): `Parallel.ForEach` over mirror XMLs using `ConcurrentBag<TrackTag>`. `TrackTag` construction is stateless per file. Non-XML corruption errors collected and surfaced after parallel phase completes. Progress dot output removed (parallel ordering is meaningless).
+
+---
+
 ## 2026-06-27 - Fuzzy title normalization + batch tag cache for integration
 
 `NormaliseTitleForDedup()` strips `(feat./ft./featuring X)` from both sides of the duplicate comparison before building or querying the mirror index. Library tags may not have been cleaned by TagFixer; incoming batch files have. Without this, "God's Plan (feat. Drake)" in the library silently missed "God's Plan" from the batch. `(Remix)` etc. are preserved as intended.
