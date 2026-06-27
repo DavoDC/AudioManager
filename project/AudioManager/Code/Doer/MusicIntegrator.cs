@@ -1136,6 +1136,40 @@ namespace AudioManager
         /// are found, which catches both traditional compilations (many primary artists) and
         /// ATD-style albums (one primary artist featuring many different people).
         /// </summary>
+        // Keywords that mark an album as a deluxe/expanded/remastered edition.
+        // Used by IsDeluxeVersionOf to detect album version hierarchy.
+        private static readonly string[] _deluxeKeywords = new[] {
+            "DELUXE", "DELUXE EDITION", "DELUXE VERSION", "EXPANDED", "EXPANDED EDITION",
+            "SUPER DELUXE", "REMASTER", "REMASTERED", "ANNIVERSARY EDITION", "SPECIAL EDITION"
+        };
+
+        /// <summary>
+        /// Returns true if <paramref name="candidate"/> is a deluxe/expanded version of <paramref name="baseAlbum"/>.
+        /// Detection: candidate starts with baseAlbum (as a prefix before " -", " (", or similar separator)
+        /// AND candidate contains a deluxe keyword that baseAlbum does not.
+        /// Case-insensitive throughout.
+        /// </summary>
+        internal static bool IsDeluxeVersionOf(string candidate, string baseAlbum)
+        {
+            if (string.IsNullOrEmpty(candidate) || string.IsNullOrEmpty(baseAlbum)) return false;
+
+            // Candidate must contain a deluxe keyword that the base album does not
+            bool candidateHasDeluxe = false;
+            foreach (var kw in _deluxeKeywords)
+                if (candidate.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0) { candidateHasDeluxe = true; break; }
+            if (!candidateHasDeluxe) return false;
+
+            bool baseHasDeluxe = false;
+            foreach (var kw in _deluxeKeywords)
+                if (baseAlbum.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0) { baseHasDeluxe = true; break; }
+            if (baseHasDeluxe) return false; // both are deluxe editions - not a clear hierarchy
+
+            // Candidate must start with the base album name (i.e., base is a prefix of candidate)
+            // Use the base album trimmed of any trailing whitespace/punctuation
+            string baseTrimmed = baseAlbum.TrimEnd(' ', '-', '(', '[');
+            return candidate.StartsWith(baseTrimmed, StringComparison.OrdinalIgnoreCase);
+        }
+
         private bool IsAlbumFolderCompilation(string xmlPath)
         {
             try
@@ -1313,6 +1347,18 @@ namespace AudioManager
             {
                 recommendedKey = 'D';
                 dupReason = $"Same song from same album ('{track.Album}') - already in library";
+            }
+            else if (newIsAlbum && IsDeluxeVersionOf(track.Album, libraryAlbum))
+            {
+                // New file is the deluxe/expanded/remastered version; prefer it
+                recommendedKey = 'L';
+                dupReason = $"New file album '{track.Album}' is a deluxe/expanded version of library album '{libraryAlbum}' - deluxe preferred";
+            }
+            else if (newIsAlbum && IsDeluxeVersionOf(libraryAlbum, track.Album))
+            {
+                // Library already has deluxe; keep it
+                recommendedKey = 'D';
+                dupReason = $"Library album '{libraryAlbum}' is a deluxe/expanded version of new file album '{track.Album}' - keep library deluxe";
             }
             else if (libraryIsSingle && newIsAlbum)
             {

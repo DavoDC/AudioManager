@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - Duplicate preference: auto-prefer deluxe/expanded/remastered albums
+
+When a duplicate is detected and the two copies come from different album versions (e.g., "BULLY" vs "BULLY - DELUXE"), `BuildDupData` now auto-recommends keeping the deluxe/expanded/remastered version via `IsDeluxeVersionOf`. Detection: the candidate album starts with the base album name as a prefix AND the candidate contains a deluxe keyword (DELUXE, EXPANDED, REMASTERED, ANNIVERSARY EDITION, etc.) that the base does not. If both are deluxe editions, no recommendation is made. Previously this showed "No version preference" and required user input on every such duplicate.
+
+---
+
 ## 2026-06-27 - Routing reason wording: "only 0 songs" -> "no songs"
 
 When albumCount is 0, routing reason strings produced "only 0 songs from album -> Singles/" (and the ATD People path produced "only 0 from this album"). Both now emit "no songs from album -> Singles/" for the zero case. Non-zero cases unchanged ("only 1 song", "only 2 songs").
