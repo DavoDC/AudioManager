@@ -24,8 +24,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Re-enable album art dimensions check in LibChecker** - `CheckAlbumCoverDimensions` was temporarily commented out (2026-06-24) to unblock integration while the existing library has ~150+ low-res tracks. Re-enable once album art remediation is done (see TIER 4 "Album art remediation" entry). Also: print a single summary line instead of one line per track - the full list floods terminal output and belongs in the report file only.
 
-- [ ] **LibChecker detection via output capture is fragile** - Program.cs line 150 detects "LibChecker: Clean" by searching captureWriter output. If LibChecker output format changes, detection silently breaks - auto-commit could fire on a dirty library. Fix: LibChecker returns `IsClean` bool (already exists as a property) and Program.cs reads that instead of string-searching stdout.
-
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.
   - **Motivation (unchanged):** Each fix session currently requires 2-3 manual dry run + force regen cycles. Every module covered by a test eliminates that cycle for that module. Real integration (May 2026) found metadata edge cases dry-run missed - tests for the same logic would have caught several earlier.
   - **Infrastructure in place:** Inline `--test` flag, 20-line Assert class, test.bat, launch.bat integration. DIY - no xUnit, no separate project. Old-style csproj manual registration + no VS test runner in the build workflow makes a framework overkill.
@@ -45,8 +43,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **MusicIntegrator constructor decomposition** - The public constructor is 400+ lines handling: TagFixer, scan-ahead, pre-scan, duplicate review, routing loop, dry-run output, JSON output, confidence report, misc migration, cleanup. Each phase should be its own private method. The constructor becomes a 15-line orchestrator. Purely a readability improvement; no behavior change.
 
-- [ ] **TrackXML.Write should use LF line endings** - `XDocument.Save(path)` on Windows writes CRLF, but `.gitattributes` forces `*.xml eol=lf` storage. Every force-regen marks all 5,000+ XMLs as dirty until committed. Fix: replace `.Save(path)` with an `XmlWriter` configured with `NewLineChars = "\n"` (one-line change in `TrackXML.cs:52`). This eliminates the "5,654 dirty files" state after every regen, even without fixing the AudioMirrorCommitter hang.
-
 - [ ] **XML file write should use temp-file pattern** - TrackXML.Write() calls .Save() directly on the target path. If the process crashes mid-write, the XML file is corrupted. Better: write to a temp file, then atomic move/rename. Protects against partial writes.
 
 - [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
@@ -54,8 +50,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **ReportWriter timestamps accumulate on disk** - Every analysis run creates a new timestamped report. Over many runs, the reports/ directory grows unbounded. Consider: (a) cleanup policy (keep last N or last N days), (b) compress old reports, or (c) store in a database instead of individual files.
 
 - [ ] **Stub-file pattern in Reflector is vestigial** - Reflector creates text files with just MP3 paths (line 156 in Reflector.cs), but these are immediately overwritten by TrackXML with actual XML content. The stubs are never read as input - they're just a temporary placeholder. Current architecture: Reflector writes stub, Parser reads MP3 via TagLib#, TrackXML overwrites stub with XML. Alternative: Reflector could directly call TrackXML, skipping the stub stage. Requires: Reflector knowing how to extract ID3 tags (it currently doesn't). Lower priority - works as-is, but worth considering if parsing performance becomes an issue.
-
-- [ ] **Album art stats in terminal output - reduce verbosity** - the album art width/height histogram (e.g., "800x800=3038, 1200x1200=1712...") is printed on every analysis run. Now that LibChecker flags sub-800 covers, the full histogram adds noise. Options: (a) collapse to one line ("N tracks below 800px, M non-square"), (b) move full histogram to report file only and print summary to terminal, (c) add `--verbose` flag to show full histogram on demand. Goal: terminal output stays scannable without losing the detail.
 
 ---
 
