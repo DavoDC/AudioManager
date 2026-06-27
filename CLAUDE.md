@@ -177,6 +177,8 @@ Treat it like you treat the XML files: version-control it, don't relegate it to 
 
 **Only the user (David) runs real integration.** Real integration moves files from NewMusic into the library - user must manually trigger via `launch.bat` for data safety and auditability.
 
+**`audioTags` list order is non-deterministic** (Parser uses `Parallel.ForEach` + `ConcurrentBag` since 2026-06-27). LibChecker, Analyser, and ParseCache all consume it without order dependency - safe. If any new consumer needs ordered output, sort explicitly after `parser.audioTags` is returned.
+
 **Claude CAN run (read-only, no file moves):**
 - `analysis` (and `analysis --force-regen`) - reads library, generates report, no writes except AudioMirror XML regen
 - `integrate --dry-run` - previews routing decisions without touching any files
