@@ -300,8 +300,10 @@ namespace AudioManager
                         entry.Destination = relativeDest;
                         string routeSummary = GetRouteSummary(relativeDest);
 
-                        // All routes are auto-routed. isNewFolder = true means a new Artists/ folder is being created.
-                        string autoLabel = isNewFolder ? "AUTO - new folder" : "AUTO";
+                        // Album suffix shown on header line for quick context. New-folder flag shown on Route line.
+                        string albumSuffix = (!string.IsNullOrEmpty(track.Album) && !track.Album.Equals("Missing"))
+                            ? $" [{track.Album}]" : "";
+                        string routeNewNote = isNewFolder ? " *" : "";
 
                         if (!dryRun && File.Exists(destPath))
                         {
@@ -315,10 +317,10 @@ namespace AudioManager
                             var sb = new StringBuilder();
                             if (sf.InBatchDuplicate)
                                 sb.AppendLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
-                            sb.AppendLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                            sb.AppendLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
                             foreach (var change in entry.TagChanges)
                                 sb.AppendLine($" > {change}");
-                            sb.AppendLine($" Route: {routeSummary}");
+                            sb.AppendLine($" Route: {routeSummary}{routeNewNote}");
                             sb.AppendLine($" Reason: {reason}");
                             sb.AppendLine($" Path: {relativeDest.Replace('\\', '/')}");
                             sb.AppendLine();
@@ -333,10 +335,10 @@ namespace AudioManager
                             Directory.CreateDirectory(destDir);
                             File.Move(sf.SourcePath, destPath);
                             movedCount++;
-                            Console.WriteLine($"[{autoLabel}] {track.Artists} - {track.Title}");
+                            Console.WriteLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
                             foreach (var change in entry.TagChanges)
                                 Console.WriteLine($" > {change}");
-                            Console.WriteLine($" Route: {routeSummary}");
+                            Console.WriteLine($" Route: {routeSummary}{routeNewNote}");
                             Console.WriteLine($" Reason: {reason}");
                             Console.WriteLine($" Path: {relativeDest.Replace('\\', '/')}");
                             Console.WriteLine();
@@ -899,9 +901,58 @@ namespace AudioManager
         }
 
         /// <summary>
+        /// Loads artist-aliases.xml: maps old names to canonical names for duplicate detection.
+        /// Returns empty dict if the file is missing or unreadable.
+        /// </summary>
+        internal static Dictionary<string, string> LoadArtistAliases(string path = null)
+        {
+            string filePath = path ?? Constants.ArtistAliasesPath;
+            var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (!File.Exists(filePath)) return aliases;
+            try
+            {
+                var doc = new XmlDocument();
+                doc.Load(filePath);
+                foreach (XmlNode node in doc.SelectNodes("//Alias"))
+                {
+                    string from = node.Attributes?["from"]?.Value;
+                    string to = node.Attributes?["to"]?.Value;
+                    if (!string.IsNullOrEmpty(from) && !string.IsNullOrEmpty(to))
+                        aliases[from] = to;
+                }
+            }
+            catch { /* ignore parse errors - duplicate detection degrades gracefully */ }
+            return aliases;
+        }
+
+        /// <summary>
+        /// Returns all mirror index keys for an artist+title pair, including alias expansions.
+        /// Handles both directions: old-name entries also get a canonical key, and canonical
+        /// entries also get old-name keys. This ensures duplicate detection works regardless
+        /// of which name the library was indexed under.
+        /// </summary>
+        internal static IEnumerable<string> GetAliasExpandedKeys(
+            string primaryArtist, string title,
+            Dictionary<string, string> aliases,
+            Dictionary<string, List<string>> reverseAliases)
+        {
+            string baseKey = primaryArtist.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+            yield return baseKey;
+
+            // If this artist is an old name (e.g. "Kanye West"), also yield the canonical key ("ye\0...")
+            if (aliases != null && aliases.TryGetValue(primaryArtist, out string canonical))
+                yield return canonical.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+
+            // If this artist is a canonical name (e.g. "Ye"), also yield old-name keys ("kanye west\0...")
+            if (reverseAliases != null && reverseAliases.TryGetValue(primaryArtist, out List<string> oldNames))
+                foreach (var oldName in oldNames)
+                    yield return oldName.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+        }
+
+        /// <summary>
         /// Builds an in-memory index of all AudioMirror XMLs: normalised "primary\0title" -> xmlPath.
         /// Called once before PreScanFiles so duplicate detection is O(1) per file instead of O(mirror_size).
-        /// Prints a progress message so the user sees activity during what was previously a silent hang.
+        /// Also indexes alias-expanded keys so artist-rename scenarios (Ye/Kanye West) are caught.
         /// </summary>
         private Dictionary<string, string> BuildMirrorIndex()
         {
@@ -910,6 +961,16 @@ namespace AudioManager
 
             var xmlFiles = Directory.GetFiles(Constants.MirrorFolderPath, "*.xml", SearchOption.AllDirectories);
             Console.Write($"\nIndexing AudioMirror for duplicates ({xmlFiles.Length} tracks)...");
+
+            // Load aliases once for the whole index build
+            var aliases = LoadArtistAliases();
+            var reverseAliases = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in aliases)
+            {
+                if (!reverseAliases.ContainsKey(kv.Value))
+                    reverseAliases[kv.Value] = new List<string>();
+                reverseAliases[kv.Value].Add(kv.Key);
+            }
 
             foreach (var xmlFile in xmlFiles)
             {
@@ -923,9 +984,10 @@ namespace AudioManager
                     string primary = Track.ProcessProperty(artistsEl.InnerText)[0].Trim();
                     string title = titleEl.InnerText.Trim();
                     if (string.IsNullOrEmpty(primary) || string.IsNullOrEmpty(title)) continue;
-                    string key = primary.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
-                    if (!index.ContainsKey(key))
-                        index[key] = xmlFile;
+
+                    foreach (var key in GetAliasExpandedKeys(primary, title, aliases, reverseAliases))
+                        if (!index.ContainsKey(key))
+                            index[key] = xmlFile;
                 }
                 catch { /* skip malformed XML */ }
             }
