@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - CountAlbumSongs library-side memoization
+
+`CountAlbumSongs` was calling `Directory.GetFiles(albumFolder)` once per routing call. When a batch contains multiple songs from the same album (e.g. 6 Blueprint tracks), and dry-run calls `GetDestDir` twice per file (preview + actual routing), this became 12 identical filesystem scans for the same album. `_albumLibraryCountCache` (artist+album -> count) reduces this to one scan per unique pair per integration run.
+
+---
+
 ## 2026-06-27 - Parallel XML reads in BuildMirrorIndex and Parser
 
 `BuildMirrorIndex` (integration dedup phase): `Parallel.ForEach` over 5,000+ mirror XMLs using `ConcurrentDictionary`. `XmlDocument` is instantiated locally per iteration; aliases are read-only. Expected 3-6x speedup on multi-core hardware for the dedup indexing phase.
