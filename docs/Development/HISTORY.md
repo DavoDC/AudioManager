@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - Fuzzy title normalization + batch tag cache for integration
+
+`NormaliseTitleForDedup()` strips `(feat./ft./featuring X)` from both sides of the duplicate comparison before building or querying the mirror index. Library tags may not have been cleaned by TagFixer; incoming batch files have. Without this, "God's Plan (feat. Drake)" in the library silently missed "God's Plan" from the batch. `(Remix)` etc. are preserved as intended.
+
+`RunScanAhead` now caches all raw tag data (`_batchTagCache`) as a side effect of its TagLib pass. `PreScanFiles` uses the cache instead of re-reading each file. For a 126-file batch, eliminates 126 TagLib reads (~1-3s on typical hardware). Falls back to direct read on cache miss.
+
+---
+
 ## 2026-06-27 - TrackXML.Write uses atomic temp-file pattern
 
 `TrackXML.Write()` now writes to `path + ".tmp"` first, then promotes atomically: `File.Replace` when overwriting (NTFS atomic), `File.Move` for first write. Temp file is cleaned up on any exception. Prevents a partially-written XML from corrupting the AudioMirror if the process crashes mid-write. Transparent to all callers; existing round-trip tests still green.

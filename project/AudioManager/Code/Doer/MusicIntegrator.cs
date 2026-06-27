@@ -1,9 +1,11 @@
 using AudioManager.Code.Modules;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using File = System.IO.File;
 using TagLib;
@@ -983,13 +985,12 @@ namespace AudioManager
         /// </summary>
         private Dictionary<string, string> BuildMirrorIndex()
         {
-            var index = new Dictionary<string, string>(StringComparer.Ordinal);
-            if (!Directory.Exists(Constants.MirrorFolderPath)) return index;
+            if (!Directory.Exists(Constants.MirrorFolderPath)) return new Dictionary<string, string>(StringComparer.Ordinal);
 
             var xmlFiles = Directory.GetFiles(Constants.MirrorFolderPath, "*.xml", SearchOption.AllDirectories);
             Console.Write($"\nIndexing AudioMirror for duplicates ({xmlFiles.Length} tracks)...");
 
-            // Load aliases once for the whole index build
+            // Load aliases once - read-only during parallel phase, safe to share
             var aliases = LoadArtistAliases();
             var reverseAliases = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             foreach (var kv in aliases)
@@ -999,7 +1000,9 @@ namespace AudioManager
                 reverseAliases[kv.Value].Add(kv.Key);
             }
 
-            foreach (var xmlFile in xmlFiles)
+            // Parallel reads: XmlDocument is created locally per iteration, aliases are read-only
+            var concurrentIndex = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+            Parallel.ForEach(xmlFiles, xmlFile =>
             {
                 try
                 {
@@ -1007,20 +1010,19 @@ namespace AudioManager
                     xmlDoc.Load(xmlFile);
                     var artistsEl = xmlDoc.SelectSingleNode("//Artists");
                     var titleEl = xmlDoc.SelectSingleNode("//Title");
-                    if (artistsEl == null || titleEl == null) continue;
+                    if (artistsEl == null || titleEl == null) return;
                     string primary = Track.ProcessProperty(artistsEl.InnerText)[0].Trim();
                     string title = titleEl.InnerText.Trim();
-                    if (string.IsNullOrEmpty(primary) || string.IsNullOrEmpty(title)) continue;
+                    if (string.IsNullOrEmpty(primary) || string.IsNullOrEmpty(title)) return;
 
                     foreach (var key in GetAliasExpandedKeys(primary, title, aliases, reverseAliases))
-                        if (!index.ContainsKey(key))
-                            index[key] = xmlFile;
+                        concurrentIndex.TryAdd(key, xmlFile);
                 }
                 catch { /* skip malformed XML */ }
-            }
+            });
 
             Console.WriteLine(" done.");
-            return index;
+            return new Dictionary<string, string>(concurrentIndex, StringComparer.Ordinal);
         }
 
         /// <summary>
