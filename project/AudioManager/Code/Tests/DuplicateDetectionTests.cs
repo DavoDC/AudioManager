@@ -6,6 +6,43 @@ namespace AudioManager
 {
     internal static class DuplicateDetectionTests
     {
+        // ---- NormaliseTitleForDedup ----
+
+        public static void NormaliseTitle_NoFeat_Unchanged()
+        {
+            Assert.Equal("God's Plan", MusicIntegrator.NormaliseTitleForDedup("God's Plan"), "title without feat should be unchanged");
+        }
+
+        public static void NormaliseTitle_FeatDot_Stripped()
+        {
+            Assert.Equal("God's Plan", MusicIntegrator.NormaliseTitleForDedup("God's Plan (feat. Drake)"), "feat. parenthetical should be stripped");
+        }
+
+        public static void NormaliseTitle_FtDot_Stripped()
+        {
+            Assert.Equal("God's Plan", MusicIntegrator.NormaliseTitleForDedup("God's Plan (ft. Drake)"), "ft. parenthetical should be stripped");
+        }
+
+        public static void NormaliseTitle_Featuring_Stripped()
+        {
+            Assert.Equal("God's Plan", MusicIntegrator.NormaliseTitleForDedup("God's Plan (featuring Drake)"), "featuring parenthetical should be stripped");
+        }
+
+        public static void NormaliseTitle_Remix_Preserved()
+        {
+            Assert.Equal("God's Plan (Remix)", MusicIntegrator.NormaliseTitleForDedup("God's Plan (Remix)"), "(Remix) should NOT be stripped - different track");
+        }
+
+        public static void NormaliseTitle_CaseInsensitive()
+        {
+            Assert.Equal("SONG", MusicIntegrator.NormaliseTitleForDedup("SONG (FEAT. ARTIST)"), "feat stripping should be case-insensitive");
+        }
+
+        public static void NormaliseTitle_Empty_ReturnsEmpty()
+        {
+            Assert.Equal("", MusicIntegrator.NormaliseTitleForDedup(""), "empty title should return empty");
+        }
+
         // ---- LoadArtistAliases ----
 
         public static void LoadArtistAliases_MissingFile_ReturnsEmpty()
