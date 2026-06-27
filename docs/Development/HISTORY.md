@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - Ye -> Kanye West: config and tag normalization
+
+`artist-name-overrides.xml`: added `<Artist canonical="Kanye West" variant="Ye" />` so TagFixer normalizes incoming "Ye" artist tags to "Kanye West" during integration. Existing library dry-run (84 files, 2026-06-27) showed no tracks with `Artist = "Ye"` - all already tagged "Kanye West".
+
+`artist-aliases.xml`: reversed alias direction from `Kanye West -> Ye` to `Ye -> Kanye West` so duplicate detection correctly bridges both names when library has "Kanye West" and a batch file arrives tagged "Ye".
+
+`TEMP/fix_ye_tags.py`: standalone dry-run script for retroactive tag fixing on existing library files. Run without flags for dry-run, `--write` to apply. (No writes needed as of 2026-06-27.)
+
+---
+
 ## 2026-06-27 - Duplicate preference: auto-prefer deluxe/expanded/remastered albums
 
 When a duplicate is detected and the two copies come from different album versions (e.g., "BULLY" vs "BULLY - DELUXE"), `BuildDupData` now auto-recommends keeping the deluxe/expanded/remastered version via `IsDeluxeVersionOf`. Detection: the candidate album starts with the base album name as a prefix AND the candidate contains a deluxe keyword (DELUXE, EXPANDED, REMASTERED, ANNIVERSARY EDITION, etc.) that the base does not. If both are deluxe editions, no recommendation is made. Previously this showed "No version preference" and required user input on every such duplicate.

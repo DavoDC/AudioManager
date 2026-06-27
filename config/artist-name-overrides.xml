@@ -69,6 +69,10 @@
   <!-- Punctuation-sensitive names -->
   <Artist canonical="T.I" />
 
+  <!-- Artist renames: variant = former stage name, canonical = current preferred name -->
+  <!-- "Ye" is the artist's legal name but library uses "Kanye West" as the folder/canonical form -->
+  <Artist canonical="Kanye West" variant="Ye" />
+
   <!-- Standard title-case (preserved explicitly for auditability) -->
   <Artist canonical="Scott Adams" />
   <Artist canonical="Terence McKenna" />
