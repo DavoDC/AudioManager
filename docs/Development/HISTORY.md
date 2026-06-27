@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - Album art stats verbosity reduced
+
+Cover art histogram (up to 10 lines per run) collapsed to a single summary line: "Sub-800px: N | Non-square: M | Top dims: 800x800=3038, 1200x1200=1712...". Terminal output stays scannable; all actionable data (sub-threshold count, non-square count, top dimension buckets) is preserved on one line.
+
+---
+
+## 2026-06-27 - Two stale IDEAS.md items removed (already done)
+
+"LibChecker detection via output capture is fragile" - already resolved: Program.cs line 151 reads `lc.IsClean` directly, never searches captureWriter string output. "TrackXML.Write should use LF line endings" - already resolved: TrackXML.cs uses `XmlWriterSettings` with `NewLineChars = "\n"` and `NewLineHandling = NewLineHandling.Replace`. Both items were documenting work completed in an earlier session.
+
+---
+
 ## 2026-06-06 - CountAlbumSongs batch-side optimization
 
 `CountAlbumSongs` was re-opening every NewMusic MP3 with TagLib# on each call (O(N*M) reads per integration run). `RunScanAhead` already does one full TagLib pass over the batch. Added `_scanAheadBatchAlbumCounts` (primaryArtist -> album -> count) populated during that existing pass. `CountAlbumSongs` now does an O(1) dict lookup for the batch-side count; the library-side (album subfolder scan) is unchanged. All tests green.

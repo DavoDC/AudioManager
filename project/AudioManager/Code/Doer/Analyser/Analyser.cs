@@ -119,29 +119,26 @@ namespace AudioManager
             Console.WriteLine($" - No cover (Width=0):     {noCover}");
             Console.WriteLine($" - Unknown format:          {badFormat}");
 
-            // Non-square covers among tracks with known dimensions
+            if (hasKnownDim == 0) return;
+
+            // Summary: sub-800px, non-square, top dimensions on one line
+            int subMin = audioTags.Count(t =>
+            {
+                if (!int.TryParse(t.CoverWidth, out int w) || !int.TryParse(t.CoverHeight, out int h)) return false;
+                return w > 0 && h > 0 && Math.Min(w, h) < 800;
+            });
             int nonSquare = audioTags.Count(t =>
             {
                 if (!int.TryParse(t.CoverWidth, out int w) || !int.TryParse(t.CoverHeight, out int h)) return false;
                 return w > 0 && h > 0 && w != h;
             });
-            if (hasKnownDim > 0)
-                Console.WriteLine($" - Non-square covers:      {nonSquare}");
-
-            // Dimension distribution histogram (top 10)
-            var dimGroups = audioTags
+            var topDims = audioTags
                 .Where(t => int.TryParse(t.CoverWidth, out int w) && int.TryParse(t.CoverHeight, out int h) && w > 0 && h > 0)
                 .GroupBy(t => $"{t.CoverWidth}x{t.CoverHeight}")
                 .OrderByDescending(g => g.Count())
-                .Take(10)
-                .ToList();
-
-            if (dimGroups.Count > 0)
-            {
-                Console.WriteLine($"\n  Dimension distribution:");
-                foreach (var g in dimGroups)
-                    Console.WriteLine($"   {g.Key,12}  {g.Count(),5} tracks");
-            }
+                .Take(5)
+                .Select(g => $"{g.Key}={g.Count()}");
+            Console.WriteLine($" - Sub-800px: {subMin} | Non-square: {nonSquare} | Top dims: {string.Join(", ", topDims)}");
         }
 
         /// <summary>
