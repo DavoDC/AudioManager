@@ -255,6 +255,34 @@ namespace AudioManager
                 "Lowercase artist should be normalized to title case");
         }
 
+        // ---- Artist name variant override (Unicode diacritics -> canonical) ----
+
+        public static void ExtractAndFixArtists_VariantArtistName_NormalizesToCanonical()
+        {
+            // JAŸ-Z (Ÿ = U+0178) is a Unicode-stylized variant of Jay-Z used by some providers.
+            // The overrides config maps it to canonical "Jay-Z" via the variant attribute.
+            List<string> result = TagFixer.ExtractAndFixArtists("Song Title", "JAŸ-Z");
+            Assert.True(
+                result.Any(a => a.Equals("Jay-Z", StringComparison.OrdinalIgnoreCase)),
+                "Variant artist name JAŸ-Z should normalize to canonical Jay-Z via override");
+            Assert.True(
+                !result.Any(a => a.IndexOf("Ÿ", StringComparison.Ordinal) >= 0 || a.IndexOf("ÿ", StringComparison.Ordinal) >= 0),
+                "No diaeresis form (Ÿ or ÿ) should appear in output - variant must resolve to canonical");
+        }
+
+        public static void ExtractAndFixArtists_VariantArtistAndFeatCanonical_NoDuplicate()
+        {
+            // Real-world case: "The Notorious B.I.G.; Angela Winbush; JAŸ-Z" tag
+            // + title "(feat. Jay-Z & Angela Winbush)" -> must NOT produce Jay-Z;Jay-Z
+            // (JAŸ-Z in tag normalizes to Jay-Z via variant override, dedup removes the feat. Jay-Z copy)
+            List<string> result = TagFixer.ExtractAndFixArtists(
+                "I Love The Dough (feat. Jay-Z & Angela Winbush)",
+                "The Notorious B.I.G.;Angela Winbush;JAŸ-Z");
+            int jayzCount = result.Count(a => a.Equals("Jay-Z", StringComparison.OrdinalIgnoreCase));
+            Assert.True(jayzCount == 1,
+                $"Jay-Z should appear exactly once (got {jayzCount}): variant JAŸ-Z in tag + Jay-Z in feat must deduplicate");
+        }
+
         // ---- Null/empty input guards ----
 
         public static void RemoveParentheticals_EmptyString_ReturnsEmpty()
