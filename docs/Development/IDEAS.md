@@ -22,8 +22,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-- [ ] **Fix "only 0 songs from album" wording in routing reason strings** - "only 0 songs from album -> Singles/" reads awkwardly. Should be "no songs from album -> Singles/". Audit ALL dynamic routing reason strings for similar weird wording before fixing.
-
 - [ ] **Duplicate preference: auto-prefer deluxe/expanded/sequel albums** - When base album (BULLY) and deluxe version (BULLY - DELUXE) are detected as duplicates, system shows "No version preference" and prompts user. Should auto-detect and recommend the deluxe/expanded version (pattern: base album name is a prefix of the deluxe name, or deluxe name contains "DELUXE", "EXPANDED", "DELUXE EDITION", "REMASTER"). Update code + write doc for version preference rules in `docs/References/Music-Library-Rules.md`.
 
 - [ ] **Ye -> Kanye West: artist tag modification for existing library tracks** - Tracks already in `Artists\Kanye West\` with `Artist = "Ye"` need to be updated to `"Kanye West"`. David wants this done for existing library tracks only (not the new BULLY - DELUXE batch). Investigate: can this be done via TagFixer over existing library files, or does it need a new CLI mode? Check if `artist-aliases.xml` can drive a reverse-fix pass.
