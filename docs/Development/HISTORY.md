@@ -1026,3 +1026,18 @@ Total playback hours, average and median song length, total library size (GB), a
 ## 2026-04-07 - Fix git folder casing
 
 Git tracked folders in old uppercase names (`PROJECT/`, `REPORTS/`, `Docs/`) while they were lowercase on disk. Fixed via two-step `git mv` per folder (required because Windows filesystem is case-insensitive and ignores direct renames). Also updated `REPORTS` path string in `Constants.cs` and comments in `ReportWriter.cs` to match.
+
+---
+
+## 2026-06-27 - Fix three routing bugs found in integration dry run
+
+**Bug 1: Scan-ahead album key mismatch (broke album subfolder routing)**
+`RunScanAhead` stored raw album tags in `batchAlbumCounts` (e.g. "The Blueprint (Explicit Version)"). `CountAlbumSongs` queried by normalized album name (e.g. "The Blueprint"). Key mismatch caused 0 batch songs found for every album with a suffix, routing all such songs to Singles instead of an album subfolder. Fix: normalize album in `RunScanAhead` using `TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(album))` before storing. Root cause: two passes over the same data applied different transformations. Invariant: scan-ahead and routing must use the same normalization.
+
+**Bug 2: Self-titled album exclusion prevented album folder routing**
+`GetDestDir` had `!track.Album.Equals(primaryArtist2)` condition that treated albums with the same name as the artist as "no distinct album", routing all their songs to Singles. This blocked a 6-song Paperboys EP (album "Paperboys") from getting an album folder. Fix: removed the condition. Album count alone determines routing. Self-titled albums are valid albums.
+
+**Bug 3: Artist casing normalization destroyed abbreviations and initials**
+`ExtractAndFixArtists` applied `a.ToLower()` before `ToTitleCase()` unconditionally. This turned "PJ Simas" -> "pj simas" -> "Pj Simas" and "XV" -> "xv" -> "Xv". Fix: skip `.ToLower()` for mixed-case names (has both upper and lower letters); add "XV" and "PJ Simas" to `artist-name-overrides.xml`. Three tests added covering these cases.
+
+Also fixed: display slash inconsistency (Path showed backslashes, Route showed forward slashes). Path now uses forward slashes for consistency.
