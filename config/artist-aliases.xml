@@ -15,5 +15,7 @@
   Format: from="old name" to="canonical name"
 -->
 <ArtistAliases>
-  <Alias from="Kanye West" to="Ye" />
+  <!-- "Ye" is the artist's legal name; library uses "Kanye West" as the canonical folder name.
+       This alias ensures duplicate detection bridges both names in either direction. -->
+  <Alias from="Ye" to="Kanye West" />
 </ArtistAliases>
