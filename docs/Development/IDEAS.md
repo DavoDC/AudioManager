@@ -45,7 +45,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
 
-- [ ] **ReportWriter timestamps accumulate on disk** - Every analysis run creates a new timestamped report. Over many runs, the reports/ directory grows unbounded. Consider: (a) cleanup policy (keep last N or last N days), (b) compress old reports, or (c) store in a database instead of individual files.
+- [ ] **ReportWriter year-folder accumulation** - Reports use date-based filenames (`yyyy-MM-dd`), so same-day reports overwrite (bounded growth per day). Growth concern is long-term: one `reports/{year}/` folder per year accumulates indefinitely. Consider: prune folders older than N years, or keep only the last N clean reports regardless of year. Low urgency - years of reports are small text files.
 
 - [ ] **Stub-file pattern in Reflector is vestigial** - Reflector creates text files with just MP3 paths (line 156 in Reflector.cs), but these are immediately overwritten by TrackXML with actual XML content. The stubs are never read as input - they're just a temporary placeholder. Current architecture: Reflector writes stub, Parser reads MP3 via TagLib#, TrackXML overwrites stub with XML. Alternative: Reflector could directly call TrackXML, skipping the stub stage. Requires: Reflector knowing how to extract ID3 tags (it currently doesn't). Lower priority - works as-is, but worth considering if parsing performance becomes an issue.
 
