@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - TrackXML.Write uses atomic temp-file pattern
+
+`TrackXML.Write()` now writes to `path + ".tmp"` first, then promotes atomically: `File.Replace` when overwriting (NTFS atomic), `File.Move` for first write. Temp file is cleaned up on any exception. Prevents a partially-written XML from corrupting the AudioMirror if the process crashes mid-write. Transparent to all callers; existing round-trip tests still green.
+
+---
+
 ## 2026-06-27 - Album art stats verbosity reduced
 
 Cover art histogram (up to 10 lines per run) collapsed to a single summary line: "Sub-800px: N | Non-square: M | Top dims: 800x800=3038, 1200x1200=1712...". Terminal output stays scannable; all actionable data (sub-threshold count, non-square count, top dimension buckets) is preserved on one line.

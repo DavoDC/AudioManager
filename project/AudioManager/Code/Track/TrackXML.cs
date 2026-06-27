@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -32,6 +33,7 @@ namespace AudioManager.Code.Modules
 
         internal static void Write(string path, TrackTag t)
         {
+            string tmpPath = path + ".tmp";
             try
             {
                 var doc = new XDocument(
@@ -57,11 +59,18 @@ namespace AudioManager.Code.Modules
                     NewLineHandling = NewLineHandling.Replace,
                     Encoding = new System.Text.UTF8Encoding(true)
                 };
-                using (var writer = XmlWriter.Create(path, settings))
+                using (var writer = XmlWriter.Create(tmpPath, settings))
                     doc.Save(writer);
+
+                // Atomic promotion: replace existing file or move into place for first write
+                if (File.Exists(path))
+                    File.Replace(tmpPath, path, null);
+                else
+                    File.Move(tmpPath, path);
             }
             catch (Exception ex)
             {
+                try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
                 throw new XmlException($"Error writing XML: {path}", ex);
             }
         }

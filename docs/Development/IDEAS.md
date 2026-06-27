@@ -43,8 +43,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **MusicIntegrator constructor decomposition** - The public constructor is 400+ lines handling: TagFixer, scan-ahead, pre-scan, duplicate review, routing loop, dry-run output, JSON output, confidence report, misc migration, cleanup. Each phase should be its own private method. The constructor becomes a 15-line orchestrator. Purely a readability improvement; no behavior change.
 
-- [ ] **XML file write should use temp-file pattern** - TrackXML.Write() calls .Save() directly on the target path. If the process crashes mid-write, the XML file is corrupted. Better: write to a temp file, then atomic move/rename. Protects against partial writes.
-
 - [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
 
 - [ ] **ReportWriter timestamps accumulate on disk** - Every analysis run creates a new timestamped report. Over many runs, the reports/ directory grows unbounded. Consider: (a) cleanup policy (keep last N or last N days), (b) compress old reports, or (c) store in a database instead of individual files.
