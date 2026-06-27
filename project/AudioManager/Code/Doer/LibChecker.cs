@@ -125,6 +125,13 @@ namespace AudioManager
                 totalHits += CheckFilenameForStr(filenameS, artist);
             }
 
+            // NOTE: Multi-artist semicolon delimiter check is NOT currently active.
+            // The library contains ~436 files with missing semicolons (pre-TagFixer era imports
+            // where artists were concatenated without ";": "T.I.Cee Lo Green", "UsherAlicia Keys", etc.).
+            // Enabling the check would block all integration until those files are fixed via Mp3tag.
+            // Tests for the desired behavior exist (LibChecker_MultiArtistFilename*).
+            // Re-enable after bulk filename remediation: IDEAS.md TIER 1 "Rename malformed multi-artist files".
+
             // Check filename contains separator
             totalHits += CheckFilenameForStr(filenameS, " - ");
 

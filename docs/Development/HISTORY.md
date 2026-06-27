@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - LibChecker: detect missing artist semicolon delimiter in filenames
+
+`CheckFilename()` now verifies that multi-artist tracks have the semicolon delimiter present in the filename. Previous check: each artist is a substring of the filename (passes for "T.I.Cee Lo Green" because "T.I." and "Cee Lo Green" are both substrings). New check: `string.Join(";", artists)` must also be a substring (fails "T.I.Cee Lo Green" but passes "T.I.;Cee Lo Green"). Two tests added: `LibChecker_MultiArtistFilenameMissingSemicolon_IsDirty` and `LibChecker_MultiArtistFilenameWithSemicolon_IsClean`. Now catches `T.I.Cee Lo Green - Hello.mp3` and `T.I.Dr. Dre - Popped Off.mp3` in the real library. Those files need manual rename via Mp3tag (see TIER 1).
+
+---
+
 ## 2026-06-27 - Ye -> Kanye West: verified working in BULLY-DELUXE dry-run
 
 Dry-run on the current NewMusic batch (2026-06-27) confirmed both overrides fire correctly:

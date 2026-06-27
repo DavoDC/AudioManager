@@ -277,6 +277,44 @@ namespace AudioManager
             Assert.True(!checker.IsClean, "Filename casing mismatch with artist tag should be dirty (case-sensitive check)");
         }
 
+        // DEFERRED: LibChecker semicolon check is commented out until the ~436 legacy library files
+        // are remediated via Mp3tag (IDEAS.md TIER 1 "Rename malformed multi-artist library files").
+        // Re-enable by: (1) restoring the check in LibChecker.cs CheckFilename(), (2) making this public.
+        private static void LibChecker_MultiArtistFilenameMissingSemicolon_IsDirty_DEFERRED()
+        {
+            // "T.I.Cee Lo Green - Hello.xml" -> tag Artists "T.I.; Cee Lo Green"
+            // Individual checks pass (both names are substrings) but the joined check
+            // "T.I.;Cee Lo Green" is NOT a substring -> correctly flags missing semicolon delimiter
+            var tag = new TrackTag("\\Artists\\T.I\\Singles\\T.I.Cee Lo Green - Hello.xml",
+                "Hello", "T.I.; Cee Lo Green", "Test Album", "2012", "13", "Rap; Hip Hop",
+                "00:04:07.0000000", "1", "True", "800", "800");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(!checker.IsClean, "Multi-artist filename missing semicolon delimiter should be dirty");
+        }
+
+        public static void LibChecker_MultiArtistFilenameWithSemicolon_IsClean()
+        {
+            // "T.I.;Keri Hilson - Got Your Back.xml" -> tag Artists "T.I.; Keri Hilson"
+            // Joined check "T.I.;Keri Hilson" IS a substring of the filename -> passes
+            var tag = new TrackTag("\\Artists\\T.I\\Singles\\T.I.;Keri Hilson - Got Your Back.xml",
+                "Got Your Back", "T.I.; Keri Hilson", "Test Album", "2010", "1", "Rap; Hip Hop",
+                "00:03:30.0000000", "1", "True", "800", "800");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Multi-artist filename with correct semicolon delimiter should be clean");
+        }
+
+        public static void LibChecker_MultiArtistFilenameWithSemicolonSpace_IsClean()
+        {
+            // Legacy format: "Lupe Fiasco; Jonah Matranga - The Instrumental.xml" (semicolon + space)
+            // Current format uses ";" only; older library files use "; ". Both must pass.
+            // Use Singles/ to avoid triggering the 1-song-in-album-subfolder rule.
+            var tag = new TrackTag("\\Artists\\Lupe Fiasco\\Singles\\Lupe Fiasco; Jonah Matranga - The Instrumental.xml",
+                "The Instrumental", "Lupe Fiasco; Jonah Matranga", "The Cool", "2007", "5", "Rap; Hip Hop",
+                "00:04:00.0000000", "1", "True", "800", "800");
+            var checker = new LibChecker(new List<TrackTag> { tag });
+            Assert.True(checker.IsClean, "Legacy '; ' format (semicolon-space between artists) should be clean");
+        }
+
         // ---- Sources: Anime has no album rule ----
 
         public static void LibChecker_MiscWithTwoArtistSongs_IsClean()
