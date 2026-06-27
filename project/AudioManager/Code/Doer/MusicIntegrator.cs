@@ -1477,7 +1477,9 @@ namespace AudioManager
                             }
                             else
                             {
-                                reason = $"{personSongCount} song(s) from {sampledPerson}, only {albumCount} from this album";
+                                reason = albumCount == 0
+                                    ? $"{personSongCount} song(s) from {sampledPerson}, no songs from this album"
+                                    : $"{personSongCount} song(s) from {sampledPerson}, only {albumCount} from this album";
                                 isNewFolder = false;
                                 return Path.Combine(peopleFolder, Constants.SinglesDir);
                             }
@@ -1545,7 +1547,9 @@ namespace AudioManager
                     }
                     else
                     {
-                        reason = $"Artist folder{scanNote}; only {albumCount} {(albumCount == 1 ? "song" : "songs")} from album -> Singles/";
+                        reason = albumCount == 0
+                            ? $"Artist folder{scanNote}; no songs from album -> Singles/"
+                            : $"Artist folder{scanNote}; only {albumCount} {(albumCount == 1 ? "song" : "songs")} from album -> Singles/";
                         isNewFolder = scanAheadNewFolder;
                         return Path.Combine(artistFolder, "Singles");
                     }
