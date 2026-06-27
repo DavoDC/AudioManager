@@ -331,5 +331,38 @@ namespace AudioManager
             string result = TagFixer.StripAlbumSuffixes("Album Name (Live at Wembley)");
             Assert.Equal("Album Name (Live at Wembley)", result, "(Live at ...) should NOT be stripped from album names");
         }
+
+        // ---- ExtractAndFixArtists - casing bugs ----
+
+        public static void ExtractAndFixArtists_MixedCaseAbbreviation_Preserved()
+        {
+            // Bug fix: "PJ Simas".ToLower() = "pj simas" -> ToTitleCase = "Pj Simas" (wrong).
+            // Mixed-case names (upper + lower) must be preserved without ToLower() normalization.
+            List<string> result = TagFixer.ExtractAndFixArtists("Ocean Drop", "PJ Simas");
+            Assert.True(
+                result.Any(a => a.Equals("PJ Simas", StringComparison.Ordinal)),
+                "Mixed-case abbreviation 'PJ Simas' must be preserved as-is (not lowercased to 'Pj Simas')");
+        }
+
+        public static void ExtractAndFixArtists_AllCapsAbbreviation_InOverrides_Preserved()
+        {
+            // "XV" is all-caps and in the artist-name-overrides.xml config.
+            // The override lookup must fire before the ToLower+ToTitleCase normalization destroys it.
+            // Note: this test only passes if the overrides config file exists and contains "XV".
+            List<string> result = TagFixer.ExtractAndFixArtists("Mirror's Edge", "XV");
+            Assert.True(
+                result.Any(a => a.Equals("XV", StringComparison.Ordinal)),
+                "All-caps override 'XV' must be preserved via artist-name-overrides.xml (not normalized to 'Xv')");
+        }
+
+        public static void ExtractAndFixArtists_AllCapsFullName_NormalizedToTitleCase()
+        {
+            // All-caps non-override names should still be title-cased (normal normalization behavior).
+            // "SCOTT ADAMS" should become "Scott Adams", not stay all-caps.
+            List<string> result = TagFixer.ExtractAndFixArtists("Some Track", "SCOTT ADAMS");
+            Assert.True(
+                result.Any(a => a.Equals("Scott Adams", StringComparison.Ordinal)),
+                "All-caps full name without override must be title-cased: 'SCOTT ADAMS' -> 'Scott Adams'");
+        }
     }
 }

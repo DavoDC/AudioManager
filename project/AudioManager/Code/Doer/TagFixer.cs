@@ -375,12 +375,20 @@ namespace AudioManager
                 }
             }
 
-            // Fix casing: "Scott adams" -> "Scott Adams" (title-cased by default).
-            // Exception: artists in the overrides config keep their canonical casing (e.g. "mike." stays lowercase).
+            // Fix casing: "scott adams" -> "Scott Adams" (title-cased by default).
+            // Exception 1: artists in the overrides config keep their canonical casing (e.g. "mike." stays lowercase).
+            // Exception 2: mixed-case names (e.g. "PJ Simas") are preserved as-is.
+            //   Applying .ToLower() first would destroy intentional casing in abbreviations and
+            //   initial-style names. Only normalize all-uppercase or all-lowercase strings.
             var overrides = GetArtistOverrides();
             var textInfo = System.Globalization.CultureInfo.InvariantCulture.TextInfo;
             return artists
-                .Select(a => overrides.TryGetValue(a, out string canonical) ? canonical : textInfo.ToTitleCase(a.ToLower()))
+                .Select(a =>
+                {
+                    if (overrides.TryGetValue(a, out string canonical)) return canonical;
+                    bool isMixedCase = a.Any(char.IsUpper) && a.Any(char.IsLower);
+                    return textInfo.ToTitleCase(isMixedCase ? a : a.ToLower());
+                })
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
