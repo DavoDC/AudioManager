@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Artist name aliases for duplicate detection.
+  Maps old/alternative artist names to their current canonical name.
+
+  When the library has tracks stored under an old name (e.g. "Kanye West") and
+  a new batch arrives under the canonical name (e.g. "Ye"), without an alias the
+  duplicate checker sees different primary artists and misses the match - silently
+  creating duplicate tracks in the library.
+
+  Both directions are checked: if library has "Kanye West" and new file has "Ye",
+  the duplicate is flagged. If library has "Ye" and new file has "Kanye West",
+  it is also flagged.
+
+  Format: from="old name" to="canonical name"
+-->
+<ArtistAliases>
+  <Alias from="Kanye West" to="Ye" />
+</ArtistAliases>
