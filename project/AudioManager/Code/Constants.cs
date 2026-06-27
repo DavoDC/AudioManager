@@ -43,6 +43,9 @@ namespace AudioManager
         // Path to the artist name casing overrides config file
         public static readonly string ArtistOverridesPath = Path.Combine(RepoRoot, "config", "artist-name-overrides.xml");
 
+        // Path to the artist name aliases config file (maps old names to canonical names for duplicate detection)
+        public static readonly string ArtistAliasesPath = Path.Combine(RepoRoot, "config", "artist-aliases.xml");
+
         // Path to the integration logs folder (gitignored, written by MusicIntegrator)
         public static readonly string LogsPath = Path.Combine(RepoRoot, "logs");
 
