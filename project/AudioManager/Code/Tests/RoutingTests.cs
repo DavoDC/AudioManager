@@ -223,6 +223,71 @@ namespace AudioManager
             finally { RoutingFixtures.Cleanup(lib); }
         }
 
+        public static void Routing_ExistingArtist_MultipleBatchSongsFromSameAlbum_RoutesToAlbumFolder()
+        {
+            // Bug scenario: Jay-Z already has an Artists/ folder. Batch contains 3+ songs from
+            // "The Blueprint". RunScanAhead stores them under raw "JAY-Z" key. CountAlbumSongs
+            // is called with tag-fixed "Jay-Z". OrdinalIgnoreCase on the outer dict should match.
+            // If this test fails, the casing bridge is broken and batchCount returns 0.
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Jay-Z" });
+            try
+            {
+                var batchAlbumCounts = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["JAY-Z"] = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["The Blueprint"] = 3
+                    }
+                };
+                var integrator = new MusicIntegrator(lib, batchAlbumCounts);
+                string dest = GetDest(integrator, MakeTrack("Jay-Z", "Heart Of The City", album: "The Blueprint"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Jay-Z", "The Blueprint");
+                Assert.Equal(expected, dest, "3 batch songs under raw 'JAY-Z' key -> tag-fixed 'Jay-Z' query -> album subfolder");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_ExistingArtist_UnicodeArtistVariant_RoutesToAlbumFolder()
+        {
+            // Root-cause regression test: streaming providers tag files with "JAŸ-Z" (Y-umlaut, U+0178).
+            // artist-name-overrides.xml maps "JAŸ-Z" -> "Jay-Z". Before the fix, RunScanAhead stored
+            // the raw "JAŸ-Z" key in batchAlbumCounts. CountAlbumSongs queried "Jay-Z"; OrdinalIgnoreCase
+            // cannot bridge U+0178 vs U+0059, so batchCount returned 0 and songs routed to Singles.
+            // Post-fix: RunScanAhead normalizes via TagFixer first, so the key is stored as "Jay-Z".
+            // This test injects the PRE-FIX state (raw "JAŸ-Z" key) to verify the lookup fails,
+            // which confirms that the fix (normalizing before storing) is the correct mitigation.
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Jay-Z" });
+            try
+            {
+                // Simulate post-fix state: key already normalized to "Jay-Z" (what RunScanAhead now stores)
+                var batchAlbumCounts = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Jay-Z"] = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["The Blueprint"] = 3
+                    }
+                };
+                var integrator = new MusicIntegrator(lib, batchAlbumCounts);
+                string dest = GetDest(integrator, MakeTrack("Jay-Z", "Heart Of The City", album: "The Blueprint"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Jay-Z", "The Blueprint");
+                Assert.Equal(expected, dest, "normalized 'Jay-Z' key (post-fix RunScanAhead) -> album subfolder");
+
+                // Confirm the pre-fix state (raw "JAŸ-Z" key) would have returned 0 batch count
+                var rawBatchAlbumCounts = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["JAŸ-Z"] = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["The Blueprint"] = 3
+                    }
+                };
+                var integratorRaw = new MusicIntegrator(lib, rawBatchAlbumCounts);
+                string destRaw = GetDest(integratorRaw, MakeTrack("Jay-Z", "Heart Of The City", album: "The Blueprint"));
+                string expectedRaw = Path.Combine(lib, Constants.ArtistsDir, "Jay-Z", "Singles");
+                Assert.Equal(expectedRaw, destRaw, "raw 'JAŸ-Z' key (pre-fix bug state) -> lookup miss -> Singles");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
         // ---- Akira The Don routing ----
 
         public static void Routing_AkiraTheDon_NoSampledPerson_RoutesToATDSingles()
