@@ -32,6 +32,9 @@ namespace AudioManager
         private string _libraryPath;
         // Raw tag data cached from RunScanAhead so PreScanFiles avoids a second TagLib read per file
         private Dictionary<string, (string artists, string title, string album, string genres, uint year)> _batchTagCache;
+        // Library-side album song count cache: "artist\0album" -> count. Avoids O(N) Directory.GetFiles
+        // calls when the same artist+album appears multiple times in a batch (e.g. 6 Blueprint tracks).
+        private Dictionary<string, int> _albumLibraryCountCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
 
         /// <summary>Per-file integration result for the log and JSON output.</summary>
@@ -1578,25 +1581,26 @@ namespace AudioManager
         /// </summary>
         private int CountAlbumSongs(string artist, string album)
         {
-            int count = 0;
-
-            // Count in library (scan artist folder for album subfolders)
-            string artistFolder = Path.Combine(_libraryPath, Constants.ArtistsDir, SanitiseFolderName(artist));
-            string albumFolder = Path.Combine(artistFolder, SanitiseFolderName(album));
-            if (Directory.Exists(albumFolder))
+            // Library-side: memoize per (artist, album) to avoid repeated Directory.GetFiles
+            // when the same album appears multiple times in a batch (e.g. 6 Blueprint songs -> 6 routing calls)
+            string cacheKey = artist + "\0" + album;
+            if (!_albumLibraryCountCache.TryGetValue(cacheKey, out int libCount))
             {
-                count += Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length;
+                string artistFolder = Path.Combine(_libraryPath, Constants.ArtistsDir, SanitiseFolderName(artist));
+                string albumFolder = Path.Combine(artistFolder, SanitiseFolderName(album));
+                libCount = Directory.Exists(albumFolder)
+                    ? Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length
+                    : 0;
+                _albumLibraryCountCache[cacheKey] = libCount;
             }
 
-            // Count in new batch (use scan-ahead data built by RunScanAhead - avoids re-reading every MP3 with TagLib)
+            // Batch-side: use scan-ahead data built by RunScanAhead (O(1) dict lookup, no TagLib re-reads)
+            int batchCount = 0;
             if (_scanAheadBatchAlbumCounts != null &&
-                _scanAheadBatchAlbumCounts.TryGetValue(artist, out var byAlbum) &&
-                byAlbum.TryGetValue(album, out int batchCount))
-            {
-                count += batchCount;
-            }
+                _scanAheadBatchAlbumCounts.TryGetValue(artist, out var byAlbum))
+                byAlbum.TryGetValue(album, out batchCount);
 
-            return count;
+            return libCount + batchCount;
         }
 
         /// <summary>
