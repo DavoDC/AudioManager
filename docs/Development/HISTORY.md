@@ -10,7 +10,6 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 `artist-aliases.xml`: reversed alias direction from `Kanye West -> Ye` to `Ye -> Kanye West` so duplicate detection correctly bridges both names when library has "Kanye West" and a batch file arrives tagged "Ye".
 
-`TEMP/fix_ye_tags.py`: standalone dry-run script for retroactive tag fixing on existing library files. Run without flags for dry-run, `--write` to apply. (No writes needed as of 2026-06-27.)
 
 ---
 
