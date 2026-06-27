@@ -20,6 +20,7 @@
   <!-- All-caps names and acronyms -->
   <Artist canonical="DMX" />
   <Artist canonical="FIFTY FIFTY" />
+  <Artist canonical="XV" />
   <Artist canonical="H.E.A.T" />
   <Artist canonical="KSI" />
   <Artist canonical="LL COOL J" />
@@ -35,6 +36,7 @@
   <!-- Partial caps / acronym prefix -->
   <Artist canonical="DC The Don" />
   <Artist canonical="DJ Khaled" />
+  <Artist canonical="PJ Simas" />
   <Artist canonical="KOTA The Friend" />
   <Artist canonical="KRS-One" />
   <Artist canonical="Juice WRLD" />
