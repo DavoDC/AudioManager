@@ -1,7 +1,9 @@
-﻿using AudioManager.Code.Modules;
+using AudioManager.Code.Modules;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace AudioManager
 {
@@ -37,32 +39,31 @@ namespace AudioManager
                 return;
             }
 
-            // Cache miss: parse all XMLs
+            // Cache miss: parse all XMLs in parallel (each file read is independent)
             string[] mirrorFiles = Directory.GetFiles(mirrorPath, "*", SearchOption.AllDirectories);
-            int parsedCount = 0;
-            int parsedTotal = mirrorFiles.Length;
-            int dotInterval = Math.Max(1, parsedTotal / 10);
-            foreach (var mirrorFilePath in mirrorFiles)
+            var bag = new ConcurrentBag<TrackTag>();
+            var badFiles = new ConcurrentBag<string>(); // non-XML files found (mirror corruption)
+
+            Parallel.ForEach(mirrorFiles, mirrorFilePath =>
             {
-                // Skip the README file
-                if (Path.GetFileName(mirrorFilePath).Equals("README.md"))
+                string name = Path.GetFileName(mirrorFilePath);
+                if (name.Equals("README.md")) return;
+
+                if (Path.GetExtension(mirrorFilePath) != ".xml")
                 {
-                    continue;
+                    badFiles.Add(mirrorFilePath);
+                    return;
                 }
 
-                // If non-XML file found (other than README), notify
-                if (Path.GetExtension(mirrorFilePath) != ".xml" )
-                {
-                    throw new ArgumentException($"Non-XML file found in mirror folder: {mirrorFilePath}");
-                }
+                bag.Add(new TrackTag(mirrorFilePath));
+            });
 
-                // Get audio file tag and add to list
-                audioTags.Add(new TrackTag(mirrorFilePath));
-                parsedCount++;
-                if (parsedTotal >= 100 && parsedCount % dotInterval == 0)
-                    Console.Write(".");
-            }
-            if (parsedTotal >= 100) Console.WriteLine();
+            // Surface mirror corruption after parallel phase completes
+            if (!badFiles.IsEmpty)
+                throw new ArgumentException($"Non-XML file(s) found in mirror folder: {string.Join(", ", badFiles)}");
+
+            audioTags = new List<TrackTag>(bag);
+            Console.WriteLine();
 
             // Save cache so next run can skip these reads
             ParseCache.Save(effectiveCachePath, audioTags);
