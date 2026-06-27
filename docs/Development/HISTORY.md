@@ -1041,3 +1041,14 @@ Git tracked folders in old uppercase names (`PROJECT/`, `REPORTS/`, `Docs/`) whi
 `ExtractAndFixArtists` applied `a.ToLower()` before `ToTitleCase()` unconditionally. This turned "PJ Simas" -> "pj simas" -> "Pj Simas" and "XV" -> "xv" -> "Xv". Fix: skip `.ToLower()` for mixed-case names (has both upper and lower letters); add "XV" and "PJ Simas" to `artist-name-overrides.xml`. Three tests added covering these cases.
 
 Also fixed: display slash inconsistency (Path showed backslashes, Route showed forward slashes). Path now uses forward slashes for consistency.
+
+---
+
+## 2026-06-27 - Artist-alias duplicate detection + routing output UX
+
+**Artist-alias duplicate detection (TIER 1):**
+Added `config/artist-aliases.xml` (`Kanye West -> Ye`). `BuildMirrorIndex` now expands alias keys in both directions when building the mirror index: a library entry stored under "Kanye West" is also indexed under "ye", so when a new batch file arrives with artist "Ye", the duplicate check catches it (and vice versa). Internal helpers `LoadArtistAliases` and `GetAliasExpandedKeys` are tested. Degrades gracefully if config missing. 6 new tests.
+
+**Routing output UX (TIER 2):**
+- Album now shown on every routing header line: `[AUTO] Artist - Title [Album]`. No extra line; brackets keep it compact.
+- `[AUTO - new folder]` label removed. New-folder routes show `[AUTO]` on the header and ` *` suffix on the Route line (e.g. `Chiddy Bang / Breakfast *`). Scan-ahead summary at the top already lists which artists get new folders; the per-block label was redundant.
