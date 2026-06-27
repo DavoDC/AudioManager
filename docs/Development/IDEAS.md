@@ -22,7 +22,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-- [ ] **Ye -> Kanye West: artist tag modification for BULLY - DELUXE batch** - Library investigation (`fix_ye_tags.py` dry-run, 2026-06-27): 84 files in `Artists\Kanye West\` already tagged "Kanye West" - no existing library tracks need fixing. The fix is needed for the incoming BULLY - DELUXE batch where streaming files may arrive tagged "Ye". `artist-name-overrides.xml` should have `<Artist canonical="Kanye West" variant="Ye" />` if it doesn't already - verify before integrating BULLY batch. Also update `artist-aliases.xml` direction: currently maps `Kanye West -> Ye`; may need to reverse to `Ye -> Kanye West` so dedup matches correctly.
+- [ ] **Ye -> Kanye West: verify before integrating BULLY - DELUXE batch** - `artist-name-overrides.xml` now has `<Artist canonical="Kanye West" variant="Ye" />` and `artist-aliases.xml` maps `Ye -> Kanye West`. Verify these fire correctly during the BULLY integration dry-run (incoming files may be tagged "Ye").
 
 - [ ] **Re-enable album art dimensions check in LibChecker** - `CheckAlbumCoverDimensions` was temporarily commented out (2026-06-24) to unblock integration while the existing library has ~150+ low-res tracks. Re-enable once album art remediation is done (see TIER 4 "Album art remediation" entry). Also: print a single summary line instead of one line per track - the full list floods terminal output and belongs in the report file only.
 
