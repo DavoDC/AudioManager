@@ -132,5 +132,49 @@ namespace AudioManager
             Assert.True(keys.Contains("ye\0dam"), "should contain canonical key");
             Assert.True(keys.Contains("kanye west\0dam"), "should contain old-name key");
         }
+
+        // ---- IsDeluxeVersionOf ----
+
+        public static void IsDeluxe_DeluxeEdition_IsDeluxeOfBase()
+        {
+            Assert.True(MusicIntegrator.IsDeluxeVersionOf("BULLY - DELUXE", "BULLY"), "BULLY - DELUXE is deluxe of BULLY");
+        }
+
+        public static void IsDeluxe_ExpandedEdition_IsDeluxeOfBase()
+        {
+            Assert.True(MusicIntegrator.IsDeluxeVersionOf("Some Album (Expanded Edition)", "Some Album"), "expanded edition is deluxe of base");
+        }
+
+        public static void IsDeluxe_Remastered_IsDeluxeOfBase()
+        {
+            Assert.True(MusicIntegrator.IsDeluxeVersionOf("The Blueprint (Remastered)", "The Blueprint"), "remastered is deluxe of base");
+        }
+
+        public static void IsDeluxe_BaseNotDeluxeOfDeluxe()
+        {
+            Assert.True(!MusicIntegrator.IsDeluxeVersionOf("BULLY", "BULLY - DELUXE"), "base is NOT deluxe of deluxe edition");
+        }
+
+        public static void IsDeluxe_TwoBothDeluxe_ReturnsFalse()
+        {
+            Assert.True(!MusicIntegrator.IsDeluxeVersionOf("BULLY - DELUXE", "BULLY - SUPER DELUXE"), "two deluxe editions - no clear hierarchy");
+        }
+
+        public static void IsDeluxe_UnrelatedAlbums_ReturnsFalse()
+        {
+            Assert.True(!MusicIntegrator.IsDeluxeVersionOf("Some Album DELUXE", "Other Album"), "unrelated albums are not deluxe versions of each other");
+        }
+
+        public static void IsDeluxe_CaseInsensitive()
+        {
+            Assert.True(MusicIntegrator.IsDeluxeVersionOf("bully - deluxe", "BULLY"), "deluxe detection is case-insensitive");
+        }
+
+        public static void IsDeluxe_NullOrEmpty_ReturnsFalse()
+        {
+            Assert.True(!MusicIntegrator.IsDeluxeVersionOf(null, "BULLY"), "null candidate returns false");
+            Assert.True(!MusicIntegrator.IsDeluxeVersionOf("BULLY - DELUXE", null), "null base returns false");
+            Assert.True(!MusicIntegrator.IsDeluxeVersionOf("", ""), "empty strings return false");
+        }
     }
 }
