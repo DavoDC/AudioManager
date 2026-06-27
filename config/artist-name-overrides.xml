@@ -46,7 +46,8 @@
   <!-- Hyphenated names where letter after hyphen must be capped -->
   <Artist canonical="Eazy-E" />
   <Artist canonical="G-Eazy" />
-  <Artist canonical="Jay-Z" />
+  <!-- variant covers the stylized Unicode form used by some streaming providers (Ÿ = U+0178) -->
+  <Artist canonical="Jay-Z" variant="JAŸ-Z" />
   <Artist canonical="T-Pain" />
   <Artist canonical="Bone Thugs-N-Harmony" />
 
