@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - Ye -> Kanye West: verified working in BULLY-DELUXE dry-run
+
+Dry-run on the current NewMusic batch (2026-06-27) confirmed both overrides fire correctly:
+- `artist-name-overrides.xml` `variant="Ye"` -> "Kanye West" normalizes all "Ye"-tagged incoming files during TagFixer
+- `artist-aliases.xml` alias bridges duplicate detection: library has "Kanye West", batch files tagged "Ye" - duplicates correctly identified and auto-resolved
+- BULLY vs BULLY-DELUXE duplicates auto-recommended [L] via `IsDeluxeVersionOf` detection
+- All 7 BULLY-DELUXE songs route to `Artists/Kanye West/BULLY - DELUXE/` correctly
+
+---
+
 ## 2026-06-27 - Ye -> Kanye West: config and tag normalization
 
 `artist-name-overrides.xml`: added `<Artist canonical="Kanye West" variant="Ye" />` so TagFixer normalizes incoming "Ye" artist tags to "Kanye West" during integration. Existing library dry-run (84 files, 2026-06-27) showed no tracks with `Artist = "Ye"` - all already tagged "Kanye West".
