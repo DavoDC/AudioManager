@@ -304,7 +304,15 @@ namespace AudioManager
                 {
                     string canonical = el.GetAttribute("canonical");
                     if (!string.IsNullOrEmpty(canonical))
+                    {
                         _artistOverrides[canonical] = canonical;
+                        // Optional variant attribute maps stylized/Unicode-variant names to the canonical form.
+                        // Needed when Unicode diacritics (e.g. JAŸ-Z) differ from the canonical ASCII form (Jay-Z)
+                        // and OrdinalIgnoreCase can't match them as equal.
+                        string variant = el.GetAttribute("variant");
+                        if (!string.IsNullOrEmpty(variant))
+                            _artistOverrides[variant] = canonical;
+                    }
                 }
             }
             catch { /* fallback: apply no overrides */ }
