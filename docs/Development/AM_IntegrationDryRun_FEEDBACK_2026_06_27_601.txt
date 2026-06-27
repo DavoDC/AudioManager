@@ -131,3 +131,518 @@ ownloads\NewMusic\Akira The Don - YOU DON'T HAVE TO SUFFER.mp3"
 AFTER THE DRY RUN i realised these were missing david lynch from artists, problem with acutal files downloade,d they had issing from metadata, had to manually add,  idk if audiomanager couild help at all ehre, research akira tracks online to look for sampled person, some are genuinely akria only tho ! 
 
 these should go in tehir own david lynch folder next run WITH ALBUM folder  and repalce the kali yuga track currently in lbibary
+
+BELONG IS 2nD RUN AFTER FIXING METdata, added david lynch BUT " Reason: 2 song(s) from David Lynch, below People threshold" this is actualyl true, not yet, can stay in singles atd for now ! 
+
+
+
+------------
+
+quick win = use same type of slashes in both  ROUTE and Path part, whatever makes most sense 
+
+[AUTO - new folder] Chiddy Bang - Handclaps & Guitars
+ Route: Chiddy Bang / Breakfast
+ Reason: Artist folder [new via scan-ahead]; 5 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\Breakfast\Chiddy Bang - Handclaps & Guitars.mp3
+
+
+
+-----------
+
+
+
+Each of these blocks ahs [AUTO] could could just automatic routes ehaidng ro something at top?  and odnt have auto new fodler variants not that useful.  ALSO CANT SEE ALBUM ON EACH BLOCK i need to see artist, title and ALBUM 
+think of best way to do,  maybe    Counting Crows - Mr. Jones [Films About Ghosts (The Best Of Counting Crows)], but ahts a big ugly,, needs more thought u think about hwo to give me artist tracka nd album info in nice way without cltutingering interface, coz rn its pretty nice and clean, dont need track: aritst: equals which takes lots of lines and i can infer from  "Counting Crows - Mr. Jones" anyway ! u think about best way to imrpove UI in these areas 
+
+[AUTO] Counting Crows - Mr. Jones
+ Route: Counting Crows / Films About Ghosts (The Best Of Counting Crows)
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Counting Crows\Films About Ghosts (The Best Of Counting Crows)\Counting Crows - Mr. Jones.mp3
+
+
+------------------
+
+THIS IS ABSOLUTELY WRONG!!! randomly changing artists,  originals were fine and correct  , this is bad!!! 
+disable this, turn off,  never do!  remember not to!!! why did this ahppen??  yes sometimes i change artists  but not randomly like this ! 
+
+[AUTO] Pj Simas - Ocean Drop
+ > Artists: "PJ Simas"  -> "Pj Simas"
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Pj Simas - Ocean Drop.mp3
+
+[AUTO] Xv - Mirror's Edge
+ > Artists: "XV"  -> "Xv"
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Xv - Mirror's Edge.mp3
+
+
+--------
+
+
+
+###############################
+
+FULL TERMINAL OUTPUT FOR REFERENCE (logs should have this info btw)
+
+CHECK YOURSELF FOR ISSUES, poor dupe detection etc 
+
+###### Audio Manager ######
+
+Select mode:
+
+    Analysis
+    Analysis (Force Regen)
+  > Integrate
+
+Pre-integration validation...
+ - Regenerating AudioMirror XMLs...
+
+Creating mirror of 'C:\Users\David\Audio'...
+ - Path: 'C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR'
+ - MP3 file count: 5653
+ - Non-MP3 files found: 17 (all expected)
+ - MP3 filenames sanitised: 83
+ - Recreated: False
+ - Time taken: 1.014 seconds
+
+Parsing audio metadata... - Tags parsed: 5653 (cache)
+ - Time taken: 0.148 seconds
+ - Checking if AudioMirror is fresh...
+ - Running library validation...
+
+Checking library...
+ - Checking all tags against filenames..
+ - Checking all tags for unwanted/missing info...
+ - Checking all tags for duplicates...
+ - Checking Artists folder...
+ - Checking Artists album subfolder rules...
+ - Checking Miscellaneous Songs folder...
+ - Checking Compilations folder...
+ - Checking Musivation folder...
+ - Checking Motivation folder...
+ - Checking for 'Musivation' genre outside Musivation/...
+ - Checking for 'Motivation' genre outside Motivation/...
+ - Checking Sources folder...
+ - LibChecker: Clean
+
+ - Time taken: 0.482 seconds
+ - Pre-integration validation passed.
+
+
+Integrating new music... [DRY RUN - no files will be moved]
+
+Fixing music tags... [DRY RUN - no files will be modified]
+Fixed: 48  |  Skipped: 0
+Tag fixing - time taken: 0.055 seconds
+
+Scan-ahead: reading 48 file(s)... checking Misc (750)... checking Sources (406)... done.
+
+Scan-ahead: 3 artist(s) will hit 3-song threshold:
+  - 8 in batch + 2 in Misc = 10 total -> new Artists/Chiddy Bang/ (2 existing Misc song(s) will be auto-migrated)
+  - 7 in batch = 7 total -> new Artists/Ye/
+  - 6 in batch = 6 total -> new Artists/Paperboys/
+
+
+Indexing AudioMirror for duplicates (5653 tracks)... done.
+
+Reviewing 5 duplicate(s)...
+
+===========================================================================
+  DUPLICATE FOUND
+===========================================================================
+
+  In AudioMirror: Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don - KALI YUGA.xml
+  Track:          Akira The Don - KALI YUGA
+  Album:          MEANINGWAVE MASTERPIECES V
+
+  New file:   Akira The Don;David Lynch - KALI YUGA.mp3
+  Album:      YOU DON'T HAVE TO SUFFER
+
+  Proposed:   Delete library copy, keep new file
+  Reason:     Library copy is from a compilation; new file is from artist album 'YOU DON'T HAVE TO SUFFER'
+
+---------------------------------------------------------------------------
+  [L] Delete library copy (keep new file - will be routed in the next step) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+---------------------------------------------------------------------------
+> L
+
+
+===========================================================================
+  DUPLICATE FOUND
+===========================================================================
+
+  In AudioMirror: Miscellaneous Songs\Chiddy Bang;Icona Pop - Mind Your Manners.xml
+  Track:          Chiddy Bang - Mind Your Manners
+  Album:          Mind Your Manners
+
+  New file:   Chiddy Bang;Icona Pop - Mind Your Manners.mp3
+  Album:      Breakfast
+
+  Proposed:   Delete library copy, keep new file
+  Reason:     Library copy is from a compilation; new file is from artist album 'Breakfast'
+
+---------------------------------------------------------------------------
+  [L] Delete library copy (keep new file - will be routed in the next step) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+---------------------------------------------------------------------------
+> L
+
+
+===========================================================================
+  DUPLICATE FOUND
+===========================================================================
+
+  In AudioMirror: Artists\Counting Crows\Singles\Counting Crows;Vanessa Carlton - Big Yellow Taxi.xml
+  Track:          Counting Crows - Big Yellow Taxi
+  Album:          Afternoon Rock
+
+  New file:   Counting Crows;Vanessa Carlton - Big Yellow Taxi.mp3
+  Album:      Films About Ghosts (The Best Of Counting Crows)
+
+  Proposed:   Delete library copy, keep new file
+  Reason:     Library has single; new file is from album 'Films About Ghosts (The Best Of Counting Crows)' - album preferred
+
+---------------------------------------------------------------------------
+  [L] Delete library copy (keep new file - will be routed in the next step) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+---------------------------------------------------------------------------
+> L
+
+
+===========================================================================
+  DUPLICATE FOUND
+===========================================================================
+
+  In AudioMirror: Artists\Jay-Z\Singles\Jay-Z;Eminem - Renegade.xml
+  Track:          Jay-Z - Renegade
+  Album:          Curtain Call: The Hits
+
+  New file:   Jay-Z;Eminem - Renegade.mp3
+  Album:      The Blueprint
+
+  Proposed:   Delete library copy, keep new file
+  Reason:     Library has single; new file is from album 'The Blueprint' - album preferred
+
+---------------------------------------------------------------------------
+  [L] Delete library copy (keep new file - will be routed in the next step) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+---------------------------------------------------------------------------
+> L
+
+
+===========================================================================
+  DUPLICATE FOUND
+===========================================================================
+
+  In AudioMirror: Artists\Jay-Z\Singles\Jay-Z - Song Cry.xml
+  Track:          Jay-Z - Song Cry
+  Album:          Song Cry
+
+  New file:   Jay-Z - Song Cry.mp3
+  Album:      The Blueprint
+
+  Proposed:   Delete library copy, keep new file
+  Reason:     Library has single; new file is from album 'The Blueprint' - album preferred
+
+---------------------------------------------------------------------------
+  [L] Delete library copy (keep new file - will be routed in the next step) (recommended)   [D] Delete NewMusic copy (keep library)   [K] Keep both   [Q] Quit
+---------------------------------------------------------------------------
+> L
+
+
+===========================================================================
+Routing (Dry Run)
+===========================================================================
+Files in batch: 48
+Routes: Artists: 41  |  Misc: 5  |  Musivation: 2
+
+[DRY RUN] Would delete from library: Musivation\Akira The Don\MEANINGWAVE MASTERPIECES V\Akira The Don - KALI YUGA.mp3
+[DRY RUN] Would keep new file: Akira The Don;David Lynch - KALI YUGA.mp3
+
+[DRY RUN] Would delete from library: Miscellaneous Songs\Chiddy Bang;Icona Pop - Mind Your Manners.mp3
+[DRY RUN] Would keep new file: Chiddy Bang;Icona Pop - Mind Your Manners.mp3
+
+[DRY RUN] Would delete from library: Artists\Counting Crows\Singles\Counting Crows;Vanessa Carlton - Big Yellow Taxi.mp3
+[DRY RUN] Would keep new file: Counting Crows;Vanessa Carlton - Big Yellow Taxi.mp3
+
+[DRY RUN] Would delete from library: Artists\Jay-Z\Singles\Jay-Z;Eminem - Renegade.mp3
+[DRY RUN] Would keep new file: Jay-Z;Eminem - Renegade.mp3
+
+[DRY RUN] Would delete from library: Artists\Jay-Z\Singles\Jay-Z - Song Cry.mp3
+[DRY RUN] Would keep new file: Jay-Z - Song Cry.mp3
+
+[AUTO - new folder] Chiddy Bang - Handclaps & Guitars
+ Route: Chiddy Bang / Breakfast
+ Reason: Artist folder [new via scan-ahead]; 5 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\Breakfast\Chiddy Bang - Handclaps & Guitars.mp3
+
+[AUTO - new folder] Chiddy Bang - Opposite of Adults
+ Route: Chiddy Bang / Breakfast
+ Reason: Artist folder [new via scan-ahead]; 5 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\Breakfast\Chiddy Bang - Opposite of Adults.mp3
+
+[AUTO - new folder] Chiddy Bang - Talking to Myself
+ Route: Chiddy Bang / Breakfast
+ Reason: Artist folder [new via scan-ahead]; 5 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\Breakfast\Chiddy Bang - Talking to Myself.mp3
+
+[AUTO - new folder] Chiddy Bang - Whatever We Want
+ Route: Chiddy Bang / Breakfast
+ Reason: Artist folder [new via scan-ahead]; 5 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\Breakfast\Chiddy Bang - Whatever We Want.mp3
+
+[AUTO - new folder] Chiddy Bang - Nothing on We
+ Route: Chiddy Bang / The Preview
+ Reason: Artist folder [new via scan-ahead]; 3 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\The Preview\Chiddy Bang - Nothing on We.mp3
+
+[AUTO - new folder] Chiddy Bang - The Good Life
+ Route: Chiddy Bang / The Preview
+ Reason: Artist folder [new via scan-ahead]; 3 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\The Preview\Chiddy Bang - The Good Life.mp3
+
+[AUTO - new folder] Chiddy Bang - Truth
+ Route: Chiddy Bang / The Preview
+ Reason: Artist folder [new via scan-ahead]; 3 songs from album -> album subfolder
+ Path: Artists\Chiddy Bang\The Preview\Chiddy Bang - Truth.mp3
+
+[AUTO] Counting Crows - Mr. Jones
+ Route: Counting Crows / Films About Ghosts (The Best Of Counting Crows)
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Counting Crows\Films About Ghosts (The Best Of Counting Crows)\Counting Crows - Mr. Jones.mp3
+
+[AUTO] Counting Crows - Round Here
+ Route: Counting Crows / Films About Ghosts (The Best Of Counting Crows)
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Counting Crows\Films About Ghosts (The Best Of Counting Crows)\Counting Crows - Round Here.mp3
+
+[AUTO] Counting Crows - A Long December
+ Route: Counting Crows / Singles
+ Reason: Artist folder; only 1 song from album -> Singles/
+ Path: Artists\Counting Crows\Singles\Counting Crows - A Long December.mp3
+
+[AUTO] Dylan Owen - Garden of the Angels
+ Route: Dylan Owen / Keep Your Friends Close
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Dylan Owen\Keep Your Friends Close\Dylan Owen - Garden of the Angels.mp3
+
+[AUTO] Dylan Owen - Ghosts
+ Route: Dylan Owen / Keep Your Friends Close
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Dylan Owen\Keep Your Friends Close\Dylan Owen - Ghosts.mp3
+
+[AUTO] Dylan Owen - Keep Your Friends Close
+ Route: Dylan Owen / Keep Your Friends Close
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Dylan Owen\Keep Your Friends Close\Dylan Owen - Keep Your Friends Close.mp3
+
+[AUTO] Dylan Owen - Old Armor
+ Route: Dylan Owen / Singles
+ Reason: Artist folder; only 1 song from album -> Singles/
+ Path: Artists\Dylan Owen\Singles\Dylan Owen - Old Armor.mp3
+
+[AUTO] Jay-Z - Blueprint 2
+ > Artists: "JAY-Z"  -> "Jay-Z"
+ Route: Jay-Z / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Jay-Z\Singles\Jay-Z - Blueprint 2.mp3
+
+[AUTO] Jay-Z - Heart Of The City (Ain't No Love)
+ > Album: "The Blueprint (Explicit Version)"  -> "The Blueprint"
+ > Artists: "JAY-Z"  -> "Jay-Z"
+ Route: Jay-Z / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Jay-Z\Singles\Jay-Z - Heart Of The City (Ain't No Love).mp3
+
+[AUTO] Jay-Z - Izzo (H.O.V.A.)
+ > Album: "The Blueprint (Explicit Version)"  -> "The Blueprint"
+ > Artists: "JAY-Z"  -> "Jay-Z"
+ Route: Jay-Z / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Jay-Z\Singles\Jay-Z - Izzo (H.O.V.A.).mp3
+
+[AUTO] Jay-Z - Never Change
+ > Album: "The Blueprint (Explicit Version)"  -> "The Blueprint"
+ > Artists: "JAY-Z"  -> "Jay-Z"
+ Route: Jay-Z / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Jay-Z\Singles\Jay-Z - Never Change.mp3
+
+[AUTO] Jay-Z - Public Service Announcement (Interlude)
+ > Artists: "JAY-Z"  -> "Jay-Z"
+ Route: Jay-Z / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Jay-Z\Singles\Jay-Z - Public Service Announcement (Interlude).mp3
+
+[AUTO] Jay-Z - Roc Boys (And The Winner Is)...
+ > Artists: "JAY-Z"  -> "Jay-Z"
+ Route: Jay-Z / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\Jay-Z\Singles\Jay-Z - Roc Boys (And The Winner Is)....mp3
+
+[AUTO] Lupe Fiasco;Pooh Bear;Snoop Dogg - Hi-Definition
+ > Title: "Hi-Definition (feat. Snoop Dogg & Pooh Bear)"  -> "Hi-Definition"
+ > Artists: "Lupe Fiasco; Pooh Bear; Snoop Dogg"  -> "Lupe Fiasco;Pooh Bear;Snoop Dogg"
+ Route: Lupe Fiasco / Lupe Fiasco's The Cool
+ Reason: Artist folder; 3 songs from album -> album subfolder
+ Path: Artists\Lupe Fiasco\Lupe Fiasco's The Cool\Lupe Fiasco;Pooh Bear;Snoop Dogg - Hi-Definition.mp3
+
+[AUTO] Nic D - Mirror Talk
+ Route: Nic D / Singles
+ Reason: Artist folder; only 1 song from album -> Singles/
+ Path: Artists\Nic D\Singles\Nic D - Mirror Talk.mp3
+
+[AUTO - new folder] Paperboys;Connor Price;Nic D - 100 Problems
+ > Artists: "Paperboys; Connor Price; Nic D"  -> "Paperboys;Connor Price;Nic D"
+ Route: Paperboys / Singles
+ Reason: Artist folder [new via scan-ahead]; no distinct album -> Singles/
+ Path: Artists\Paperboys\Singles\Paperboys;Connor Price;Nic D - 100 Problems.mp3
+
+[AUTO - new folder] Paperboys;Connor Price;Nic D - Luv U
+ > Artists: "Paperboys; Connor Price; Nic D"  -> "Paperboys;Connor Price;Nic D"
+ Route: Paperboys / Singles
+ Reason: Artist folder [new via scan-ahead]; no distinct album -> Singles/
+ Path: Artists\Paperboys\Singles\Paperboys;Connor Price;Nic D - Luv U.mp3
+
+[AUTO - new folder] Paperboys;Connor Price;Nic D - No Middleman
+ > Artists: "Paperboys; Connor Price; Nic D"  -> "Paperboys;Connor Price;Nic D"
+ Route: Paperboys / Singles
+ Reason: Artist folder [new via scan-ahead]; no distinct album -> Singles/
+ Path: Artists\Paperboys\Singles\Paperboys;Connor Price;Nic D - No Middleman.mp3
+
+[AUTO - new folder] Paperboys;Connor Price;Nic D - Old Ways
+ > Artists: "Paperboys; Connor Price; Nic D"  -> "Paperboys;Connor Price;Nic D"
+ Route: Paperboys / Singles
+ Reason: Artist folder [new via scan-ahead]; no distinct album -> Singles/
+ Path: Artists\Paperboys\Singles\Paperboys;Connor Price;Nic D - Old Ways.mp3
+
+[AUTO - new folder] Paperboys;Connor Price;Nic D - Slide
+ > Artists: "Paperboys; Connor Price; Nic D"  -> "Paperboys;Connor Price;Nic D"
+ Route: Paperboys / Singles
+ Reason: Artist folder [new via scan-ahead]; no distinct album -> Singles/
+ Path: Artists\Paperboys\Singles\Paperboys;Connor Price;Nic D - Slide.mp3
+
+[AUTO - new folder] Paperboys;Connor Price;Nic D - Stuntman
+ > Artists: "Paperboys; Connor Price; Nic D"  -> "Paperboys;Connor Price;Nic D"
+ Route: Paperboys / Singles
+ Reason: Artist folder [new via scan-ahead]; no distinct album -> Singles/
+ Path: Artists\Paperboys\Singles\Paperboys;Connor Price;Nic D - Stuntman.mp3
+
+[AUTO] T.I.;Summer Walker - AND WON'T
+ > Album: "AND WON'T (feat. Summer Walker)"  -> "AND WON'T"
+ > Artists: "T.I.; Summer Walker"  -> "T.I.;Summer Walker"
+ Route: T.I. / Singles
+ Reason: Artist folder; only 0 songs from album -> Singles/
+ Path: Artists\T.I.\Singles\T.I.;Summer Walker - AND WON'T.mp3
+
+[AUTO] The Notorious B.I.G.;Angela Winbush;Jay-Z - I Love The Dough (2014 Remaster)
+ > Title: "I Love The Dough (feat. Jay-Z & Angela Winbush) (2014 Remaster)"  -> "I Love The Dough (2014 Remaster)"
+ > Artists: "The Notorious B.I.G.; Angela Winbush; JAY-Z"  -> "The Notorious B.I.G.;Angela Winbush;Jay-Z"
+ Route: The Notorious B.I.G. / Life After Death (2014 Remastered Edition)
+ Reason: Artist folder; 4 songs from album -> album subfolder
+ Path: Artists\The Notorious B.I.G.\Life After Death (2014 Remastered Edition)\The Notorious B.I.G.;Angela Winbush;Jay-Z - I Love The Dough (2014 Remaster).mp3
+
+[AUTO - new folder] Ye - BEAUTY AND THE BEAST
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye - BEAUTY AND THE BEAST.mp3
+
+[AUTO - new folder] Ye - DAMN
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye - DAMN.mp3
+
+[AUTO - new folder] Ye - PREACHER MAN
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye - PREACHER MAN.mp3
+
+[AUTO - new folder] Ye - PUNCH DRUNK
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye - PUNCH DRUNK.mp3
+
+[AUTO - new folder] Ye - WHATEVER WORKS
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye - WHATEVER WORKS.mp3
+
+[AUTO - new folder] Ye;Andre Troutman - ALL THE LOVE
+ > Title: "ALL THE LOVE (feat. Andre Troutman)"  -> "ALL THE LOVE"
+ > Artists: "Ye; Andre Troutman"  -> "Ye;Andre Troutman"
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye;Andre Troutman - ALL THE LOVE.mp3
+
+[AUTO - new folder] Ye;Nine Vicious - MAMA'S FAVORITE
+ > Title: "MAMA'S FAVORITE (feat. Nine Vicious)"  -> "MAMA'S FAVORITE"
+ > Artists: "Ye; nine vicious"  -> "Ye;Nine Vicious"
+ Route: Ye / BULLY - DELUXE
+ Reason: Artist folder [new via scan-ahead]; 7 songs from album -> album subfolder
+ Path: Artists\Ye\BULLY - DELUXE\Ye;Nine Vicious - MAMA'S FAVORITE.mp3
+
+[AUTO] Naughty By Nature - Hip Hop Hooray
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Naughty By Nature - Hip Hop Hooray.mp3
+
+[AUTO] Outasight - Figure 8
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Outasight - Figure 8.mp3
+
+[AUTO] Phantom Planet - California (Tchad Blake Mix)
+ > Album: "The Guest (Expanded Edition)"  -> "The Guest"
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Phantom Planet - California (Tchad Blake Mix).mp3
+
+[AUTO] Pj Simas - Ocean Drop
+ > Artists: "PJ Simas"  -> "Pj Simas"
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Pj Simas - Ocean Drop.mp3
+
+[AUTO] Xv - Mirror's Edge
+ > Artists: "XV"  -> "Xv"
+ Route: Misc
+ Reason: no artist folder; 1 in batch + 0 in library = 1 total, below threshold 3 -> Misc
+ Path: Miscellaneous Songs\Xv - Mirror's Edge.mp3
+
+[AUTO] Akira The Don;David Lynch - YOU DON'T HAVE TO SUFFER
+ > Artists: "Akira The Don; David Lynch"  -> "Akira The Don;David Lynch"
+ > Genre: "Rap; Hip Hop"  -> "Musivation"
+ Route: Akira The Don / Singles
+ Reason: 2 song(s) from David Lynch, below People threshold
+ Path: Musivation\Akira The Don\Singles\Akira The Don;David Lynch - YOU DON'T HAVE TO SUFFER.mp3
+
+Routed: 43  |  Skipped: 5
+
+Routing - time taken: 0.023 seconds
+
+===========================================================================
+Misc Migration (Dry Run)
+===========================================================================
+
+  Chiddy Bang: 2 song(s) -> Artists\Chiddy Bang\Singles
+[DRY RUN] Would move: Chiddy Bang - Dream Chasin'.mp3
+[DRY RUN] Would move: Chiddy Bang;Icona Pop - Mind Your Manners.mp3
+
+Would migrate: 2 Misc song(s)
+
+[INFO] NewMusic cleanup skipped: 48 file(s) still remain. Review manually.
+
+============================================================
+Finished
+============================================================
+
+--- DRY RUN COMPLETE ---
+
+Proceed with real integration? [y/N]: N
+Cancelled.
+Log file saved: logs/run-2026-06-27_180356.log
+
+============================================================
+[DONE] Start: 18:03:53.88  End: 18:05:52.14
+============================================================
+
+C:\Users\David\GitHubRepos\AudioManager\scripts>
