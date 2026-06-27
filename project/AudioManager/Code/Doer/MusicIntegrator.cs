@@ -28,6 +28,8 @@ namespace AudioManager
         // Album names with 3+ distinct primary artists in the batch - routed to Compilations/ when no artist folder
         private HashSet<string> _compilationAlbums;
         private string _libraryPath;
+        // Raw tag data cached from RunScanAhead so PreScanFiles avoids a second TagLib read per file
+        private Dictionary<string, (string artists, string title, string album, string genres, uint year)> _batchTagCache;
 
 
         /// <summary>Per-file integration result for the log and JSON output.</summary>
@@ -423,10 +425,12 @@ namespace AudioManager
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             Console.Write($"\nScan-ahead: reading {batchFiles.Length} file(s)...");
 
-            // Count artists in the incoming batch; also map album -> distinct primary artists for compilation detection
+            // Count artists in the incoming batch; also map album -> distinct primary artists for compilation detection.
+            // Cache raw tag data here so PreScanFiles avoids a second TagLib read per file.
             var batchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var batchAlbumCounts = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
             var albumArtists = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            var tagCache = new Dictionary<string, (string artists, string title, string album, string genres, uint year)>(StringComparer.OrdinalIgnoreCase);
             foreach (var f in batchFiles)
             {
                 try
@@ -434,6 +438,8 @@ namespace AudioManager
                     using (TagLib.File tf = TagLib.File.Create(f))
                     {
                         string artists = tf.Tag.JoinedPerformers;
+                        // Cache all fields PreScanFiles will need, so it can skip its own TagLib.File.Create
+                        tagCache[f] = (artists, tf.Tag.Title, tf.Tag.Album, tf.Tag.JoinedGenres, tf.Tag.Year);
                         if (string.IsNullOrEmpty(artists)) continue;
                         string primary = Track.ProcessProperty(artists)[0].Trim();
                         if (string.IsNullOrEmpty(primary)) continue;
@@ -458,8 +464,9 @@ namespace AudioManager
                         }
                     }
                 }
-                catch { /* skip unreadable files */ }
+                catch { /* skip unreadable files - no cache entry, PreScanFiles falls back to TagLib */ }
             }
+            _batchTagCache = tagCache;
 
             // Count existing Misc songs by artist from AudioMirror XML
             var miscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -936,17 +943,37 @@ namespace AudioManager
             Dictionary<string, string> aliases,
             Dictionary<string, List<string>> reverseAliases)
         {
-            string baseKey = primaryArtist.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+            string normTitle = NormaliseTitleForDedup(title).ToLowerInvariant();
+            string baseKey = primaryArtist.ToLowerInvariant() + "\0" + normTitle;
             yield return baseKey;
 
             // If this artist is an old name (e.g. "Kanye West"), also yield the canonical key ("ye\0...")
             if (aliases != null && aliases.TryGetValue(primaryArtist, out string canonical))
-                yield return canonical.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+                yield return canonical.ToLowerInvariant() + "\0" + normTitle;
 
             // If this artist is a canonical name (e.g. "Ye"), also yield old-name keys ("kanye west\0...")
             if (reverseAliases != null && reverseAliases.TryGetValue(primaryArtist, out List<string> oldNames))
                 foreach (var oldName in oldNames)
-                    yield return oldName.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+                    yield return oldName.ToLowerInvariant() + "\0" + normTitle;
+        }
+
+        /// <summary>
+        /// Normalises a title for duplicate detection by stripping featured-artist parentheticals.
+        /// Library tags may contain "(feat. X)" that TagFixer hasn't cleaned; incoming batch files
+        /// have already been cleaned. Without normalisation "God's Plan (feat. XYZ)" in the library
+        /// won't match "God's Plan" from the batch even though they're the same song.
+        /// Only strips feat./ft./featuring - does NOT strip (Remix), (Edit), (Version) which are
+        /// genuinely different tracks.
+        /// </summary>
+        internal static string NormaliseTitleForDedup(string title)
+        {
+            if (string.IsNullOrEmpty(title)) return title;
+            // Strip "(feat. X)", "(ft. X)", "(featuring X)" - case-insensitive, greedy on content
+            return System.Text.RegularExpressions.Regex.Replace(
+                title,
+                @"\s*\((feat\.?|ft\.?|featuring)\s[^)]*\)",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
         }
 
         /// <summary>
@@ -1006,7 +1033,8 @@ namespace AudioManager
             if (string.IsNullOrEmpty(primaryArtist) || primaryArtist.Equals("Missing")) return null;
             string title = track.Title;
             if (string.IsNullOrEmpty(title) || title.Equals("Missing")) return null;
-            string key = primaryArtist.ToLowerInvariant() + "\0" + title.ToLowerInvariant();
+            string normTitle = NormaliseTitleForDedup(title).ToLowerInvariant();
+            string key = primaryArtist.ToLowerInvariant() + "\0" + normTitle;
             return mirrorIndex.TryGetValue(key, out string xmlPath) ? xmlPath : null;
         }
 
@@ -1146,7 +1174,7 @@ namespace AudioManager
             var keyGroups = new Dictionary<string, List<ScannedFile>>(StringComparer.Ordinal);
             foreach (var sf in scannedFiles.Where(f => f.IsReadable && f.Track != null))
             {
-                string key = sf.Track.PrimaryArtist.ToLowerInvariant() + "\0" + sf.Track.Title.ToLowerInvariant();
+                string key = sf.Track.PrimaryArtist.ToLowerInvariant() + "\0" + NormaliseTitleForDedup(sf.Track.Title).ToLowerInvariant();
                 if (!keyGroups.ContainsKey(key)) keyGroups[key] = new List<ScannedFile>();
                 keyGroups[key].Add(sf);
             }
@@ -1170,14 +1198,26 @@ namespace AudioManager
                 try
                 {
                     Track track = new Track();
-                    using (TagLib.File tagFile = TagLib.File.Create(sourcePath))
+                    if (_batchTagCache != null && _batchTagCache.TryGetValue(sourcePath, out var cached))
                     {
-                        Tag tag = tagFile.Tag;
-                        track.Title = string.IsNullOrEmpty(tag.Title) ? "Missing" : tag.Title;
-                        track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
-                        track.Album = string.IsNullOrEmpty(tag.Album) ? "Missing" : tag.Album;
-                        track.Genres = string.IsNullOrEmpty(tag.JoinedGenres) ? "Missing" : tag.JoinedGenres;
-                        track.Year = (tag.Year == 0) ? "Missing" : tag.Year.ToString();
+                        // Use cached tags from RunScanAhead - avoids a second TagLib read per file
+                        track.Title   = string.IsNullOrEmpty(cached.title)   ? "Missing" : cached.title;
+                        track.Artists = string.IsNullOrEmpty(cached.artists) ? "Missing" : cached.artists;
+                        track.Album   = string.IsNullOrEmpty(cached.album)   ? "Missing" : cached.album;
+                        track.Genres  = string.IsNullOrEmpty(cached.genres)  ? "Missing" : cached.genres;
+                        track.Year    = (cached.year == 0)                   ? "Missing" : cached.year.ToString();
+                    }
+                    else
+                    {
+                        using (TagLib.File tagFile = TagLib.File.Create(sourcePath))
+                        {
+                            Tag tag = tagFile.Tag;
+                            track.Title   = string.IsNullOrEmpty(tag.Title)           ? "Missing" : tag.Title;
+                            track.Artists = string.IsNullOrEmpty(tag.JoinedPerformers) ? "Missing" : tag.JoinedPerformers;
+                            track.Album   = string.IsNullOrEmpty(tag.Album)           ? "Missing" : tag.Album;
+                            track.Genres  = string.IsNullOrEmpty(tag.JoinedGenres)    ? "Missing" : tag.JoinedGenres;
+                            track.Year    = (tag.Year == 0)                           ? "Missing" : tag.Year.ToString();
+                        }
                     }
 
                     // Inherit album from immediate subfolder name when tag is missing.
