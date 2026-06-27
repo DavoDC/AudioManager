@@ -320,7 +320,7 @@ namespace AudioManager
                                 sb.AppendLine($" > {change}");
                             sb.AppendLine($" Route: {routeSummary}");
                             sb.AppendLine($" Reason: {reason}");
-                            sb.AppendLine($" Path: {relativeDest}");
+                            sb.AppendLine($" Path: {relativeDest.Replace('\\', '/')}");
                             sb.AppendLine();
                             dryRunRoutingOutputs.Add((relativeDest, sb.ToString()));
                             entry.Status = "would-move";
@@ -338,7 +338,7 @@ namespace AudioManager
                                 Console.WriteLine($" > {change}");
                             Console.WriteLine($" Route: {routeSummary}");
                             Console.WriteLine($" Reason: {reason}");
-                            Console.WriteLine($" Path: {relativeDest}");
+                            Console.WriteLine($" Path: {relativeDest.Replace('\\', '/')}");
                             Console.WriteLine();
                             entry.Status = "moved";
                             logEntries.Add(entry);
@@ -392,6 +392,21 @@ namespace AudioManager
             _scanAheadBatchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _scanAheadMiscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _scanAheadSourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _scanAheadBatchAlbumCounts = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+            _compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Test-only constructor that accepts pre-built batch album counts.
+        /// Allows routing tests to verify album subfolder routing without real TagLib MP3 files.
+        /// </summary>
+        internal MusicIntegrator(string testLibraryPath, Dictionary<string, Dictionary<string, int>> batchAlbumCounts)
+        {
+            _libraryPath = testLibraryPath;
+            _scanAheadBatchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _scanAheadMiscCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _scanAheadSourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _scanAheadBatchAlbumCounts = batchAlbumCounts ?? new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
             _compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -424,13 +439,20 @@ namespace AudioManager
                         string album = tf.Tag.Album;
                         if (!string.IsNullOrEmpty(album) && !album.Equals("Missing", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!albumArtists.ContainsKey(album))
-                                albumArtists[album] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                            albumArtists[album].Add(primary);
-                            if (!batchAlbumCounts.ContainsKey(primary))
-                                batchAlbumCounts[primary] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            var byAlbum = batchAlbumCounts[primary];
-                            byAlbum[album] = byAlbum.ContainsKey(album) ? byAlbum[album] + 1 : 1;
+                            // Normalize album to match how PreScanFiles cleans tags before routing.
+                            // Without this, "The Blueprint (Explicit Version)" and "The Blueprint" are
+                            // counted under different keys, causing CountAlbumSongs to return 0 for the batch.
+                            album = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(album));
+                            if (!string.IsNullOrEmpty(album))
+                            {
+                                if (!albumArtists.ContainsKey(album))
+                                    albumArtists[album] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                albumArtists[album].Add(primary);
+                                if (!batchAlbumCounts.ContainsKey(primary))
+                                    batchAlbumCounts[primary] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                                var byAlbum = batchAlbumCounts[primary];
+                                byAlbum[album] = byAlbum.ContainsKey(album) ? byAlbum[album] + 1 : 1;
+                            }
                         }
                     }
                 }
@@ -1397,9 +1419,11 @@ namespace AudioManager
             {
                 string scanNote = scanAheadNewFolder ? " [new via scan-ahead]" : "";
 
-                if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist2))
+                if (!track.Album.Equals("Missing"))
                 {
-                    // Count songs from this album (holistic: library + batch combined)
+                    // Count songs from this album (holistic: library + batch combined).
+                    // Self-titled albums (album == artist name) are treated as real albums; the
+                    // count determines routing just like any other album.
                     int albumCount = CountAlbumSongs(primaryArtist2, track.Album);
                     if (albumCount >= 2)
                     {
@@ -1416,7 +1440,7 @@ namespace AudioManager
                 }
                 else
                 {
-                    reason = $"Artist folder{scanNote}; no distinct album -> Singles/";
+                    reason = $"Artist folder{scanNote}; no album tag -> Singles/";
                     isNewFolder = scanAheadNewFolder;
                     return Path.Combine(artistFolder, "Singles");
                 }

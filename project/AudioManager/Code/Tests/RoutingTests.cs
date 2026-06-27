@@ -166,16 +166,59 @@ namespace AudioManager
             finally { RoutingFixtures.Cleanup(lib); }
         }
 
-        public static void Routing_ExistingArtist_AlbumMatchesArtistName_RoutesToSingles()
+        public static void Routing_ExistingArtist_AlbumMatchesArtistName_NoLibrarySongs_RoutesToSingles()
         {
             string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Known Artist" });
             try
             {
-                // When album == primary artist name, GetDestDir treats it as no distinct album -> Singles
+                // Self-titled album ("Known Artist") with 0 library songs -> below threshold -> Singles.
+                // Self-titled albums are no longer special-cased: only album song count decides routing.
                 var integrator = new MusicIntegrator(lib);
                 string dest = GetDest(integrator, MakeTrack("Known Artist", "Some Song", album: "Known Artist"));
                 string expected = Path.Combine(lib, Constants.ArtistsDir, "Known Artist", "Singles");
-                Assert.Equal(expected, dest, "existing artist, album == artist name -> Singles (no distinct album)");
+                Assert.Equal(expected, dest, "self-titled album, 0 library songs -> Singles (below threshold)");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_SelfTitledAlbum_WithLibrarySongs_RoutesToAlbumFolder()
+        {
+            // Bug fix: album == artist name was incorrectly excluded from album routing.
+            // With 2+ library songs in the self-titled album folder, it must route to the album subfolder.
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Paperboys" });
+            try
+            {
+                RoutingFixtures.AddAlbumFiles(lib, "Paperboys", "Paperboys", fileCount: 2);
+                var integrator = new MusicIntegrator(lib);
+                string dest = GetDest(integrator, MakeTrack("Paperboys", "No Middleman", album: "Paperboys"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Paperboys", "Paperboys");
+                Assert.Equal(expected, dest, "self-titled album with 2+ library songs -> album subfolder");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_BatchAlbumCount_NormalizedAlbumSuffixMatchesCount()
+        {
+            // Bug fix: scan-ahead must normalize album names before storing in batch counts.
+            // This test injects pre-normalized batch data to verify CountAlbumSongs finds it.
+            // Real scenario: "The Blueprint (Explicit Version)" raw -> "The Blueprint" normalized.
+            // Before fix, batch data was stored under the raw key; CountAlbumSongs looked up the
+            // normalized key and found 0, routing everything to Singles.
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "Jay-Z" });
+            try
+            {
+                // Simulate scan-ahead having stored normalized "The Blueprint" with 4 batch songs
+                var batchAlbumCounts = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Jay-Z"] = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["The Blueprint"] = 4
+                    }
+                };
+                var integrator = new MusicIntegrator(lib, batchAlbumCounts);
+                string dest = GetDest(integrator, MakeTrack("Jay-Z", "Izzo (H.O.V.A.)", album: "The Blueprint"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "Jay-Z", "The Blueprint");
+                Assert.Equal(expected, dest, "4 batch songs from album (normalized key) -> album subfolder");
             }
             finally { RoutingFixtures.Cleanup(lib); }
         }
