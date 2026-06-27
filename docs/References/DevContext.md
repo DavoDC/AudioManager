@@ -139,6 +139,9 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 ## Testing Patterns
 
+- **`_scanAheadBatchAlbumCounts` was null (not empty dict) in the test constructor.** This made it impossible to inject batch album count data for routing tests without real TagLib MP3 files. Fixed 2026-06-27: default test constructor now initializes to empty dict; injector overload `MusicIntegrator(string testLibraryPath, Dictionary<string,Dictionary<string,int>> batchAlbumCounts)` added for routing tests that need batch data without real MP3 files. When adding scan-ahead fields: always initialize to empty collections in test constructors, not null.
+
+
 - **Path-injection pattern for testability.** Any class that hardcodes a `Constants.X` path (cache, mirror, config, last-run file) is made testable by adding an optional `string path = null` final parameter and computing `string effectivePath = path ?? Constants.X` at the top. Pass the real field at call sites; tests pass a temp path. Zero production behavior change, backwards compatible, no DI framework. Applied to: `Parser(mirrorPath, cachePath)`, `CountAkiraTheDonPersonSongs(person, libraryPath)`, `CountAkiraTheDonPersonAlbumSongs(person, album, libraryPath)`, `AgeChecker(force, lastRunInfoPath)`, `LibChecker.LoadExceptions(exceptionsPath)`. Use this before reaching for any heavier seam.
 
 - **LibChecker test RelPath must have a leading backslash** (`\Artists\Artist\Singles\file.xml`). LibChecker's `GetRelPathPart(tag, 1)` splits on `\` and expects index 1 = the main folder, which only holds when the path leads with a separator (matching real AudioMirror format). Without it, index 1 resolves to the artist name and every folder-scoped rule silently no-ops. The `ArtistTag()` helper in LibCheckerTests documents this in a comment.
