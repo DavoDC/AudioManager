@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-27 - RunScanAhead: normalize artist via TagFixer before storing batchAlbumCounts key
+
+Some streaming providers embed Unicode artist variants (e.g. "JAŸ-Z" with Y-umlaut U+0178) in MP3 tags. `RunScanAhead` was storing these raw strings as keys in `_scanAheadBatchAlbumCounts`. `CountAlbumSongs` queries with the TagFixer-normalized name ("Jay-Z"). `StringComparer.OrdinalIgnoreCase` cannot bridge different Unicode code points (U+0178 vs U+0059), so the lookup returned 0 and all Blueprint songs routed to Singles instead of the album subfolder.
+
+Fix: `RunScanAhead` now calls `TagFixer.ExtractAndFixArtists()` on each file's artist tag before using it as the `batchAlbumCounts` key (and also `batchCounts` for new-folder detection). This ensures the key matches what `CountAlbumSongs` will query: the canonical, overrides-applied form. The `artist-name-overrides.xml` override `<Artist canonical="Jay-Z" variant="JAŸ-Z" />` now fires correctly at scan-ahead time.
+
+---
+
 ## 2026-06-27 - CountAlbumSongs library-side memoization
 
 `CountAlbumSongs` was calling `Directory.GetFiles(albumFolder)` once per routing call. When a batch contains multiple songs from the same album (e.g. 6 Blueprint tracks), and dry-run calls `GetDestDir` twice per file (preview + actual routing), this became 12 identical filesystem scans for the same album. `_albumLibraryCountCache` (artist+album -> count) reduces this to one scan per unique pair per integration run.

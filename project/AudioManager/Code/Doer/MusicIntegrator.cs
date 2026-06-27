@@ -446,7 +446,12 @@ namespace AudioManager
                         // Cache all fields PreScanFiles will need, so it can skip its own TagLib.File.Create
                         tagCache[f] = (artists, tf.Tag.Title, tf.Tag.Album, tf.Tag.JoinedGenres, tf.Tag.Year);
                         if (string.IsNullOrEmpty(artists)) continue;
-                        string primary = Track.ProcessProperty(artists)[0].Trim();
+                        // Normalize via TagFixer so artist-name variants (e.g. "JAŸ-Z" via U+0178)
+                        // are resolved to their canonical form ("Jay-Z") before being used as dict keys.
+                        // Without this, batchAlbumCounts stores "JAŸ-Z" but CountAlbumSongs queries
+                        // "Jay-Z" (tag-fixed), and OrdinalIgnoreCase can't bridge the Unicode gap.
+                        var fixedArtists = TagFixer.ExtractAndFixArtists(tf.Tag.Title ?? "", artists);
+                        string primary = fixedArtists.Count > 0 ? fixedArtists[0].Trim() : Track.ProcessProperty(artists)[0].Trim();
                         if (string.IsNullOrEmpty(primary)) continue;
                         batchCounts[primary] = batchCounts.ContainsKey(primary) ? batchCounts[primary] + 1 : 1;
                         string album = tf.Tag.Album;
