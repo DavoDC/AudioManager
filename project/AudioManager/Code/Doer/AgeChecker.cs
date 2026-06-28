@@ -14,6 +14,18 @@ namespace AudioManager
         public static bool RegenMirror { get; set; }
 
         /// <summary>
+        /// Forces force-regen mode for the next Reflector call and updates LastRunInfo.txt.
+        /// Used by post-integration validation, which always needs a full mirror rebuild
+        /// to prune orphaned XMLs left behind by deleted/moved library files.
+        /// </summary>
+        public static void ForceRegen(string lastRunInfoPath = null)
+        {
+            RegenMirror = true;
+            string effectivePath = lastRunInfoPath ?? Constants.LastRunInfoFilePath;
+            File.WriteAllText(effectivePath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
+
+        /// <summary>
         /// Create an age checker
         /// </summary>
         /// <param name="forceMirrorRegen">Whether the mirror should be regenerated regardless of age</param>

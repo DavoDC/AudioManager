@@ -204,8 +204,12 @@ namespace AudioManager
                             Console.WriteLine("\nPost-integration validation...");
                             try
                             {
-                                // Regenerate mirror to reflect newly integrated files
-                                Console.WriteLine(" - Regenerating AudioMirror XMLs...");
+                                // Force-regen: integration deleted/moved library files, so incremental
+                                // Reflector would leave orphaned XMLs that trigger ghost LibChecker warnings.
+                                AgeChecker.ForceRegen();
+
+                                // Regenerate mirror (force-regen mode now active via AgeChecker.RegenMirror)
+                                Console.WriteLine(" - Regenerating AudioMirror XMLs (force)...");
                                 Reflector r = new Reflector(mirrorPath);
                                 Parser p = new Parser(mirrorPath);
 
