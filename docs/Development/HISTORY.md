@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-28 - INVESTIGATE: multi-artist filename separator - no bug found
+
+Investigated TIER 1 candidate: "multi-artist destination filename keeps `"; "` while artist tag normalizes to `";`"". Read on-disk MP3 filenames and AudioMirror XML `<Artists>` tags for two multi-artist files from the 2026-06-28 integration batch (`Akira The Don; David Lynch - KALI YUGA` and `Counting Crows; Vanessa Carlton - Big Yellow Taxi`). Both filenames and both `<Artists>` tags consistently use `"; "` (semicolon space). No mismatch. LibChecker correctly does not flag these files.
+
+Latent risk identified and moved to TIER 3: TagFixer's `string.Join(";")` (no space) diverges from TagLib#'s `JoinedPerformers` (with `"; "` space), which could cause phantom `artistsChanged` detections for future files stored with Performers as a TagLib# array. No fix needed now - not manifested in real data.
+
+---
+
 ## 2026-06-28 - Post-integration mirror integrity: force-regen + LastRunInfo.txt commit
 
 Two bugs fixed together (causally linked - both affect post-integration reliability):
