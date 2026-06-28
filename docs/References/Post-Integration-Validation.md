@@ -5,6 +5,11 @@ Why post-integration LibChecker warnings are often false, and how to make
 
 Case study: real integration run on 2026-06-28 (`logs/REAL_INTEGRATION_Sun_28.txt`).
 
+**This is reference only - mechanism, proof, and design rationale.** Every
+actionable item (fixes, investigations) is tracked in `docs/Development/IDEAS.md`
+TIER 1, not here. Read this to understand *why*; act from IDEAS so nothing is
+missed.
+
 ---
 
 ## The defect in one sentence
@@ -69,23 +74,24 @@ This same asymmetry leaks into ParseCache (a deleted MP3's cached row persists
 until force regen) and is the reason "is this a ghost or a real duplicate?"
 recurs in diagnosis. Removing the asymmetry removes the whole class.
 
-## Three fixes, smallest to deepest
+## The solution space (rationale only - actions in IDEAS TIER 1)
 
-1. **Interim: post-integration validation force-regens.**
-   Change the post-integration step to delete + rebuild the mirror before
-   LibChecker. Correct, ~1s cost, one-line behavior change. Stops the lying.
+Three approaches exist, smallest to deepest. They are tracked as IDEAS items;
+the rationale is recorded here so the trade-offs are not re-derived later.
 
-2. **Better: incremental Reflector prunes orphaned XMLs.**
-   After the create/refresh pass, delete any XML whose MP3 no longer exists.
-   This makes incremental regen fully truthful, removes the post-integration
-   ghost class AND the ParseCache caveat, and retires the "force regen required
-   after deletion" footnote everywhere. Guard: only prune when the Audio root
-   enumerated successfully (never prune against an empty/failed scan). XMLs are
-   git-tracked and regenerable, so the blast radius is low.
+1. **Interim - force-regen before post-integration LibChecker.** Correct, ~1s
+   cost, minimal change, but wastefully rebuilds the whole mirror for the sake of
+   a handful of deletions.
 
-3. **Best (shift-left): validate the projected final state in the dry run.**
-   See below. Catches real issues BEFORE any file moves and is inherently
-   ghost-free because it models deletions correctly.
+2. **Deeper - incremental Reflector prunes orphaned XMLs.** Makes incremental
+   regen fully truthful, which removes the post-integration ghost class AND the
+   ParseCache "deleted MP3 persists" caveat AND the "force regen required after
+   deletion" footnotes everywhere. The one with the widest blast radius of
+   simplification.
+
+3. **Best (shift-left) - validate the projected final state in the dry run.**
+   Catches real issues before any file moves and is inherently ghost-free
+   because it models deletions correctly. Mechanism described below.
 
 ---
 
@@ -114,15 +120,17 @@ What this would have done on 2026-06-28:
   `The Notorious B.I.G.` album-suffix split - fixable while files are still
   staged.
 
-This turns the user's goal ("after a real integration there should be no
-LibChecker errors") into something achievable and enforceable: the dry run can
-print a projected-LibChecker section, and integration can refuse to proceed (or
-loudly require an override) when the projection is not clean.
+This turns the goal ("after a real integration there should be no LibChecker
+errors") into something achievable and enforceable: the dry run prints a
+projected-LibChecker section, and integration refuses to proceed (or loudly
+requires an override) when the projection is not clean.
 
 Feasibility note: no actual MP3 reads are required for the projection - the
 integrator already holds the fixed tag data for every batch file, and LibChecker
 already operates on TrackTag objects. The only new work is synthesizing
 destination-path TrackTags and splicing the list.
+
+(Build action tracked in IDEAS TIER 1 "Dry-run projected LibChecker".)
 
 ---
 
@@ -147,14 +155,15 @@ Two things are wrong and they compound:
   That is a routing<->LibChecker divergence of the same family already noted in
   DevContext "Routing-LibChecker threshold parity".
 
-Fix direction: a single canonical album-version normalizer (strip / fold
-Remaster(ed), Anniversary, Mono, Stereo, Expanded, and decide a consistent rule
-for Deluxe vs base) used by BOTH the album-count logic and the destination-path
-builder, so the count and the placement can never disagree.
+The direction (tracked in IDEAS TIER 1 "Album version-suffix normalization"): a
+single canonical album-version normalizer (strip / fold Remaster(ed),
+Anniversary, Mono, Stereo, Expanded, and a consistent Deluxe-vs-base rule) used
+by BOTH the album-count logic and the destination-path builder, so count and
+placement can never disagree.
 
 ---
 
-## Secondary observation to confirm (not yet proven a bug)
+## Secondary observation (not yet proven a bug)
 
 In the confidence report, every multi-artist destination filename keeps the
 `"; "` (space after semicolon) form while the corresponding artist tag is
@@ -168,7 +177,6 @@ uses the un-normalized artist string, producing a real tag/filename mismatch tha
 LibChecker's `CheckFilenamesCasingsMatchArtistTags` does not catch (it compares
 casing, perhaps not separator spacing).
 
-Confirm by reading the on-disk filename of one multi-artist file and comparing to
-its `<Artists>` tag. If mismatched, this is two defects: a TagFixer rename
-normalization gap AND a LibChecker filename-check gap. Until confirmed, treat as
-an investigation item, not a fix.
+The confirmation step and follow-up are tracked in IDEAS TIER 1 "Multi-artist
+destination filename keeps '; '". If confirmed, it is two defects: a TagFixer
+rename normalization gap AND a LibChecker filename-check gap.
