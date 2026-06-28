@@ -121,6 +121,10 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 - **CommitTrigger enum in AudioMirrorCommitter:** AnalysisForceRegen and Integration trigger auto-commit (mirror is reliable); AnalysisIncremental skips silently (stale XMLs possible). Never pushes - user pushes manually. Safety gate: LibChecker must be clean AND files must have changed.
 
+- **`AgeChecker.ForceRegen(lastRunInfoPath=null)` is the correct seam for forcing a full mirror rebuild.** Sets `RegenMirror=true` AND writes `LastRunInfo.txt` with current timestamp (so the audit file is committed alongside the mirror). Use this over direct `AgeChecker.RegenMirror = true` assignment - the latter skips the LastRunInfo update. Post-integration flow calls this before `new Reflector()` so orphaned XMLs from deleted/moved library files are pruned.
+
+- **TagLib#'s `JoinedPerformers` uses `"; "` (semicolon space) as the join separator** for Performers arrays. TagFixer's `string.Join(";", artistList)` uses no space. These diverge for files where Performers is stored as an array - `artistsChanged` detects a difference even when artists are already correct. Any future artist-equality check should either compare the Performers array directly, or normalize both sides to the same separator before string comparison. See TIER 3 item "TagFixer artist separator diverges from TagLib# JoinedPerformers format".
+
 - **verify.bat runs full suite:** build + unit tests + manifest tests. Always pass `--no-pause` when calling from Claude. All assertions must be green before any C# commit.
 
 - **Test deactivation pattern (reflection-discovered tests):** TestRunner discovers tests via `GetMethods(BindingFlags.Static | BindingFlags.Public)`. To deactivate a test without deleting it (e.g. when a LibChecker check is deferred until library remediation), change `public static void` to `private static void`. Add `_DEFERRED` suffix to the method name as a signal. Re-enable: revert to public + restore the production code it exercises. The `_IsClean` counterpart tests should remain public - they verify the non-blocking path still passes.
