@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-28 - Post-integration mirror integrity: force-regen + LastRunInfo.txt commit
+
+Two bugs fixed together (causally linked - both affect post-integration reliability):
+
+**Bug 1 - LastRunInfo.txt excluded from auto-commit:** `AudioMirrorCommitter.TryCommit()` staged only `AUDIO_MIRROR/` via `git add`, silently omitting `LastRunInfo.txt` at the AudioMirror repo root on every auto-commit. Fixed: `git add AUDIO_MIRROR/ LastRunInfo.txt`. CLAUDE.md rule: "AudioMirror audit metadata is as much part of the artifact as the data itself."
+
+**Bug 2 - Post-integration used incremental Reflector:** After integration moves/deletes library files (`[L]` duplicate decisions, Misc migration), the post-integration Reflector ran incrementally - leaving orphaned XMLs for vacated locations. LibChecker then saw those ghosts and reported false issues. Confirmed 2026-06-28: 11 of 12 post-integration LibChecker hits were ghosts; only the B.I.G. album-suffix case was real. Fixed: added `AgeChecker.ForceRegen(path=null)` static method (sets `RegenMirror=true`, writes `LastRunInfo.txt`). Program.cs post-integration block now calls `AgeChecker.ForceRegen()` before `new Reflector(mirrorPath)`, ensuring a full mirror rebuild that prunes orphaned XMLs. Three new tests added: `ForceRegen_SetsRegenMirrorTrue`, `ForceRegen_WritesLastRunInfoFile`, `ForceRegen_UpdatesExistingLastRunInfoFile`.
+
+---
+
 ## 2026-06-27 - LibChecker: detect missing artist semicolon delimiter in filenames
 
 `CheckFilename()` now verifies that multi-artist tracks have the semicolon delimiter present in the filename. Previous check: each artist is a substring of the filename (passes for "T.I.Cee Lo Green" because "T.I." and "Cee Lo Green" are both substrings). New check: `string.Join(";", artists)` must also be a substring (fails "T.I.Cee Lo Green" but passes "T.I.;Cee Lo Green"). Two tests added: `LibChecker_MultiArtistFilenameMissingSemicolon_IsDirty` and `LibChecker_MultiArtistFilenameWithSemicolon_IsClean`. Now catches `T.I.Cee Lo Green - Hello.mp3` and `T.I.Dr. Dre - Popped Off.mp3` in the real library. Those files need manual rename via Mp3tag (see TIER 1).
