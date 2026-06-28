@@ -79,8 +79,8 @@ namespace AudioManager
                 ? commitTitle
                 : commitTitle + "\n" + commitBody;
 
-            // Stage AUDIO_MIRROR folder and commit
-            RunGit(repoPath, "add AUDIO_MIRROR/");
+            // Stage AUDIO_MIRROR folder + LastRunInfo.txt (audit metadata at repo root)
+            RunGit(repoPath, "add AUDIO_MIRROR/ LastRunInfo.txt");
             string commitResult = RunGit(repoPath, $"commit -m \"{fullMessage.Replace("\"", "\\\"")}\"");
 
             if (string.IsNullOrWhiteSpace(commitResult) || commitResult.Contains("nothing to commit"))
