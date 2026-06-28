@@ -69,6 +69,10 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 **Force regen removes all staleness:** deletes mirror entirely, rebuilds all XMLs from MP3 reads, then Parser saves a fresh cache.
 
+**Validation-after-deletion hazard (the ghost-XML trap):** the add-only nature of incremental regen is not just an analysis concern - integration itself deletes (`[L]` duplicate decisions) and moves (Misc migration) library files, then post-integration validation regenerates incrementally. The vacated locations keep their XMLs, so LibChecker validates a mirror that describes a library state that no longer exists and flags the ghosts as duplicates / misplaced songs. Fast tell: post-integration regen prints `Tags parsed > MP3 file count` - the difference is the ghost count (2026-06-28: 5702 parsed vs 5693 on disk = 9 ghosts = 9 vacated locations). Before treating any post-integration LibChecker warning as real, force-regen and re-check; warnings at a deleted/moved-from path are almost always ghosts. The durable fix is to make incremental regen prune orphaned XMLs (IDEAS TIER 1). Full analysis: `docs/References/Post-Integration-Validation.md`.
+
+**Projection pattern for pre-move validation:** LibChecker consumes `List<TrackTag>`, never MP3 files - so the post-integration library state can be validated in memory during the dry run, before anything moves. Build a projected tag list: current parsed tags, minus the TrackTags the integrator will delete or move away from, plus synthesized destination-path TrackTags carrying the post-TagFixer values (the integrator already holds these). Running LibChecker on the projection predicts real issues with zero ghost false positives, because deletions are modelled by construction. This is the preferred validation seam (IDEAS TIER 1) - any new check that needs "what will the library look like after this batch?" should build a projected `List<TrackTag>` rather than inspecting the live mirror after the fact.
+
 ---
 
 ## Code Invariants
