@@ -13,7 +13,8 @@ namespace AudioManager
         private static TrackTag ArtistTag(string artist = "Jay-Z", string title = "Song",
             string album = "The Blueprint", string relPath = null)
         {
-            string path = relPath ?? $"\\Artists\\{artist}\\{album}\\{artist} - {title}.xml";
+            // Default path: Singles/ (1-song rule; LibChecker expects 2+ songs -> album folder, 1 song -> Singles/)
+            string path = relPath ?? $"\\Artists\\{artist}\\Singles\\{artist} - {title}.xml";
             return new TrackTag(path, title, artist, album, "2001", "1", "Hip-Hop",
                 "00:03:30.0000000", "1", "True", "1200", "1200");
         }
