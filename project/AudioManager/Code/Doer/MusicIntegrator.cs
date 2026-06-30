@@ -35,6 +35,9 @@ namespace AudioManager
         // Library-side album song count cache: "artist\0album" -> count. Avoids O(N) Directory.GetFiles
         // calls when the same artist+album appears multiple times in a batch (e.g. 6 Blueprint tracks).
         private Dictionary<string, int> _albumLibraryCountCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        // Library paths deleted by L-decisions during real integration; used in RunMiscMigration
+        // to distinguish "deleted by dup resolution" from "genuinely stale mirror".
+        private HashSet<string> _lDeletedLibraryPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 
         /// <summary>Per-file integration result for the log and JSON output.</summary>
@@ -202,6 +205,13 @@ namespace AudioManager
                         {
                             Console.WriteLine($"[DRY RUN] Would delete from library: {dup.RelLibraryPath}");
                             Console.WriteLine($"[DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
+                            string lDestDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out _, out _);
+                            string lDestFile = Reflector.SanitiseFilename(track.Artists) + " - " + Reflector.SanitiseFilename(track.Title) + ".mp3";
+                            string lDestPath = Path.Combine(lDestDir, lDestFile);
+                            string lRelDest = lDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
+                                ? lDestPath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
+                                : lDestPath;
+                            Console.WriteLine($"[DRY RUN] Would route to: {lRelDest}");
                             entry.Status = "would-replace";
                             entry.Detail = "duplicate (would replace)";
                             logEntries.Add(entry); skippedCount++;
@@ -213,6 +223,7 @@ namespace AudioManager
                             if (File.Exists(dup.LibraryFilePath))
                             {
                                 File.Delete(dup.LibraryFilePath);
+                                _lDeletedLibraryPaths.Add(dup.LibraryFilePath);
                                 Console.WriteLine($"  Deleted from library: {dup.RelLibraryPath}");
                                 Console.WriteLine($"  Integrating replacement: {dup.RelNewPath}");
                                 entry.Detail = "duplicate (library replaced)";
@@ -681,7 +692,10 @@ namespace AudioManager
 
                     if (!File.Exists(libPath))
                     {
-                        Console.WriteLine($"  [WARN] Not found in library (stale mirror?): {fileName}");
+                        if (_lDeletedLibraryPaths.Contains(libPath))
+                            Console.WriteLine($"  [INFO] Already deleted by duplicate resolution: {fileName}");
+                        else
+                            Console.WriteLine($"  [WARN] Not found in library (stale mirror?): {fileName}");
                         continue;
                     }
 
