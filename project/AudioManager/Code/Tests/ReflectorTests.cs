@@ -100,12 +100,62 @@ namespace AudioManager
 
         // ---- PruneOrphanedXmls ----
 
-        public static void PruneOrphanedXmls_DeletesOrphanedXml() { }
+        public static void PruneOrphanedXmls_DeletesOrphanedXml()
+        {
+            string mirror = Path.Combine(Path.GetTempPath(), "am_prune_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            Directory.CreateDirectory(mirror);
+            try
+            {
+                string orphan = Path.Combine(mirror, "deleted-track.xml");
+                File.WriteAllText(orphan, "stub");
 
-        public static void PruneOrphanedXmls_PreservesExpectedXml() { }
+                // Empty expected set - orphan not in it
+                var expected = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                int pruned = Reflector.PruneOrphanedXmls(mirror, expected);
 
-        public static void PruneOrphanedXmls_EmptyMirror_ReturnsZero() { }
+                Assert.True(pruned == 1, "one orphaned XML should be pruned");
+                Assert.True(!File.Exists(orphan), "orphaned XML file should be deleted");
+            }
+            finally { Directory.Delete(mirror, recursive: true); }
+        }
 
-        public static void PruneOrphanedXmls_NonexistentMirrorPath_ReturnsZero() { }
+        public static void PruneOrphanedXmls_PreservesExpectedXml()
+        {
+            string mirror = Path.Combine(Path.GetTempPath(), "am_prune_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            Directory.CreateDirectory(mirror);
+            try
+            {
+                string kept = Path.Combine(mirror, "current-track.xml");
+                File.WriteAllText(kept, "stub");
+
+                var expected = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { kept };
+                int pruned = Reflector.PruneOrphanedXmls(mirror, expected);
+
+                Assert.True(pruned == 0, "expected XML should not be pruned");
+                Assert.True(File.Exists(kept), "expected XML file should still exist");
+            }
+            finally { Directory.Delete(mirror, recursive: true); }
+        }
+
+        public static void PruneOrphanedXmls_EmptyMirror_ReturnsZero()
+        {
+            string mirror = Path.Combine(Path.GetTempPath(), "am_prune_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            Directory.CreateDirectory(mirror);
+            try
+            {
+                var expected = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                int pruned = Reflector.PruneOrphanedXmls(mirror, expected);
+                Assert.True(pruned == 0, "no XMLs in mirror -> nothing to prune");
+            }
+            finally { Directory.Delete(mirror, recursive: true); }
+        }
+
+        public static void PruneOrphanedXmls_NonexistentMirrorPath_ReturnsZero()
+        {
+            string mirror = Path.Combine(Path.GetTempPath(), "am_prune_nonexistent_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            var expected = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int pruned = Reflector.PruneOrphanedXmls(mirror, expected);
+            Assert.True(pruned == 0, "nonexistent mirror path -> returns 0, no exception");
+        }
     }
 }
