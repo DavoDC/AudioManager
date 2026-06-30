@@ -309,6 +309,40 @@ namespace AudioManager
             Assert.Equal("", result, "empty artists string should return empty genre");
         }
 
+        // ---- StripAlbumSuffixes - version-suffix normalization (B.I.G. bug 2026-06-28) ----
+
+        public static void StripAlbumSuffixes_StripsYearRemasteredEdition()
+        {
+            // Root case: "Life After Death (2014 Remastered Edition)" was not stripped before this fix.
+            // The remaster pattern stopped at Remaster(ed) without the trailing Edition word.
+            string result = TagFixer.StripAlbumSuffixes("Life After Death (2014 Remastered Edition)");
+            Assert.Equal("Life After Death", result, "(YYYY Remastered Edition) should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsRemasteredEdition()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (Remastered Edition)");
+            Assert.Equal("Album Name", result, "(Remastered Edition) without year should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsYearRemasterEdition()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (2011 Remaster Edition)");
+            Assert.Equal("Album Name", result, "(YYYY Remaster Edition) should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsMono()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (Mono)");
+            Assert.Equal("Album Name", result, "(Mono) should be stripped");
+        }
+
+        public static void StripAlbumSuffixes_StripsStereo()
+        {
+            string result = TagFixer.StripAlbumSuffixes("Album Name (Stereo)");
+            Assert.Equal("Album Name", result, "(Stereo) should be stripped");
+        }
+
         // ---- Intentionally NOT stripped (documents design boundaries) ----
 
         public static void RemoveParentheticals_LivePattern_NotStripped()
