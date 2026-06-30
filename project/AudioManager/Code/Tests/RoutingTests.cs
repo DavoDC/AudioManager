@@ -398,5 +398,42 @@ namespace AudioManager
             }
             finally { RoutingFixtures.Cleanup(lib); }
         }
+
+        // ---- Version-suffix normalization routing (B.I.G. bug 2026-06-28) ----
+
+        public static void Routing_VersionSuffixedAlbumTag_RoutesToExistingCleanFolder()
+        {
+            // After TagFixer strips "(2014 Remastered Edition)" from the ID3 tag, track.Album is clean.
+            // Routing should find the existing clean-named library folder and route there.
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "The Notorious B.I.G." });
+            try
+            {
+                RoutingFixtures.AddAlbumFiles(lib, "The Notorious B.I.G.", "Life After Death", fileCount: 4);
+                var integrator = new MusicIntegrator(lib);
+                // Track has clean album name (as TagFixer would produce after the fix)
+                string dest = GetDest(integrator, MakeTrack("The Notorious B.I.G.", "I Love The Dough", album: "Life After Death"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "The Notorious B.I.G.", "Life After Death");
+                Assert.Equal(expected, dest, "clean album tag + 4 library songs -> routes to existing clean folder");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
+
+        public static void Routing_SuffixedLibraryFolder_MatchedByCleanAlbumName()
+        {
+            // FindAlbumFolder fuzzy match: library has a suffixed folder, incoming clean album name
+            // should route into that folder rather than creating a new clean-named folder.
+            string lib = RoutingFixtures.CreateLibraryFixture(artistFolders: new[] { "The Notorious B.I.G." });
+            try
+            {
+                // Library already has a suffixed folder (created by a pre-fix integration run)
+                RoutingFixtures.AddAlbumFiles(lib, "The Notorious B.I.G.", "Life After Death (2014 Remastered Edition)", fileCount: 2);
+                var integrator = new MusicIntegrator(lib);
+                // Incoming file has clean album tag (as TagFixer would produce)
+                string dest = GetDest(integrator, MakeTrack("The Notorious B.I.G.", "Sky's The Limit", album: "Life After Death"));
+                string expected = Path.Combine(lib, Constants.ArtistsDir, "The Notorious B.I.G.", "Life After Death (2014 Remastered Edition)");
+                Assert.Equal(expected, dest, "clean album tag + suffixed library folder -> FindAlbumFolder fuzzy match routes to existing suffixed folder");
+            }
+            finally { RoutingFixtures.Cleanup(lib); }
+        }
     }
 }
