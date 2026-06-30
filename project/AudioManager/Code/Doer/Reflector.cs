@@ -76,10 +76,11 @@ namespace AudioManager
 
 
         /// <summary>
-        /// Populate folder structure with mirrored files
+        /// Populate folder structure with mirrored files. In incremental mode, also prunes XMLs
+        /// whose source MP3 no longer exists (guard: only when Audio root enumerated successfully).
         /// </summary>
-        /// <returns>Statistics tuple</returns>
-        private Tuple<int, int, int, List<string>> CreateFiles()
+        /// <returns>Statistics tuple: (mp3Count, sanitised, refreshed, pruned, nonMP3Files)</returns>
+        private Tuple<int, int, int, int, List<string>> CreateFiles()
         {
             // Holders
             int mp3FileCount = 0;
@@ -89,6 +90,10 @@ namespace AudioManager
 
             // For every actual file
             string[] realFiles = Directory.GetFiles(Constants.AudioFolderPath, "*", SearchOption.AllDirectories);
+
+            // Track expected XML paths so orphan detection knows what to keep
+            var expectedXmlPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var realFilePath in realFiles)
             {
                 // Get relative file path
@@ -101,6 +106,14 @@ namespace AudioManager
                     continue;
                 }
 
+                // Compute expected XML path (same logic as CreateFile, for orphan tracking)
+                string fileName = Path.GetFileName(realFilePath);
+                string sanitisedName = SanitiseFilename(fileName);
+                string xmlRelPath = fileName != sanitisedName
+                    ? relativePath.Replace(fileName, sanitisedName)
+                    : relativePath;
+                expectedXmlPaths.Add(Path.ChangeExtension(Path.Combine(mirrorPath, xmlRelPath), ".xml"));
+
                 // Otherwise, process MP3 file
                 if (CreateFile(realFilePath, relativePath, out bool refreshed))
                     sanitisationCount++;
@@ -110,8 +123,14 @@ namespace AudioManager
                 mp3FileCount++;
             }
 
+            // Incremental mode: prune XMLs whose MP3 was deleted since last run.
+            // Guard: skip if Audio root returned 0 files (access failure or unexpected empty library).
+            int prunedCount = 0;
+            if (!AgeChecker.RegenMirror && realFiles.Length > 0)
+                prunedCount = PruneOrphanedXmls(mirrorPath, expectedXmlPaths);
+
             // Return holders
-            return Tuple.Create(mp3FileCount, sanitisationCount, refreshedCount, nonMP3Files);
+            return Tuple.Create(mp3FileCount, sanitisationCount, refreshedCount, prunedCount, nonMP3Files);
         }
 
 
@@ -177,18 +196,38 @@ namespace AudioManager
             return File.GetLastWriteTimeUtc(mp3Path) > File.GetLastWriteTimeUtc(xmlPath);
         }
 
+        /// <summary>
+        /// Deletes XMLs from mirrorPath that are not in expectedXmlPaths (orphaned entries
+        /// left by deleted MP3s). Returns the number of XMLs pruned.
+        /// </summary>
+        internal static int PruneOrphanedXmls(string mirrorPath, HashSet<string> expectedXmlPaths)
+        {
+            if (!Directory.Exists(mirrorPath)) return 0;
+            int pruned = 0;
+            foreach (string xmlFile in Directory.GetFiles(mirrorPath, "*.xml", SearchOption.AllDirectories))
+            {
+                if (!expectedXmlPaths.Contains(xmlFile))
+                {
+                    File.Delete(xmlFile);
+                    pruned++;
+                }
+            }
+            return pruned;
+        }
+
 
         /// <summary>
         /// Print info about completed mirroring process
         /// </summary>
         /// <param name="statisticsInfo"></param>
-        private void PrintStats(Tuple<int, int, int, List<string>> statisticsInfo)
+        private void PrintStats(Tuple<int, int, int, int, List<string>> statisticsInfo)
         {
             // Extract info items
             int mp3FileCount = statisticsInfo.Item1;
             int sanitisedFileNames = statisticsInfo.Item2;
             int refreshedCount = statisticsInfo.Item3;
-            List<string> nonMP3Files = statisticsInfo.Item4;
+            int prunedCount = statisticsInfo.Item4;
+            List<string> nonMP3Files = statisticsInfo.Item5;
 
             // Print mirror path
             Console.WriteLine($" - Path: '{mirrorPath}'");
@@ -214,6 +253,10 @@ namespace AudioManager
             // Print refreshed count (only show when > 0 to avoid noise in normal runs)
             if (refreshedCount > 0)
                 Console.WriteLine($" - XMLs refreshed (MP3 updated since last analysis): {refreshedCount}");
+
+            // Print pruned count (only show when > 0 - indicates deleted MPs were cleaned up)
+            if (prunedCount > 0)
+                Console.WriteLine($" - XMLs pruned (MP3 deleted since last analysis): {prunedCount}");
 
             // Print recreation setting
             Console.WriteLine($" - Recreated: {AgeChecker.RegenMirror}");
