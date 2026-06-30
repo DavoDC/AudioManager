@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-30 - Reflector: prune orphaned XMLs in incremental pass
+
+Incremental Reflector created XMLs for new MP3s and refreshed XMLs when the MP3 was newer - but never deleted XMLs for MP3s that had been removed from the library. Ghost XMLs accumulated and tripped LibChecker (duplicates, misplaced songs) on the next non-force-regen analysis run.
+
+Fix: `CreateFiles()` now builds a `HashSet<string>` of expected XML paths as it processes each MP3. After the main pass, `PruneOrphanedXmls()` deletes any XMLs not in the set. Guard: pruning only fires in incremental mode (`!AgeChecker.RegenMirror`) and when `realFiles.Length > 0` (Audio root enumerated successfully - prevents accidental mass delete if the library is temporarily inaccessible). Force-regen already rebuilds from scratch so pruning is not needed there. Output line "XMLs pruned: N" shown only when N > 0.
+
+Retires the "deleted MP3 persists until force regen" caveat. Completes the deeper fix for the 2026-06-28 ghost-XML incident (the immediate fix was adding ForceRegen before post-integration Reflector; this makes incremental runs equally clean). 4 new tests added.
+
+---
+
 ## 2026-06-30 - AudioMirrorCommitter: fix stdout/stderr deadlock in RunGit
 
 `RunGit` read stdout then stderr sequentially. When git writes enough to stderr to fill the 4KB pipe buffer (e.g. CRLF warnings for 5693 XML files during `git add AUDIO_MIRROR/`), the process hangs trying to write more stderr while the main thread is stuck in `stdout.ReadToEnd()`. Neither side can proceed - classic C# Process deadlock.
