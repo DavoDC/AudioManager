@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-30 - AudioMirrorCommitter: fix stdout/stderr deadlock in RunGit
+
+`RunGit` read stdout then stderr sequentially. When git writes enough to stderr to fill the 4KB pipe buffer (e.g. CRLF warnings for 5693 XML files during `git add AUDIO_MIRROR/`), the process hangs trying to write more stderr while the main thread is stuck in `stdout.ReadToEnd()`. Neither side can proceed - classic C# Process deadlock.
+
+Fix: read stderr on a `Task.Run` background thread concurrently with reading stdout on the main thread. Both pipes drain simultaneously; no deadlock possible. Also changed `RunGit` from `private` to `internal` for testability, and added 3 new tests: `RunGit_CapturesStdoutFromStatusCommand`, `RunGit_CapturesStderrFromFailedCommand`, `RunGit_InvalidWorkingDirectory_ReturnsErrorMessage`.
+
+The full "integration test that runs force-regen and verifies auto-commit completes within N seconds" remains aspirational - it would require a real AudioMirror clone and is lower value than the root-cause fix. Existing unit tests now cover the subprocess paths.
+
+---
+
 ## 2026-06-30 - Album version-suffix normalization: fix split-album routing bug
 
 `StripAlbumSuffixes` didn't match `(YYYY Remastered Edition)` - the remaster regex stopped at `Remaster(ed)` without the trailing `Edition` word. Result: `"Life After Death (2014 Remastered Edition)"` was left in the ID3 tag unchanged, scan-ahead stored the suffixed name as a dict key, `CountAlbumSongs` missed the library's existing `"Life After Death/"` folder, and `GetDestDir` built a NEW `"Life After Death (2014 Remastered Edition)/"` folder - splitting the album and tripping LibChecker.
