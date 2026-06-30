@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-30 - Dry-run projected LibChecker
+
+Implemented dry-run projected LibChecker: before any files move, the integrator builds a projected post-integration tag list in memory (`current parsed tags` - removals from L-decisions and Misc migration sources + synthesized destination TrackTags with fixed tags) and runs LibChecker on it. Predicts the real library state with zero false positives (deletions correctly modelled). Makes "a clean integration leaves a clean library" enforceable before any irreversible move.
+
+Core design: `BuildProjection(currentTags, additions, removals)` is a pure static function (testable in isolation). `RunProjectedLibChecker` handles I/O (loads current tags via Parser) and orchestration. Called in `dryRun` path between JSON output and `PrintRoutingResultsAndFinish`.
+
+10 tests added in `ProjectedLibCheckerTests.cs` covering: empty library add, pass-through, removal, L-decision replace, Misc migration move, LibChecker pass/fail on projection, multi-file scenarios.
+
+Also fixed a critical regression discovered during testing: `GetRelativePath` returned URI forward-slash paths, which caused `PruneOrphanedXmls` to delete all 5694 XMLs on every incremental run (mixed-slash expectedXmlPaths never matched Directory.GetFiles backslash output). Fixed by adding `.Replace('/', Path.DirectorySeparatorChar)`. Regression test added.
+
+---
+
 ## 2026-06-30 - Reflector: prune orphaned XMLs in incremental pass
 
 Incremental Reflector created XMLs for new MP3s and refreshed XMLs when the MP3 was newer - but never deleted XMLs for MP3s that had been removed from the library. Ghost XMLs accumulated and tripped LibChecker (duplicates, misplaced songs) on the next non-force-regen analysis run.
