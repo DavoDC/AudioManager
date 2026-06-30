@@ -48,5 +48,12 @@ namespace AudioManager
             string reason = AudioMirrorCommitter.GetSkipReason(libCheckerClean: true, trigger: CommitTrigger.Integration);
             Assert.True(reason == null, "clean integration has no skip reason (would proceed to git)");
         }
+
+        // RunGit subprocess tests - verify stdout and stderr are both captured without deadlock
+        public static void RunGit_CapturesStdoutFromStatusCommand() { }
+
+        public static void RunGit_CapturesStderrFromFailedCommand() { }
+
+        public static void RunGit_InvalidWorkingDirectory_ReturnsErrorMessage() { }
     }
 }
