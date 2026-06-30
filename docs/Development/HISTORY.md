@@ -4,6 +4,19 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-30 - Album version-suffix normalization: fix split-album routing bug
+
+`StripAlbumSuffixes` didn't match `(YYYY Remastered Edition)` - the remaster regex stopped at `Remaster(ed)` without the trailing `Edition` word. Result: `"Life After Death (2014 Remastered Edition)"` was left in the ID3 tag unchanged, scan-ahead stored the suffixed name as a dict key, `CountAlbumSongs` missed the library's existing `"Life After Death/"` folder, and `GetDestDir` built a NEW `"Life After Death (2014 Remastered Edition)/"` folder - splitting the album and tripping LibChecker.
+
+Three changes:
+1. `StripAlbumSuffixes` - extended remaster pattern to `(?:\d{4}\s+)?Remaster(?:ed)?(?:\s+Edition)?`; also added `(Mono)` and `(Stereo)`.
+2. `FindAlbumFolder` (new helper) - fuzzy-matches existing library subfolders by stripping suffixes from folder names; handles the reverse scenario where the library folder HAS a suffix but the incoming tag is already clean.
+3. `CountAlbumSongs` + `GetDestDir` - both now use `FindAlbumFolder` so count and destination path always agree on the same folder.
+
+Result: incoming `"Life After Death (2014 Remastered Edition)"` album tag is stripped to `"Life After Death"` by TagFixer, counted against the `"Life After Death/"` library folder, and routed there. Also handles forward compatibility if the library folder was previously created with a suffix. 7 new tests added.
+
+---
+
 ## 2026-06-28 - INVESTIGATE: multi-artist filename separator - no bug found
 
 Investigated TIER 1 candidate: "multi-artist destination filename keeps `"; "` while artist tag normalizes to `";`"". Read on-disk MP3 filenames and AudioMirror XML `<Artists>` tags for two multi-artist files from the 2026-06-28 integration batch (`Akira The Don; David Lynch - KALI YUGA` and `Counting Crows; Vanessa Carlton - Big Yellow Taxi`). Both filenames and both `<Artists>` tags consistently use `"; "` (semicolon space). No mismatch. LibChecker correctly does not flag these files.
