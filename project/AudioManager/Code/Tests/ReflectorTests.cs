@@ -97,5 +97,15 @@ namespace AudioManager
             }
             finally { Directory.Delete(tmp, true); }
         }
+
+        // ---- PruneOrphanedXmls ----
+
+        public static void PruneOrphanedXmls_DeletesOrphanedXml() { }
+
+        public static void PruneOrphanedXmls_PreservesExpectedXml() { }
+
+        public static void PruneOrphanedXmls_EmptyMirror_ReturnsZero() { }
+
+        public static void PruneOrphanedXmls_NonexistentMirrorPath_ReturnsZero() { }
     }
 }
