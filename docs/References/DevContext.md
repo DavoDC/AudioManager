@@ -178,6 +178,18 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 **TrackXML.Write() emits explicit XML declaration:** `new XDeclaration("1.0", "utf-8", null)` as the first parameter to XDocument constructor. This produces `<?xml version="1.0" encoding="utf-8"?>` at the top of every generated track XML. Benefits: explicit encoding contract, clarity for external tools, standard practice. Cost: negligible (305 KB per 5653 files). Always include when generating XDocument - it's not overhead, it's contractual clarity.
 
+## Subprocess Pattern: RunGit Concurrent Stream Reading
+
+**AudioMirrorCommitter.RunGit() must read stdout and stderr concurrently.** The original sequential `ReadToEnd()` pattern deadlocks on Windows when git writes enough to stderr to fill the 4KB pipe buffer (e.g. CRLF warnings for thousands of XMLs during `git add`). The fix: `Task.Run(() => proc.StandardError.ReadToEnd())` on a background thread before reading stdout on the main thread. This is the only subprocess helper in the codebase; apply the same pattern if any other helper is added.
+
+**RunGit is `internal static` for testability.** Tests in `AudioMirrorCommitterTests.cs` cover stdout capture, stderr capture from failed commands, and invalid working directory. Any new git operation added to `TryCommit` should use RunGit (not a new Process wrapper).
+
+## Incremental Reflector Orphan Pruning
+
+**Reflector.PruneOrphanedXmls(string mirrorPath, HashSet<string> expectedXmlPaths) is the orphan-cleanup contract.** Called by CreateFiles() at the end of the incremental pass. The HashSet is built inline: for each MP3 processed, compute the expected XML path (apply SanitiseFilename to filename, change extension to .xml). After the main loop, PruneOrphanedXmls deletes any XML in the mirror not in the set.
+
+**Guard is mandatory:** pruning only fires when `!AgeChecker.RegenMirror` (force-regen rebuilds from scratch) AND `realFiles.Length > 0` (Audio root successfully enumerated - prevents mass-delete if the library is temporarily inaccessible). Any refactor of CreateFiles() must preserve both conditions.
+
 ## Mirror Generation Architecture: Stub-to-Replacement Pattern
 
 **Reflector creates text-file stubs with MP3 paths; Parser reads MP3s via TagLib#; TrackXML overwrites stubs with actual XML.** This is the current design, not a bug - it works. However, the stubs are never read as input, only as intermediate placeholders. The pattern is vestigial: Reflector writes stub (path file) → Parser reads MP3 and caches → TrackXML overwrites stub with XML. The stubs exist but are never actually parsed - they're just temporary. Not a performance issue now, but worth refactoring if parsing becomes a bottleneck (Reflector could skip stub creation and TrackXML could read MP3 directly, bypassing the temp file stage entirely). Current design trades immediate clarity (the stubs are there) for simplicity (Reflector doesn't need to import TagLib# or know about XML generation).
