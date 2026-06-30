@@ -236,8 +236,9 @@ namespace AudioManager
 
         /// <summary>
         /// Runs a git command in the given working directory and returns stdout+stderr.
+        /// stderr is read on a background thread to prevent deadlock when both pipes fill.
         /// </summary>
-        private static string RunGit(string workingDir, string args)
+        internal static string RunGit(string workingDir, string args)
         {
             try
             {
@@ -251,8 +252,11 @@ namespace AudioManager
                 };
                 using (var proc = Process.Start(psi))
                 {
+                    // Read stderr on a background thread - prevents deadlock when git writes
+                    // enough to stderr to fill the pipe buffer (e.g. CRLF warnings for many files).
+                    var stderrTask = System.Threading.Tasks.Task.Run(() => proc.StandardError.ReadToEnd());
                     string stdout = proc.StandardOutput.ReadToEnd();
-                    string stderr = proc.StandardError.ReadToEnd();
+                    string stderr = stderrTask.Result;
                     proc.WaitForExit();
                     return stdout + stderr;
                 }
