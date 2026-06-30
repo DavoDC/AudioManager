@@ -190,6 +190,31 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 **Guard is mandatory:** pruning only fires when `!AgeChecker.RegenMirror` (force-regen rebuilds from scratch) AND `realFiles.Length > 0` (Audio root successfully enumerated - prevents mass-delete if the library is temporarily inaccessible). Any refactor of CreateFiles() must preserve both conditions.
 
+## GetRelativePath: URI Slash Normalization (Critical)
+
+**Reflector.GetRelativePath returns backslash-normalized paths.** `Uri.MakeRelativeUri` returns forward-slash URI paths (e.g. `"Artists/Jay-Z/Singles/file.mp3"`). Before the fix, `expectedXmlPaths` was built via `Path.Combine(mirrorPath, forwardSlashRelPath)` producing mixed-slash paths (`"C:\...\mirror\Artists/Jay-Z/..."`). `Directory.GetFiles` returns backslash paths. HashSet lookup failed for every XML - `PruneOrphanedXmls` deleted all 5694 XMLs on every incremental run.
+
+**Always normalize after `Uri.UnescapeDataString`:** `.Replace('/', Path.DirectorySeparatorChar)`. The fix is at the return statement of `GetRelativePath`. Any new method that calls `Uri.MakeRelativeUri` must apply the same normalization. The regression test `PruneOrphanedXmls_XmlInSubdirectory_Preserved` (ReflectorTests.cs) documents this invariant.
+
+## MusicIntegrator: Step 3a Routing Dest Pattern
+
+**In the Step 3a duplicate loop, `sf.Track` already has TagFixer-applied tags.** To compute where a file will land (e.g. for dry-run display), use this pattern outside the 3b routing loop:
+
+```csharp
+string destDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out _, out _);
+string destFile = Reflector.SanitiseFilename(track.Artists) + " - " + Reflector.SanitiseFilename(track.Title) + ".mp3";
+string destPath = Path.Combine(destDir, destFile);
+string relDest = destPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
+    ? destPath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
+    : destPath;
+```
+
+This is exactly how the dry-run `[DRY RUN] Would route to:` line is computed for L-decided files.
+
+## RunMiscMigration: L-Delete Ambiguity
+
+**`RunMiscMigration`'s `!File.Exists(libPath)` check has two distinct causes:** (1) genuinely stale mirror entry (MP3 deleted from library before this run) or (2) L-decision deleted the file earlier in this same run. The `_lDeletedLibraryPaths` HashSet (populated in Step 3a when `File.Delete(dup.LibraryFilePath)` fires) disambiguates these. Check it before printing WARN: if path is in set, print `[INFO] Already deleted by duplicate resolution` instead. Reuse this pattern if other post-routing cleanup passes face the same ambiguity.
+
 ## Mirror Generation Architecture: Stub-to-Replacement Pattern
 
 **Reflector creates text-file stubs with MP3 paths; Parser reads MP3s via TagLib#; TrackXML overwrites stubs with actual XML.** This is the current design, not a bug - it works. However, the stubs are never read as input, only as intermediate placeholders. The pattern is vestigial: Reflector writes stub (path file) → Parser reads MP3 and caches → TrackXML overwrites stub with XML. The stubs exist but are never actually parsed - they're just temporary. Not a performance issue now, but worth refactoring if parsing becomes a bottleneck (Reflector could skip stub creation and TrackXML could read MP3 directly, bypassing the temp file stage entirely). Current design trades immediate clarity (the stubs are there) for simplicity (Reflector doesn't need to import TagLib# or know about XML generation).
