@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-06-30 - Dry-run output: L-decision destination + Misc migration WARN fix
+
+Two causally linked dry-run output improvements:
+
+**L-decision routing destination:** Dry-run now prints `[DRY RUN] Would route to: Artists\X\Singles\X - Title.mp3` after "Would keep new file" for [L]-decided duplicates. Previously the destination was invisible - the file was shown as "would keep" but you couldn't see where it would land without running real integration.
+
+**Misc migration WARN fix:** When a Misc migration candidate was also [L]-deleted in the same real-integration run, `RunMiscMigration` would print `[WARN] Not found in library (stale mirror?)` because the file was already deleted. Now tracks L-deleted library paths in `_lDeletedLibraryPaths` and prints `[INFO] Already deleted by duplicate resolution: {file}` instead - eliminating the false alarm.
+
+---
+
 ## 2026-06-30 - Dry-run projected LibChecker
 
 Implemented dry-run projected LibChecker: before any files move, the integrator builds a projected post-integration tag list in memory (`current parsed tags` - removals from L-decisions and Misc migration sources + synthesized destination TrackTags with fixed tags) and runs LibChecker on it. Predicts the real library state with zero false positives (deletions correctly modelled). Makes "a clean integration leaves a clean library" enforceable before any irreversible move.
