@@ -1589,7 +1589,10 @@ namespace AudioManager
                     {
                         reason = $"Artist folder{scanNote}; {albumCount} songs from album -> album subfolder";
                         isNewFolder = scanAheadNewFolder;
-                        return Path.Combine(artistFolder, SanitiseFolderName(track.Album));
+                        // Use actual on-disk folder name (may have a version suffix like "Life After Death (2014 Remastered Edition)")
+                        string actualAlbumFolder = FindAlbumFolder(artistFolder, track.Album)
+                                                  ?? Path.Combine(artistFolder, SanitiseFolderName(track.Album));
+                        return actualAlbumFolder;
                     }
                     else
                     {
@@ -1631,6 +1634,31 @@ namespace AudioManager
         }
 
         /// <summary>
+        /// Finds the best matching album folder in an artist directory.
+        /// Tries exact match first; if not found, strips version suffixes from each existing subfolder
+        /// and returns the first that matches cleanAlbum (case-insensitive).
+        /// Returns null if no match found.
+        /// </summary>
+        private string FindAlbumFolder(string artistFolder, string cleanAlbum)
+        {
+            string exactPath = Path.Combine(artistFolder, SanitiseFolderName(cleanAlbum));
+            if (Directory.Exists(exactPath)) return exactPath;
+            if (!Directory.Exists(artistFolder)) return null;
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(artistFolder))
+                {
+                    string folderName = Path.GetFileName(dir);
+                    string stripped = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(folderName));
+                    if (string.Equals(stripped, cleanAlbum, StringComparison.OrdinalIgnoreCase))
+                        return dir;
+                }
+            }
+            catch { /* filesystem errors: fall through to null */ }
+            return null;
+        }
+
+        /// <summary>
         /// Count total songs from an album (library + new batch combined).
         /// Returns the count of existing library songs + all songs from this album in the current files array.
         /// </summary>
@@ -1642,8 +1670,8 @@ namespace AudioManager
             if (!_albumLibraryCountCache.TryGetValue(cacheKey, out int libCount))
             {
                 string artistFolder = Path.Combine(_libraryPath, Constants.ArtistsDir, SanitiseFolderName(artist));
-                string albumFolder = Path.Combine(artistFolder, SanitiseFolderName(album));
-                libCount = Directory.Exists(albumFolder)
+                string albumFolder = FindAlbumFolder(artistFolder, album);
+                libCount = albumFolder != null
                     ? Directory.GetFiles(albumFolder, "*.mp3", SearchOption.AllDirectories).Length
                     : 0;
                 _albumLibraryCountCache[cacheKey] = libCount;
