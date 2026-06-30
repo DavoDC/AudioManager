@@ -271,7 +271,9 @@ namespace AudioManager
                 @"\s*\([^)]*\s+Version\)",                                                   // (International Version), (Radio Version), (Acoustic Version), etc.
                 @"\s*\(Deluxe(?:\s+Edition)?\)",                                             // (Deluxe Edition) or (Deluxe)
                 @"\s*\((?:Special|Limited|Collector'?s?|Anniversary|Expanded|Extended)\s+Edition\)", // edition markers
-                @"\s*\((?:\d{4}\s+)?Remaster(?:ed)?\)",                                     // (Remastered), (Remaster), (2011 Remaster), (2011 Remastered)
+                @"\s*\((?:\d{4}\s+)?Remaster(?:ed)?(?:\s+Edition)?\)",                          // (Remastered), (Remaster), (2011 Remaster), (2011 Remastered), (2014 Remastered Edition)
+                @"\s*\(Mono\)",                                                              // (Mono)
+                @"\s*\(Stereo\)",                                                            // (Stereo)
                 @"\s*\(Bonus\s+Tracks?\)",                                                   // (Bonus Track) or (Bonus Tracks)
                 @"\s*\((?:19|20)\d{2}\)",                                                    // year suffixes: (2019), (1995), etc.
             };
