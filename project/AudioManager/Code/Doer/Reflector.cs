@@ -365,8 +365,11 @@ namespace AudioManager
             // Calculate relative URI
             Uri relativeUri = baseUri.MakeRelativeUri(targetUri);
 
-            // Convert relative URI to a string and unescape special characters
-            return Uri.UnescapeDataString(relativeUri.ToString());
+            // Convert relative URI to a string, unescape special characters, and normalize to Windows
+            // backslash paths. URI.MakeRelativeUri returns forward-slash paths; Path.Combine and
+            // Directory.GetFiles both use backslashes, so a mismatch would cause PruneOrphanedXmls
+            // to delete all XMLs (HashSet lookup fails because '/' != '\').
+            return Uri.UnescapeDataString(relativeUri.ToString()).Replace('/', Path.DirectorySeparatorChar);
         }
     }
 }

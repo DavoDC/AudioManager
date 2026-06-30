@@ -157,5 +157,30 @@ namespace AudioManager
             int pruned = Reflector.PruneOrphanedXmls(mirror, expected);
             Assert.True(pruned == 0, "nonexistent mirror path -> returns 0, no exception");
         }
+
+        public static void PruneOrphanedXmls_XmlInSubdirectory_Preserved()
+        {
+            // Regression: GetRelativePath used to return URI forward-slash paths (e.g. "Artists/Singer/file.mp3").
+            // Path.Combine(mirrorPath, "Artists/Singer/file.xml") -> mixed-slash path.
+            // Directory.GetFiles -> backslash path. HashSet miss -> ALL XMLs deleted on every incremental run.
+            // Fix: GetRelativePath now returns backslash paths so Path.Combine produces matching keys.
+            string mirror = Path.Combine(Path.GetTempPath(), "am_prune_sub_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            string subDir = Path.Combine(mirror, "Artists", "Singer A");
+            Directory.CreateDirectory(subDir);
+            string xmlFile = Path.Combine(subDir, "Singer A - Song.xml");
+            File.WriteAllText(xmlFile, "stub");
+            try
+            {
+                // Build expectedXmlPaths the same way CreateFiles does: Path.Combine + ChangeExtension
+                // with a backslash relative path (as fixed GetRelativePath now returns).
+                string relPath = "Artists\\Singer A\\Singer A - Song.mp3";
+                string expectedPath = Path.ChangeExtension(Path.Combine(mirror, relPath), ".xml");
+                var expected = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { expectedPath };
+                int pruned = Reflector.PruneOrphanedXmls(mirror, expected);
+                Assert.True(pruned == 0, "subdirectory XML should be preserved (regression: forward slashes caused all XMLs to be treated as orphaned)");
+                Assert.True(File.Exists(xmlFile), "XML file in subdirectory should still exist after prune");
+            }
+            finally { Directory.Delete(mirror, recursive: true); }
+        }
     }
 }
