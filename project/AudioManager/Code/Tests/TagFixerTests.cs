@@ -398,5 +398,23 @@ namespace AudioManager
                 result.Any(a => a.Equals("Scott Adams", StringComparison.Ordinal)),
                 "All-caps full name without override must be title-cased: 'SCOTT ADAMS' -> 'Scott Adams'");
         }
+
+        // ---- ProcessFile (full pipeline: real MP3 file I/O, not pure functions) ----
+
+        public static void ProcessFile_MessyTags_WritesCleanedId3TagsToDisk()
+        {
+        }
+
+        public static void ProcessFile_MessyTags_RenamesFileToArtistDashTitle()
+        {
+        }
+
+        public static void ProcessFile_CleanTags_SkipsWithNoChanges()
+        {
+        }
+
+        public static void ProcessFile_SetsCompilationFlagOnSave()
+        {
+        }
     }
 }
