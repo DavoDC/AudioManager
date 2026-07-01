@@ -41,8 +41,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: close structural gaps and improve developer experience. Non-blocking.**
 
-- [ ] **MusicIntegrator constructor decomposition** - The public constructor is 400+ lines handling: TagFixer, scan-ahead, pre-scan, duplicate review, routing loop, dry-run output, JSON output, confidence report, misc migration, cleanup. Each phase should be its own private method. The constructor becomes a 15-line orchestrator. Purely a readability improvement; no behavior change.
-
 - [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
 
 

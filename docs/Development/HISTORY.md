@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-07-01 - MusicIntegrator constructor decomposition
+
+Broke the 400+ line public constructor into three per-phase private methods: `RunDuplicateReview` (Step 2 - presents in-batch duplicates, returns false on user quit), `ExecuteDuplicateDecisions` (Step 3a - executes D/L decisions, groups their output before routing begins), and `RouteAllFiles` (Step 3b - the main per-file routing loop). The constructor is now a ~95-line orchestrator that calls each phase in order and stops early via the returned bool where the original had inline `return` statements.
+
+Pure extract-method refactor - no behavior change. No existing test exercises the constructor's orchestration directly (only `GetDestDir` routing logic is tested in isolation), so verification relied on build success, the full 230-test suite passing unchanged, and careful line-for-line preservation reviewed via diff. NewMusic was empty during this session, so a live dry-run diff of the routing loop itself wasn't possible - worth a spot-check next real integration run.
+
 ## 2026-07-01 - TagFixer full-pipeline test (real MP3 file I/O)
 
 Closed the last "expansion candidate" in the automated-tests item: prior TagFixer tests only exercised pure functions (`RemoveParentheticals`, `StripAlbumSuffixes`, `ExtractAndFixArtists`) - none touched the actual TagLib# read/write/rename path.
