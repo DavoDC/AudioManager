@@ -401,20 +401,123 @@ namespace AudioManager
 
         // ---- ProcessFile (full pipeline: real MP3 file I/O, not pure functions) ----
 
+        /// <summary>
+        /// Writes a minimal silent MPEG1 Layer III file (128kbps/44100Hz, no CRC) with the given
+        /// starting tags. No binary fixture is committed to the repo - the frame is synthesized
+        /// so TagLib# recognizes the file and can read/write ID3v2 tags on it.
+        /// </summary>
+        private static string CreateSilentMp3Fixture(string directory, string filename, string title, string album, string artist)
+        {
+            string path = System.IO.Path.Combine(directory, filename);
+            const int frameLength = 417; // floor(144 * 128000 / 44100), no padding
+            byte[] frame = new byte[frameLength];
+            frame[0] = 0xFF; frame[1] = 0xFB; frame[2] = 0x90; frame[3] = 0x64;
+            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+            {
+                for (int i = 0; i < 20; i++) fs.Write(frame, 0, frame.Length);
+            }
+
+            TagLib.File tagFile = TagLib.File.Create(path);
+            tagFile.Tag.Title = title;
+            tagFile.Tag.Album = album;
+            tagFile.Tag.Performers = new[] { artist };
+            var id3 = (TagLib.Id3v2.Tag)tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
+            id3.IsCompilation = false;
+            tagFile.Save();
+            return path;
+        }
+
         public static void ProcessFile_MessyTags_WritesCleanedId3TagsToDisk()
         {
+            string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AudioManagerTest_" + Guid.NewGuid());
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                string fixturePath = CreateSilentMp3Fixture(tempDir, "fixture.mp3",
+                    "Song Title (feat. Featured Artist)", "Album Name (Deluxe Edition)", "Primary Artist");
+
+                var fixer = TagFixer.ForTesting(dryRun: false);
+                var log = fixer.ProcessFile(fixturePath);
+
+                string resultPath = System.IO.Path.Combine(tempDir, log.Filename);
+                TagLib.File resultFile = TagLib.File.Create(resultPath);
+                Assert.Equal("Song Title", resultFile.Tag.Title, "Title should have feat. parenthetical stripped");
+                Assert.Equal("Album Name", resultFile.Tag.Album, "Album should have Deluxe Edition suffix stripped");
+                Assert.True(
+                    resultFile.Tag.JoinedPerformers.IndexOf("Featured Artist", StringComparison.OrdinalIgnoreCase) >= 0,
+                    "Featured artist extracted from title should appear in Performers");
+            }
+            finally
+            {
+                System.IO.Directory.Delete(tempDir, true);
+            }
         }
 
         public static void ProcessFile_MessyTags_RenamesFileToArtistDashTitle()
         {
+            string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AudioManagerTest_" + Guid.NewGuid());
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                string fixturePath = CreateSilentMp3Fixture(tempDir, "messy filename.mp3",
+                    "Song Title", "Album Name", "Primary Artist");
+
+                var fixer = TagFixer.ForTesting(dryRun: false);
+                var log = fixer.ProcessFile(fixturePath);
+
+                Assert.Equal("Primary Artist - Song Title.mp3", log.Filename, "File should be renamed to 'Artist - Title.mp3' convention");
+                Assert.True(!System.IO.File.Exists(fixturePath), "Original messy-named file should no longer exist after rename");
+                string resultPath = System.IO.Path.Combine(tempDir, log.Filename);
+                Assert.True(System.IO.File.Exists(resultPath), "Renamed file should exist on disk");
+            }
+            finally
+            {
+                System.IO.Directory.Delete(tempDir, true);
+            }
         }
 
         public static void ProcessFile_CleanTags_SkipsWithNoChanges()
         {
+            string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AudioManagerTest_" + Guid.NewGuid());
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                string fixturePath = CreateSilentMp3Fixture(tempDir, "Primary Artist - Clean Title.mp3",
+                    "Clean Title", "Clean Album", "Primary Artist");
+
+                var fixer = TagFixer.ForTesting(dryRun: false);
+                fixer.ProcessFile(fixturePath); // first pass only normalizes TCMP, filename unchanged
+                var secondLog = fixer.ProcessFile(fixturePath);
+
+                Assert.Equal("skipped", secondLog.Status, "Second pass over already-clean, TCMP-set file should skip with no changes");
+            }
+            finally
+            {
+                System.IO.Directory.Delete(tempDir, true);
+            }
         }
 
         public static void ProcessFile_SetsCompilationFlagOnSave()
         {
+            string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AudioManagerTest_" + Guid.NewGuid());
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                string fixturePath = CreateSilentMp3Fixture(tempDir, "Clean Artist - Clean Title.mp3",
+                    "Clean Title", "Clean Album", "Clean Artist");
+
+                var fixer = TagFixer.ForTesting(dryRun: false);
+                var log = fixer.ProcessFile(fixturePath);
+
+                string resultPath = System.IO.Path.Combine(tempDir, log.Filename);
+                TagLib.File resultFile = TagLib.File.Create(resultPath);
+                var id3 = (TagLib.Id3v2.Tag)resultFile.GetTag(TagLib.TagTypes.Id3v2, true);
+                Assert.True(id3.IsCompilation, "TCMP flag should be set to true after ProcessFile writes tags");
+            }
+            finally
+            {
+                System.IO.Directory.Delete(tempDir, true);
+            }
         }
     }
 }
