@@ -53,6 +53,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **Stub-file pattern in Reflector is vestigial** - Reflector creates text files with just MP3 paths (line 156 in Reflector.cs), but these are immediately overwritten by TrackXML with actual XML content. The stubs are never read as input - they're just a temporary placeholder. Current architecture: Reflector writes stub, Parser reads MP3 via TagLib#, TrackXML overwrites stub with XML. Alternative: Reflector could directly call TrackXML, skipping the stub stage. Requires: Reflector knowing how to extract ID3 tags (it currently doesn't). Lower priority - works as-is, but worth considering if parsing performance becomes an issue.
 
+- [ ] **Rules unification: single RulesEngine for MusicIntegrator + LibChecker** - Rules currently defined separately in GetDestDir and LibChecker; divergence has caused "TagFixer SKIPPED but LibChecker FLAGGED" bugs. Refactor into a shared RulesEngine consumed by both. **Promoted from TIER 4 (2026-07-01):** the dry-run projection (shipped) now surfaces divergences automatically, satisfying the trigger condition this item was waiting on, and the B.I.G. album-suffix case (2026-06-28) is a second real instance of the same divergence. The album-version normalizer is the first concrete shared rule that belongs in the unified engine.
+
 ---
 
 ## TIER 4 - FUTURE
@@ -62,8 +64,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - **AudioMirror schema formalization (XSD)** - Formalise the current XML schema (AudioMirror-Format.md) as an XSD file (`AudioMirror-Schema.xsd` at repo root). Not needed now; would be valuable if AudioManager becomes a library or other tools consume the format. Minimal benefit for internal-use-only repo. Consider if schema ever diverges across users or if external tooling emerges.
 
 - **Pattern analysis: extract routing patterns from decision XMLs + AudioMirror data** - Artist folder distribution, album patterns, genre consistency. Build statistical models to identify high-confidence auto-routing cases. Blocked by: need real integration decision XML data from multiple runs.
-
-- **Rules unification: single RulesEngine for MusicIntegrator + LibChecker** - Rules currently defined separately in GetDestDir and LibChecker; divergence has caused "TagFixer SKIPPED but LibChecker FLAGGED" bugs. Refactor into a shared RulesEngine consumed by both. Prerequisites: routing stable, patterns understood. **Fresh evidence (2026-06-28):** the B.I.G. album-suffix case is exactly this divergence - routing decided "album subfolder OK (4 songs)", LibChecker decided "should be Singles (1 song)". Each new divergence instance is an argument for promoting this item. The album-version normalizer (TIER 1) is the first concrete shared rule that belongs in the unified engine. Consider raising priority once the dry-run projection (TIER 1) exists - the projection makes divergences visible automatically and gives the refactor a regression net.
 
 - **Refactor CountAkiraTheDonPersonSongs/AlbumSongs - artist as parameter** - [code smell] `CountAkiraTheDonPersonSongs(sampledPerson)` and `CountAkiraTheDonPersonAlbumSongs(sampledPerson, album)` hardcode the artist ("Akira The Don") in the function name. These should become `CountPersonSongs(artist, sampledPerson)` and `CountPersonAlbumSongs(artist, sampledPerson, album)` so the same logic can serve future artists with the same People/ folder structure. Only matters if a second artist with a People/-style structure is added.
 
