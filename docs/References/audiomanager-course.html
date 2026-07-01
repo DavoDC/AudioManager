@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How AudioManager Works - An Interactive Course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --color-bg:             #FAF7F2;
+  --color-bg-warm:        #F5F0E8;
+  --color-bg-code:        #1E1E2E;
+  --color-text:           #2C2A28;
+  --color-text-secondary: #6B6560;
+  --color-text-muted:     #9E9790;
+  --color-border:         #E5DFD6;
+  --color-border-light:   #EEEBE5;
+  --color-surface:        #FFFFFF;
+  --color-surface-warm:   #FDF9F3;
+  --color-accent:         #2A7B9B;
+  --color-accent-hover:   #1F6080;
+  --color-accent-light:   #E4F2F7;
+  --color-accent-muted:   #5B9BB8;
+  --color-success:        #2D8B55;
+  --color-success-light:  #E8F5EE;
+  --color-error:          #C93B3B;
+  --color-error-light:    #FDE8E8;
+  --color-info:           #D94F30;
+  --color-info-light:     #FDEEE9;
+  --color-actor-1:        #2A7B9B;
+  --color-actor-2:        #D94F30;
+  --color-actor-3:        #7B6DAA;
+  --color-actor-4:        #D4A843;
+  --color-actor-5:        #2D8B55;
+  --font-display: 'Bricolage Grotesque', Georgia, serif;
+  --font-body:    'DM Sans', -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.125rem; --text-xl: 1.25rem; --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem; --text-6xl: 3.75rem;
+  --leading-tight: 1.15; --leading-snug: 1.3; --leading-normal: 1.6; --leading-loose: 1.8;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
+  --space-12: 3rem; --space-16: 4rem; --space-20: 5rem; --space-24: 6rem;
+  --content-width: 800px; --content-width-wide: 1000px; --nav-height: 50px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(44,42,40,0.05);
+  --shadow-md: 0 4px 12px rgba(44,42,40,0.08);
+  --shadow-lg: 0 8px 24px rgba(44,42,40,0.1);
+  --ease-out: cubic-bezier(0.16,1,0.3,1);
+  --duration-fast: 150ms; --duration-normal: 300ms; --duration-slow: 500ms;
+  --stagger-delay: 120ms;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-snap-type:y proximity;scroll-behavior:smooth;}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(42,123,155,0.04) 0%,transparent 50%);-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full);}
+pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden;}
+
+.nav{position:fixed;top:0;left:0;right:0;height:var(--nav-height);background:rgba(250,247,242,0.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--color-border-light);z-index:100;}
+.progress-bar{position:absolute;bottom:0;left:0;height:2px;background:var(--color-accent);width:0%;transition:width 100ms linear;}
+.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6);}
+.nav-title{font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;color:var(--color-text-secondary);letter-spacing:0.02em;}
+.nav-dots{display:flex;gap:var(--space-2);align-items:center;}
+.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;padding:0;transition:all var(--duration-normal) var(--ease-out);position:relative;}
+.nav-dot::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--color-bg-code);color:#CDD6F4;font-family:var(--font-body);font-size:var(--text-xs);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity var(--duration-fast);}
+.nav-dot:hover::after{opacity:1;}
+.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent-light);}
+.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent);}
+
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12));}
+.module-content{max-width:var(--content-width);margin:0 auto;}
+.module-header{margin-bottom:var(--space-12);}
+.module-number{display:block;font-family:var(--font-display);font-size:var(--text-6xl);font-weight:800;color:var(--color-accent);opacity:0.15;line-height:1;margin-bottom:var(--space-2);}
+.module-title{font-family:var(--font-display);font-size:var(--text-4xl);font-weight:700;line-height:var(--leading-tight);color:var(--color-text);margin-bottom:var(--space-3);}
+.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);line-height:var(--leading-snug);}
+.module-body{display:flex;flex-direction:column;gap:var(--space-16);}
+.screen-heading{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:600;color:var(--color-text);margin-bottom:var(--space-6);line-height:var(--leading-snug);}
+.screen p{font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);margin-bottom:var(--space-4);max-width:65ch;}
+
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out);}
+.animate-in.visible{opacity:1;transform:translateY(0);}
+.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay));}
+
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-6) 0;}
+.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm);}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0;font-size:var(--text-sm);}
+.step-body strong{display:block;margin-bottom:var(--space-1);}
+.step-body p{margin:0 !important;color:var(--color-text-secondary);font-size:var(--text-sm);max-width:100% !important;}
+
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-6) 0;}
+.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);}
+.icon-row>div:last-child p{margin:0 !important;color:var(--color-text-secondary);font-size:var(--text-sm);max-width:100% !important;}
+.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;}
+
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);margin:var(--space-6) 0;}
+.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal);}
+.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);}
+.pattern-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:var(--space-3);}
+.pattern-title{font-family:var(--font-display);font-weight:600;margin-bottom:var(--space-2);}
+.pattern-desc{color:var(--color-text-secondary);font-size:var(--text-sm);line-height:var(--leading-normal);}
+
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-radius:var(--radius-md);margin:var(--space-6) 0;}
+.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent);}
+.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info);}
+.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error);}
+.callout-icon{font-size:1.25rem;flex-shrink:0;}
+.callout-content p{margin:var(--space-2) 0 0 !important;color:var(--color-text-secondary);font-size:var(--text-sm);max-width:100% !important;}
+.callout-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);}
+
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0;}
+.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden;}
+.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden;}
+.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent);}
+.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;font-family:var(--font-mono);}
+.translation-english .translation-label{position:static;display:block;margin-bottom:var(--space-4);color:var(--color-text-muted);opacity:1;}
+.tl{padding:var(--space-2) 0;border-bottom:1px solid var(--color-border-light);margin:0 !important;max-width:100% !important;color:var(--color-text-secondary) !important;}
+.tl:last-child{border-bottom:none;}
+.code-keyword{color:#CBA6F7;} .code-string{color:#A6E3A1;} .code-function{color:#89B4FA;}
+.code-comment{color:#6C7086;} .code-number{color:#FAB387;} .code-type{color:#F38BA8;}
+@media(max-width:768px){.translation-block{grid-template-columns:1fr;}.translation-english{border-left:none;border-top:3px solid var(--color-accent);}}
+
+.file-tree{font-family:var(--font-mono);font-size:var(--text-sm);margin:var(--space-6) 0;}
+.ft-folder,.ft-file{padding:var(--space-2) var(--space-3);border-left:2px solid var(--color-border-light);margin-left:var(--space-4);}
+.ft-root{margin-left:0;border-left:none;padding:var(--space-2) 0;}
+.ft-folder>.ft-name{color:var(--color-accent);font-weight:600;}
+.ft-folder>.ft-name::before{content:'folder ';}
+.ft-file>.ft-name::before{content:'file ';}
+.ft-xml>.ft-name::before{content:'xml ';}
+.ft-desc{color:var(--color-text-secondary);font-family:var(--font-body);margin-left:var(--space-3);font-size:var(--text-xs);}
+.ft-children{margin-left:var(--space-4);}
+
+.quiz-container{background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-8);box-shadow:var(--shadow-md);margin:var(--space-8) 0;}
+.quiz-question-block{margin-bottom:var(--space-8);}
+.quiz-question{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;margin-bottom:var(--space-5);line-height:var(--leading-snug);}
+.quiz-options{display:flex;flex-direction:column;gap:var(--space-3);}
+.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;text-align:left;transition:border-color var(--duration-fast),background var(--duration-fast);font-family:var(--font-body);font-size:var(--text-base);}
+.quiz-option:hover{border-color:var(--color-accent-muted);background:var(--color-accent-light);}
+.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light);}
+.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light);}
+.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light);}
+.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0;transition:all var(--duration-fast);}
+.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white;}
+.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal);font-size:var(--text-sm);}
+.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3);margin-top:var(--space-2);border-radius:var(--radius-sm);}
+.quiz-feedback.success{background:var(--color-success-light);color:var(--color-success);}
+.quiz-feedback.error{background:var(--color-error-light);color:var(--color-error);}
+.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);font-family:var(--font-display);font-weight:600;font-size:var(--text-sm);cursor:pointer;transition:all var(--duration-fast);margin-top:var(--space-4);margin-right:var(--space-3);}
+.quiz-check-btn{background:var(--color-accent);color:white;border:none;}
+.quiz-check-btn:hover{background:var(--color-accent-hover);}
+.quiz-reset-btn{background:transparent;color:var(--color-text-secondary);border:2px solid var(--color-border);}
+.quiz-reset-btn:hover{border-color:var(--color-accent);color:var(--color-accent);}
+
+.chat-window{background:var(--color-surface);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0;}
+.chat-messages{padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);min-height:280px;overflow-y:auto;max-height:380px;}
+.chat-message{display:flex;gap:var(--space-3);align-items:flex-start;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);font-weight:700;color:white;flex-shrink:0;font-family:var(--font-display);}
+.chat-bubble{background:var(--color-bg-warm);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);max-width:80%;}
+.chat-sender{display:block;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:var(--space-1);}
+.chat-bubble p{margin:0 !important;font-size:var(--text-sm);line-height:var(--leading-normal);max-width:100% !important;}
+.chat-typing{display:flex;gap:var(--space-3);align-items:center;padding:0 var(--space-6) var(--space-4);}
+.chat-typing-dots{display:flex;gap:4px;}
+.typing-dot{width:8px;height:8px;border-radius:50%;background:var(--color-text-muted);animation:typingBounce 1.4s infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
+.chat-controls{background:var(--color-bg);padding:var(--space-4) var(--space-6);display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;}
+.chat-progress{font-size:var(--text-xs);color:var(--color-text-muted);margin-left:auto;font-family:var(--font-mono);}
+.btn{padding:var(--space-2) var(--space-4);border-radius:var(--radius-sm);font-family:var(--font-display);font-weight:600;font-size:var(--text-sm);cursor:pointer;transition:all var(--duration-fast);background:var(--color-accent);color:white;border:none;}
+.btn:hover{background:var(--color-accent-hover);}
+.btn-outline{background:transparent;color:var(--color-text-secondary);border:2px solid var(--color-border);}
+.btn-outline:hover{border-color:var(--color-accent);color:var(--color-accent);}
+
+.flow-animation{background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-8);box-shadow:var(--shadow-md);margin:var(--space-8) 0;}
+.flow-actors{display:flex;justify-content:space-around;align-items:center;gap:var(--space-4);margin-bottom:var(--space-8);flex-wrap:wrap;}
+.flow-actor{display:flex;flex-direction:column;align-items:center;gap:var(--space-2);transition:all var(--duration-normal) var(--ease-out);min-width:70px;}
+.flow-actor.active{box-shadow:0 0 0 3px var(--color-accent),0 0 20px rgba(42,123,155,0.2);border-radius:var(--radius-md);transform:scale(1.05);}
+.flow-actor-icon{width:56px;height:56px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:var(--color-bg-warm);border:2px solid var(--color-border);transition:all var(--duration-normal);}
+.flow-actor.active .flow-actor-icon{border-color:var(--color-accent);background:var(--color-accent-light);}
+.flow-actor span{font-size:var(--text-xs);font-weight:600;color:var(--color-text-secondary);text-align:center;}
+.flow-step-label{text-align:center;font-size:var(--text-base);color:var(--color-text-secondary);min-height:2em;padding:var(--space-3);background:var(--color-bg-warm);border-radius:var(--radius-sm);margin-bottom:var(--space-4);line-height:var(--leading-normal);}
+.flow-controls{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;}
+.flow-progress{font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono);margin-left:auto;}
+
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative;}
+.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent);}
+.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000;}
+.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code);}
+.term-tooltip.visible{opacity:1;}
+.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code);}
+
+.badge-list{display:flex;flex-direction:column;gap:var(--space-2);margin:var(--space-6) 0;}
+.badge-item{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--color-border-light);border-radius:var(--radius-sm);transition:border-color var(--duration-fast);background:var(--color-surface);}
+.badge-item:hover{border-color:var(--color-accent-muted);}
+.badge-code{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-3);border-radius:var(--radius-sm);white-space:nowrap;flex-shrink:0;}
+.badge-desc{color:var(--color-text-secondary);font-size:var(--text-sm);}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin:var(--space-6) 0;}
+.col-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--shadow-sm);}
+.col-card h4{font-family:var(--font-display);font-weight:600;margin-bottom:var(--space-3);}
+.col-card p{color:var(--color-text-secondary);font-size:var(--text-sm);max-width:100% !important;}
+@media(max-width:600px){.two-col{grid-template-columns:1fr;}}
+
+.flow-steps{display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0;flex-wrap:wrap;}
+.flow-step{display:flex;flex-direction:column;align-items:center;gap:var(--space-2);flex:1;min-width:80px;}
+.flow-step-num{width:36px;height:36px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;font-family:var(--font-display);font-size:var(--text-sm);display:flex;align-items:center;justify-content:center;}
+.flow-step p{font-size:var(--text-xs);text-align:center;color:var(--color-text-secondary);max-width:100% !important;margin:0 !important;}
+.flow-arrow{color:var(--color-accent);font-size:var(--text-xl);flex-shrink:0;}
+
+.hero-visual{background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-8);box-shadow:var(--shadow-md);margin:var(--space-8) 0;text-align:center;}
+.hero-visual .big-emoji{font-size:4rem;display:block;margin-bottom:var(--space-4);}
+.hero-visual h3{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;margin-bottom:var(--space-3);}
+.hero-visual p{color:var(--color-text-secondary);max-width:50ch;margin:0 auto !important;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="progress-bar" id="progress-bar"></div>
+  <div class="nav-inner">
+    <span class="nav-title">AudioManager</span>
+    <div class="nav-dots">
+      <button class="nav-dot current" data-target="module-1" data-tooltip="Meet the App" onclick="scrollToModule('module-1')"></button>
+      <button class="nav-dot" data-target="module-2" data-tooltip="The Mirror" onclick="scrollToModule('module-2')"></button>
+      <button class="nav-dot" data-target="module-3" data-tooltip="Fix and File" onclick="scrollToModule('module-3')"></button>
+      <button class="nav-dot" data-target="module-4" data-tooltip="The Librarian" onclick="scrollToModule('module-4')"></button>
+      <button class="nav-dot" data-target="module-5" data-tooltip="When Things Break" onclick="scrollToModule('module-5')"></button>
+    </div>
+  </div>
+</nav>
+
+<!-- MODULE 1 -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">Meet AudioManager</h1>
+      <p class="module-subtitle">A personal music library is not just files in a folder. This is the C# app that keeps it organized.</p>
+    </header>
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Problem It Solves</h2>
+        <p>You download a song. The filename is "track01.mp3". The artist tag says "various". The genre is blank. And you already have 3,000 songs that need to be in exactly the right folder.</p>
+        <p>Doing this manually every time would take hours. AudioManager does it in seconds.</p>
+        <div class="hero-visual">
+          <span class="big-emoji">🎵</span>
+          <h3>You download it. AudioManager handles the rest.</h3>
+          <p>Fix the tags. Rename the file. Route it to the right folder. Validate everything is still clean. Done.</p>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Two Modes, Two Jobs</h2>
+        <p>AudioManager has two completely separate jobs. You pick one from an arrow-key menu when you launch it.</p>
+        <div class="two-col">
+          <div class="col-card" style="border-top:3px solid var(--color-actor-1)">
+            <h4>Analysis</h4>
+            <p>Scans your entire music library, checks every tag, and produces a report. Catches problems before they become permanent. Like a health checkup for your music collection.</p>
+          </div>
+          <div class="col-card" style="border-top:3px solid var(--color-actor-2)">
+            <h4>Integrate</h4>
+            <p>Takes songs from your Downloads/NewMusic folder, fixes their tags, and moves them into the right place in your library. Like a new-employee onboarding process.</p>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why two modes?</strong>
+            <p>Analysis is safe to run any time - it never moves files. Integrate is the action - it does. Separating them means you can always look before you leap by running Analysis first.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Cast of Characters</h2>
+        <p>AudioManager is made of specialist components. Each one does one job and hands off to the next - like a well-run assembly line.</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background:var(--color-actor-1)">🔄</div>
+            <div>
+              <strong><span class="term" data-definition="Reflector walks your music folder and creates an XML shadow copy of every song file. One XML document per song, containing all the tag metadata.">Reflector</span></strong>
+              <p>Creates an XML snapshot of every song in your library - the mirror that everything else reads from.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background:var(--color-actor-2)">📖</div>
+            <div>
+              <strong><span class="term" data-definition="Parser reads the XML files the Reflector created and converts them into a list of Track objects that C# code can work with. Like a librarian who reads index cards and arranges them on a desk.">Parser</span></strong>
+              <p>Reads those XML files and loads the metadata into memory as a list of track objects.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background:var(--color-actor-3)">✅</div>
+            <div>
+              <strong><span class="term" data-definition="LibChecker (Library Checker) applies a set of validation rules to every song in your library. Like a building inspector who walks every room checking against a code book.">LibChecker</span></strong>
+              <p>Validates every song against library rules. Reports everything that is not right.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background:var(--color-actor-4)">🏷️</div>
+            <div>
+              <strong><span class="term" data-definition="TagFixer reads an MP3's embedded metadata (ID3 tags) and cleans them up: removing junk, standardizing genres, extracting featured artists from song titles.">TagFixer</span></strong>
+              <p>Cleans messy tags on new songs - genres, featured artists, TCMP compilation flags, and file naming.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background:var(--color-actor-5)">📦</div>
+            <div>
+              <strong><span class="term" data-definition="MusicIntegrator is the conductor of Integrate mode. It picks up songs from NewMusic, runs TagFixer on them, decides where each one belongs, and moves the file to its permanent home.">MusicIntegrator</span></strong>
+              <p>Orchestrates the integration pipeline: fix tags, decide routing, move files.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2 -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">The Mirror</h1>
+      <p class="module-subtitle">AudioManager never reads your MP3 files directly. It reads a lightweight XML copy of them. Here is why.</p>
+    </header>
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Your Library's Passport System</h2>
+        <p>Imagine every song in your library had to carry a passport - a small document listing their name, artist, album, and genre. Instead of flipping through thousands of MP3 files every time (slow, risky), AudioManager just reads the passports.</p>
+        <p>Those passports live in a separate <span class="term" data-definition="A git repository is a folder that tracks every change made to files over time. It is like a detailed logbook: you can see what changed, when, and go back to any previous version.">git repo</span> called AudioMirror. One <span class="term" data-definition="XML (Extensible Markup Language) is a structured text format for storing data. Think of it like a very organized form with labeled fields - each song's data is stored in clearly tagged structures like name, artist, album.">XML</span> file per song.</p>
+
+        <div class="file-tree animate-in">
+          <div class="ft-root">
+            <span class="ft-name" style="font-weight:700;color:var(--color-accent)">AudioMirror/</span>
+            <span class="ft-desc">- separate git repo, lives next to AudioManager</span>
+          </div>
+          <div class="ft-children">
+            <div class="ft-folder">
+              <span class="ft-name">AUDIO_MIRROR/</span>
+              <span class="ft-desc">- one XML per song</span>
+              <div class="ft-children">
+                <div class="ft-file ft-xml">
+                  <span class="ft-name">Artists/Flume/Skin/01 - Never Be Like You.xml</span>
+                  <span class="ft-desc">- metadata for one track</span>
+                </div>
+                <div class="ft-file ft-xml">
+                  <span class="ft-name">Artists/Flume/Skin/02 - Say It.xml</span>
+                </div>
+                <div class="ft-file ft-xml">
+                  <span class="ft-name">Compilations/Now 90/05 - Mr Jones.xml</span>
+                </div>
+              </div>
+            </div>
+            <div class="ft-file ft-xml">
+              <span class="ft-name">LastRunInfo.txt</span>
+              <span class="ft-desc">- timestamp of last mirror update</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Analysis Pipeline in Code</h2>
+        <p>Here is what actually runs when you choose Analysis. Six lines of C#. Each one is a specialist that takes the previous one's output.</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE (Program.cs)</span>
+            <pre><code><span class="code-type">AgeChecker</span> ac = <span class="code-keyword">new</span> <span class="code-function">AgeChecker</span>(forceMirrorRegen);
+
+<span class="code-type">Reflector</span> r = <span class="code-keyword">new</span> <span class="code-function">Reflector</span>(mirrorPath);
+
+<span class="code-type">Parser</span> p = <span class="code-keyword">new</span> <span class="code-function">Parser</span>(mirrorPath);
+
+<span class="code-type">Analyser</span> a = <span class="code-keyword">new</span> <span class="code-function">Analyser</span>(p.audioTags);
+
+<span class="code-type">LibChecker</span> lc = <span class="code-keyword">new</span> <span class="code-function">LibChecker</span>(p.audioTags);
+
+<span class="code-type">ReportWriter</span>.<span class="code-function">Save</span>(captureWriter.ToString(), libCheckerClean);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Check if the mirror XML files are recent (under 7 days) - or force a rebuild if requested</p>
+              <p class="tl">Walk the music library and write one XML file per song (the mirror)</p>
+              <p class="tl">Read all those XML files into memory as a list of track objects</p>
+              <p class="tl">Calculate stats: artist counts, album counts, genre breakdown, etc.</p>
+              <p class="tl">Apply library rules to the track list - flag anything wrong</p>
+              <p class="tl">Write all the output to a timestamped report file</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Why Is the Mirror a Git Repo?</h2>
+        <p>Because git makes every change visible. When you integrate new songs, those XMLs get committed. You can see exactly what changed, when, and why.</p>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background:var(--color-actor-1)">📋</div>
+            <h4 class="pattern-title">Audit Trail</h4>
+            <p class="pattern-desc">Every song addition creates a commit. The git log is a record of exactly when each song entered your library.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background:var(--color-actor-2)">🔙</div>
+            <h4 class="pattern-title">Rollback</h4>
+            <p class="pattern-desc">If a bad integration corrupts your library state, you can revert the mirror to see what things looked like before.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background:var(--color-actor-3)">🔎</div>
+            <h4 class="pattern-title">Change Detection</h4>
+            <p class="pattern-desc">The pre-integration gate uses git status to check if the mirror is clean - no uncommitted changes - before allowing new songs in.</p>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🧠</div>
+          <div class="callout-content">
+            <strong class="callout-title">The Age Check</strong>
+            <p>AudioManager only regenerates the mirror if it is older than 7 days. This is set in Constants.cs: <code style="font-family:var(--font-mono);color:var(--color-accent)">TimeSpan.FromDays(7)</code>. For day-to-day use, it reuses the existing mirror - saving seconds on startup.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3 -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">Fix First, Then File</h1>
+      <p class="module-subtitle">The integration pipeline: how a messy downloaded MP3 becomes a properly organized library entry.</p>
+    </header>
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Songs in the Wild</h2>
+        <p>Songs you download arrive with whatever metadata the uploader chose to add. That is often nothing useful - or actively wrong.</p>
+        <div class="two-col">
+          <div class="col-card" style="border-top:3px solid var(--color-error)">
+            <h4>Typical download</h4>
+            <p><strong>Title:</strong> "Mr. Jones (feat. Adam Duritz) [Official Audio]"<br>
+            <strong>Artist:</strong> "Counting Crows ft. Adam Duritz"<br>
+            <strong>Genre:</strong> "Rock/Pop"<br>
+            <strong>TCMP:</strong> not set</p>
+          </div>
+          <div class="col-card" style="border-top:3px solid var(--color-success)">
+            <h4>After TagFixer</h4>
+            <p><strong>Title:</strong> "Mr. Jones"<br>
+            <strong>Artist:</strong> "Counting Crows"<br>
+            <strong>Genre:</strong> "Rock"<br>
+            <strong>TCMP:</strong> set correctly<br>
+            <strong>File:</strong> "Counting Crows - Mr. Jones.mp3"</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What TagFixer Does</h2>
+        <p>TagFixer runs before a song is filed. It is like a customs agent who checks every item and brings it up to standard before it enters the country.</p>
+        <div class="badge-list animate-in">
+          <div class="badge-item">
+            <code class="badge-code">Parenthetical strip</code>
+            <span class="badge-desc">Removes "(feat. X)", "(Official Audio)", "(Remix)" from titles - junk that does not belong in a clean library</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">Featured artist</code>
+            <span class="badge-desc">Extracts "feat. X" from titles into a separate artist tag - so multiple artists are searchable correctly</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">Genre cleanup</code>
+            <span class="badge-desc">Normalizes messy genre strings like "Rock/Pop" or "rock" into clean canonical values like "Rock"</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">TCMP flag</code>
+            <span class="badge-desc">Sets the Compilation <span class="term" data-definition="ID3 tags are metadata fields embedded inside an MP3 file - artist, title, album, year, genre, and dozens more. They are what media players read to display song info.">ID3 tag</span> - tells media players whether a song is part of a multi-artist compilation</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">File rename</code>
+            <span class="badge-desc">Renames the file to "Artist - Title.mp3" after tags are cleaned - filename matches metadata</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Integration Flow</h2>
+        <p>Click Next Step to watch a song travel from your Downloads folder into the library.</p>
+        <div class="flow-animation" id="flow-integrate" data-steps='[{"highlight":"flow-actor-1","label":"You drop a song into Downloads/NewMusic/"},{"highlight":"flow-actor-2","label":"MusicIntegrator scans NewMusic and picks it up"},{"highlight":"flow-actor-3","label":"TagFixer cleans the title, artist, genre, and TCMP flag"},{"highlight":"flow-actor-4","label":"The router decides: Artists, Compilations, Misc, or Motivation?"},{"highlight":"flow-actor-5","label":"The file moves to its permanent folder in the library"}]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1"><div class="flow-actor-icon">📁</div><span>NewMusic</span></div>
+            <div class="flow-actor" id="flow-actor-2"><div class="flow-actor-icon">🔍</div><span>Integrator</span></div>
+            <div class="flow-actor" id="flow-actor-3"><div class="flow-actor-icon">🏷️</div><span>TagFixer</span></div>
+            <div class="flow-actor" id="flow-actor-4"><div class="flow-actor-icon">🗺️</div><span>Router</span></div>
+            <div class="flow-actor" id="flow-actor-5"><div class="flow-actor-icon">📚</div><span>Library</span></div>
+          </div>
+          <div class="flow-step-label" id="flow-integrate-label">Click "Next Step" to trace an integration</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn btn-outline flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Safety Net: Dry Run</h2>
+        <p>Before any file moves, AudioManager runs a <span class="term" data-definition="A dry run is a simulation that shows you what WOULD happen without actually doing anything. Like a rehearsal before the real show. No files move, no tags change - you just see the plan.">dry run</span> first. You see exactly what it intends to do, then confirm before anything is actually moved.</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE (Program.cs)</span>
+            <pre><code><span class="code-keyword">new</span> <span class="code-function">MusicIntegrator</span>(dryRun: <span class="code-keyword">true</span>, ...);
+<span class="code-type">Console</span>.<span class="code-function">WriteLine</span>(<span class="code-string">"--- DRY RUN COMPLETE ---"</span>);
+<span class="code-type">Console</span>.<span class="code-function">Write</span>(<span class="code-string">"Proceed with real integration? [y/N]: "</span>);
+<span class="code-type">string</span> answer = <span class="code-type">Console</span>.<span class="code-function">ReadLine</span>();
+<span class="code-keyword">if</span> (answer != <span class="code-string">"Y"</span>)
+{
+    <span class="code-type">Console</span>.<span class="code-function">WriteLine</span>(<span class="code-string">"Cancelled."</span>);
+    <span class="code-keyword">return</span>;
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Run the entire integration pipeline, but with pretend mode on - print what would happen but do not move anything</p>
+              <p class="tl">Print a clear divider so you know the simulation is done</p>
+              <p class="tl">Ask: are you happy with this plan?</p>
+              <p class="tl">Read what you type</p>
+              <p class="tl">If you did not type exactly "Y"...</p>
+              <p class="tl">...cancel everything. Nothing moves unless you explicitly confirm.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check Your Understanding</h2>
+        <div class="quiz-container" id="quiz-module3">
+          <div class="quiz-question-block" data-correct="opt-b" data-explanation-right="Exactly. The dry run shows the plan without doing anything. Only after you type Y does anything move. This is the safety net." data-explanation-wrong="Not quite. Think about what dry run means in context - it runs all the logic, but does any file actually change on disk?">
+            <h3 class="quiz-question">You run AudioManager in Integrate mode. It shows a dry run. A song appears headed for the wrong folder. What do you do?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Type Y to confirm - the dry run output is just a preview, the file probably went to the right place</span></button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Do not type Y - the dry run is accurate. The file would go to the wrong folder. Investigate the routing rule first.</span></button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Type Y and then move the file manually afterward - it is faster</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="opt-a" data-explanation-right="Right. TagFixer runs before routing - the tags are the basis for where the song goes. If the artist tag is wrong or blank, the router cannot identify it." data-explanation-wrong="Think about the pipeline order - TagFixer runs first, then routing. If the destination looks wrong, what is routing using to decide where the song goes?">
+            <h3 class="quiz-question">A new song ends up in Miscellaneous Songs when it should be in Artists. Where would you look first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The artist tag - TagFixer may not have cleaned it properly, so the router could not identify the artist</span></button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The AudioMirror XML - the song might already be in the library</span></button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The LibChecker report - it would have caught the wrong routing</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4 -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">The Librarian</h1>
+      <p class="module-subtitle">LibChecker enforces the rules. If anything is wrong with your library, it will find it - and the integration gate will not let you proceed until it is fixed.</p>
+    </header>
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quality Control for a Music Library</h2>
+        <p>Think of LibChecker as a building inspector. Every new development needs inspection before people can move in. Every library analysis runs LibChecker before any integration is allowed.</p>
+        <p>LibChecker does not fix problems - it only reports them. You fix them manually and run Analysis again until it is clean. Only a clean library can receive new songs.</p>
+        <div class="badge-list animate-in">
+          <div class="badge-item"><code class="badge-code">Duplicate detection</code><span class="badge-desc">Finds songs that appear twice in the library - same title, same artist</span></div>
+          <div class="badge-item"><code class="badge-code">Missing tags</code><span class="badge-desc">Flags songs with blank artist, title, or album fields - cannot be organized without them</span></div>
+          <div class="badge-item"><code class="badge-code">Wrong folder</code><span class="badge-desc">Catches songs that ended up in a folder that does not match their tags - like a compilation in the Artists folder</span></div>
+          <div class="badge-item"><code class="badge-code">Invalid filenames</code><span class="badge-desc">Finds filenames that do not follow the "Artist - Title.mp3" convention or contain illegal characters</span></div>
+          <div class="badge-item"><code class="badge-code">Orphan XMLs</code><span class="badge-desc">Detects XML mirror files with no matching MP3 - a sign that a song was deleted but the mirror was not updated</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Analysis Pipeline as a Conversation</h2>
+        <p>Here is what the components say to each other during an Analysis run.</p>
+        <div class="chat-window" id="chat-analysis">
+          <div class="chat-messages" id="chat-analysis-messages">
+            <div class="chat-message" data-msg="0" data-sender="agechecker" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-1)">AC</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color:var(--color-actor-1)">AgeChecker</span><p>Mirror is 3 days old - still fresh. No rebuild needed.</p></div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="reflector" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-2)">R</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color:var(--color-actor-2)">Reflector</span><p>Incremental run: scanning for changes... 2 new MP3s added since last run. Updating those 2 XML files now.</p></div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="parser" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-3)">P</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color:var(--color-actor-3)">Parser</span><p>Read 3,241 XML files. 3,241 tracks loaded into memory. Handing off to Analyser...</p></div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="analyser" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-4)">A</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color:var(--color-actor-4)">Analyser</span><p>Stats: 847 artists, 612 albums, top genre: Electronic (28%). Total duration: 9 days 14 hours. Report generated.</p></div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="libchecker" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-5)">LC</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color:var(--color-actor-5)">LibChecker</span><p>Validation complete. 1 issue found: "Various - Unknown.mp3" in Artists folder is missing artist tag. Please fix before integrating.</p></div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="committer" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-text-muted)">MC</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color:var(--color-text-muted)">AudioMirrorCommitter</span><p>LibChecker found an issue. Skipping auto-commit - mirror is only committed after a clean run.</p></div>
+            </div>
+          </div>
+          <div class="chat-typing" id="chat-analysis-typing" style="display:none">
+            <div class="chat-avatar" id="chat-analysis-typing-avatar" style="background:var(--color-accent)">...</div>
+            <div class="chat-typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+          </div>
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next</button>
+            <button class="btn btn-outline chat-all-btn">Play All</button>
+            <button class="btn btn-outline chat-reset-btn">Replay</button>
+            <span class="chat-progress">0 / 6</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Gate Before the Door</h2>
+        <p>You cannot integrate new songs until the library is clean. This is enforced in code. The pre-integration gate runs a full Analysis before allowing a single file to move.</p>
+        <div class="step-cards animate-in">
+          <div class="step-card"><div class="step-num">1</div><div class="step-body"><strong>Regenerate the mirror</strong><p>Forces a fresh Reflector run - ensures the gate sees the real current state of your library</p></div></div>
+          <div class="step-card"><div class="step-num">2</div><div class="step-body"><strong>Check if the mirror is clean</strong><p>Runs "git status" on AudioMirror - if there are uncommitted changes, integration is blocked</p></div></div>
+          <div class="step-card"><div class="step-num">3</div><div class="step-body"><strong>Run LibChecker</strong><p>If LibChecker finds any issues, integration is blocked. "Fix library issues before adding new songs."</p></div></div>
+          <div class="step-card"><div class="step-num">4</div><div class="step-body"><strong>Gate passed - proceed</strong><p>Only if all three checks pass does MusicIntegrator get to run the dry run and real integration</p></div></div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why enforce this?</strong>
+            <p>Adding songs to a library with existing problems compounds the mess. Fix the foundation first, then build on top of it.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5 -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">When Things Break</h1>
+      <p class="module-subtitle">Everything you need to debug a problem - and the architectural tricks that make it possible.</p>
+    </header>
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Dual Output: TeeWriter</h2>
+        <p>Every run of AudioManager creates a log file automatically. You see output in the terminal AND it gets saved to <code style="font-family:var(--font-mono)">logs/</code> simultaneously. This is the TeeWriter.</p>
+        <div class="callout callout-info">
+          <div class="callout-icon">🔀</div>
+          <div class="callout-content">
+            <strong class="callout-title">What is a TeeWriter?</strong>
+            <p>Named after the Unix "tee" command: like a T-junction in a pipe - water flows through both branches at once. TeeWriter intercepts every line of output and writes it to both the screen and a log file simultaneously. You never have to choose between watching live output and having a record.</p>
+          </div>
+        </div>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE (Program.cs)</span>
+            <pre><code><span class="code-type">string</span> logFilePath = <span class="code-type">Path</span>.<span class="code-function">Combine</span>(
+  <span class="code-type">Constants</span>.LogsPath,
+  <span class="code-string">$"{logPrefix}-{timestamp}.log"</span>
+);
+<span class="code-type">TeeWriter</span> teeWriter = <span class="code-keyword">new</span> <span class="code-function">TeeWriter</span>(
+  <span class="code-type">Console</span>.Out,
+  logFilePath,
+  captureWriter,
+  addFileTimestamps: isIntegrate
+);
+<span class="code-type">Console</span>.<span class="code-function">SetOut</span>(teeWriter);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Build the log file path: "logs/integrate-2026-06-30_143022.log"</p>
+              <p class="tl">(timestamp makes every log file unique - no overwriting)</p>
+              <p class="tl">Create a TeeWriter with three destinations: screen, log file, and an in-memory buffer</p>
+              <p class="tl">(the in-memory buffer captures Analysis output for the report file)</p>
+              <p class="tl">For integration runs, add timestamps to each log line</p>
+              <p class="tl">Replace the console output with TeeWriter - every Console.WriteLine now hits all three destinations</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Reading the Logs</h2>
+        <p>When something goes wrong, the log file is your first stop. Log files live in <code style="font-family:var(--font-mono)">AudioManager/logs/</code> and are gitignored (they are ephemeral, not history).</p>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background:var(--color-actor-2)">🔴</div>
+            <h4 class="pattern-title">LibChecker errors</h4>
+            <p class="pattern-desc">Look for lines with "ISSUE:" or "ERROR:". Each one names the problem and the file. Fix the file, run Analysis again, repeat until clean.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background:var(--color-actor-4)">WARN</div>
+            <h4 class="pattern-title">Integration WARN vs INFO</h4>
+            <p class="pattern-desc">WARN means something unexpected. INFO is normal progress. If you see "WARN: missing from library", it might be a file deleted in the same run - check routing decisions above it.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background:var(--color-actor-3)">⏱️</div>
+            <h4 class="pattern-title">Timing info</h4>
+            <p class="pattern-desc">Each component prints how long it took. If an Analysis run is slow, the timing tells you exactly which step to investigate - Reflector is usually the culprit on large libraries.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Final Challenge</h2>
+        <div class="quiz-container" id="quiz-module5">
+          <div class="quiz-question-block" data-correct="opt-c" data-explanation-right="Correct. The pre-integration gate runs LibChecker before any files move. A blocked integration means the library has existing issues - they need to be fixed first, regardless of how clean the new songs are." data-explanation-wrong="Not quite. The gate does not evaluate the new songs - it evaluates the existing library. Think about what the gate is checking before it lets integration proceed.">
+            <h3 class="quiz-question">You try to Integrate a batch of new songs but the app says "Fix library issues before adding new songs." The songs you are adding look fine. What is happening?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>One of the new songs has a missing tag - fix it in NewMusic and try again</span></button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>AudioMirror is too old - force a regeneration with Analysis (Force Regen)</span></button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>An existing song in your library already has an issue. Run Analysis to find it, fix it, then try Integration again.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="opt-b" data-explanation-right="Exactly. The log file captures the full output, including every routing decision and the tags at the time. The log is timestamped and persistent - perfect for seeing exactly what the integrator decided." data-explanation-wrong="Think about what gets captured in the log file and when it would help to have a detailed record of exactly what happened.">
+            <h3 class="quiz-question">After an integration run, a song appears in the wrong folder. You want to understand exactly what the integrator decided. What is your best first step?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Run the integration again in dry-run mode with the same song</span></button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Open the log file from that run - it captured every routing decision with the song's tags at the time</span></button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Check the AudioMirror git log - it shows which files changed</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Full Architecture at a Glance</h2>
+        <p>Everything connects in a deliberate loop. The library feeds the mirror. The mirror feeds analysis. Analysis gates integration. Integration updates the library. And around it goes.</p>
+        <div class="flow-steps animate-in">
+          <div class="flow-step"><div class="flow-step-num">1</div><p>Songs sit in NewMusic</p></div>
+          <div class="flow-arrow">&#8594;</div>
+          <div class="flow-step"><div class="flow-step-num">2</div><p>Gate: library must be clean</p></div>
+          <div class="flow-arrow">&#8594;</div>
+          <div class="flow-step"><div class="flow-step-num">3</div><p>TagFixer + Router</p></div>
+          <div class="flow-arrow">&#8594;</div>
+          <div class="flow-step"><div class="flow-step-num">4</div><p>Library updated</p></div>
+          <div class="flow-arrow">&#8594;</div>
+          <div class="flow-step"><div class="flow-step-num">5</div><p>Mirror rebuilt + committed</p></div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">🎯</div>
+          <div class="callout-content">
+            <strong class="callout-title">What you can now do</strong>
+            <p>You know the full data flow, what each component does, and why the gate exists. You can read a log file and find the root cause. You can tell AI assistants exactly which component to modify and why. You can spot when something smells wrong.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<script>
+function scrollToModule(id){document.getElementById(id).scrollIntoView({behavior:'smooth'});}
+
+const progressBar=document.getElementById('progress-bar');
+const navDots=document.querySelectorAll('.nav-dot');
+const modules=document.querySelectorAll('.module');
+
+function updateNav(){
+  const scrollTop=window.scrollY;
+  const scrollHeight=document.documentElement.scrollHeight-window.innerHeight;
+  if(scrollHeight>0)progressBar.style.width=(scrollTop/scrollHeight*100)+'%';
+  let currentIdx=0;
+  modules.forEach((m,i)=>{if(m.getBoundingClientRect().top<=window.innerHeight/2)currentIdx=i;});
+  navDots.forEach((dot,i)=>{dot.classList.remove('current','visited');if(i<currentIdx)dot.classList.add('visited');else if(i===currentIdx)dot.classList.add('current');});
+}
+window.addEventListener('scroll',()=>requestAnimationFrame(updateNav),{passive:true});
+updateNav();
+
+document.addEventListener('keydown',(e)=>{
+  if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;
+  let current=0;
+  modules.forEach((m,i)=>{if(m.getBoundingClientRect().top<=10)current=i;});
+  if((e.key==='ArrowDown'||e.key==='ArrowRight')&&current<modules.length-1){modules[current+1].scrollIntoView({behavior:'smooth'});e.preventDefault();}
+  if((e.key==='ArrowUp'||e.key==='ArrowLeft')&&current>0){modules[current-1].scrollIntoView({behavior:'smooth'});e.preventDefault();}
+});
+
+document.querySelectorAll('.stagger-children').forEach(parent=>{
+  Array.from(parent.children).forEach((child,i)=>child.style.setProperty('--stagger-index',i));
+});
+
+const animObserver=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');animObserver.unobserve(entry.target);}});
+},{rootMargin:'0px 0px -5% 0px',threshold:0.05});
+document.querySelectorAll('.animate-in').forEach(el=>animObserver.observe(el));
+
+let activeTooltip=null;
+function positionTooltip(term,tip){
+  const rect=term.getBoundingClientRect();
+  const tipWidth=300;
+  let left=rect.left+rect.width/2-tipWidth/2;
+  left=Math.max(8,Math.min(left,window.innerWidth-tipWidth-8));
+  document.body.appendChild(tip);
+  const tipHeight=tip.offsetHeight;
+  if(rect.top-tipHeight-8<0){tip.style.top=(rect.bottom+8)+'px';tip.classList.add('flip');}
+  else{tip.style.top=(rect.top-tipHeight-8)+'px';tip.classList.remove('flip');}
+  tip.style.left=left+'px';
+}
+document.querySelectorAll('.term').forEach(term=>{
+  const tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=term.dataset.definition;
+  term.addEventListener('mouseenter',()=>{
+    if(activeTooltip&&activeTooltip!==tip){activeTooltip.classList.remove('visible');activeTooltip.remove();}
+    positionTooltip(term,tip);requestAnimationFrame(()=>tip.classList.add('visible'));activeTooltip=tip;
+  });
+  term.addEventListener('mouseleave',()=>{tip.classList.remove('visible');setTimeout(()=>{if(!tip.classList.contains('visible'))tip.remove();},150);activeTooltip=null;});
+  term.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    if(activeTooltip&&activeTooltip!==tip){activeTooltip.classList.remove('visible');activeTooltip.remove();}
+    if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();activeTooltip=null;}
+    else{positionTooltip(term,tip);requestAnimationFrame(()=>tip.classList.add('visible'));activeTooltip=tip;}
+  });
+});
+document.addEventListener('click',()=>{if(activeTooltip){activeTooltip.classList.remove('visible');activeTooltip.remove();activeTooltip=null;}});
+
+window.selectOption=function(btn){
+  const block=btn.closest('.quiz-question-block');
+  block.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));
+  btn.classList.add('selected');
+};
+window.checkQuiz=function(containerId){
+  const container=document.getElementById(containerId);
+  container.querySelectorAll('.quiz-question-block').forEach(block=>{
+    const correct=block.dataset.correct;
+    const selected=block.querySelector('.quiz-option.selected');
+    const feedback=block.querySelector('.quiz-feedback');
+    if(!selected)return;
+    const isRight=selected.dataset.value===correct;
+    block.querySelectorAll('.quiz-option').forEach(o=>{
+      o.classList.remove('correct','incorrect');
+      if(o.dataset.value===correct)o.classList.add('correct');
+      else if(o===selected&&!isRight)o.classList.add('incorrect');
+    });
+    feedback.textContent=(isRight?'Correct: ':'Not quite: ')+(isRight?block.dataset.explanationRight:block.dataset.explanationWrong);
+    feedback.className='quiz-feedback show '+(isRight?'success':'error');
+  });
+};
+window.resetQuiz=function(containerId){
+  const container=document.getElementById(containerId);
+  container.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected','correct','incorrect'));
+  container.querySelectorAll('.quiz-feedback').forEach(f=>f.className='quiz-feedback');
+};
+
+function initChat(windowId){
+  const win=document.getElementById(windowId);if(!win)return;
+  const messages=win.querySelectorAll('.chat-message');
+  const typingEl=win.querySelector('.chat-typing');
+  const typingAvatar=win.querySelector('.chat-avatar[id$="-typing-avatar"]');
+  const progressEl=win.querySelector('.chat-progress');
+  let current=0;
+  const colors={agechecker:'var(--color-actor-1)',reflector:'var(--color-actor-2)',parser:'var(--color-actor-3)',analyser:'var(--color-actor-4)',libchecker:'var(--color-actor-5)',committer:'var(--color-text-muted)'};
+  function showMsg(idx){
+    if(idx>=messages.length){if(typingEl)typingEl.style.display='none';if(progressEl)progressEl.textContent=messages.length+' / '+messages.length;return;}
+    const msg=messages[idx];const sender=msg.dataset.sender;
+    if(typingEl){if(typingAvatar&&colors[sender])typingAvatar.style.background=colors[sender];typingEl.style.display='flex';}
+    setTimeout(()=>{
+      if(typingEl)typingEl.style.display='none';
+      msg.style.display='flex';msg.style.opacity='0';msg.style.transform='translateY(8px)';
+      requestAnimationFrame(()=>{msg.style.transition='opacity 0.3s,transform 0.3s';msg.style.opacity='1';msg.style.transform='translateY(0)';});
+      const msgArea=win.querySelector('.chat-messages');if(msgArea)msgArea.scrollTop=msgArea.scrollHeight;
+      current=idx+1;if(progressEl)progressEl.textContent=current+' / '+messages.length;
+    },900);
+  }
+  win.querySelector('.chat-next-btn').addEventListener('click',()=>{if(current<messages.length)showMsg(current);});
+  win.querySelector('.chat-all-btn').addEventListener('click',()=>{let i=current;function step(){if(i<messages.length){showMsg(i++);setTimeout(step,1400);}}step();});
+  win.querySelector('.chat-reset-btn').addEventListener('click',()=>{messages.forEach(m=>{m.style.display='none';m.style.opacity='';m.style.transform='';});if(typingEl)typingEl.style.display='none';current=0;if(progressEl)progressEl.textContent='0 / '+messages.length;});
+  if(progressEl)progressEl.textContent='0 / '+messages.length;
+}
+initChat('chat-analysis');
+
+function initFlow(el){
+  const steps=JSON.parse(el.dataset.steps);
+  const actors=el.querySelectorAll('.flow-actor');
+  const labelEl=el.querySelector('.flow-step-label');
+  const progressEl=el.querySelector('.flow-progress');
+  let current=0;
+  function reset(){actors.forEach(a=>a.classList.remove('active'));if(labelEl)labelEl.textContent='Click "Next Step" to begin';current=0;if(progressEl)progressEl.textContent='';}
+  function showStep(idx){
+    if(idx>=steps.length)return;
+    const step=steps[idx];
+    actors.forEach(a=>a.classList.remove('active'));
+    const target=el.querySelector('#'+step.highlight);if(target)target.classList.add('active');
+    if(labelEl)labelEl.textContent=step.label;
+    current=idx+1;if(progressEl)progressEl.textContent='Step '+current+' / '+steps.length;
+  }
+  el.querySelector('.flow-next-btn').addEventListener('click',()=>{if(current<steps.length)showStep(current);else reset();});
+  el.querySelector('.flow-reset-btn').addEventListener('click',reset);
+}
+document.querySelectorAll('.flow-animation').forEach(initFlow);
+</script>
+</body>
+</html>
