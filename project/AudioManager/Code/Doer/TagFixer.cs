@@ -29,7 +29,7 @@ namespace AudioManager
         /// </summary>
         public Dictionary<string, List<string>> FileChanges { get; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-        private class FixLog
+        internal class FixLog
         {
             public string Filename;
             public string OriginalFilename;
@@ -60,142 +60,7 @@ namespace AudioManager
 
                 foreach (var sourcePath in files)
                 {
-                    var log = new FixLog { OriginalFilename = Path.GetFileName(sourcePath) };
-                    try
-                    {
-                        // Read current tags
-                        TagLib.File tagFile = TagLib.File.Create(sourcePath);
-                        var tag = tagFile.Tag;
-                        var id3 = (TagLib.Id3v2.Tag)tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
-
-                        string title = tag.Title ?? "";
-                        string artists = tag.JoinedPerformers ?? "";
-                        string album = tag.Album ?? "";
-                        string genres = tag.JoinedGenres ?? "";
-
-                        // AUTO-DELETE: Akira The Don instrumentals (Rule from STAGE_3B)
-                        // Delete if: artist = "Akira The Don" AND title contains/ends with "Instrumental"
-                        if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                            (title.IndexOf("Instrumental", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                             title.EndsWith("(Instrumental)", StringComparison.OrdinalIgnoreCase)))
-                        {
-                            if (!dryRun && File.Exists(sourcePath))
-                            {
-                                File.Delete(sourcePath);
-                                Console.WriteLine($"  [AUTO-DELETED] {Path.GetFileName(sourcePath)} (Akira The Don instrumental)");
-                            }
-                            else if (dryRun)
-                            {
-                                Console.WriteLine($"  [WOULD AUTO-DELETE] {Path.GetFileName(sourcePath)} (Akira The Don instrumental)");
-                            }
-                            skippedCount++;
-                            continue;
-                        }
-
-                        // Apply tag cleanup rules
-                        string cleanTitle = RemoveParentheticals(title);
-                        string cleanAlbum = StripAlbumSuffixes(RemoveParentheticals(album));
-                        var artistList = ExtractAndFixArtists(title, artists);
-                        string cleanArtists = string.Join(";", artistList);
-
-                        // Check if any changes needed
-                        bool titleChanged = cleanTitle != title;
-                        bool albumChanged = cleanAlbum != album;
-                        bool artistsChanged = cleanArtists != artists && !string.IsNullOrEmpty(cleanArtists);
-                        bool tcmpNeeded = !id3.IsCompilation;
-                        bool genreNeeded = ShouldFixGenre(cleanArtists, genres);
-
-                        if (!titleChanged && !albumChanged && !artistsChanged && !tcmpNeeded && !genreNeeded)
-                        {
-                            log.Status = "skipped";
-                            log.Detail = "no fixes needed";
-                            fixLogs.Add(log);
-                            skippedCount++;
-                            continue;
-                        }
-
-                        // Record what will change
-                        if (titleChanged) log.Changes.Add($"Title: \"{title}\"  -> \"{cleanTitle}\"");
-                        if (albumChanged) log.Changes.Add($"Album: \"{album}\"  -> \"{cleanAlbum}\"");
-                        if (artistsChanged) log.Changes.Add($"Artists: \"{artists}\"  -> \"{cleanArtists}\"");
-                        // TCMP fix is silent - almost always needed, adds noise to output
-                        if (genreNeeded)
-                        {
-                            string newGenre = DetermineGenre(cleanArtists);
-                            log.Changes.Add($"Genre: \"{genres}\"  -> \"{newGenre}\"");
-                        }
-
-                        // Apply changes (write tags + rename file)
-                        if (!dryRun)
-                        {
-                            if (titleChanged) tag.Title = cleanTitle;
-                            if (albumChanged) tag.Album = cleanAlbum;
-                            if (artistsChanged) tag.Performers = artistList.ToArray();
-                            if (tcmpNeeded) id3.IsCompilation = true;
-                            if (genreNeeded) tag.Genres = new[] { DetermineGenre(cleanArtists) };
-
-                            tagFile.Save();
-
-                            // Rename file: {artists} - {title}.mp3
-                            string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
-                            string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
-                            if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
-                            {
-                                log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
-                                log.Filename = log.OriginalFilename;
-                            }
-                            else
-                            {
-                                string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
-                                string newPath = Path.Combine(Path.GetDirectoryName(sourcePath), newFilename);
-                                if (newPath != sourcePath && !File.Exists(newPath))
-                                {
-                                    File.Move(sourcePath, newPath);
-                                    log.Changes.Add($"Filename: \"{Path.GetFileName(sourcePath)}\"  -> \"{newFilename}\"");
-                                }
-                                log.Filename = newFilename;
-                            }
-                            log.Status = "fixed";
-                            fixedCount++;
-                        }
-                        else
-                        {
-                            // Dry run: show what would change
-                            string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
-                            string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
-                            if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
-                            {
-                                log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
-                                log.Filename = log.OriginalFilename;
-                            }
-                            else
-                            {
-                                string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
-                                log.Filename = newFilename;
-                            }
-                            log.Status = "would-fix";
-                            fixedCount++;
-                        }
-
-                        // Register changes for combined display in MusicIntegrator's routing block
-                        var nonFilenameChanges = log.Changes.Where(c => !c.StartsWith("Filename:")).ToList();
-                        if (nonFilenameChanges.Count > 0)
-                        {
-                            FileChanges[log.OriginalFilename] = nonFilenameChanges;
-                            if (!string.IsNullOrEmpty(log.Filename) && !log.Filename.Equals(log.OriginalFilename, StringComparison.OrdinalIgnoreCase))
-                                FileChanges[log.Filename] = nonFilenameChanges;
-                        }
-
-                        fixLogs.Add(log);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': error reading file ({ex.Message})");
-                        log.Status = "error";
-                        log.Detail = ex.Message;
-                        fixLogs.Add(log);
-                        skippedCount++;
-                    }
+                    fixLogs.Add(ProcessFile(sourcePath));
                 }
 
                 // Per-file tag changes shown in MusicIntegrator's combined routing block.
@@ -211,6 +76,165 @@ namespace AudioManager
             finally
             {
                 FinishAndPrintTimeTaken("Tag fixing");
+            }
+        }
+
+        /// <summary>
+        /// Test-only entry point. Skips the NewMusicPath directory scan so tests can call
+        /// ProcessFile() directly against a fixture path without touching the real inbox.
+        /// </summary>
+        internal static TagFixer ForTesting(bool dryRun)
+        {
+            return new TagFixer(dryRun, skipScan: true);
+        }
+
+        private TagFixer(bool dryRun, bool skipScan)
+        {
+            this.dryRun = dryRun;
+        }
+
+        /// <summary>
+        /// Reads, cleans, and (if not dry-run) writes ID3 tags for a single MP3 file, renaming
+        /// it to match library convention. Returns the FixLog describing what changed.
+        /// </summary>
+        internal FixLog ProcessFile(string sourcePath)
+        {
+            var log = new FixLog { OriginalFilename = Path.GetFileName(sourcePath) };
+            try
+            {
+                // Read current tags
+                TagLib.File tagFile = TagLib.File.Create(sourcePath);
+                var tag = tagFile.Tag;
+                var id3 = (TagLib.Id3v2.Tag)tagFile.GetTag(TagLib.TagTypes.Id3v2, true);
+
+                string title = tag.Title ?? "";
+                string artists = tag.JoinedPerformers ?? "";
+                string album = tag.Album ?? "";
+                string genres = tag.JoinedGenres ?? "";
+
+                // AUTO-DELETE: Akira The Don instrumentals (Rule from STAGE_3B)
+                // Delete if: artist = "Akira The Don" AND title contains/ends with "Instrumental"
+                if (artists.IndexOf("Akira The Don", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    (title.IndexOf("Instrumental", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     title.EndsWith("(Instrumental)", StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (!dryRun && File.Exists(sourcePath))
+                    {
+                        File.Delete(sourcePath);
+                        Console.WriteLine($"  [AUTO-DELETED] {Path.GetFileName(sourcePath)} (Akira The Don instrumental)");
+                    }
+                    else if (dryRun)
+                    {
+                        Console.WriteLine($"  [WOULD AUTO-DELETE] {Path.GetFileName(sourcePath)} (Akira The Don instrumental)");
+                    }
+                    skippedCount++;
+                    log.Status = "skipped";
+                    log.Detail = "auto-deleted instrumental";
+                    return log;
+                }
+
+                // Apply tag cleanup rules
+                string cleanTitle = RemoveParentheticals(title);
+                string cleanAlbum = StripAlbumSuffixes(RemoveParentheticals(album));
+                var artistList = ExtractAndFixArtists(title, artists);
+                string cleanArtists = string.Join(";", artistList);
+
+                // Check if any changes needed
+                bool titleChanged = cleanTitle != title;
+                bool albumChanged = cleanAlbum != album;
+                bool artistsChanged = cleanArtists != artists && !string.IsNullOrEmpty(cleanArtists);
+                bool tcmpNeeded = !id3.IsCompilation;
+                bool genreNeeded = ShouldFixGenre(cleanArtists, genres);
+
+                if (!titleChanged && !albumChanged && !artistsChanged && !tcmpNeeded && !genreNeeded)
+                {
+                    log.Status = "skipped";
+                    log.Detail = "no fixes needed";
+                    skippedCount++;
+                    return log;
+                }
+
+                // Record what will change
+                if (titleChanged) log.Changes.Add($"Title: \"{title}\"  -> \"{cleanTitle}\"");
+                if (albumChanged) log.Changes.Add($"Album: \"{album}\"  -> \"{cleanAlbum}\"");
+                if (artistsChanged) log.Changes.Add($"Artists: \"{artists}\"  -> \"{cleanArtists}\"");
+                // TCMP fix is silent - almost always needed, adds noise to output
+                if (genreNeeded)
+                {
+                    string newGenre = DetermineGenre(cleanArtists);
+                    log.Changes.Add($"Genre: \"{genres}\"  -> \"{newGenre}\"");
+                }
+
+                // Apply changes (write tags + rename file)
+                if (!dryRun)
+                {
+                    if (titleChanged) tag.Title = cleanTitle;
+                    if (albumChanged) tag.Album = cleanAlbum;
+                    if (artistsChanged) tag.Performers = artistList.ToArray();
+                    if (tcmpNeeded) id3.IsCompilation = true;
+                    if (genreNeeded) tag.Genres = new[] { DetermineGenre(cleanArtists) };
+
+                    tagFile.Save();
+
+                    // Rename file: {artists} - {title}.mp3
+                    string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
+                    string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
+                    if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
+                    {
+                        log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
+                        log.Filename = log.OriginalFilename;
+                    }
+                    else
+                    {
+                        string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
+                        string newPath = Path.Combine(Path.GetDirectoryName(sourcePath), newFilename);
+                        if (newPath != sourcePath && !File.Exists(newPath))
+                        {
+                            File.Move(sourcePath, newPath);
+                            log.Changes.Add($"Filename: \"{Path.GetFileName(sourcePath)}\"  -> \"{newFilename}\"");
+                        }
+                        log.Filename = newFilename;
+                    }
+                    log.Status = "fixed";
+                    fixedCount++;
+                }
+                else
+                {
+                    // Dry run: show what would change
+                    string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
+                    string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
+                    if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
+                    {
+                        log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
+                        log.Filename = log.OriginalFilename;
+                    }
+                    else
+                    {
+                        string newFilename = $"{sanitisedArtists} - {sanitisedTitle}.mp3";
+                        log.Filename = newFilename;
+                    }
+                    log.Status = "would-fix";
+                    fixedCount++;
+                }
+
+                // Register changes for combined display in MusicIntegrator's routing block
+                var nonFilenameChanges = log.Changes.Where(c => !c.StartsWith("Filename:")).ToList();
+                if (nonFilenameChanges.Count > 0)
+                {
+                    FileChanges[log.OriginalFilename] = nonFilenameChanges;
+                    if (!string.IsNullOrEmpty(log.Filename) && !log.Filename.Equals(log.OriginalFilename, StringComparison.OrdinalIgnoreCase))
+                        FileChanges[log.Filename] = nonFilenameChanges;
+                }
+
+                return log;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($" - Skipped '{Path.GetFileName(sourcePath)}': error reading file ({ex.Message})");
+                log.Status = "error";
+                log.Detail = ex.Message;
+                skippedCount++;
+                return log;
             }
         }
 
