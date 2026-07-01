@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-07-01 - TagFixer full-pipeline test (real MP3 file I/O)
+
+Closed the last "expansion candidate" in the automated-tests item: prior TagFixer tests only exercised pure functions (`RemoveParentheticals`, `StripAlbumSuffixes`, `ExtractAndFixArtists`) - none touched the actual TagLib# read/write/rename path.
+
+Extracted the per-file loop body from `TagFixer`'s constructor into a testable `ProcessFile(sourcePath)` instance method, and added an internal `ForTesting(bool dryRun)` entry point that skips the real `Constants.NewMusicPath` directory scan (constructor behavior for production use is unchanged). Tests synthesize a minimal silent MPEG1 Layer III frame at run time - no binary fixture committed - so TagLib# can open, tag, save, and reload a real file. Four new tests cover: tag cleanup written to disk, filename rename to `Artist - Title.mp3` convention, idempotent skip on a second pass over already-clean output, and TCMP flag set on save. 230/230 tests pass.
+
+Did not touch `TagFixer`'s public constructor signature - no folder-path parameter was added, per the constraint in CLAUDE.md that TagFixer must only ever operate on the NewMusic folder.
+
+---
+
 ## 2026-06-30 - Dry-run output: L-decision destination + Misc migration WARN fix
 
 Two causally linked dry-run output improvements:
