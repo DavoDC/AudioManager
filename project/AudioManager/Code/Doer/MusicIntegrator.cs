@@ -135,20 +135,7 @@ namespace AudioManager
                 MarkInBatchDuplicates(scannedFiles);
 
                 // Step 2: Batch duplicate review - all duplicates presented together before routing
-                var duplicateFiles = scannedFiles.Where(sf => sf.Duplicate != null).ToList();
-                if (duplicateFiles.Count > 0)
-                {
-                    Console.WriteLine($"\nReviewing {duplicateFiles.Count} duplicate(s)...");
-                    foreach (var sf in duplicateFiles)
-                    {
-                        if (!PresentDuplicateAndDecide(sf))
-                        {
-                            sf.LogEntry.Status = "quit";
-                            logEntries.Add(sf.LogEntry);
-                            return;
-                        }
-                    }
-                }
+                if (!RunDuplicateReview(scannedFiles, logEntries)) return;
 
                 // Step 3: Route files (all duplicate decisions already made)
                 int routeableCount = scannedFiles.Count(sf => sf.IsReadable && sf.Duplicate?.SkipRouting != true);
@@ -165,225 +152,13 @@ namespace AudioManager
                 // 3a: Execute all duplicate decisions together so their outputs are grouped
                 //     before routing output begins. D/L outputs appear consecutively here;
                 //     K files produce no output and are routed normally in 3b.
-                foreach (var sf in scannedFiles.Where(sf2 => sf2.Duplicate != null))
-                {
-                    var entry = sf.LogEntry;
-                    var dup = sf.Duplicate;
-                    Track track = sf.Track;
-                    char decision = dup.Decision;
-
-                    // Safety net: Q in Step 2 already exits the constructor, but guard anyway
-                    if (decision == 'Q')
-                    {
-                        entry.Status = "quit";
-                        logEntries.Add(entry);
-                        return;
-                    }
-
-                    if (decision == 'D')
-                    {
-                        if (dryRun)
-                        {
-                            Console.WriteLine($"[DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
-                            entry.Status = "would-delete";
-                            entry.Detail = "duplicate (would delete)";
-                        }
-                        else
-                        {
-                            File.Delete(sf.SourcePath);
-                            Console.WriteLine($"  Deleted from NewMusic: {dup.RelNewPath}");
-                            entry.Status = "deleted";
-                            entry.Detail = "duplicate (deleted)";
-                        }
-                        logEntries.Add(entry); skippedCount++;
-                        Console.WriteLine();
-                        dup.SkipRouting = true;
-                    }
-                    else if (decision == 'L')
-                    {
-                        if (dryRun)
-                        {
-                            Console.WriteLine($"[DRY RUN] Would delete from library: {dup.RelLibraryPath}");
-                            Console.WriteLine($"[DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
-                            string lDestDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out _, out _);
-                            string lDestFile = Reflector.SanitiseFilename(track.Artists) + " - " + Reflector.SanitiseFilename(track.Title) + ".mp3";
-                            string lDestPath = Path.Combine(lDestDir, lDestFile);
-                            string lRelDest = lDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
-                                ? lDestPath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
-                                : lDestPath;
-                            Console.WriteLine($"[DRY RUN] Would route to: {lRelDest}");
-                            entry.Status = "would-replace";
-                            entry.Detail = "duplicate (would replace)";
-                            logEntries.Add(entry); skippedCount++;
-                            Console.WriteLine();
-                            dup.SkipRouting = true;
-                        }
-                        else
-                        {
-                            if (File.Exists(dup.LibraryFilePath))
-                            {
-                                File.Delete(dup.LibraryFilePath);
-                                _lDeletedLibraryPaths.Add(dup.LibraryFilePath);
-                                Console.WriteLine($"  Deleted from library: {dup.RelLibraryPath}");
-                                Console.WriteLine($"  Integrating replacement: {dup.RelNewPath}");
-                                entry.Detail = "duplicate (library replaced)";
-                                Console.WriteLine();
-                                // SkipRouting stays false: new file is routed in 3b
-                            }
-                            else
-                            {
-                                Console.WriteLine($"  [WARN] Library file not found: {dup.RelLibraryPath}");
-                                entry.Status = "error";
-                                entry.Detail = "duplicate (library file not found)";
-                                logEntries.Add(entry); skippedCount++;
-                                Console.WriteLine();
-                                dup.SkipRouting = true;
-                            }
-                        }
-                    }
-                    // K: no output in 3a; routed normally in 3b
-                }
+                if (!ExecuteDuplicateDecisions(scannedFiles, newArtistFolders, logEntries, ref skippedCount)) return;
 
                 // 3b: Route all files. D-decided and dry-run L-decided duplicates already handled
                 //     above; real-mode L files and K files fall through to routing here.
                 // In dry-run: collect outputs and print sorted by destination path after the loop.
-                var dryRunRoutingOutputs = dryRun ? new List<(string destPath, string block)>() : null;
                 var routingStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                foreach (var sf in scannedFiles)
-                {
-                    var entry = sf.LogEntry;
-
-                    if (!sf.IsReadable)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine("===========================================================================");
-                        Console.WriteLine("INTEGRATION FAILED");
-                        Console.WriteLine("===========================================================================");
-                        Console.WriteLine();
-                        Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
-                        Console.WriteLine($"Full path: {sf.SourcePath}");
-                        Console.WriteLine();
-                        Console.WriteLine($"Error details: {sf.ReadError}");
-                        if (sf.ReadException != null && !string.IsNullOrEmpty(sf.ReadException.StackTrace))
-                            Console.WriteLine($"\nStack trace:\n{sf.ReadException.StackTrace}");
-                        Console.WriteLine("\n===========================================================================");
-                        Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
-                        if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
-                        throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {sf.ReadError}", sf.ReadException);
-                    }
-
-                    // Skip files fully resolved during duplicate execution (3a)
-                    if (sf.Duplicate?.SkipRouting == true) continue;
-
-                    try
-                    {
-                        Track track = sf.Track;
-                        string primaryArtist = track.PrimaryArtist;
-
-                        // Skip if un-routable (tags are already clean from TagFixer)
-                        if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
-                        {
-                            Console.WriteLine($"- Skipped '{Path.GetFileName(sf.SourcePath)}': missing required tag");
-                            entry.Status = "skipped"; entry.Detail = "missing required tag";
-                            logEntries.Add(entry); skippedCount++;
-                            continue;
-                        }
-
-                        // Build destination filename
-                        string sanitisedArtists = Reflector.SanitiseFilename(track.Artists);
-                        string sanitisedTitle = Reflector.SanitiseFilename(track.Title);
-                        string destFilename = sanitisedArtists + " - " + sanitisedTitle + ".mp3";
-
-                        // Determine destination directory and whether it requires creating a new artist folder
-                        string destDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out string reason, out bool isNewFolder);
-                        entry.Reason = reason;
-                        entry.IsNewFolder = isNewFolder;
-                        entry.InBatchDuplicate = sf.InBatchDuplicate;
-
-                        string destPath = Path.Combine(destDir, destFilename);
-
-                        // Compute relative destination path for display
-                        string relativeDest = destPath;
-                        if (destPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            int startIndex = Constants.AudioFolderPath.Length;
-                            if (startIndex <= destPath.Length)
-                            {
-                                relativeDest = destPath.Substring(startIndex);
-                                if (relativeDest.StartsWith("\\") || relativeDest.StartsWith("/"))
-                                    relativeDest = relativeDest.Substring(1);
-                            }
-                        }
-
-                        entry.Destination = relativeDest;
-                        string routeSummary = GetRouteSummary(relativeDest);
-
-                        // Album suffix shown on header line for quick context. New-folder flag shown on Route line.
-                        string albumSuffix = (!string.IsNullOrEmpty(track.Album) && !track.Album.Equals("Missing"))
-                            ? $" [{track.Album}]" : "";
-                        string routeNewNote = isNewFolder ? " *" : "";
-
-                        if (!dryRun && File.Exists(destPath))
-                        {
-                            Console.WriteLine($"[SKIP] {track.Artists} - {track.Title}: already exists at destination");
-                            Console.WriteLine();
-                            entry.Status = "skipped"; entry.Detail = "already exists at destination";
-                            logEntries.Add(entry); skippedCount++;
-                        }
-                        else if (dryRun)
-                        {
-                            var sb = new StringBuilder();
-                            if (sf.InBatchDuplicate)
-                                sb.AppendLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
-                            sb.AppendLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
-                            foreach (var change in entry.TagChanges)
-                                sb.AppendLine($" > {change}");
-                            sb.AppendLine($" Route: {routeSummary}{routeNewNote}");
-                            sb.AppendLine($" Reason: {reason}");
-                            sb.AppendLine($" Path: {relativeDest.Replace('\\', '/')}");
-                            sb.AppendLine();
-                            dryRunRoutingOutputs.Add((relativeDest, sb.ToString()));
-                            entry.Status = "would-move";
-                            logEntries.Add(entry); movedCount++;
-                        }
-                        else
-                        {
-                            if (sf.InBatchDuplicate)
-                                Console.WriteLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
-                            Directory.CreateDirectory(destDir);
-                            File.Move(sf.SourcePath, destPath);
-                            movedCount++;
-                            Console.WriteLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
-                            foreach (var change in entry.TagChanges)
-                                Console.WriteLine($" > {change}");
-                            Console.WriteLine($" Route: {routeSummary}{routeNewNote}");
-                            Console.WriteLine($" Reason: {reason}");
-                            Console.WriteLine($" Path: {relativeDest.Replace('\\', '/')}");
-                            Console.WriteLine();
-                            entry.Status = "moved";
-                            logEntries.Add(entry);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine("===========================================================================");
-                        Console.WriteLine("INTEGRATION FAILED");
-                        Console.WriteLine("===========================================================================");
-                        Console.WriteLine();
-                        Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
-                        Console.WriteLine($"Full path: {sf.SourcePath}");
-                        Console.WriteLine();
-                        Console.WriteLine($"Error details: {ex.Message}");
-                        if (!string.IsNullOrEmpty(ex.StackTrace))
-                            Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
-                        Console.WriteLine("\n===========================================================================");
-                        Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
-                        if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
-                        throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {ex.Message}", ex);
-                    }
-                }
-
+                var dryRunRoutingOutputs = RouteAllFiles(scannedFiles, newArtistFolders, logEntries, noInput, ref movedCount, ref skippedCount);
                 routingStopwatch.Stop();
 
                 // Print dry-run routing outputs sorted by destination path
@@ -432,6 +207,266 @@ namespace AudioManager
             _scanAheadSourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _scanAheadBatchAlbumCounts = batchAlbumCounts ?? new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
             _compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Step 2: presents all in-batch duplicates for review before routing begins.
+        /// Returns false if the user quits (constructor must return immediately without routing).
+        /// </summary>
+        private bool RunDuplicateReview(List<ScannedFile> scannedFiles, List<LogEntry> logEntries)
+        {
+            var duplicateFiles = scannedFiles.Where(sf => sf.Duplicate != null).ToList();
+            if (duplicateFiles.Count == 0) return true;
+
+            Console.WriteLine($"\nReviewing {duplicateFiles.Count} duplicate(s)...");
+            foreach (var sf in duplicateFiles)
+            {
+                if (!PresentDuplicateAndDecide(sf))
+                {
+                    sf.LogEntry.Status = "quit";
+                    logEntries.Add(sf.LogEntry);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Step 3a: executes all duplicate decisions (D delete-from-NewMusic, L replace-in-library) so
+        /// their console output is grouped before per-file routing output begins. K files produce no
+        /// output here and fall through to routing in Step 3b (RouteAllFiles).
+        /// Returns false if a Q decision slipped through (safety net; Step 2 already exits before this
+        /// point in the normal case).
+        /// </summary>
+        private bool ExecuteDuplicateDecisions(List<ScannedFile> scannedFiles, HashSet<string> newArtistFolders,
+            List<LogEntry> logEntries, ref int skippedCount)
+        {
+            foreach (var sf in scannedFiles.Where(sf2 => sf2.Duplicate != null))
+            {
+                var entry = sf.LogEntry;
+                var dup = sf.Duplicate;
+                Track track = sf.Track;
+                char decision = dup.Decision;
+
+                // Safety net: Q in Step 2 already exits the constructor, but guard anyway
+                if (decision == 'Q')
+                {
+                    entry.Status = "quit";
+                    logEntries.Add(entry);
+                    return false;
+                }
+
+                if (decision == 'D')
+                {
+                    if (dryRun)
+                    {
+                        Console.WriteLine($"[DRY RUN] Would delete from NewMusic: {dup.RelNewPath}");
+                        entry.Status = "would-delete";
+                        entry.Detail = "duplicate (would delete)";
+                    }
+                    else
+                    {
+                        File.Delete(sf.SourcePath);
+                        Console.WriteLine($"  Deleted from NewMusic: {dup.RelNewPath}");
+                        entry.Status = "deleted";
+                        entry.Detail = "duplicate (deleted)";
+                    }
+                    logEntries.Add(entry); skippedCount++;
+                    Console.WriteLine();
+                    dup.SkipRouting = true;
+                }
+                else if (decision == 'L')
+                {
+                    if (dryRun)
+                    {
+                        Console.WriteLine($"[DRY RUN] Would delete from library: {dup.RelLibraryPath}");
+                        Console.WriteLine($"[DRY RUN] Would keep new file: {dup.DisplayNewFilename}");
+                        string lDestDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out _, out _);
+                        string lDestFile = Reflector.SanitiseFilename(track.Artists) + " - " + Reflector.SanitiseFilename(track.Title) + ".mp3";
+                        string lDestPath = Path.Combine(lDestDir, lDestFile);
+                        string lRelDest = lDestPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase)
+                            ? lDestPath.Substring(Constants.AudioFolderPath.Length).TrimStart('\\', '/')
+                            : lDestPath;
+                        Console.WriteLine($"[DRY RUN] Would route to: {lRelDest}");
+                        entry.Status = "would-replace";
+                        entry.Detail = "duplicate (would replace)";
+                        logEntries.Add(entry); skippedCount++;
+                        Console.WriteLine();
+                        dup.SkipRouting = true;
+                    }
+                    else
+                    {
+                        if (File.Exists(dup.LibraryFilePath))
+                        {
+                            File.Delete(dup.LibraryFilePath);
+                            _lDeletedLibraryPaths.Add(dup.LibraryFilePath);
+                            Console.WriteLine($"  Deleted from library: {dup.RelLibraryPath}");
+                            Console.WriteLine($"  Integrating replacement: {dup.RelNewPath}");
+                            entry.Detail = "duplicate (library replaced)";
+                            Console.WriteLine();
+                            // SkipRouting stays false: new file is routed in 3b
+                        }
+                        else
+                        {
+                            Console.WriteLine($"  [WARN] Library file not found: {dup.RelLibraryPath}");
+                            entry.Status = "error";
+                            entry.Detail = "duplicate (library file not found)";
+                            logEntries.Add(entry); skippedCount++;
+                            Console.WriteLine();
+                            dup.SkipRouting = true;
+                        }
+                    }
+                }
+                // K: no output in 3a; routed normally in 3b
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Step 3b: routes all files. D-decided and dry-run L-decided duplicates were already handled
+        /// in ExecuteDuplicateDecisions (3a); real-mode L files and K files fall through to routing here.
+        /// In dry-run mode, routing output blocks are collected and returned for the caller to print
+        /// sorted by destination path; otherwise returns null.
+        /// </summary>
+        private List<(string destPath, string block)> RouteAllFiles(List<ScannedFile> scannedFiles,
+            HashSet<string> newArtistFolders, List<LogEntry> logEntries, bool noInput, ref int movedCount, ref int skippedCount)
+        {
+            var dryRunRoutingOutputs = dryRun ? new List<(string destPath, string block)>() : null;
+            foreach (var sf in scannedFiles)
+            {
+                var entry = sf.LogEntry;
+
+                if (!sf.IsReadable)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("===========================================================================");
+                    Console.WriteLine("INTEGRATION FAILED");
+                    Console.WriteLine("===========================================================================");
+                    Console.WriteLine();
+                    Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
+                    Console.WriteLine($"Full path: {sf.SourcePath}");
+                    Console.WriteLine();
+                    Console.WriteLine($"Error details: {sf.ReadError}");
+                    if (sf.ReadException != null && !string.IsNullOrEmpty(sf.ReadException.StackTrace))
+                        Console.WriteLine($"\nStack trace:\n{sf.ReadException.StackTrace}");
+                    Console.WriteLine("\n===========================================================================");
+                    Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
+                    if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
+                    throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {sf.ReadError}", sf.ReadException);
+                }
+
+                // Skip files fully resolved during duplicate execution (3a)
+                if (sf.Duplicate?.SkipRouting == true) continue;
+
+                try
+                {
+                    Track track = sf.Track;
+                    string primaryArtist = track.PrimaryArtist;
+
+                    // Skip if un-routable (tags are already clean from TagFixer)
+                    if (track.Title.Equals("Missing") || track.Artists.Equals("Missing") || primaryArtist.Equals("Missing"))
+                    {
+                        Console.WriteLine($"- Skipped '{Path.GetFileName(sf.SourcePath)}': missing required tag");
+                        entry.Status = "skipped"; entry.Detail = "missing required tag";
+                        logEntries.Add(entry); skippedCount++;
+                        continue;
+                    }
+
+                    // Build destination filename
+                    string sanitisedArtists = Reflector.SanitiseFilename(track.Artists);
+                    string sanitisedTitle = Reflector.SanitiseFilename(track.Title);
+                    string destFilename = sanitisedArtists + " - " + sanitisedTitle + ".mp3";
+
+                    // Determine destination directory and whether it requires creating a new artist folder
+                    string destDir = GetDestDir(track, newArtistFolders, _compilationAlbums, out string reason, out bool isNewFolder);
+                    entry.Reason = reason;
+                    entry.IsNewFolder = isNewFolder;
+                    entry.InBatchDuplicate = sf.InBatchDuplicate;
+
+                    string destPath = Path.Combine(destDir, destFilename);
+
+                    // Compute relative destination path for display
+                    string relativeDest = destPath;
+                    if (destPath.StartsWith(Constants.AudioFolderPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        int startIndex = Constants.AudioFolderPath.Length;
+                        if (startIndex <= destPath.Length)
+                        {
+                            relativeDest = destPath.Substring(startIndex);
+                            if (relativeDest.StartsWith("\\") || relativeDest.StartsWith("/"))
+                                relativeDest = relativeDest.Substring(1);
+                        }
+                    }
+
+                    entry.Destination = relativeDest;
+                    string routeSummary = GetRouteSummary(relativeDest);
+
+                    // Album suffix shown on header line for quick context. New-folder flag shown on Route line.
+                    string albumSuffix = (!string.IsNullOrEmpty(track.Album) && !track.Album.Equals("Missing"))
+                        ? $" [{track.Album}]" : "";
+                    string routeNewNote = isNewFolder ? " *" : "";
+
+                    if (!dryRun && File.Exists(destPath))
+                    {
+                        Console.WriteLine($"[SKIP] {track.Artists} - {track.Title}: already exists at destination");
+                        Console.WriteLine();
+                        entry.Status = "skipped"; entry.Detail = "already exists at destination";
+                        logEntries.Add(entry); skippedCount++;
+                    }
+                    else if (dryRun)
+                    {
+                        var sb = new StringBuilder();
+                        if (sf.InBatchDuplicate)
+                            sb.AppendLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
+                        sb.AppendLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
+                        foreach (var change in entry.TagChanges)
+                            sb.AppendLine($" > {change}");
+                        sb.AppendLine($" Route: {routeSummary}{routeNewNote}");
+                        sb.AppendLine($" Reason: {reason}");
+                        sb.AppendLine($" Path: {relativeDest.Replace('\\', '/')}");
+                        sb.AppendLine();
+                        dryRunRoutingOutputs.Add((relativeDest, sb.ToString()));
+                        entry.Status = "would-move";
+                        logEntries.Add(entry); movedCount++;
+                    }
+                    else
+                    {
+                        if (sf.InBatchDuplicate)
+                            Console.WriteLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
+                        Directory.CreateDirectory(destDir);
+                        File.Move(sf.SourcePath, destPath);
+                        movedCount++;
+                        Console.WriteLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
+                        foreach (var change in entry.TagChanges)
+                            Console.WriteLine($" > {change}");
+                        Console.WriteLine($" Route: {routeSummary}{routeNewNote}");
+                        Console.WriteLine($" Reason: {reason}");
+                        Console.WriteLine($" Path: {relativeDest.Replace('\\', '/')}");
+                        Console.WriteLine();
+                        entry.Status = "moved";
+                        logEntries.Add(entry);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("===========================================================================");
+                    Console.WriteLine("INTEGRATION FAILED");
+                    Console.WriteLine("===========================================================================");
+                    Console.WriteLine();
+                    Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
+                    Console.WriteLine($"Full path: {sf.SourcePath}");
+                    Console.WriteLine();
+                    Console.WriteLine($"Error details: {ex.Message}");
+                    if (!string.IsNullOrEmpty(ex.StackTrace))
+                        Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
+                    Console.WriteLine("\n===========================================================================");
+                    Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
+                    if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
+                    throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {ex.Message}", ex);
+                }
+            }
+            return dryRunRoutingOutputs;
         }
 
         /// <summary>
