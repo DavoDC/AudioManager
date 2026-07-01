@@ -153,6 +153,8 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 - **Sort routing display output by destination path before printing**, not by file processing order. Tracks from the same artist/album should be grouped together in dry-run output so routing anomalies are visible by clustering.
 
+- **TagFixer's per-file work lives in `ProcessFile(sourcePath)` (2026-07-01), not the constructor.** The public constructor still only scans `Constants.NewMusicPath` and calls `ProcessFile` per file - production behavior is unchanged. An internal `ForTesting(bool dryRun)` factory skips the directory scan so tests can call `ProcessFile` directly against a synthesized fixture path, without touching the real NewMusic folder or adding a folderPath parameter to the public API. Any future TagFixer change should extend `ProcessFile`, not re-inline logic into the constructor.
+
 - **Test constructor pattern for MusicIntegrator:** `internal MusicIntegrator(string testLibraryPath)` bypasses the full pipeline, sets `_libraryPath` and initializes empty scan-ahead dicts. Use for any new module that can't be instantiated cheaply via the public constructor.
 
 - **RoutingFixtures.AddAlbumFiles uses `new byte[0]` placeholder .mp3 files.** Safe because `CountAlbumSongs` only calls `Directory.GetFiles(*.mp3)` on the library side - it never opens them with TagLib#. Do NOT use this trick for test scenarios that trigger TagLib# reads (e.g. the NewMusic batch scan path in CountAlbumSongs).
