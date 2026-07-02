@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-03T01:00:56",
+  "summary": {
+    "trackCount": 4,
+    "artistCount": 3,
+    "genreCount": 3,
+    "totalLibraryBytes": 20971520,
+    "avgFileBytes": 5242880,
+    "totalPlaybackSeconds": 912.5,
+    "totalPlaybackHours": 0.3,
+    "avgSongLengthSeconds": 228,
+    "medianSongLengthSeconds": 211
+  },
+  "genreDistribution": [
+    {"label": "Hip Hop", "count": 2},
+    {"label": "Rock", "count": 1},
+    {"label": "Games", "count": 1}
+  ],
+  "decadeDistribution": [
+    {"label": "2020s", "count": 3},
+    {"label": "1980s", "count": 1}
+  ],
+  "yearDistribution": [
+    {"label": "2024", "count": 2},
+    {"label": "2022", "count": 1},
+    {"label": "1986", "count": 1}
+  ],
+  "topArtists": {
+    "exclMusivation": [
+      {"label": "Eminem", "count": 2},
+      {"label": "Metallica", "count": 1}
+    ],
+    "all": [
+      {"label": "Akira The Don", "count": 3},
+      {"label": "Eminem", "count": 2}
+    ]
+  },
+  "ageStats": {
+    "averageYears": 11.6,
+    "medianYears": 9,
+    "newestYears": 0,
+    "oldestYears": 40
+  },
+  "ageDistribution": [
+    {"label": "0-2y", "count": 2},
+    {"label": "2-5y", "count": 1},
+    {"label": "5-10y", "count": 0},
+    {"label": "10-20y", "count": 0},
+    {"label": "20y+", "count": 1}
+  ],
+  "coverArt": {
+    "total": 4,
+    "hasKnownDims": 4,
+    "noCover": 0,
+    "missingData": 0,
+    "unknownFormat": 0,
+    "subMin800": 1,
+    "nonSquare": 0,
+    "dimensionHistogram": [
+      {"label": "800x800", "count": 2},
+      {"label": "1200x1200", "count": 1},
+      {"label": "500x500", "count": 1}
+    ]
+  },
+  "tagCompleteness": {"complete": 3, "total": 4, "percent": 75.0},
+  "coverCoverage800": {"covered": 3, "total": 4, "percent": 75.0}
+}
