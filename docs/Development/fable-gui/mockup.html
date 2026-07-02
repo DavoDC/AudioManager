@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AudioManager GUI - Mockup (fake data, all tabs)</title>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3"></script>
+<style>
+  :root{
+    --bg:#14161c; --panel:#1c1f28; --panel-border:#2a2e3a;
+    --text:#e6e8ee; --text-dim:#9aa0ac; --accent:#5b8cff;
+    --accent2:#7fd1ae; --accent3:#f2b84b; --accent4:#e26d6d; --accent5:#b98af0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .shell{display:flex;min-height:100vh;}
+  nav{width:210px;background:#10121a;border-right:1px solid var(--panel-border);padding:20px 0;flex-shrink:0;}
+  nav .brand{padding:0 20px 20px;font-weight:600;font-size:15px;color:var(--text);border-bottom:1px solid var(--panel-border);margin-bottom:10px;}
+  nav .brand span{color:var(--accent);}
+  nav .tab-link{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 20px;color:var(--text-dim);font-size:14px;border-left:3px solid transparent;cursor:pointer;font-family:inherit;}
+  nav .tab-link.active{color:var(--text);background:#181b24;border-left-color:var(--accent);}
+  nav .tab-link .badge{float:right;font-size:9px;color:var(--accent3);border:1px solid var(--accent3);border-radius:3px;padding:1px 4px;}
+  main{flex:1;padding:24px 28px;max-width:1320px;}
+  header.page{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;}
+  header.page h1{font-size:20px;margin:0;font-weight:600;}
+  header.page .meta{color:var(--text-dim);font-size:12px;}
+  .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .stat-tile{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:14px 16px;}
+  .stat-tile .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;}
+  .stat-tile .value{font-size:22px;font-weight:600;margin-top:4px;}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+  .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:16px;}
+  .panel h2{font-size:13px;font-weight:600;margin:0 0 4px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;}
+  .panel h2 select{background:#12141c;color:var(--text);border:1px solid var(--panel-border);border-radius:4px;font-size:11px;padding:2px 6px;text-transform:none;letter-spacing:0;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--panel-border);}
+  th{color:var(--text-dim);font-weight:500;font-size:11px;text-transform:uppercase;}
+  td.num{text-align:right;color:var(--text-dim);}
+  .note{color:var(--text-dim);font-size:11px;margin-top:14px;}
+  .tab-page{display:none;}
+  .tab-page.active{display:block;}
+  .skeleton-box{background:#12141c;border:1px dashed var(--panel-border);border-radius:6px;height:60px;margin-bottom:10px;}
+  .btn{background:var(--accent);color:#0c0e13;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn.secondary{background:transparent;border:1px solid var(--panel-border);color:var(--text);}
+  .btn-row{display:flex;gap:10px;margin-bottom:16px;}
+  .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:6px;padding:12px;font-family:Consolas,monospace;font-size:12px;color:var(--accent2);height:160px;overflow:auto;}
+  .console .dim{color:var(--text-dim);}
+  .chip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .chip{background:#12141c;border:1px solid var(--panel-border);border-radius:14px;padding:5px 12px;font-size:12px;color:var(--text-dim);}
+  .chip.active{color:var(--text);border-color:var(--accent);}
+  .far-future{opacity:.6;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav>
+    <div class="brand"><span>Audio</span>Manager</div>
+    <button class="tab-link active" data-tab="stats">Statistics</button>
+    <button class="tab-link" data-tab="library">Library Browser</button>
+    <button class="tab-link" data-tab="integration">Integration</button>
+    <button class="tab-link" data-tab="tagfix">Tag Fix</button>
+    <button class="tab-link" data-tab="mirror">Mirror</button>
+    <button class="tab-link" data-tab="services">Services <span class="badge">G5</span></button>
+  </nav>
+  <main>
+
+    <!-- STATISTICS TAB -->
+    <div class="tab-page active" id="tab-stats">
+      <header class="page">
+        <h1>Statistics Dashboard</h1>
+        <div class="meta">Fake data - layout/chart-type mockup only</div>
+      </header>
+
+      <div class="totals">
+        <div class="stat-tile"><div class="label">Tracks</div><div class="value">5,650</div></div>
+        <div class="stat-tile"><div class="label">Artists</div><div class="value">1,214</div></div>
+        <div class="stat-tile"><div class="label">Total Size</div><div class="value">38.2 GB</div></div>
+        <div class="stat-tile"><div class="label">Genres</div><div class="value">42</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Genre Distribution
+            <select id="genreChartType">
+              <option value="donut">Donut</option>
+              <option value="pie">Pie</option>
+              <option value="treemap">Treemap</option>
+            </select>
+          </h2>
+          <div id="genreChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Decade Distribution</h2>
+          <div id="decadeChart"></div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="panel">
+          <h2>Top Artists</h2>
+          <div id="artistsChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Recent Additions</h2>
+          <table>
+            <tr><th>Title</th><th>Artist</th><th>Added</th></tr>
+            <tr><td>see the real</td><td>21 Savage</td><td class="num">2 days ago</td></tr>
+            <tr><td>One More Time</td><td>Daft Punk</td><td class="num">4 days ago</td></tr>
+            <tr><td>Master of Puppets</td><td>Metallica</td><td class="num">6 days ago</td></tr>
+            <tr><td>Currents</td><td>Tame Impala</td><td class="num">9 days ago</td></tr>
+            <tr><td>DNA.</td><td>Kendrick Lamar</td><td class="num">11 days ago</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="panel">
+          <h2>Library Growth (tracks added per month)</h2>
+          <div id="growthChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Genre Balance (radar)</h2>
+          <div id="radarChart"></div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="panel" style="grid-column:1/-1;">
+          <h2>Additions Calendar (last 12 weeks)</h2>
+          <div id="heatmapChart"></div>
+        </div>
+      </div>
+
+      <p class="note">Configurability demo: the Genre panel's dropdown swaps chart type live (donut/pie/treemap) using the same underlying data - the real build should support this pattern per panel, plus a date-range filter across the whole dashboard. Chart library shown here: ApexCharts (animated, many chart types, easy config) - final stack choice is Fable's call, see fable-brief.md.</p>
+    </div>
+
+    <!-- LIBRARY BROWSER TAB -->
+    <div class="tab-page" id="tab-library">
+      <header class="page"><h1>Library Browser</h1><div class="meta">TIER G3 - simple MVP this round</div></header>
+      <div class="chip-row">
+        <div class="chip active">All</div><div class="chip">Rap/Hip Hop</div><div class="chip">Rock</div><div class="chip">Electronic</div><div class="chip">2020s</div>
+      </div>
+      <table>
+        <tr><th>Title</th><th>Artist</th><th>Album</th><th>Genre</th><th>Year</th></tr>
+        <tr><td>see the real</td><td>21 Savage</td><td>american dream</td><td>Rap</td><td class="num">2024</td></tr>
+        <tr><td>One More Time</td><td>Daft Punk</td><td>Discovery</td><td>Electronic</td><td class="num">2001</td></tr>
+        <tr><td>Master of Puppets</td><td>Metallica</td><td>Master of Puppets</td><td>Metal</td><td class="num">1986</td></tr>
+      </table>
+      <p class="note">Search + genre/decade/artist filter chips, full-text search across artist/album/title. Read-only, same AudioMirror data source as Statistics.</p>
+    </div>
+
+    <!-- INTEGRATION TAB -->
+    <div class="tab-page" id="tab-integration">
+      <header class="page"><h1>Integration</h1><div class="meta">TIER G2 - trigger existing CLI modes from the GUI</div></header>
+      <div class="btn-row">
+        <button class="btn">Run Analysis</button>
+        <button class="btn secondary">Run Integration (dry-run)</button>
+        <button class="btn secondary">Run Integration (real)</button>
+      </div>
+      <div class="panel">
+        <h2>Output</h2>
+        <div class="console">
+<span class="dim">$ AudioManager.exe analysis --json-output</span><br>
+Loaded 5,650 tracks from AudioMirror<br>
+Validation: 0 errors, 3 warnings<br>
+<span class="dim">$ AudioManager.exe integrate --dry-run --no-input</span><br>
+Found 12 tracks in NewMusic staging<br>
+Proposed routing: 12/12 resolved, 0 conflicts<br>
+<span class="dim">-- dry run, no files moved --</span>
+        </div>
+      </div>
+      <p class="note">Real build: shell out to the existing <code>AudioManager.exe</code> with its already-supported CLI flags (<code>analysis</code>, <code>integrate --dry-run</code>, <code>--json-output</code>) and stream stdout into this console - no C# code changes needed for MVP. Per-track confirm/decline queue with album art is a later pass within this tier if time allows.</p>
+    </div>
+
+    <!-- TAG FIX TAB -->
+    <div class="tab-page" id="tab-tagfix">
+      <header class="page"><h1>Tag Fix</h1><div class="meta">TIER G2b - rule-based bulk correction</div></header>
+      <div class="skeleton-box"></div>
+      <div class="skeleton-box"></div>
+      <p class="note">Rule builder ("if genre is empty, set to Unknown"), preview matches before applying, batch apply to library or NewMusic queue. Not an individual track editor.</p>
+    </div>
+
+    <!-- MIRROR TAB -->
+    <div class="tab-page" id="tab-mirror">
+      <header class="page"><h1>Mirror</h1><div class="meta">TIER G4 - AudioMirror sync status</div></header>
+      <div class="panel">
+        <h2>Status</h2>
+        <table>
+          <tr><th>Last commit</th><td>a3f9c21 - 2026-06-30</td></tr>
+          <tr><th>Uncommitted</th><td>0 changes</td></tr>
+        </table>
+      </div>
+      <p class="note">Diff view + manual commit trigger (dry-run first) - read-only status display is the MVP slice for this round.</p>
+    </div>
+
+    <!-- SERVICES TAB -->
+    <div class="tab-page far-future" id="tab-services">
+      <header class="page"><h1>Services</h1><div class="meta">TIER G5 - far future, not this round</div></header>
+      <div class="skeleton-box"></div>
+      <p class="note">Spotify + Last.fm cross-synthesis. Placeholder tab only - do not build functionality here this session.</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.tab-link').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-link').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+const palette=['#5b8cff','#7fd1ae','#f2b84b','#e26d6d','#b98af0','#5c6270'];
+const genreLabels=['Rap/Hip Hop','Rock','Electronic','Pop','Metal','Other'];
+const genreData=[28,22,18,14,10,8];
+
+let genreChart = new ApexCharts(document.querySelector("#genreChart"), {
+  chart:{type:'donut',height:260,background:'transparent',animations:{speed:500}},
+  series:genreData, labels:genreLabels, colors:palette,
+  theme:{mode:'dark'}, legend:{position:'bottom',labels:{colors:'#9aa0ac'}}, dataLabels:{style:{fontSize:'11px'}}
+});
+genreChart.render();
+
+document.getElementById('genreChartType').addEventListener('change',(e)=>{
+  genreChart.destroy();
+  const type=e.target.value;
+  if(type==='treemap'){
+    genreChart = new ApexCharts(document.querySelector("#genreChart"), {
+      chart:{type:'treemap',height:260,background:'transparent'},
+      series:[{data:genreLabels.map((l,i)=>({x:l,y:genreData[i]}))}],
+      colors:palette, theme:{mode:'dark'}
+    });
+  } else {
+    genreChart = new ApexCharts(document.querySelector("#genreChart"), {
+      chart:{type:type,height:260,background:'transparent'},
+      series:genreData, labels:genreLabels, colors:palette,
+      theme:{mode:'dark'}, legend:{position:'bottom',labels:{colors:'#9aa0ac'}}
+    });
+  }
+  genreChart.render();
+});
+
+new ApexCharts(document.querySelector("#decadeChart"), {
+  chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks',data:[120,340,980,2200,2010]}],
+  xaxis:{categories:['1980s','1990s','2000s','2010s','2020s'],labels:{style:{colors:'#9aa0ac'}}},
+  yaxis:{labels:{style:{colors:'#9aa0ac'}}},
+  colors:['#5b8cff'], theme:{mode:'dark'}, grid:{borderColor:'#2a2e3a'}
+}).render();
+
+new ApexCharts(document.querySelector("#artistsChart"), {
+  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks',data:[92,78,65,58,44]}],
+  xaxis:{categories:['21 Savage','Metallica','Daft Punk','Kendrick Lamar','Tame Impala'],labels:{style:{colors:'#9aa0ac'}}},
+  plotOptions:{bar:{horizontal:true,borderRadius:3}},
+  colors:['#7fd1ae'], theme:{mode:'dark'}, grid:{borderColor:'#2a2e3a'}
+}).render();
+
+new ApexCharts(document.querySelector("#growthChart"), {
+  chart:{type:'area',height:220,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Added',data:[40,55,30,70,65,90,25]}],
+  xaxis:{categories:['Jan','Feb','Mar','Apr','May','Jun','Jul'],labels:{style:{colors:'#9aa0ac'}}},
+  colors:['#f2b84b'], theme:{mode:'dark'}, fill:{type:'gradient',gradient:{opacityFrom:.5,opacityTo:0}}, grid:{borderColor:'#2a2e3a'}
+}).render();
+
+new ApexCharts(document.querySelector("#radarChart"), {
+  chart:{type:'radar',height:220,background:'transparent'},
+  series:[{name:'Track share %',data:[28,22,18,14,10,8]}],
+  labels:['Rap','Rock','Electronic','Pop','Metal','Other'],
+  colors:['#b98af0'], theme:{mode:'dark'},
+  xaxis:{labels:{style:{colors:['#9aa0ac','#9aa0ac','#9aa0ac','#9aa0ac','#9aa0ac','#9aa0ac']}}}
+}).render();
+
+function genHeatmapData(){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  return days.map(d=>({name:d,data:Array.from({length:12},(_,i)=>({x:'W'+(i+1),y:Math.floor(Math.random()*8)}))}));
+}
+new ApexCharts(document.querySelector("#heatmapChart"), {
+  chart:{type:'heatmap',height:220,background:'transparent',toolbar:{show:false}},
+  series:genHeatmapData(),
+  colors:['#5b8cff'], theme:{mode:'dark'},
+  xaxis:{labels:{style:{colors:'#9aa0ac'}}}
+}).render();
+</script>
+</body>
+</html>

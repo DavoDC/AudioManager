@@ -2,6 +2,8 @@
 
 Planning doc for the GUI layer of AudioManager. CLI work lives in IDEAS.md. GUI is a separate development lifecycle - do not start until CLI TIER 1 is stable.
 
+**Fable 5 promo session (2026-07-02 to 2026-07-07):** self-contained build brief and visual mockup live in `docs/Development/fable-gui/` (`fable-brief.md`, `mockup.html`). This session's scope is wider than the original G1-only plan below - MVP versions of all six tabs, not Statistics alone. See the brief for the up-to-date scope; this roadmap remains the durable long-term reference.
+
 ---
 
 ## CLI Feature Parity - What the GUI Must Replicate
