@@ -162,6 +162,7 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 - **Force regen = canonical fresh-data operation.** Incremental Reflector creates XMLs for new MP3s, refreshes XMLs when the MP3 is newer (tag edits in Mp3tag), and now also prunes XMLs for deleted MP3s. Force regen deletes the mirror entirely and rebuilds - use when you want a guaranteed clean state regardless of incremental history. ParseCache (logs/parse-cache.txt) serves data consistent with XMLs. See DevContext.md for the three-layer cache architecture.
 - **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
 - **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually, advise the user to use Mp3tag. Do not suggest VLC or Windows file properties for tag editing.
+- **David's actual integration cadence: one big batch every 2-4 weeks, not daily.** He does not run `integrate` a little each day - tracks accumulate in NewMusic and get integrated in a single large batch periodically. Any UI/report design (GUI dashboards, stats, "recent activity" views) that assumes daily/steady-drip additions will look wrong or empty most days and spike hard on integration day - design for batch-shaped data (e.g. group by integration-run/week, not by day) rather than daily granularity. Noted 2026-07-02 during GUI mockup review - the first mockup's daily "additions calendar heatmap" was flagged as not matching this pattern.
 
 ## Audit Metadata in Version Control
 
