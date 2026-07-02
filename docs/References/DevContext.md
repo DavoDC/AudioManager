@@ -217,6 +217,36 @@ This is exactly how the dry-run `[DRY RUN] Would route to:` line is computed for
 
 **`RunMiscMigration`'s `!File.Exists(libPath)` check has two distinct causes:** (1) genuinely stale mirror entry (MP3 deleted from library before this run) or (2) L-decision deleted the file earlier in this same run. The `_lDeletedLibraryPaths` HashSet (populated in Step 3a when `File.Delete(dup.LibraryFilePath)` fires) disambiguates these. Check it before printing WARN: if path is in set, print `[INFO] Already deleted by duplicate resolution` instead. Reuse this pattern if other post-routing cleanup passes face the same ambiguity.
 
+## Workflow Rules (moved from CLAUDE.md 2026-07-02)
+
+- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
+
+- **Post-integration validation always force-regens.** Program.cs calls `AgeChecker.ForceRegen()` before `new Reflector()` in the post-integration block. Any future code that runs Reflector after integration-level file moves/deletes must do the same - force-regen gives a guaranteed clean rebuild after bulk moves, as defense-in-depth.
+
+- **Post-integration LibChecker warnings - confirm with force-regen before acting.** Incremental Reflector now prunes orphaned XMLs, so ghost hits are much less likely than before. If warnings appear post-integration, run `analysis --force-regen --no-input --no-auto-commit` first to rule out any residual ghost. Warnings that survive a force-regen are real. Full mechanism: `docs/References/Post-Integration-Validation.md`.
+
+- **AudioMirror dirty state after force-regen = expected, not corruption.** XDocument.Save() writes CRLF; .gitattributes enforces eol=lf storage - so every regen leaves all XMLs "modified" until committed.
+- **Temporarily disabled checks need tests commented out too.** When a LibChecker check is commented out, its unit tests must also be commented (not deleted) - both re-enable together. Leaving tests active causes false failures.
+- **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
+- **AudioMirror rebuild reliability:** Analysis (non-force regen) runs with `Recreated: False` (incremental mirror update) - NOT reliable for LibChecker pass claims or auto-commit. Only analysis (force regen) and integration produce a fully reliable mirror state. Auto-commit must only trigger on force regen or integration.
+- **Force regen = canonical fresh-data operation.** Incremental Reflector creates XMLs for new MP3s, refreshes XMLs when the MP3 is newer (tag edits in Mp3tag), and now also prunes XMLs for deleted MP3s. Force regen deletes the mirror entirely and rebuilds - use when you want a guaranteed clean state regardless of incremental history. ParseCache (logs/parse-cache.txt) serves data consistent with XMLs - see the three-layer cache architecture above.
+- **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
+- **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually, advise the user to use Mp3tag. Do not suggest VLC or Windows file properties for tag editing.
+
+## Audit Metadata in Version Control
+
+**AudioMirror audit metadata (LastRunInfo.txt) is as much part of the artifact as the data itself.** It lives in git because:
+- Answers "when was this mirror regenerated?" for every commit
+- Enables audit trail and diagnostics (regen failed? cache stale? force-regen active?)
+- Changes on every force-regen, so commits on every regen are expected and acceptable
+- Not noise - metadata IS the artifact state
+
+Treat it like you treat the XML files: version-control it, don't relegate it to ephemeral-only.
+
+## Avoid Output-Capture for Control Flow
+
+**Never use string-search of stdout to gate decisions.** Example: detecting "LibChecker: Clean" by grepping Program.cs's captured output. This couples output format to control logic - if LibChecker's message changes, the detection breaks. Better: return explicit status codes or enums from modules, not relying on stdout parsing for branching logic.
+
 ## Mirror Generation Architecture: Stub-to-Replacement Pattern
 
 **Reflector creates text-file stubs with MP3 paths; Parser reads MP3s via TagLib#; TrackXML overwrites stubs with actual XML.** This is the current design, not a bug - it works. However, the stubs are never read as input, only as intermediate placeholders. The pattern is vestigial: Reflector writes stub (path file) → Parser reads MP3 and caches → TrackXML overwrites stub with XML. The stubs exist but are never actually parsed - they're just temporary. Not a performance issue now, but worth refactoring if parsing becomes a bottleneck (Reflector could skip stub creation and TrackXML could read MP3 directly, bypassing the temp file stage entirely). Current design trades immediate clarity (the stubs are there) for simplicity (Reflector doesn't need to import TagLib# or know about XML generation).
