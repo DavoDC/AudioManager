@@ -40,13 +40,15 @@ David wants to see the whole app shape this round, not just one tab, and is comf
 
 ### Build one data loader first, before any UI code
 
-Statistics, Library Browser, and the Recent Additions/batch panels all read from the same two sources: `analysis --json-output` and the AudioMirror XML files. Write a single module (e.g. `gui/data_loader.py`) that owns both:
+Statistics, Library Browser, and the Recent Additions/batch panels all read from the same two sources: `analysis --json-output` and the AudioMirror XML files. Write a single module (e.g. `gui/data_loader.py`) with explicit, individually testable accessor functions (e.g. `get_stats()`, `get_tracks_for_batch(batch_id)`, `get_genre_distribution()`) that owns both:
 
-- Runs `analysis --json-output` once at startup (and on manual refresh), and documents the exact fields it actually returns in `gui/README.md` before writing any tile/chart code against it - don't assume the JSON schema covers every stat tile; check it first, and only fall back to AudioReport.md text parsing for fields genuinely missing from JSON.
-- Globs and parses the AudioMirror XML once at startup, builds an in-memory (or `gui/.cache/mirror-index.json`) index, and exposes typed accessors - don't re-glob or re-parse 5,693 XML files on every panel render or every page load.
+- Runs `analysis --json-output` once at startup (and on manual refresh). Check the exe's actual JSON field names as you write the loader, and note them inline as comments or in `gui/README.md` as you go - this is a normal "check the data before consuming it" step, not a stopping point; keep building. Fall back to AudioReport.md text parsing only for fields genuinely missing from JSON, and prefer recomputing from the AudioMirror XML over regex-parsing report text wherever the XML has the same data (XML is structured and stable; the text report is a rendering of it and more brittle to parse).
+- Globs and parses the AudioMirror XML once at startup, builds an in-memory (or `gui/.cache/mirror-index.json`) index, and exposes typed accessors - don't re-glob or re-parse 5,693 XML files on every panel render or every page load. Cold load shouldn't feel sluggish to a human watching it start; if your first pass is slow, cache is the fix, not a specific library choice.
 - Owns the `stats-history.json` batch-delta cache described below and exposes a `refresh()` method.
 
 Every panel, tile, and the Library Browser consume this loader; none of them touch the exe, the JSON, or the XML files directly. This is the single highest-leverage structural decision in this brief - it's the shared root of the JSON-schema risk, the XML-performance risk, and the batch-delta risk below, and fixing it once here means you don't re-solve it per panel.
+
+**Before building the rest of Statistics, prove the loader end-to-end on one panel first:** get Genre Distribution (with its donut/pie/treemap swap) fully working against real data and committed, then move on. This catches loader bugs and chart-library friction (theming, swap mechanics) once, cheaply, instead of after all ten panels are wired up.
 
 ### Why subprocess, not core-library extraction
 
@@ -79,7 +81,7 @@ The mockup's Statistics tab is the structural target. Every panel in it maps to 
 | Median Song Length | median track length | AudioReport.md "Median (typical) song length" |
 | Avg File Size | mean resolved file size | AudioReport.md "Average file size" |
 
-**Batch delta definition:** compare the current stat snapshot to the stat snapshot as of the previous `analysis`/`integrate` run. Simplest implementation: store each analysis run's summary stats (tiny JSON) in a local cache file the GUI writes to (NOT AudioMirror, NOT the library - a new small file under the GUI's own folder, e.g. `gui/.cache/stats-history.json`), and diff against the second-most-recent entry. This is the "batch-shaped comparison" pattern from Last.fm's "+7% vs 2024" tile - only meaningful against batch data, never a fabricated daily/monthly delta.
+**Batch delta definition:** compare the current stat snapshot to the stat snapshot as of the previous integration batch (batch boundaries per the canonical-source rule in "Recent Additions" below). Simplest implementation: store each analysis run's summary stats (tiny JSON), keyed by the git-derived batch it corresponds to, in a local cache file the GUI writes to (NOT AudioMirror, NOT the library - a new small file under the GUI's own folder, e.g. `gui/.cache/stats-history.json`), and diff against the second-most-recent batch entry. This is the "batch-shaped comparison" pattern from Last.fm's "+7% vs 2024" tile - only meaningful against batch data, never a fabricated daily/monthly delta.
 
 **File size / Date Added note - decided, don't re-open:** use the XML file's own mtime and a proxy size (e.g. estimate from bitrate x length, or omit exact size and show "~" if no cheap proxy exists). **Do not resolve real MP3 paths under `C:\Users\David\Audio\` for this** - at 5,693 tracks, per-track disk stat calls on every load/refresh is a real performance risk with no caching layer to absorb it, and it's not worth building one just for a size column. Note this choice in `GUI-ROADMAP.md` as already made, not as an open decision.
 
@@ -95,7 +97,7 @@ The mockup's Statistics tab is the structural target. Every panel in it maps to 
 
 **Top Artists** - horizontal bar, toggle between the two AudioReport.md rankings: "Artists Excluding Musivation" and "Artists All" (these differ meaningfully - Akira The Don dominates the "All" ranking via the Musivation motivational-audio collection but is absent from "Excluding Musivation"). Port both tables directly from the report/JSON output.
 
-**Recent Additions** - grouped by integration batch, NOT by relative day ("2 days ago"). Header row per batch: "Batch <date> (<N> tracks)", then the tracks added in that run underneath. Batch boundaries come from AudioMirror commit history or your own stats-history cache (same source as the delta tiles above) - use whichever is more reliable; AudioMirror's commit log is probably the more authoritative source of "when did tracks get added" since it commits after each successful integration run.
+**Recent Additions** - grouped by integration batch, NOT by relative day ("2 days ago"). Header row per batch: "Batch <date> (<N> tracks)", then the tracks added in that run underneath. **Batch boundaries: use AudioMirror commit history as the single canonical source everywhere a "batch" is shown** (Recent Additions, the delta tiles, the batch bar chart) - it's the more authoritative record since it predates the GUI's own cache and covers every past integration run, not just ones since the GUI started running. `stats-history.json` stores the stat *values* for each batch (keyed to the same git-derived batch boundaries), not an independent definition of where batches start and end - two different batch-boundary sources across panels would make "Batch <date>" headers disagree with the delta tiles' notion of "last batch."
 
 **Tracks Added Per Integration Batch** - bar chart, one bar per batch, last 6-10 batches. This replaces round-1's daily "Additions Calendar" heatmap, which was flagged as fundamentally wrong for this data shape (see the cadence note at the top of this brief). Source: same batch boundaries as Recent Additions.
 
@@ -176,13 +178,13 @@ Round 1 shipped 5 columns (Title/Artist/Album/Genre/Year) and no view options. T
 
 **Search + filters:** full-text search across Title/Artist/Album, filter chips for genre/decade/artist (as in the mockup).
 
-**Pagination:** 5,693 tracks needs real pagination, not one long scroll or a single unpaginated table - port the mockup's pagination row pattern (page numbers + jump-to-position input, Last.fm Library/Albums-style).
+**Pagination:** 5,693 tracks needs real pagination, not one long scroll or a single unpaginated table - port the mockup's pagination row pattern (page numbers + jump-to-position input, Last.fm Library/Albums-style). **Only render the current page's rows** - query/slice the data loader's in-memory index for the current page and filters, don't send all 5,693 rows to the page and hide most of them client-side; that defeats the purpose of pagination and will feel laggy in the browser.
 
 ---
 
 ## Integration tab
 
-Trigger `analysis`, `integrate --dry-run`, and `integrate --no-input` (real) against the real exe as subprocesses, streaming stdout into the console panel. **`--no-input` is mandatory on every subprocess call, including dry-run** - without it, any confirm prompt the exe emits will hang the subprocess waiting on stdin the GUI never provides. **Layout fix, mandatory:** the console panel must be a flex child that grows to fill available vertical space (`flex:1` on the panel, parent `main`/tab-page as a flex column) - round 1 shipped a fixed 160px console box with a large empty area below it on the page, which was flagged explicitly. Port the mockup's flex layout structure directly - it already implements this correctly.
+Trigger `analysis`, `integrate --dry-run`, and `integrate --no-input` (real) against the real exe as subprocesses, streaming both stdout and stderr into the console panel (capture both - error output that only appears in stderr would otherwise vanish silently). **`--no-input` is mandatory on every subprocess call, including dry-run** - without it, any confirm prompt the exe emits will hang the subprocess waiting on stdin the GUI never provides. **Read the subprocess output unbuffered / line-by-line as it's produced, not all at once after the process exits** - Python subprocess pipes buffer by default, and a long `analysis` run over 5,693 tracks will otherwise make the console panel look completely frozen until the process finishes, which reads as a hang even when it isn't one. Smoke-test this against a real long-running call (e.g. `analysis --force-regen`) before considering Integration done. **Layout fix, mandatory:** the console panel must be a flex child that grows to fill available vertical space (`flex:1` on the panel, parent `main`/tab-page as a flex column) - round 1 shipped a fixed 160px console box with a large empty area below it on the page, which was flagged explicitly. Port the mockup's flex layout structure directly - it already implements this correctly.
 
 Per-track confirm/decline queue with album art is a later pass within this tier if time allows, not required for MVP.
 
@@ -214,7 +216,7 @@ Round 1 left this as an empty placeholder. This round, build it as **two feasibi
 
 ## Where to put the code
 
-New top-level folder in this repo, e.g. `AudioManager\gui\`. Keep it fully separate from the CLI's `project\AudioManager\` C# solution so you don't risk breaking the CLI build. Add a short "how to run it" README inside `gui\` or a section in the main repo README. Do NOT modify `project\AudioManager\AudioManager.csproj`, `Program.cs`, or anything in `project\AudioManager\Code\` - you don't need to; the exe's existing CLI surface is your integration point.
+New top-level folder in this repo, e.g. `AudioManager\gui\`. Keep it fully separate from the CLI's `project\AudioManager\` C# solution so you don't risk breaking the CLI build. Add a short "how to run it" README inside `gui\` or a section in the main repo README. Do NOT read, parse, or modify `project\AudioManager\AudioManager.csproj`, `Program.cs`, or anything in `project\AudioManager\Code\` - you don't need to; the exe's existing CLI surface (documented above) is your integration point, and the C# solution is out of scope for this session entirely.
 
 **Commit frequently** - one commit per tab/panel completed, not one commit at the end. See `contingency-plan.md` in this folder for why (usage-limit pauses preserve session state, but only committed work survives a hard kill).
 
