@@ -1,244 +1,378 @@
-# Brief for Fable: AudioManager GUI (round 2 - final)
+# Brief for Fable: AudioManager GUI (round 3 - final)
 
-**Everything you need is in this repo and in this document.** You should not need to look outside `C:\Users\David\GitHubRepos\AudioManager`, and you should not need to do further web research - all research decisions (chart types, stack, inspiration takeaways, Services feasibility) are already made and embedded below. Your job this session is **building, not researching**.
+**Everything you need is in this repo and in this document.** You should not need to look outside `C:\Users\David\GitHubRepos\AudioManager`, and you should not need to do further web research - all research decisions (chart types, stack, XML schema, JSON contract, backend architecture) are already made and embedded below. Your job this session is **building, not researching or re-deciding**.
 
-Start here, then read `AudioManager\CLAUDE.md` (build commands, safety rules, file registration quirks) and `docs\Development\GUI-ROADMAP.md` (full multi-session roadmap - this brief is the scoped, self-contained version of one work session against it).
+Start here, then read:
+- `AudioManager\CLAUDE.md` - build commands, safety rules, file-registration quirks.
+- `docs\References\AnalysisJson-Format.md` - **the data contract your whole app consumes** (new this round, see below).
+- `docs\Development\GUI-ROADMAP.md` - durable long-term roadmap; this brief is the scoped version of one work session against it.
 
-**Window:** promotional access to Fable 5 ends 2026-07-07 11:59:59 PM PT. This is a deliberately big, well-scoped, mostly self-contained task chosen to make good use of a scarce budget.
+**Window:** promotional access to Fable 5 ends 2026-07-07 11:59:59 PM PT. Deliberately big, well-scoped, mostly self-contained - chosen to make good use of a scarce budget.
 
-**Visual reference (read/open before writing any UI code):** `mockup.html` in this same folder. Open it in a browser - it has working tab navigation and live (fake-data) charts across all six planned tabs. This is the **round-2, David-approved** mockup - it went through two rounds of human review (`PRIVATE_NOTES/memory/processes/mockup-before-fable-build.md`, workspace-internal process doc, not needed here). **Implement your GUI's visual language, layout, tab structure, chart selection, and interaction patterns (column picker, view toggle, rule cards, radial rings, comparison deltas) against this mockup.** Don't redesign it from scratch; wire real data and real actions into this shape. You have explicit license to *exceed* its visual polish once the structure is locked in - see "Go beyond the mockup" at the end of this brief.
+**Visual reference (open before writing any UI code):** `mockup.html` in this folder. Open it in a browser - working tab navigation and live (fake-data) charts across all planned tabs. It went through three rounds of human review. **Implement your GUI's visual language, layout, tab structure, chart selection, and interaction patterns against this mockup.** Don't redesign it from scratch; wire real data and real actions into this shape. You have explicit license to *exceed* its visual polish once structure is locked - see "Go beyond the mockup" at the end.
+
+---
+
+## What changed in round 3 (read this first if you saw an earlier brief)
+
+Round 3 fixed a **critical false assumption** in rounds 1-2 and sharpened the product goal. Four things are materially different:
+
+1. **`analysis --json-output` now really works, and C# owns 100% of data ingestion.** Rounds 1-2 assumed `AudioManager.exe analysis --json-output` emitted library statistics as JSON. **It did not** - the flag was parsed but only wired into `integrate` mode (it wrote *routing* decisions, not stats). Analysis mode silently ignored it and only wrote a markdown report. This has been **fixed at the source**, and the fix now emits **two** JSON files to `logs/`:
+   - `logs/analysis-stats.json` (`Code/Doer/Analyser/StatsJson.cs`) - aggregate statistics, reusing the same `StatList` primitives the text report uses so it can't drift from `AudioReport.md`. **This is your Statistics data source.**
+   - `logs/tracks.json` (`Code/Doer/Analyser/TracksJson.cs`) - the full per-track array (title/artist/album/year/decade/genres/length/compilation/album-art status + real MP3 `filePath`). **This is your Library Browser data source.**
+
+   **HARD RULE: the Python GUI never reads or parses the raw AudioMirror XML. C# is the only XML parser.** Do not parse `AudioReport.md`, do not reimplement stats in Python, and do not glob/parse AudioMirror XML in Python - consume these two files. This eliminates any second, drifting parser. Full contract: `docs/References/AnalysisJson-Format.md`.
+
+2. **The product goal is now "replace the CLI and BAT scripts entirely."** David's words: *"I want to not use the CLI anymore, not use the BAT scripts anymore - I want this GUI to be my way of using AudioManager from now on."* This raises the bar past "MVP of six tabs." A dedicated **CLI/BAT replacement audit** (below) lists every workflow the GUI must cover, and flags the gaps that need a follow-up C# change to fully close.
+
+3. **Integration is a GUI-native staged workflow, not a terminal.** Rounds 1-2 streamed raw subprocess stdout into a console box. That defeats the point of a GUI - the CLI already prints to a console. Integration is now a **staged review queue** (scan -> per-track visual review with album art + routing preview -> confirm -> structured live progress). A raw log view survives only as a collapsed "Advanced / debug output" affordance, never the primary surface. See the redesigned Integration section and the mockup's Integration tab.
+
+4. **Analysis is demoted from a tab to a Statistics-page control.** Running analysis just regenerates the data the Statistics tab already shows, so a separate "Analysis" surface is redundant. "Re-run analysis" and "Force full regen" now live as a data-freshness control in the Statistics header. Integration keeps its own dedicated left-nav tab (it is a genuinely different function - routing new files, not viewing stats).
 
 ---
 
 ## What AudioManager is
 
-C# console app (.NET Framework 4.8) that manages David's personal MP3 library (~5,693 tracks at `C:\Users\David\Audio\`). It has two modes, **already exposed via CLI args on the built exe** (verified in `Code\Program.cs`):
+C# console app (.NET Framework 4.8) that manages David's personal MP3 library (~5,694 tracks at `C:\Users\David\Audio\`). Modes, exposed as CLI args on the built exe (verified in `Code/Program.cs`):
 
 ```
-AudioManager.exe analysis [--force-regen] [--json-output]
+AudioManager.exe analysis  [--force-regen] [--json-output] [--no-input] [--no-auto-commit]
 AudioManager.exe integrate [--dry-run] [--no-input] [--json-output] [--no-auto-commit]
+AudioManager.exe tagfix    [--dry-run]
+AudioManager.exe            (no args -> interactive arrow-key menu: Analysis / Analysis Force-Regen / Integrate)
 ```
 
-The **AudioMirror** is a sibling git repo (`C:\Users\David\GitHubRepos\AudioMirror`) containing one small XML file per track - the data source for the Statistics and Library Browser tabs. Plain data on disk, not a database.
+The **AudioMirror** is a sibling git repo (`C:\Users\David\GitHubRepos\AudioMirror`, XML under `AUDIO_MIRROR\`) containing one small XML file per track - the per-track data source for the Statistics and Library Browser tabs. Plain data on disk, not a database.
 
-**Critical data-shape fact, drives several design decisions below:** David integrates new music in one big batch every 2-4 weeks, not a little each day. Any "recent activity" or "additions over time" view must be batch-shaped (grouped by integration run/week), never daily-granularity - a daily view is empty almost every day and spikes hard on integration day, which reads as broken. This is documented in `AudioManager\CLAUDE.md` under "David's actual integration cadence."
+**Critical data-shape fact, drives several design decisions:** David integrates new music in one big batch every 2-4 weeks, not a little each day. Any "recent activity" / "additions over time" view must be batch-shaped (grouped by integration run), never daily-granularity - a daily view is empty almost every day and spikes on integration day, which reads as broken. Documented in `CLAUDE.md` under "David's actual integration cadence."
 
 ---
 
-## Scope this session: MVP versions of ALL six tabs
+## Backend architecture - DECIDED: subprocess + JSON contract, no daemon
 
-David wants to see the whole app shape this round, not just one tab, and is comfortable with simple/skeleton versions of the later tiers as long as Statistics and Integration are functionally real. Build in this priority order, and stop moving down the list once you're running low on session budget - a fully-working Statistics + Integration with skeleton Library/TagFix/Mirror/Services is a good outcome; don't sacrifice Statistics/Integration quality to rush the rest.
+The roadmap's TIER G0 lists three options: (1) extract a shared C# core library both CLI and GUI call, (2) GUI-only, (3) duplicate logic. Round 2 asked whether the exe should instead expose a **long-running local daemon** (HTTP/named-pipe) to avoid reimplementing parsing in Python. **Decision for this build: none of those. Use subprocess invocation + a structured JSON data contract.** Reasoning, so you don't reopen it:
 
-**Gate between tabs on a real check, not a feeling:** before moving from one tab to the next, load it in the browser and confirm its data actually renders correctly against real data (not just "the code compiles"). If Statistics hits a data or performance problem, fix that before starting Library Browser - don't rush ahead to "show the whole shape" while leaving Statistics half-working, since that violates the priority order above (Statistics/Integration quality over breadth).
+- **The reuse problem is already solved by the JSON contract.** The whole worry was "Python will have to reimplement AudioMirror XML parsing / stats and drift from C# over time." It won't. Statistics data comes from `analysis --json-output` -> `logs/analysis-stats.json`, computed by the C# `Analyser`'s own primitives (guarded by 238 C# tests). Python reads that file. **Zero duplicated stats logic, zero drift** - enforced in code, not by discipline.
+- **A daemon buys nothing here and costs plenty.** For a single-user local tool, a daemon means process-lifecycle management (who starts/stops it, crash recovery, port conflicts), a new IPC/API surface to design and version, and more for David to run and debug. The alternative - "run the exe, read a JSON file it wrote" - is simpler, crash-proof (no long-lived state), and already fast enough (a warm-cache `analysis` over 5,694 tracks completes in a few seconds; measured 2026-07-03).
+- **The middle-ground question (does Python need to touch XML for the Library Browser?) - no, resolved by design.** Per-track rows come from `tracks.json`, emitted by the same C# analysis run. Python parses **zero** XML. The "shared cache format between C# and Python" the round-2 note wondered about is exactly these two JSON files - C# produces, Python consumes, one parser, no drift. Neither the stats path nor the per-track path needs a daemon or a re-parse per render.
+- **This does not box in future tiers.** If a later tier (G5 services, live scrobble overlay) genuinely needs push updates, a daemon/websocket layer can be added *then* as an additive consumer, without touching the stats path. Subprocess-per-invocation is correct for everything G1-G4 does (all user-triggered, none real-time).
 
-1. **Statistics** (real, full-featured - this is the centerpiece, see chart requirements below)
-2. **Integration** (real - trigger the exe's existing `analysis` / `integrate --dry-run` / `integrate --no-input` modes as subprocesses, stream output into a console panel that fills available vertical space, not a cramped fixed box. **Always pass `--no-input` on subprocess-triggered runs** - the exe supports an interactive confirm flow, and a subprocess with no stdin attached will hang the GUI indefinitely if it ever hits a prompt.)
-3. **Library Browser** (MVP - browse/search/filter over the same AudioMirror data already loaded for Statistics, with the richer column set and view toggle described below)
-4. **Tag Fix** (skeleton acceptable - rule-card UI per the mockup, "Run Rules" does not need to execute real tag changes yet, but the cards should render as a real feature-in-progress, not empty boxes)
-5. **Mirror** (skeleton acceptable - read-only status display: last commit SHA/date, uncommitted count, from `git log`/`git status` run against the AudioMirror repo path, read-only)
-6. **Services** (placeholder tab with two stretch-goal stub cards - see "Services tab" section below, do not build required functionality)
+**Net:** no core-library extraction this round, no daemon. Shell out to the existing exe; consume its JSON. Document this as the G0 decision in `GUI-ROADMAP.md` ("subprocess + JSON contract chosen; core-library extraction and daemon both explicitly deferred, revisit only if a real-time tier needs it").
+
+**One recommended follow-up C# change (do NOT build this round unless Statistics + Integration preview are done and solid):** to let the Integration tab execute a *per-track* accept/decline selection (rather than all-or-nothing), the exe needs a manifest-driven integrate mode - e.g. `integrate --manifest <accepted.json> --no-input` that moves only the listed files. The current exe integrates everything in NewMusic or nothing. See the Integration section for how the MVP works safely within that limitation, and why closing this gap is the last step to a *complete* CLI replacement. This is the same kind of source change as the JSON fix - flagged, reasoned, but out of scope for this build's core.
+
+---
+
+## Complete CLI/BAT replacement audit (the "no more terminal" goal)
+
+For the GUI to become David's only interface, it must cover every workflow he currently reaches through the CLI or a `.bat`. Here is the full surface and where each piece lands. **Gaps are called out explicitly - do not silently leave them.**
+
+| Current workflow (CLI flag / script) | What it does | GUI home | Status this round |
+|---|---|---|---|
+| `analysis` (standard) | Incremental mirror refresh + stats + report | Statistics header: **Re-run analysis** | COVERED (reads new JSON) |
+| `analysis --force-regen` | Full mirror regen, re-reads cover art from every MP3 (slow, rare) | Statistics header: **Force full regen** (separate control, confirm dialog, progress) | COVERED - build this control, don't hide it |
+| `integrate --dry-run` | Preview routing of NewMusic, no file moves | Integration tab: **Scan** stage | COVERED (drives the review queue) |
+| `integrate` (real) | Move NewMusic files into library | Integration tab: **Confirm & integrate** | COVERED for all-accepted; **GAP**: per-track selective execution needs the `--manifest` exe mode (see above). MVP = review is a rich preview; execution is accept-all-or-abort |
+| interactive `integrate` y/N confirm | Terminal prompt before real integration | Integration tab: **Confirm** step in the queue | COVERED (this is the core "no more terminal" win) |
+| `tagfix` | Fixed tag cleanup on NewMusic (hardcoded transforms) | Tag Fix tab | **GAP/skeleton**: the exe's TagFixer is NOT rule-configurable - it applies fixed transforms. The mockup's "rule builder" is aspirational. MVP: rule cards render + "Run Rules" can trigger the exe's existing `tagfix --dry-run`. True configurable rules = future + C# work. Flag this honestly in the tab |
+| AudioMirror commit (when exe reports it stale) | `git commit` in AudioMirror before integrating | Mirror tab | **GAP**: Mirror tab is read-only this round. To fully avoid the terminal, it eventually needs a **Commit AudioMirror** action. Note it as the tab's next step |
+| `launch.bat` | Build + run interactive menu | Replaced by a GUI launcher (see Distribution) | COVERED - `launch-gui.bat` starts the app, no menu needed |
+| `scripts/open_playlist.bat` shortcut | Opens a generated playlist (separate feature) | Not in GUI scope this round | Out of scope - note in roadmap under Services/future |
+| `--test` / `--verify` / `--routing-manifest` | Dev/test entry points | N/A | Correctly out of scope (dev-only, not a user workflow) |
+
+**Bottom line for the goal:** after this build, David's normal loop (refresh stats, review + integrate new music, check mirror status) is fully GUI-driven. The two things still needing a terminal or a future C# change are (a) *selective* per-track integration execution and (b) committing AudioMirror and (c) true configurable tag rules. Those are named above so they become the next round's work, not a silent surprise.
+
+---
+
+## Scope this session: all tabs, priority-ordered
+
+David wants the whole app shape, and is comfortable with skeleton later-tiers as long as Statistics and Integration are functionally real. Build in this order; stop moving down once budget runs low. A fully-working Statistics + Integration with skeleton Library/TagFix/Mirror/Services is a good outcome - don't sacrifice the first two's quality to rush the rest.
+
+**Gate between tabs on a real check:** before moving on, load the tab in the browser and confirm its data renders correctly against real data (not just "it compiles"). If Statistics hits a data/perf problem, fix it before starting Library Browser.
+
+1. **Statistics** (real, full-featured - the centerpiece; includes the Analysis re-run controls)
+2. **Integration** (real - staged review workflow driven by the exe's dry-run JSON; see its section)
+3. **Library Browser** (MVP - browse/search/filter over AudioMirror XML, rich columns, table/grid, pagination)
+4. **Tag Fix** (skeleton - rule cards render; "Run Rules" may trigger `tagfix --dry-run`, no configurable rules yet)
+5. **Mirror** (skeleton - read-only status from `git log`/`git status` against AudioMirror)
+6. **Services** (placeholder - two stretch stub cards; do not build)
 
 ### Build one data loader first, before any UI code
 
-Statistics, Library Browser, and the Recent Additions/batch panels all read from the same two sources: `analysis --json-output` and the AudioMirror XML files. Write a single module (e.g. `gui/data_loader.py`) with explicit, individually testable accessor functions (e.g. `get_stats()`, `get_tracks_for_batch(batch_id)`, `get_genre_distribution()`) that owns both:
+Statistics, Library Browser, and the batch panels read from the **two C#-emitted JSON files** - never from XML. Write a single module (`gui/data_loader.py`) with explicit, individually testable accessors that owns both:
 
-- Runs `analysis --json-output` once at startup (and on manual refresh). Check the exe's actual JSON field names as you write the loader, and note them inline as comments or in `gui/README.md` as you go - this is a normal "check the data before consuming it" step, not a stopping point; keep building. Fall back to AudioReport.md text parsing only for fields genuinely missing from JSON, and prefer recomputing from the AudioMirror XML over regex-parsing report text wherever the XML has the same data (XML is structured and stable; the text report is a rendering of it and more brittle to parse).
-- Globs and parses the AudioMirror XML once at startup, builds an in-memory (or `gui/.cache/mirror-index.json`) index, and exposes typed accessors - don't re-glob or re-parse 5,693 XML files on every panel render or every page load. Cold load shouldn't feel sluggish to a human watching it start; if your first pass is slow, cache is the fix, not a specific library choice.
-- Owns the `stats-history.json` batch-delta cache described below and exposes a `refresh()` method.
+- **Stats:** runs `AudioManager.exe analysis --json-output --no-input` once at startup (and on manual refresh) - this single run produces *both* JSON files - then reads `logs/analysis-stats.json`. Every stat tile and Statistics panel maps 1:1 to a field in that file (see `AnalysisJson-Format.md`). **Read `schemaVersion` and fail loudly on a mismatch** rather than mis-reading.
+- **Per-track rows:** reads `logs/tracks.json` once into an in-memory index, exposes typed accessors (page/slice/filter/search). Don't re-read the file per render. **Do NOT glob or parse AudioMirror XML in Python - `tracks.json` is the only per-track source.** Album art is extracted lazily from each row's `filePath` via `mutagen` (that's reading an MP3's embedded image, not parsing XML data) and cached - see the Library Browser section.
+- **Batch history:** owns the `stats-history.json` batch-delta cache (below) and a `refresh()` method.
 
-Every panel, tile, and the Library Browser consume this loader; none of them touch the exe, the JSON, or the XML files directly. This is the single highest-leverage structural decision in this brief - it's the shared root of the JSON-schema risk, the XML-performance risk, and the batch-delta risk below, and fixing it once here means you don't re-solve it per panel.
+Every panel and the Library Browser consume this loader; none touch the exe output paths or the XML directly. **The GUI parses no XML at all** - this is the single highest-leverage structural decision in the brief, and it is now enforced by the data contract, not by discipline.
 
-**Before building the rest of Statistics, prove the loader end-to-end on one panel first:** get Genre Distribution (with its donut/pie/treemap swap) fully working against real data and committed, then move on. This catches loader bugs and chart-library friction (theming, swap mechanics) once, cheaply, instead of after all ten panels are wired up.
-
-### Why subprocess, not core-library extraction
-
-The roadmap doc's TIER G0 lists "extract a shared core C#/GUI library" as a recommended architecture decision. For this session, **don't do that refactor.** The exe already accepts the args above and already has `--json-output` support - shelling out to the existing binary and parsing its output is lower-risk, zero-change-to-CLI-code, and gets you working Integration today. Document this as the G0 decision for now in `GUI-ROADMAP.md` (check off the item, note "subprocess invocation chosen for MVP; revisit core-library extraction only if a future tier needs deeper C# logic access than the exe's CLI surface provides").
+**Prove the loader end-to-end on one panel first:** get Genre Distribution (with its donut/pie/treemap swap) fully working against `analysis-stats.json` and committed, then move on. Catches loader + chart-library friction once, cheaply.
 
 ### Safety constraints (read `CLAUDE.md` for the full list)
 
-- The music library (`C:\Users\David\Audio\`) and NewMusic inbox are **not backed up**. Never write to them directly from GUI code - the only writes that happen are through the existing exe's own integrate mode, which already has its own safety checks (dry-run, confirm flow). Your GUI code triggers the exe; it doesn't reimplement its logic.
-- Never write to the AudioMirror repo directly either, except read-only `git log`/`git status` for the Mirror tab.
-- If unsure whether an operation is read-only or safe, don't do it - note it in your summary instead of guessing.
+- The music library (`C:\Users\David\Audio\`) and NewMusic inbox are **not backed up**. **Never write to them, or to AudioMirror, from GUI/Python code.** The only writes that happen are through the exe's own modes, which have their own safety checks (dry-run, confirm flow, pre-integration gate). Your GUI triggers the exe; it never reimplements or bypasses those paths. This specifically means the Integration review queue must not physically move or delete files in NewMusic itself (see its section).
+- Read-only `git log`/`git status` against AudioMirror for the Mirror tab is fine.
+- If unsure whether an operation is read-only/safe, don't do it - note it in your summary instead of guessing.
 
 ---
 
-## Statistics tab: full chart/panel spec (build against mockup.html)
+## Statistics tab: full chart/panel spec (build against mockup.html + the JSON contract)
 
-The mockup's Statistics tab is the structural target. Every panel in it maps to a real data source below. Build all of them; the "stretch" list at the end is optional if time allows.
+Every panel maps to a field in `analysis-stats.json`. Build all of them; the "stretch" list is optional.
 
-### Stat tile row (top)
+### Data-freshness control (new this round - the demoted Analysis function)
 
-8 tiles, all sourced from `analysis --json-output` (or the equivalent AudioReport.md fields if JSON output doesn't cover a stat - check the exe's actual JSON schema first, fall back to parsing the text report only if a field is genuinely missing from JSON):
+In the Statistics page header, next to the global date-range selector, show a **data-freshness card/control**:
+- "Analysis last run: <relative time from `generatedAt`>"
+- **Re-run analysis** button -> runs `analysis --json-output --no-input`, shows a small inline progress state, re-reads the JSON, re-renders. This is fast (seconds).
+- **Force full regen** button (secondary, with a confirm dialog) -> runs `analysis --force-regen --json-output --no-input`. This is the slow path (re-reads cover art from every MP3) - show a proper progress indicator and disable it while running. Use `--no-auto-commit` semantics carefully: force-regen may change AudioMirror XML; surface that in the Mirror tab rather than auto-committing from the GUI.
 
-| Tile | Source | Notes |
+This is the entirety of the "Analysis tab" - a control, not a page. Justify it in the UI copy: analysis output *is* the Statistics data.
+
+### Stat tile row (top) - all from `summary` in the JSON
+
+| Tile | JSON field | Notes |
 |---|---|---|
-| Tracks | track count | show a "+N vs last batch" delta comparing current count to the count at the previous integration run (see "batch delta" note below) |
-| Artists | distinct artist count | |
-| Total Size | sum of resolved MP3 file sizes | see file-size note below |
-| Genres | distinct genre count | |
-| Total Playback | sum of all track lengths, formatted as "360.9 hrs" | AudioReport.md "Total playback hours" |
-| Avg Song Length | mean track length | AudioReport.md "Average song length" |
-| Median Song Length | median track length | AudioReport.md "Median (typical) song length" |
-| Avg File Size | mean resolved file size | AudioReport.md "Average file size" |
+| Tracks | `summary.trackCount` | show "+N vs last batch" delta (see batch delta below) |
+| Artists | `summary.artistCount` | |
+| Total Size | `summary.totalLibraryBytes` | **now a real on-disk sum** (the exe walks the library once; no Python proxy needed) |
+| Genres | `summary.genreCount` | |
+| Total Playback | `summary.totalPlaybackHours` | format "360.9 hrs" |
+| Avg Song Length | `summary.avgSongLengthSeconds` | format m:ss |
+| Median Song Length | `summary.medianSongLengthSeconds` | format m:ss |
+| Avg File Size | `summary.avgFileBytes` | format MB |
 
-**Batch delta definition:** compare the current stat snapshot to the stat snapshot as of the previous integration batch (batch boundaries per the canonical-source rule in "Recent Additions" below). Simplest implementation: store each analysis run's summary stats (tiny JSON), keyed by the git-derived batch it corresponds to, in a local cache file the GUI writes to (NOT AudioMirror, NOT the library - a new small file under the GUI's own folder, e.g. `gui/.cache/stats-history.json`), and diff against the second-most-recent batch entry. This is the "batch-shaped comparison" pattern from Last.fm's "+7% vs 2024" tile - only meaningful against batch data, never a fabricated daily/monthly delta.
+**File-size note, now resolved:** rounds 1-2 told you to fake file size from bitrate because per-track disk stats in Python would be slow. That workaround is gone - `totalLibraryBytes`/`avgFileBytes` are computed by the exe in a single disk walk it was doing anyway, and arrive in the JSON for free. Use them. (Per-track exact size in the Library Browser's optional "Size" column still has no cheap source - keep that column out, as before.)
 
-**File size / Date Added note - decided, don't re-open:** use the XML file's own mtime and a proxy size (e.g. estimate from bitrate x length, or omit exact size and show "~" if no cheap proxy exists). **Do not resolve real MP3 paths under `C:\Users\David\Audio\` for this** - at 5,693 tracks, per-track disk stat calls on every load/refresh is a real performance risk with no caching layer to absorb it, and it's not worth building one just for a size column. Note this choice in `GUI-ROADMAP.md` as already made, not as an open decision.
+**Batch delta definition:** compare the current snapshot to the snapshot at the previous integration batch. Store each analysis run's `summary` (tiny), keyed by the git-derived batch it corresponds to, in `gui/.cache/stats-history.json` (GUI-owned; NOT AudioMirror, NOT the library), and diff against the second-most-recent batch entry. This grows by roughly one small row per batch (a few dozen a year) - no scale concern over years.
 
-### Panels
+### Panels (each -> a JSON field)
 
-**Genre Distribution** - donut/pie/treemap swappable via dropdown (pattern already in mockup.html, port directly). Source: `Genres` field, semicolon-split, first genre per track counted (or count all genres a track has - your call, note which).
+- **Genre Distribution** - donut/pie/treemap swappable (pattern in mockup). Source: `genreDistribution` (already per-genre counted; a multi-genre track appears in each genre, matching the report).
+- **Decade Distribution** - bar/donut swappable. Source: `decadeDistribution`.
+- **Year Distribution** - horizontal bar, top years. Source: `yearDistribution` (sorted desc; show top N with a "show all").
+- **Genre Balance (radar)** - same `genreDistribution` data, radar read. **Chart-theming fix, mandatory and systemic:** ApexCharts (or your chart lib) does not inherit page CSS variables for axis/legend/tooltip text - set them explicitly on **every** chart (`yaxis/xaxis.labels.style.colors`, `legend.labels.colors`, `tooltip.theme:'dark'`). Round 1's radar shipped white-on-white. Apply to all panels, not just the radar.
+- **Top Artists** - horizontal bar, toggle "Excl. Musivation" / "All". Source: `topArtists.exclMusivation` / `topArtists.all` (Akira The Don dominates "all" via the Musivation collection and is absent from "excl" - both are in the JSON, top 50 each).
+- **Recent Additions** - grouped by integration batch, header "Batch <date> (<N> tracks)". **Batch boundaries: use AudioMirror commit history as the single canonical source everywhere a "batch" appears** (Recent Additions, delta tiles, batch bar chart) - it predates the GUI cache and covers every past run. `stats-history.json` stores stat *values* per batch keyed to those same git boundaries, not an independent batch definition.
+- **Tracks Added Per Integration Batch** - bar, one per batch, last 6-10 batches. Replaces round-1's daily heatmap (wrong shape for batch data). Same boundaries as Recent Additions.
+- **Track Age Distribution** - bar, buckets `0-2y / 2-5y / 5-10y / 10-20y / 20y+`. Source: `ageDistribution` (fixed 5 buckets, always present). Pair with the scalar `ageStats` (average/median/newest/oldest years) as a small callout.
+- **Cover Art Resolution Breakdown** - bar of `coverArt.dimensionHistogram` (top 15 "WxH" buckets).
+- **Tag Completeness ring** - radial widget. Source: `tagCompleteness.percent` (% of tracks with Title/Artist/Album/Genre/Year all present). Reusable component - build once, use for both rings.
+- **High-Res Cover Coverage ring** - same widget. Source: `coverCoverage800.percent` (% of all tracks with cover >= 800px on the short side; this is `covered/total`, honestly counting no-cover tracks as not-covered).
+- **Global date-range filter** - dropdown (All time / current year / previous year / last batch) in the header; re-renders the time-windowed panels (Year/Decade/Age/batch - not Genre/Cover, which aren't time-windowed). Mockup demos this on the Year chart; extend consistently.
 
-**Decade Distribution** - bar/donut swappable via dropdown. Source: `Year` field bucketed to decade.
+### Configurability pattern (generalize)
 
-**Year Distribution** - horizontal bar, top years by track count. Source: AudioReport.md "Year Statistics" table - port directly, all 19+ rows or top N with a "show all" affordance.
-
-**Genre Balance (radar)** - same genre-share data as the donut, shown as a radar for a different read. **Contrast fix, mandatory:** ApexCharts (or whatever chart library you use) does not inherit page CSS variables for axis/legend/tooltip text - it needs explicit label color config (in ApexCharts: `yaxis.labels.style.colors`, `xaxis.labels.style.colors`, `legend.labels.colors`, and `tooltip.theme:'dark'`). Round-1's radar chart shipped with white-on-white axis numbers because this wasn't set. Apply this explicit theming to **every** chart panel's axis/legend/tooltip, not just the radar - it's a systemic gap in chart-library theming vs. page theming, not a one-off bug.
-
-**Top Artists** - horizontal bar, toggle between the two AudioReport.md rankings: "Artists Excluding Musivation" and "Artists All" (these differ meaningfully - Akira The Don dominates the "All" ranking via the Musivation motivational-audio collection but is absent from "Excluding Musivation"). Port both tables directly from the report/JSON output.
-
-**Recent Additions** - grouped by integration batch, NOT by relative day ("2 days ago"). Header row per batch: "Batch <date> (<N> tracks)", then the tracks added in that run underneath. **Batch boundaries: use AudioMirror commit history as the single canonical source everywhere a "batch" is shown** (Recent Additions, the delta tiles, the batch bar chart) - it's the more authoritative record since it predates the GUI's own cache and covers every past integration run, not just ones since the GUI started running. `stats-history.json` stores the stat *values* for each batch (keyed to the same git-derived batch boundaries), not an independent definition of where batches start and end - two different batch-boundary sources across panels would make "Batch <date>" headers disagree with the delta tiles' notion of "last batch."
-
-**Tracks Added Per Integration Batch** - bar chart, one bar per batch, last 6-10 batches. This replaces round-1's daily "Additions Calendar" heatmap, which was flagged as fundamentally wrong for this data shape (see the cadence note at the top of this brief). Source: same batch boundaries as Recent Additions.
-
-**Track Age Distribution** - bar chart, buckets like `0-2y / 2-5y / 5-10y / 10-20y / 20y+` computed from `Year` field vs current year. New this round, pairs with the scalar Age Statistics (avg/median/newest/oldest) from AudioReport.md - show those as a small stat callout near the chart or as part of the stat tile row if space allows.
-
-**Cover Art Resolution Breakdown** - bar chart of the `AlbumCover` Width x Height buckets, e.g. "800x800", "1200x1200", "1000x1000", etc. Source: AudioReport.md "Cover Art Statistics" line (`Top dims: 800x800=3080, 1200x1200=1711, ...`) - parse this or recompute directly from AudioMirror XML `AlbumCover` fields (more robust than parsing the text report).
-
-**Tag Completeness ring** - radial/circular progress widget (WakaTime's "AI-driven %" ring, Last.fm's "listening clock" - both are single circular-proportion widgets). Show % of tracks with all core tags present (Title/Artist/Album/Genre/Year all non-empty/non-"Missing"). This is a reusable component - build it once, use it for both rings below.
-
-**High-Res Cover Art Coverage ring** - same radial widget, % of tracks with cover art >= 800px (i.e. `AlbumCover.Width >= 800`). Source: AudioReport.md "Cover Art Statistics" (`Sub-800px: N`) - coverage = (total - sub-800px) / total.
-
-**Global date-range filter** - a dropdown (All time / current year / previous year / last integration batch) in the Statistics page header that re-renders the dashboard against the selected window. Mockup demonstrates this pattern on the Year chart only, as a proof of concept; extend it to apply consistently across the panels where a date window is meaningful (Year/Decade/Age/batch charts - not Genre/Cover-art breakdowns, which aren't time-windowed in a meaningful way).
-
-### Configurability pattern (generalize, don't stop at Genre)
-
-Round 1 only made Genre swappable. This round: Genre (donut/pie/treemap), Decade (bar/donut), Top Artists (Excl. Musivation / All toggle), plus the global date-range filter. If you build additional panels beyond this list, prefer giving them a similar toggle/swap control over a fixed single view - it's a cheap addition once the pattern exists and matches David's "more configurability across all panels" feedback.
+Genre (donut/pie/treemap), Decade (bar/donut), Top Artists (Excl./All toggle), plus the global date filter. New panels beyond these should prefer a similar toggle/swap over a fixed single view - cheap once the pattern exists.
 
 ### Stretch, if budget allows
 
-- Artist treemap (hierarchical genre -> artist share)
-- Library size vs track count dual-axis chart over batches
-- Year-over-year comparison toggle
-- Top-10-vs-long-tail split visualization
+Artist treemap (genre -> artist share); library-size-vs-track-count dual-axis over batches; year-over-year toggle; top-10-vs-long-tail split.
 
 ---
 
-## Chart library and stack decision (already researched - build, don't re-research)
+## AudioMirror XML schema (C#'s input - the GUI never reads this)
 
-**Stack: your call, same reasoning as round 1** - see below, unchanged from round-1 research (still current as of 2026-07-02):
+**This section is reference for understanding data lineage, not an instruction to parse anything.** The GUI does not open these files - `tracks.json` (per-track) and `analysis-stats.json` (aggregate) are derived from them by C# and are your only sources. Shown here so you understand where the JSON fields come from.
 
-- **NiceGUI** (Python-native, FastAPI + Vue/Quasar under the hood, WebSocket live updates, `ui.echart`/`ui.plotly` wrappers) - **recommended.** Write UI in pure Python, no separate JS build step, easiest to wire real backend actions (subprocess calls, file reads) directly into UI event handlers. Its `ui.echart` wrapper exposes Apache ECharts, which has every chart type this brief needs built in (radar, bar, donut/pie, treemap, radialBar/gauge equivalent) plus room to grow.
-- **Flask + ApexCharts/Chart.js (JS frontend)** - safe fallback if NiceGUI's component model doesn't fit something. The mockup's ApexCharts code is directly portable to this stack (mockup uses ApexCharts via CDN specifically so it's a drop-in reference regardless of which stack wins).
-
-**Chart-type choices for this brief, with reasoning** (so you don't need to re-derive them):
-- **Donut/pie/treemap** for Genre - three different reads on hierarchical/proportional share data, cheap to make swappable since they share the same series shape.
-- **Bar (vertical)** for Decade/Year/batch/age/cover-resolution - all are simple categorical counts, bar is the least ambiguous chart type and reads correctly at a glance.
-- **Horizontal bar** for Top Artists and Year - long text labels (artist names, "2010s" style categories) read better unrotated on a horizontal axis.
-- **Radar** for Genre Balance - deliberately a second read on the same data as the donut; radar makes uneven genre spread visually obvious in a way a donut doesn't.
-- **RadialBar/circular progress ("ring")** for Tag Completeness and Cover Coverage - both are single-proportion metrics (% complete), which is exactly what this chart type is for (WakaTime's AI% ring, Last.fm's listening-clock ring - both single-proportion circular widgets, not general-purpose charts).
-- Explicitly rejected: calendar/scrobble heatmap (wrong shape for batch data, see cadence note), dual-axis growth chart (deferred to stretch - real value once there's more batch history to show a meaningful trend), sankey/flow diagrams (no natural source-to-destination flow in this data - library growth isn't a flow).
-
----
-
-## AudioMirror XML schema (Statistics + Library Browser data source)
-
-Location: `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\` - one `.xml` file per track, in subfolders (`Artists/<ArtistName>/<Album>/`, plus `Compilations/`, `Miscellaneous Songs/`, `Motivation/`, `Musivation/`, `Sources/`). Recursively glob `*.xml`.
+Location: `C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\` - one `.xml` per track in subfolders (`Artists/<Artist>/<Album>/`, plus `Compilations/`, `Miscellaneous Songs/`, `Motivation/`, `Musivation/`, `Sources/`). The C# `Parser` recursively globs `*.xml`; Python does not.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Track>
   <Title>see the real</Title>
-  <Artists>21 Savage</Artists>          <!-- semicolon-separated if multiple, first = primary artist -->
+  <Artists>21 Savage</Artists>          <!-- semicolon-separated if multiple, first = primary -->
   <Album>american dream</Album>
   <Year>2024</Year>
   <TrackNumber>10</TrackNumber>
   <Genres>Rap; Hip Hop</Genres>          <!-- "; " separated -->
-  <Length>00:03:02.6250000</Length>      <!-- .NET TimeSpan format, hh:mm:ss.fffffff -->
+  <Length>00:03:02.6250000</Length>      <!-- .NET TimeSpan, hh:mm:ss.fffffff -->
   <AlbumCover><Count>1</Count><Width>1200</Width><Height>1200</Height></AlbumCover>
-  <Compilation>True</Compilation>        <!-- "True" or "False" string -->
+  <Compilation>True</Compilation>        <!-- "True" / "False" string -->
 </Track>
 ```
 
-All fields are required (strict schema, locked 2026-06-06) - no defensive parsing needed for missing fields. Full reference: `AudioManager\docs\References\AudioMirror-Format.md`.
+Strict schema (locked 2026-06-06) - all fields present. Full reference: `docs/References/AudioMirror-Format.md`. Every field above surfaces in `tracks.json` (per track) and/or `analysis-stats.json` (aggregated), computed by C#. **You consume those JSON files; you never parse this XML.**
 
 ---
 
-## Library Browser tab: full column + view spec
+## Library Browser tab: columns, views, and REAL album art
 
-Round 1 shipped 5 columns (Title/Artist/Album/Genre/Year) and no view options. This round, build against the mockup's richer version:
+Build against the mockup's richer version. **All rows come from `tracks.json`** (via `data_loader`) - every column below is already a field in that file; Python computes nothing from XML.
 
-**Default visible columns:** Title, Artist, Album, Genre, Year, Track Number, Length (formatted m:ss from the XML `Length` TimeSpan).
+**Default visible columns:** Title (`title`), Artist (`primaryArtist`/`artists`), Album (`album`), Genre (`primaryGenre`), Year (`year`), Track Number (`trackNumber`), Length (`length`, already m:ss).
 
-**Optional columns (iTunes-style show/hide column picker, off by default except where noted):** Date Added (from the file-size/date-added proxy decision made in the Statistics section above - reuse the same choice), Compilation (Yes/No from the `Compilation` field), Cover Thumbnail (small square rendered from the track's actual album art if you can extract it via a Python tag-reading library such as `mutagen` (pure-Python, reads embedded APIC/cover-art frames directly, no cross-language bridge needed) - a colored placeholder icon is an acceptable fallback if extracting real thumbnails is too costly for this round).
+**Optional columns (iTunes-style show/hide picker, off by default):** Date Added (`addedDate`), Compilation (`compilation` boolean), Cover Thumbnail (see album art below).
 
-**Do not add:** Play Count, Rating, BPM, or other columns with no backing field in AudioMirror - these don't exist in the data (this was flagged explicitly in round-1 review against the iTunes reference screenshot; the iTunes column list is broader than what applies here).
+**Do not add:** Play Count, Rating, BPM - no backing field in AudioMirror.
 
-**View toggle:** Table view (above) and Grid view - Sonarr-poster-style cards using each track's album cover art as the card image (real art if extracted, placeholder otherwise), with a colored status bar along the card bottom (color by genre or another meaningful dimension - your call) and an "Added: <date>" line.
+**Album art - this is the point of the grid view, get it right:**
+- **Grid view (Sonarr-poster style)** is the headline: each track is a card whose image is the track's **real album cover art**, extracted with `mutagen` (pure-Python, reads embedded APIC/cover frames directly from the MP3). Use the row's **`filePath`** (already the real MP3 path, provided by C# in `tracks.json`), read the embedded picture, render it as the card image. This is reading an image out of an MP3 - it is NOT parsing XML data, so it does not violate the no-XML rule. Cache extracted thumbnails (`gui/.cache/thumbs/`, keyed by `id`) so you extract once, not per render.
+- Use the row's **`hasArt`/`hiResArt`** flags to skip extraction attempts on tracks with no art and to badge low-res covers - no need to open the file to know its art status.
+- The grid must **read as an album-art wall**, not a placeholder field. The mockup shows varied per-card placeholder covers (distinct colors + album initials) specifically so the *concept* is legible with fake data - **build toward real extracted art as the target, not "the placeholder is fine."** A colored placeholder is an acceptable fallback only for a track whose art can't be read (or whose `filePath` doesn't resolve - rare, see the contract doc).
+- Card also has a thin status bar (color by `primaryGenre`) and an "Added: <addedDate>" line.
+- **Table view** Cover Thumbnail column uses the same extracted-thumbnail source at small size.
 
-**Search + filters:** full-text search across Title/Artist/Album, filter chips for genre/decade/artist (as in the mockup).
+**Search + filters:** full-text across Title/Artist/Album; filter chips for genre/decade/artist (as in mockup).
 
-**Pagination:** 5,693 tracks needs real pagination, not one long scroll or a single unpaginated table - port the mockup's pagination row pattern (page numbers + jump-to-position input, Last.fm Library/Albums-style). **Only render the current page's rows** - query/slice the data loader's in-memory index for the current page and filters, don't send all 5,693 rows to the page and hide most of them client-side; that defeats the purpose of pagination and will feel laggy in the browser.
-
----
-
-## Integration tab
-
-Trigger `analysis`, `integrate --dry-run`, and `integrate --no-input` (real) against the real exe as subprocesses, streaming both stdout and stderr into the console panel (capture both - error output that only appears in stderr would otherwise vanish silently). **`--no-input` is mandatory on every subprocess call, including dry-run** - without it, any confirm prompt the exe emits will hang the subprocess waiting on stdin the GUI never provides. **Read the subprocess output unbuffered / line-by-line as it's produced, not all at once after the process exits** - Python subprocess pipes buffer by default, and a long `analysis` run over 5,693 tracks will otherwise make the console panel look completely frozen until the process finishes, which reads as a hang even when it isn't one. Smoke-test this against a real long-running call (e.g. `analysis --force-regen`) before considering Integration done. **Layout fix, mandatory:** the console panel must be a flex child that grows to fill available vertical space (`flex:1` on the panel, parent `main`/tab-page as a flex column) - round 1 shipped a fixed 160px console box with a large empty area below it on the page, which was flagged explicitly. Port the mockup's flex layout structure directly - it already implements this correctly.
-
-Per-track confirm/decline queue with album art is a later pass within this tier if time allows, not required for MVP.
+**Pagination:** 5,694 tracks needs real server-side pagination - only render the current page's rows (slice the loader's in-memory index for the current page + filters). Don't ship all rows and hide them client-side. Port the mockup's pagination row (page numbers + jump-to-position). Thumbnail extraction is per-visible-page only (never extract 5,694 covers up front).
 
 ---
 
-## Tag Fix tab
+## Integration tab: GUI-native staged workflow (NOT a terminal)
 
-Build the rule-card UI from the mockup (Maintainerr-pattern: card with name, description, status badge, scope metadata row, Preview/Edit/Delete actions, top-level "+ New Rule" / "Run Rules" buttons). **This can be a functional stub** - cards render, are editable in the UI (name/description/status can change), "Preview Matches" can show a hardcoded or lightly-computed match count, but "Run Rules" does not need to execute real tag changes this round. The goal is that it looks like a real feature-in-progress, not an empty skeleton box, matching David's explicit feedback on round 1's Tag Fix tab.
+**Design principle:** the CLI already prints to a console. A GUI that just mirrors that stream adds nothing. Integration is a **staged, visual workflow**. A raw log exists only as a collapsible "Advanced / debug output" panel, defaulted closed - never the primary surface.
+
+The exe's real integration is all-or-nothing (see the architecture section's `--manifest` note), so the MVP is honest about what "accept/decline" can execute. Stages:
+
+**Stage 1 - Scan.** A **Scan NewMusic** button runs `integrate --dry-run --no-input --json-output` as a subprocess. This produces `logs/routing-<timestamp>.json` - the existing routing contract (array of `{filename, artist, title, album, destination, reason, isNewFolder, status, inBatchDuplicate, tagChanges[]}`; schema in `MusicIntegrator.WriteJsonOutput`). Parse that file, not stdout. Show an inline progress state while it runs (dry-run over NewMusic is quick).
+
+**Stage 2 - Review queue.** Render one **card per proposed track** from the routing JSON:
+- Album art (extract via `mutagen` from the NewMusic file), title, artist, album.
+- Proposed **destination path** and the **routing reason** (both already in the JSON).
+- **Tag changes** as before -> after chips (from `tagChanges[]`).
+- Status badge: New Folder (`isNewFolder`), In-Batch Duplicate (`inBatchDuplicate`), or a `status` value.
+- Per-card **Accept / Decline** toggle and a bulk select-all / accept-all.
+- Filter chips: "Only conflicts/duplicates", "Only new folders", "All".
+
+This is a genuine visual review of exactly what the real run will do - the data is real, per-track, with art and routing rationale. It replaces reading a wall of dry-run text.
+
+**Stage 3 - Confirm.** A summary bar: "N tracks -> M artists, K new folders, D duplicates/conflicts; X declined". A single **Integrate accepted tracks** primary button, enabled only after a scan.
+
+**Stage 4 - Execute + structured progress.** On confirm, run the real integration and show **structured progress** - an overall progress bar plus a per-track status list transitioning queued -> moving -> done / failed, driven by parsing the exe's line-by-line output into state (read the pipe unbuffered/line-by-line; do NOT wait for exit). NOT a raw text dump. On completion, a result summary (moved / skipped / errors) and a link to the run log.
+
+**The honest MVP limitation (surface it in the UI, don't hide it):** because the exe integrates all-of-NewMusic or nothing, the MVP's real execution is **accept-all** (Stage 4 runs `integrate --no-input`). If David declines specific tracks, the correct MVP behavior is to **not execute** and tell him "declining individual tracks needs manual removal from NewMusic first" - the GUI must NOT move/delete NewMusic files itself (safety rule). True per-track selective execution is unlocked by the recommended `integrate --manifest` exe mode (architecture section) - build the review queue now so it's ready to drive that mode later; wire Stage 4 to accept-all for this round.
+
+**Subprocess discipline (mandatory on every exe call, all tabs):**
+- **Always pass `--no-input`** (including dry-run) - the exe has an interactive confirm path; a subprocess with no stdin will hang forever if it hits a prompt.
+- **Capture stdout AND stderr** (errors only on stderr would vanish silently). Read line-by-line, unbuffered.
+- **One exe invocation at a time.** Disable trigger buttons while a subprocess runs (prevents two concurrent analysis/integrate runs racing on AudioMirror regen). See Failure Modes for concurrency.
+- Smoke-test the streaming against a real long run (`analysis --force-regen`) before considering this done.
 
 ---
 
-## Mirror tab
+## Failure modes, error handling, and the Subprocess Error Modal
 
-Read-only status display: last commit SHA/date, uncommitted change count, via `git log -1` / `git status` run against the AudioMirror repo path. Read-only only - never write to AudioMirror from GUI code.
+The brief must specify what happens when a triggered subprocess misbehaves. It touches real filesystem-adjacent operations (via the exe), so this is not optional polish.
+
+**Exit codes the exe actually uses** (from `Program.cs`): `0` success; `1` gate/validation failure or unknown mode (e.g. pre-integration gate: AudioMirror stale or LibChecker dirty); `123` unhandled exception (the exe prints a `Message:` and `Stack Trace:` block before exiting). Map these to human messages; treat any non-zero as failure.
+
+**Hang / timeout.** Every subprocess call has a **timeout** and a visible **Cancel** button that kills the process tree. Because `--no-input` is always passed, hangs shouldn't come from prompts, but a genuinely stuck run (e.g. disk stall) must be killable without closing the app. Default timeouts: dry-run/analysis a few minutes; force-regen longer (it re-reads every MP3's art) - make it generous and progress-driven, not a hard short kill.
+
+**Subprocess Error Modal - exact layout (build this component, reuse it for every exe call):**
+```
++-------------------------------------------------------------+
+|  [x]  Analysis failed                                        |   <- title = "<action> failed"
+|-------------------------------------------------------------|
+|  Exit code: 1  -  Pre-integration gate failed:              |   <- code + interpreted meaning
+|  AudioMirror is out of sync with the library.               |      (parsed from known exit codes /
+|                                                             |       the exe's first ERROR line)
+|-------------------------------------------------------------|
+|  Details                                    [Copy] [v/^]    |   <- collapsible; Copy = full command
+|  > AudioManager.exe integrate --dry-run --no-input ...       |      + exit code + full captured output
+|  > Pre-integration validation...                            |      to clipboard
+|  >  - ERROR: AudioMirror is out of sync ...                 |   <- monospace, scrollable tail of
+|  >  (for exit 123: the parsed "Stack Trace:" block)         |      stdout+stderr
+|-------------------------------------------------------------|
+|                          [ Dismiss ]   [ Retry execution ]  |   <- Retry re-runs the SAME command
++-------------------------------------------------------------+
+```
+- **Copy-to-clipboard** copies the exact command line, exit code, and full captured stdout+stderr - so David can paste it to you or into an issue without retyping.
+- **Retry execution** re-invokes the identical command (same args, same working dir) - a one-click retry loop for transient failures.
+- For exit `123`, parse the exe's `Stack Trace:` section out of the captured output and show it in Details.
+- For exit `1` gate failures, lift the exe's first `- ERROR:` line into the interpreted-meaning slot (e.g. "AudioMirror is out of sync", "LibChecker found issues") so David sees the actionable cause without reading the log.
+
+**Concurrency / data drift.**
+- **GUI-internal:** serialize all exe calls (one at a time, buttons disabled while running) so two GUI-triggered analysis/integrate runs never race on AudioMirror regeneration.
+- **GUI vs a terminal David opens anyway:** if he runs a CLI command while the GUI is mid-operation, both could regenerate AudioMirror. MVP mitigation: document "finish GUI operations before running CLI commands"; the exe's own pre-integration gate already refuses to integrate against a stale/dirty mirror, so the dangerous path (integrate) is self-protecting. A GUI file-lock is a stretch goal.
+- **AudioMirror vs disk drift:** `analysis` regenerates the mirror from disk, so a refresh re-syncs. The Mirror tab surfaces uncommitted count so drift is visible. If the mirror is stale at integration time, the exe's gate blocks and the Error Modal shows why.
 
 ---
 
-## Services tab (stretch goal, not required)
+## Testing / verification strategy (was missing entirely - add it)
 
-Round 1 left this as an empty placeholder. This round, build it as **two feasibility stub cards**, both explicitly optional and gated behind finishing the required tabs first:
+The C# side is covered (238 tests incl. the new `StatsJson` contract). The GUI's own burden is bounded because it never performs file operations itself - it triggers the exe (which owns those, with its own tests and safety gates). So the GUI test scope is **data parsing + rendering correctness + not-crashing on bad data**:
 
-**Last.fm read-only** - lowest-effort real integration available. `user.getRecentTracks` and other read endpoints work with just a free API key (`https://www.last.fm/api`, no callback URL needed) - **no OAuth flow at all**. If you have budget left after Statistics/Integration/Library/TagFix are solid, a minimal real integration here (recently-scrobbled tracks shown somewhere, or a "tracks never scrobbled" cross-reference against the library) is achievable and would be a genuine extra, not just a stub.
+- **`data_loader` unit tests** against a small committed fixture (a handful of AudioMirror XML files + a canned `analysis-stats.json`): field mapping, pagination/slice/filter correctness, empty-library empty states, and a **schemaVersion-mismatch** case that must fail loudly.
+- **Contract smoke test:** a test that runs `analysis --json-output` once against the real (or a fixture) library and asserts every field `data_loader` reads is present in the produced JSON - catches C#/Python schema drift the moment it happens.
+- **Subprocess-flow manual smoke checklist** (file moves can't be safely unit-tested): scan -> review -> (dry-run) confirm renders; error modal appears on a forced non-zero exit; cancel kills a long run. Document the checklist in `gui/README.md`.
 
-**Spotify read-only** - higher-effort. Needs Authorization Code + PKCE flow: an app must be registered in the Spotify Developer dashboard (David needs to do this himself - it's his account), with a `localhost` redirect URI, then a code-verifier/code-challenge exchange for an access token. No client-secret storage risk (PKCE is designed for exactly this: desktop/local apps that can't safely hold a secret), but meaningfully more setup than Last.fm. Only attempt after Last.fm is working and only if there's clear budget remaining.
+Keep it proportional - this is a personal single-user tool, not a service. The point is that the *data path* is tested and the *destructive path* stays inside the already-tested exe.
 
-**Keep TIER G5 in GUI-ROADMAP.md as "far future"** - this section is an invitation to go further if the core tabs finish early, not a scope change to the roadmap's tier structure.
+---
+
+## Tag Fix tab (skeleton - be honest about what it is)
+
+Build the rule-card UI from the mockup (Maintainerr pattern: name, description, status badge, scope metadata, Preview/Edit/Delete, top-level New Rule / Run Rules). **Functional stub:** cards render and are editable in the UI; "Preview Matches" can show a computed-or-hardcoded count.
+
+**Honesty flag (put a short note in the tab):** the exe's `TagFixer` applies **fixed, hardcoded** transforms (TCMP, genres, parentheticals, featured-artist extraction) to NewMusic - it is not rule-configurable. So the mockup's "rule builder" describes a *future* capability, not what the exe does today. For this round, "Run Rules" may at most trigger `tagfix --dry-run` (the exe's existing fixed behavior) and show its output; it must not claim to run user-defined rules. True configurable rules need a C# change and are future work.
+
+---
+
+## Mirror tab (skeleton)
+
+Read-only status: last commit SHA/date, uncommitted change count, via `git log -1` / `git status` against the AudioMirror repo path. **Read-only - never write to AudioMirror.** Note in the tab that a **Commit AudioMirror** action is the planned next step (needed to fully remove the terminal from David's loop - see the CLI-replacement audit).
+
+---
+
+## Services tab (stretch, not required)
+
+Two feasibility stub cards, both optional and gated behind finishing the required tabs:
+- **Last.fm read-only** - lowest-effort real integration. `user.getRecentTracks` etc. work with a free API key, **no OAuth**. If budget remains after the core tabs, a minimal real integration (recent scrobbles, or a "never scrobbled" cross-reference) is a genuine extra.
+- **Spotify read-only** - higher effort. Authorization Code + PKCE, an app registered in the Spotify dashboard (David does this himself), a `localhost` redirect. No client-secret risk. Only after Last.fm, only if clear budget.
+
+Keep TIER G5 "far future" in the roadmap - this is an invitation to go further, not a scope change.
+
+---
+
+## Distribution / launch (how this replaces `launch.bat` operationally)
+
+The "no more BAT scripts" goal includes *starting* the app. Provide a **`launch-gui.bat`** (double-click) that starts the GUI and opens it, with **no lingering console window**:
+- If NiceGUI (recommended): run in native/desktop-window mode, or start the server with `pythonw`/minimized and open the browser to it. The user should get a window, not a terminal.
+- Add a note in `gui/README.md` on making a Start-Menu/desktop shortcut to `launch-gui.bat` so David launches from an icon, matching how `launch.bat` was reached.
+- It would be self-defeating (see Integration feedback) to require a visible terminal to run a GUI whose whole point is escaping the terminal - make the launcher windowless.
+
+---
+
+## Chart library and stack decision (already researched - build, don't re-research)
+
+**Stack: your call, same as prior rounds:**
+- **NiceGUI** (Python-native, FastAPI + Vue/Quasar, WebSocket live updates, `ui.echart`/`ui.plotly`) - **recommended.** Pure-Python UI, no JS build step, easiest to wire subprocess calls and file reads into event handlers. `ui.echart` (Apache ECharts) has every chart type here (radar, bar, donut/pie, treemap, gauge). Native-window mode also solves the windowless-launch requirement above.
+- **Flask + ApexCharts/Chart.js** - safe fallback. The mockup's ApexCharts is directly portable (mockup uses ApexCharts via CDN as a stack-neutral reference).
+
+**Chart-type choices (don't re-derive):** donut/pie/treemap for Genre (three reads on proportional share); vertical bar for Decade/Year/batch/age/cover-resolution (least-ambiguous categorical counts); horizontal bar for Top Artists and Year (long labels read better unrotated); radar for Genre Balance (deliberate second read); radialBar/ring for the two coverage percentages. Explicitly rejected: calendar/scrobble heatmap (wrong shape for batch data), sankey (no source-to-destination flow in this data).
 
 ---
 
 ## Where to put the code
 
-New top-level folder in this repo, e.g. `AudioManager\gui\`. Keep it fully separate from the CLI's `project\AudioManager\` C# solution so you don't risk breaking the CLI build. Add a short "how to run it" README inside `gui\` or a section in the main repo README. Do NOT read, parse, or modify `project\AudioManager\AudioManager.csproj`, `Program.cs`, or anything in `project\AudioManager\Code\` - you don't need to; the exe's existing CLI surface (documented above) is your integration point, and the C# solution is out of scope for this session entirely.
+New top-level `AudioManager\gui\` folder. Keep it fully separate from `project\AudioManager\` (the C# solution) so you don't risk the CLI build. **Do NOT read, modify, or re-register anything in `project\AudioManager\Code\` or the `.csproj`** - the exe's CLI surface (documented above) plus the two JSON contracts are your only integration points, and the C# solution is otherwise out of scope. (The one C# change this build depends on - `analysis --json-output` - is already done and committed on branch `feat/analysis-json-output`; you consume it, you don't touch it.)
 
-**Commit frequently** - one commit per tab/panel completed, not one commit at the end. See `contingency-plan.md` in this folder for why (usage-limit pauses preserve session state, but only committed work survives a hard kill).
+**Commit frequently** - one commit per tab/panel completed, not one at the end. See `contingency-plan.md` for why (usage pauses preserve session state; only committed work survives a hard kill).
 
 ---
 
 ## Go beyond the mockup
 
-The mockup is the **structural floor** - tab layout, dark theme, panel grid, chart selection, interaction patterns (column picker, view toggle, rule cards, radial rings). It is explicitly **not** the polish ceiling. David's own framing: "go FAR BEYOND the mockup, plus ultra." Once the structure above is locked in and the required tabs are functionally real, you have license to exceed the mockup's visual richness - better spacing, micro-interactions, loading states, empty states, animation on chart transitions, whatever makes it feel like a finished product rather than a wired-up wireframe. Don't spend this license before the structural requirements above are met; spend it after.
+The mockup is the **structural floor** - tab layout, dark theme, panel grid, chart selection, interaction patterns (column picker, view toggle, rule cards, radial rings, the staged Integration workflow). It is **not** the polish ceiling. Once the structure is locked and the required tabs are functionally real, exceed the mockup's visual richness - spacing, micro-interactions, loading/empty states, chart-transition animation, real album-art walls. Don't spend this license before the structural requirements are met.
 
-The `frontend-design` plugin skill is enabled for this session. Use it **only** for this polish pass - typography pairing, spacing/weight extremes, background depth (the mockup's system-font stack `Segoe UI/Roboto/Arial` and uniform 6-8px radius are exactly the kind of generic default it exists to catch). Do **not** let it override the mockup's already-approved dark theme, tab structure, chart-library choice, or accent-color system - those were locked through two rounds of human review and are not open for reconsideration.
+The `frontend-design` plugin skill is enabled - use it **only** for polish (typography, spacing/weight, background depth). Do **not** let it override the approved dark theme, tab structure, chart-library choice, accent system, or the JSON/subprocess architecture - those are locked.
 
 ---
 
 ## Definition of done
 
-- GUI loads (browser or desktop window, per your stack choice) and shows all six tabs; Statistics and Integration are fully functional against real data/real subprocess calls, others may be simple/skeleton per the priority order above.
-- Statistics tab includes every panel listed in the "Statistics tab: full chart/panel spec" section above, each sourced from real AudioMirror data or the exe's `analysis --json-output`, with the configurability (chart-type swaps, artist-ranking toggle, global date filter) and chart-theming (explicit axis/legend/tooltip colors on every chart) requirements applied.
-- Every AudioReport.md stat category (General, Artists x2, Genre, Year, Decade, Age, Cover Art) has a visible home in the Statistics tab.
-- Integration tab can trigger `analysis` and `integrate --dry-run` against the real exe, shows real output, and the console panel fills available vertical space.
-- Library Browser has the full column set (default + optional via column picker), table/grid view toggle, and pagination.
-- Tag Fix shows Maintainerr-style rule cards, not empty skeleton boxes.
-- No writes anywhere except through the existing exe's own write paths (which already have their own safety checks) - your GUI code never writes to the library, NewMusic, or AudioMirror directly.
-- `GUI-ROADMAP.md` updated: G0 decisions (stack, subprocess-vs-library) checked off with brief reasoning; file-size/date-added proxy decision noted; G1+ checklist items checked off for whatever you built.
-- A short "how to run it" note so David can launch it without you.
-- Report back: stack chosen and why, which tabs got full vs skeleton treatment, whether the Services stretch goal was attempted and how far it got, anything deliberately deferred.
+- GUI loads and shows all tabs; **Statistics and Integration are fully functional against real data / real subprocess calls**; others may be skeleton per the priority order.
+- **Statistics** reads exclusively from `logs/analysis-stats.json` (via `data_loader`), includes every panel in the spec with configurability (chart swaps, artist toggle, global date filter) and explicit chart theming on every chart, and includes the **Re-run analysis** + **Force full regen** freshness controls (the demoted Analysis function). Every `analysis-stats.json` category has a visible home.
+- **Integration** is the staged **scan -> review-queue -> confirm -> structured-progress** workflow driven by the exe's dry-run routing JSON, with real per-track album art and routing reasons - **not** a raw terminal stream (raw log is a collapsed advanced affordance only). Real execution is accept-all this round, with the per-track-selective limitation surfaced honestly in the UI.
+- **Analysis and Integration are separated**: Integration is its own tab; Analysis is a Statistics-page control, not a tab.
+- **Library Browser** reads all rows from `logs/tracks.json` (never XML), has the full column set (+ picker), table/grid toggle with **real `mutagen`-extracted album art** in the grid (from each row's `filePath`; placeholder only as fallback), server-side pagination, and per-visible-page thumbnail extraction.
+- **Decoupling verified:** the GUI/Python parses no AudioMirror XML anywhere - all data comes from `analysis-stats.json` and `tracks.json`. A `grep` of the `gui/` folder for XML parsing should come up empty (mutagen image reads and `git`/subprocess calls excepted).
+- **CLI/BAT replacement:** the audit table's COVERED rows work end-to-end from the GUI; the GAP rows (per-track selective integrate, AudioMirror commit, configurable tag rules) are surfaced in-UI as next steps, not silently omitted.
+- **Failure handling:** the Subprocess Error Modal (with copy-to-clipboard and retry) is implemented and reused for every exe call; subprocess calls are serialized, cancellable, and always pass `--no-input`.
+- **Launch:** a windowless `launch-gui.bat` starts the app; `gui/README.md` explains shortcut setup.
+- **Tests:** `data_loader` unit tests (incl. schemaVersion mismatch + empty-library) and the contract smoke test pass; the subprocess manual smoke checklist is documented.
+- **No writes anywhere except through the exe's own write paths.** GUI/Python code never writes to the library, NewMusic, or AudioMirror.
+- `GUI-ROADMAP.md` updated: G0 decisions (stack; subprocess+JSON; daemon and core-library both deferred) checked off with reasoning; the real-file-size resolution noted; G1+ items checked off for what you built.
+- **Report back:** stack chosen and why; which tabs got full vs skeleton; how far the Integration per-track limitation was taken; Services stretch attempted or not; anything deferred.

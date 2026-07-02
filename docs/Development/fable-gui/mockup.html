@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AudioManager GUI - Mockup round 2 (fake data, all tabs)</title>
+<title>AudioManager GUI - Mockup round 3 (fake data, all tabs)</title>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,6 +119,63 @@
   .service-card h3{margin:0 0 6px;font-size:14px;}
   .service-card .stretch-badge{font-size:9px;color:var(--accent3);border:1px solid var(--accent3);border-radius:3px;padding:1px 5px;margin-left:8px;}
   .ring-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+  /* Data-freshness control (the demoted "Analysis" function - a Statistics control, not a tab) */
+  .freshness-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:10px 14px;margin-bottom:18px;flex-wrap:wrap;}
+  .freshness-bar .fresh-info{font-size:12px;color:var(--text-dim);}
+  .freshness-bar .fresh-info b{color:var(--text);font-weight:600;}
+  .freshness-bar .fresh-info .dot{color:var(--accent2);}
+  .freshness-bar .fresh-actions{display:flex;gap:8px;}
+  /* Album-art placeholder covers (varied, so grid reads as an art wall even with fake data) */
+  .cover-art{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:rgba(255,255,255,.92);letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .cover-art.sm{width:32px;height:32px;border-radius:3px;font-size:11px;}
+  .cover-art.lg{font-size:30px;}
+  /* Integration: staged GUI-native workflow (NOT a terminal) */
+  .stepper{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .stepper .step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);background:#12141c;border:1px solid var(--panel-border);border-radius:var(--radius-pill);padding:6px 14px;}
+  .stepper .step .n{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#2a2e3a;color:var(--text-dim);font-size:11px;font-weight:600;}
+  .stepper .step.active{color:var(--text);border-color:var(--accent);background:#181b2e;}
+  .stepper .step.active .n{background:var(--accent);color:#0c0e13;}
+  .stepper .step.done .n{background:var(--accent2);color:#0c0e13;}
+  .review-toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .review-summary{font-size:12px;color:var(--text-dim);}
+  .review-summary b{color:var(--text);}
+  .review-queue{display:flex;flex-direction:column;gap:10px;}
+  .review-card{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px 14px;}
+  .review-card .cover-art{width:56px;height:56px;border-radius:4px;font-size:16px;}
+  .review-card .rc-main .rc-title{font-size:14px;font-weight:600;}
+  .review-card .rc-main .rc-artist{font-size:12px;color:var(--text-dim);margin-bottom:6px;}
+  .review-card .rc-route{font-size:11px;font-family:var(--font-mono);color:var(--accent2);}
+  .review-card .rc-route .arrow{color:var(--text-dim);}
+  .review-card .rc-reason{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .review-card .rc-tags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+  .tag-change{font-size:10px;font-family:var(--font-mono);padding:2px 7px;border-radius:var(--radius-pill);background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);}
+  .tag-change .was{color:var(--accent4);text-decoration:line-through;opacity:.7;}
+  .tag-change .now{color:var(--accent2);}
+  .rc-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .rc-badge{font-size:9px;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:var(--radius-pill);font-weight:600;}
+  .rc-badge.newfolder{color:var(--accent);background:rgba(91,140,255,.13);}
+  .rc-badge.dupe{color:var(--accent3);background:rgba(242,184,75,.13);}
+  .rc-badge.clean{color:var(--accent2);background:rgba(127,209,174,.12);}
+  .rc-decision{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:104px;}
+  .rc-decision button{font-size:11px;padding:6px 10px;border-radius:var(--radius-control);cursor:pointer;font-family:inherit;border:1px solid var(--panel-border);background:#12141c;color:var(--text-dim);}
+  .rc-decision button.accept.on{background:rgba(127,209,174,.15);border-color:var(--accent2);color:var(--accent2);}
+  .rc-decision button.decline.on{background:rgba(226,109,109,.15);border-color:var(--accent4);color:var(--accent4);}
+  /* Structured execute progress (NOT a text stream) */
+  .exec-progress{margin-bottom:14px;}
+  .progress-track{height:8px;background:#12141c;border:1px solid var(--panel-border);border-radius:var(--radius-pill);overflow:hidden;}
+  .progress-track .fill{height:100%;width:64%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .progress-list{display:flex;flex-direction:column;gap:2px;margin-top:12px;font-size:12px;}
+  .progress-row{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:var(--radius-control);}
+  .progress-row .st{font-size:10px;text-transform:uppercase;letter-spacing:.04em;width:64px;}
+  .progress-row .st.done{color:var(--accent2);}
+  .progress-row .st.moving{color:var(--accent3);}
+  .progress-row .st.queued{color:var(--text-dim);}
+  .progress-row .st.failed{color:var(--accent4);}
+  .progress-row .pr-name{color:var(--text);}
+  /* Collapsible advanced/debug log - secondary, never the primary surface */
+  details.advanced-log{margin-top:16px;border-top:1px solid var(--panel-border);padding-top:10px;}
+  details.advanced-log summary{font-size:12px;color:var(--text-dim);cursor:pointer;}
+  details.advanced-log .console{margin-top:10px;min-height:120px;max-height:200px;}
 </style>
 </head>
 <body>
@@ -150,8 +207,16 @@
         </div>
       </header>
 
+      <div class="freshness-bar">
+        <div class="fresh-info"><span class="dot">&#9679;</span> Analysis last run: <b>2 hours ago</b> &middot; 5,694 tracks &middot; data from <b>analysis-stats.json</b></div>
+        <div class="fresh-actions">
+          <button class="btn small">Re-run analysis</button>
+          <button class="btn secondary small">Force full regen</button>
+        </div>
+      </div>
+
       <div class="totals">
-        <div class="stat-tile"><div class="label">Tracks</div><div class="value">5,693</div><span class="delta pos">+18 vs last batch</span></div>
+        <div class="stat-tile"><div class="label">Tracks</div><div class="value">5,694</div><span class="delta pos">+18 vs last batch</span></div>
         <div class="stat-tile"><div class="label">Artists</div><div class="value">1,214</div></div>
         <div class="stat-tile"><div class="label">Total Size</div><div class="value">28.46 GB</div><span class="delta pos">+94 MB vs last batch</span></div>
         <div class="stat-tile"><div class="label">Genres</div><div class="value">16</div></div>
@@ -279,53 +344,32 @@
         </thead>
         <tbody>
         <tr>
-          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td class="opt opt-cover"><div class="cover-art sm" style="background:linear-gradient(135deg,#e26d6d,#7a2d2d);">AD</div></td>
           <td>see the real</td><td>21 Savage</td><td>american dream</td><td>Rap</td>
           <td class="opt opt-track">10</td><td class="opt opt-length">3:02</td><td class="num">2024</td>
           <td class="opt opt-added">2026-06-28</td><td class="opt opt-comp">No</td>
         </tr>
         <tr>
-          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td class="opt opt-cover"><div class="cover-art sm" style="background:linear-gradient(135deg,#f2b84b,#8a5a10);">DI</div></td>
           <td>One More Time</td><td>Daft Punk</td><td>Discovery</td><td>Electronic</td>
           <td class="opt opt-track">3</td><td class="opt opt-length">5:20</td><td class="num">2001</td>
           <td class="opt opt-added">2026-06-06</td><td class="opt opt-comp">No</td>
         </tr>
         <tr>
-          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td class="opt opt-cover"><div class="cover-art sm" style="background:linear-gradient(135deg,#5c6270,#23262e);">MP</div></td>
           <td>Master of Puppets</td><td>Metallica</td><td>Master of Puppets</td><td>Metal</td>
           <td class="opt opt-track">4</td><td class="opt opt-length">8:36</td><td class="num">1986</td>
           <td class="opt opt-added">2026-05-31</td><td class="opt opt-comp">No</td>
         </tr>
         <tr>
-          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td class="opt opt-cover"><div class="cover-art sm" style="background:linear-gradient(135deg,#b98af0,#5a3a8a);">MU</div></td>
           <td>WHAT IF?</td><td>Akira The Don / Scott Adams</td><td>Musivation</td><td>Musivation</td>
           <td class="opt opt-track">1</td><td class="opt opt-length">2:40</td><td class="num">2019</td>
           <td class="opt opt-added">2026-05-26</td><td class="opt opt-comp">Yes</td>
         </tr>
         </tbody>
       </table>
-      <div class="card-grid" id="libGrid">
-        <div class="track-card">
-          <div class="cover-placeholder">&#9835;</div>
-          <div class="status-bar" style="background:var(--accent4);"></div>
-          <div class="info"><div class="t-title">see the real</div><div class="t-artist">21 Savage</div><div class="t-meta">Rap &middot; 2024</div></div>
-        </div>
-        <div class="track-card">
-          <div class="cover-placeholder">&#9835;</div>
-          <div class="status-bar" style="background:var(--accent);"></div>
-          <div class="info"><div class="t-title">One More Time</div><div class="t-artist">Daft Punk</div><div class="t-meta">Electronic &middot; 2001</div></div>
-        </div>
-        <div class="track-card">
-          <div class="cover-placeholder">&#9835;</div>
-          <div class="status-bar" style="background:var(--accent5);"></div>
-          <div class="info"><div class="t-title">Master of Puppets</div><div class="t-artist">Metallica</div><div class="t-meta">Metal &middot; 1986</div></div>
-        </div>
-        <div class="track-card">
-          <div class="cover-placeholder">&#9835;</div>
-          <div class="status-bar" style="background:var(--accent3);"></div>
-          <div class="info"><div class="t-title">WHAT IF?</div><div class="t-artist">Akira The Don</div><div class="t-meta">Musivation &middot; 2019</div></div>
-        </div>
-      </div>
+      <div class="card-grid" id="libGrid"></div>
       <div class="pagination">
         <div>5,693 tracks</div>
         <div class="pages"><span class="active">1</span><span>2</span><span>3</span><span>&hellip;</span><span>114</span><span>Next &rsaquo;</span></div>
@@ -336,27 +380,109 @@
 
     <!-- INTEGRATION TAB -->
     <div class="tab-page" id="tab-integration">
-      <header class="page"><h1>Integration</h1><div class="meta">TIER G2 - trigger existing CLI modes from the GUI</div></header>
-      <div class="btn-row">
-        <button class="btn">Run Analysis</button>
-        <button class="btn secondary">Run Integration (dry-run)</button>
-        <button class="btn secondary">Run Integration (real)</button>
+      <header class="page"><h1>Integration</h1><div class="meta">TIER G2 - GUI-native staged workflow (not a terminal)</div></header>
+
+      <div class="stepper">
+        <div class="step done"><span class="n">&#10003;</span> Scan NewMusic</div>
+        <div class="step active"><span class="n">2</span> Review routing</div>
+        <div class="step"><span class="n">3</span> Confirm</div>
+        <div class="step"><span class="n">4</span> Integrate</div>
       </div>
-      <div class="panel console-panel">
-        <h2>Output</h2>
-        <div class="console">
-<span class="dim">$ AudioManager.exe analysis --json-output</span><br>
-Loaded 5,693 tracks from AudioMirror<br>
-Validation: 0 errors, 0 warnings<br>
-<span class="dim">$ AudioManager.exe integrate --dry-run --no-input</span><br>
-Found 12 tracks in NewMusic staging<br>
-Proposed routing: 12/12 resolved, 0 conflicts<br>
-<span class="dim">-- dry run, no files moved --</span><br>
-<span class="dim">$ AudioManager.exe integrate --dry-run --no-input</span><br>
-<span class="dim">(console fills remaining vertical space in the real build - this box grows with the window instead of forcing an inner scrollbar while the page has empty space below it)</span>
+
+      <div class="review-toolbar">
+        <div class="chip-row" style="margin:0;">
+          <div class="chip active">All (12)</div>
+          <div class="chip">New folders (3)</div>
+          <div class="chip">Duplicates / conflicts (1)</div>
+        </div>
+        <button class="btn secondary small">Re-scan NewMusic</button>
+      </div>
+
+      <div class="review-queue">
+        <div class="review-card">
+          <div class="cover-art" style="background:linear-gradient(135deg,#e26d6d,#7a2d2d);">AD</div>
+          <div class="rc-main">
+            <div class="rc-title">see the real</div>
+            <div class="rc-artist">21 Savage &middot; american dream</div>
+            <div class="rc-route">NewMusic\21 Savage - see the real.mp3 <span class="arrow">&rarr;</span> Artists\21 Savage\american dream\</div>
+            <div class="rc-reason">Existing artist folder, 3+ album songs in batch &rarr; album subfolder</div>
+            <div class="rc-tags">
+              <span class="tag-change">Title <span class="was">see the real (Explicit)</span> <span class="now">see the real</span></span>
+            </div>
+            <div class="rc-badges"><span class="rc-badge clean">Clean route</span></div>
+          </div>
+          <div class="rc-decision">
+            <button class="accept on">&#10003; Accept</button>
+            <button class="decline">Decline</button>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="cover-art" style="background:linear-gradient(135deg,#7fd1ae,#1f5c48);">NF</div>
+          <div class="rc-main">
+            <div class="rc-title">Nightfall</div>
+            <div class="rc-artist">Aurora Bytes &middot; Singles</div>
+            <div class="rc-route">NewMusic\Aurora Bytes - Nightfall.mp3 <span class="arrow">&rarr;</span> Artists\Aurora Bytes\Singles\</div>
+            <div class="rc-reason">New artist, 1 song in batch &rarr; Artists\Singles\ (creates folder)</div>
+            <div class="rc-tags">
+              <span class="tag-change">Genre <span class="was">(empty)</span> <span class="now">Electronic</span></span>
+              <span class="tag-change">Compilation <span class="now">set false</span></span>
+            </div>
+            <div class="rc-badges"><span class="rc-badge newfolder">New folder</span></div>
+          </div>
+          <div class="rc-decision">
+            <button class="accept on">&#10003; Accept</button>
+            <button class="decline">Decline</button>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="cover-art" style="background:linear-gradient(135deg,#f2b84b,#8a5a10);">MU</div>
+          <div class="rc-main">
+            <div class="rc-title">DISCIPLINE EQUALS FREEDOM</div>
+            <div class="rc-artist">Akira The Don / Jocko Willink &middot; Musivation</div>
+            <div class="rc-route">NewMusic\... Jocko.mp3 <span class="arrow">&rarr;</span> Musivation\Akira The Don\People\Jocko Willink\Singles\</div>
+            <div class="rc-reason">Musivation genre + sampled person &rarr; People\{Person}\Singles\</div>
+            <div class="rc-tags">
+              <span class="tag-change">Featured <span class="now">+ Jocko Willink</span></span>
+            </div>
+            <div class="rc-badges"><span class="rc-badge dupe">Possible duplicate</span></div>
+          </div>
+          <div class="rc-decision">
+            <button class="accept">Accept</button>
+            <button class="decline on">&#10005; Decline</button>
+          </div>
         </div>
       </div>
-      <p class="note">Real build: shell out to the existing <code>AudioManager.exe</code> with its already-supported CLI flags (<code>analysis</code>, <code>integrate --dry-run</code>, <code>--json-output</code>) and stream stdout into this console - no C# code changes needed for MVP. Per-track confirm/decline queue with album art is a later pass within this tier if time allows.</p>
+
+      <div class="review-toolbar" style="margin-top:16px;">
+        <div class="review-summary"><b>12 tracks scanned</b> &middot; 11 accepted, 1 declined &middot; 3 new folders &middot; 1 possible duplicate</div>
+        <button class="btn">Integrate 11 accepted tracks</button>
+      </div>
+
+      <div class="exec-progress">
+        <div class="progress-track"><div class="fill"></div></div>
+        <div class="progress-list">
+          <div class="progress-row"><span class="st done">Done</span><span class="pr-name">21 Savage - see the real &rarr; Artists\21 Savage\american dream\</span></div>
+          <div class="progress-row"><span class="st done">Done</span><span class="pr-name">Aurora Bytes - Nightfall &rarr; Artists\Aurora Bytes\Singles\ (folder created)</span></div>
+          <div class="progress-row"><span class="st moving">Moving</span><span class="pr-name">Kevin Gates - Big Lyfe &rarr; Artists\Kevin Gates\Singles\</span></div>
+          <div class="progress-row"><span class="st queued">Queued</span><span class="pr-name">Russ - Workin' On Me &rarr; Artists\Russ\Singles\</span></div>
+        </div>
+      </div>
+
+      <details class="advanced-log">
+        <summary>Advanced / raw output (debug)</summary>
+        <div class="console">
+<span class="dim">$ AudioManager.exe integrate --dry-run --no-input --json-output</span><br>
+Pre-integration validation passed.<br>
+Found 12 tracks in NewMusic staging<br>
+Proposed routing: 12/12 resolved, 1 possible duplicate<br>
+JSON: logs\routing-20260703-011216.json<br>
+<span class="dim">-- dry run, no files moved --</span>
+        </div>
+      </details>
+
+      <p class="note">GUI-native workflow, not a terminal: <b>Scan</b> runs <code>integrate --dry-run --no-input --json-output</code> and parses <code>logs/routing-*.json</code> (real per-track destinations, reasons, tag changes) into the <b>Review</b> queue above - album art, routing preview, and accept/decline per track. <b>Confirm</b> shows the summary; <b>Integrate</b> runs the real move with structured per-track progress (not a text stream). The raw console survives only as the collapsed "Advanced" panel. <b>Honest limitation:</b> the current exe integrates all-of-NewMusic or nothing, so MVP execution is accept-all; true per-track selective integrate needs a small <code>integrate --manifest</code> exe mode (see fable-brief.md). The GUI never moves or deletes NewMusic files itself.</p>
     </div>
 
     <!-- TAG FIX TAB -->
@@ -636,6 +762,42 @@ document.querySelectorAll('#libViewToggle button').forEach(b=>{
     document.getElementById('libGrid').classList.toggle('active', isGrid);
     document.getElementById('libTable').style.display = isGrid ? 'none' : 'table';
   });
+});
+
+// Grid view: an album-art WALL. In the real build each cover is the track's real embedded art,
+// extracted from tracks.json's filePath via mutagen. Here, varied gradient+initials placeholders
+// stand in so the concept reads correctly with fake data (target = real art, not "icon is fine").
+const gridTracks=[
+  {t:'see the real',a:'21 Savage',g:'Rap',y:2024,c:['#e26d6d','#7a2d2d'],i:'AD'},
+  {t:'One More Time',a:'Daft Punk',g:'Electronic',y:2001,c:['#f2b84b','#8a5a10'],i:'DI'},
+  {t:'Master of Puppets',a:'Metallica',g:'Metal',y:1986,c:['#5c6270','#23262e'],i:'MP'},
+  {t:'WHAT IF?',a:'Akira The Don',g:'Musivation',y:2019,c:['#b98af0','#5a3a8a'],i:'MU'},
+  {t:'HUMBLE.',a:'Kendrick Lamar',g:'Rap',y:2017,c:['#5b8cff','#243a7a'],i:'DA'},
+  {t:'Currents',a:'Tame Impala',g:'Psych',y:2015,c:['#7fd1ae','#1f5c48'],i:'CU'},
+  {t:'Big Lyfe',a:'Kevin Gates',g:'Rap',y:2019,c:['#e2905b','#7a3f1f'],i:'BL'},
+  {t:'Workin On Me',a:'Russ',g:'R&B',y:2018,c:['#5bb8ff','#1f4a7a'],i:'WM'},
+  {t:'Nightfall',a:'Aurora Bytes',g:'Electronic',y:2023,c:['#8a7ff0','#3a2f8a'],i:'NF'},
+  {t:'Lucid Dreams',a:'Juice WRLD',g:'Rap',y:2018,c:['#e26db8','#7a2d5a'],i:'LD'},
+  {t:'Sicko Mode',a:'Travis Scott',g:'Rap',y:2018,c:['#d1c37f','#5c521f'],i:'SM'},
+  {t:'Blinding Lights',a:'The Weeknd',g:'Pop',y:2020,c:['#e2585b','#7a1f22'],i:'BL'}
+];
+const gridEl=document.getElementById('libGrid');
+gridTracks.forEach(k=>{
+  const card=document.createElement('div');
+  card.className='track-card';
+  card.innerHTML=
+    `<div class="cover-art lg" style="background:linear-gradient(135deg,${k.c[0]},${k.c[1]});">${k.i}</div>`+
+    `<div class="status-bar" style="background:${k.c[0]};"></div>`+
+    `<div class="info"><div class="t-title">${k.t}</div><div class="t-artist">${k.a}</div>`+
+    `<div class="t-meta">${k.g} &middot; ${k.y}</div></div>`;
+  gridEl.appendChild(card);
+});
+
+// Integration review queue: per-track accept/decline toggle (visual only in the mockup).
+document.querySelectorAll('.rc-decision').forEach(d=>{
+  const accept=d.querySelector('.accept'), decline=d.querySelector('.decline');
+  accept.addEventListener('click',()=>{accept.classList.add('on');decline.classList.remove('on');});
+  decline.addEventListener('click',()=>{decline.classList.add('on');accept.classList.remove('on');});
 });
 </script>
 </body>
