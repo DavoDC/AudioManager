@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AudioManager GUI - Mockup (fake data, all tabs)</title>
+<title>AudioManager GUI - Mockup round 2 (fake data, all tabs)</title>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3"></script>
 <style>
   :root{
@@ -11,44 +11,100 @@
     --accent2:#7fd1ae; --accent3:#f2b84b; --accent4:#e26d6d; --accent5:#b98af0;
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
-  .shell{display:flex;min-height:100vh;}
-  nav{width:210px;background:#10121a;border-right:1px solid var(--panel-border);padding:20px 0;flex-shrink:0;}
+  html,body{height:100%;margin:0;}
+  body{font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .shell{display:flex;height:100vh;}
+  nav{width:210px;background:#10121a;border-right:1px solid var(--panel-border);padding:20px 0;flex-shrink:0;overflow-y:auto;}
   nav .brand{padding:0 20px 20px;font-weight:600;font-size:15px;color:var(--text);border-bottom:1px solid var(--panel-border);margin-bottom:10px;}
   nav .brand span{color:var(--accent);}
   nav .tab-link{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 20px;color:var(--text-dim);font-size:14px;border-left:3px solid transparent;cursor:pointer;font-family:inherit;}
   nav .tab-link.active{color:var(--text);background:#181b24;border-left-color:var(--accent);}
   nav .tab-link .badge{float:right;font-size:9px;color:var(--accent3);border:1px solid var(--accent3);border-radius:3px;padding:1px 4px;}
-  main{flex:1;padding:24px 28px;max-width:1320px;}
-  header.page{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;}
+  main{flex:1;padding:24px 28px;display:flex;flex-direction:column;overflow-y:auto;min-width:0;}
+  header.page{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
   header.page h1{font-size:20px;margin:0;font-weight:600;}
   header.page .meta{color:var(--text-dim);font-size:12px;}
-  .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  header.page .header-controls{display:flex;align-items:center;gap:10px;}
+  select.date-range{background:#12141c;color:var(--text);border:1px solid var(--panel-border);border-radius:5px;font-size:12px;padding:6px 10px;}
+  .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
   .stat-tile{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:14px 16px;}
   .stat-tile .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;}
   .stat-tile .value{font-size:22px;font-weight:600;margin-top:4px;}
+  .stat-tile .delta{display:block;font-size:11px;margin-top:3px;font-weight:500;}
+  .delta.pos{color:var(--accent2);}
+  .delta.neg{color:var(--accent4);}
   .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
   .grid3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px;}
   .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:16px;}
-  .panel h2{font-size:13px;font-weight:600;margin:0 0 4px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;}
+  .panel h2{font-size:13px;font-weight:600;margin:0 0 4px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
   .panel h2 select{background:#12141c;color:var(--text);border:1px solid var(--panel-border);border-radius:4px;font-size:11px;padding:2px 6px;text-transform:none;letter-spacing:0;}
+  .toggle-pair{display:flex;gap:4px;}
+  .toggle-pair button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:inherit;}
+  .toggle-pair button.active{color:var(--text);border-color:var(--accent);background:#181b2e;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--panel-border);}
   th{color:var(--text-dim);font-weight:500;font-size:11px;text-transform:uppercase;}
   td.num{text-align:right;color:var(--text-dim);}
-  .note{color:var(--text-dim);font-size:11px;margin-top:14px;}
-  .tab-page{display:none;}
-  .tab-page.active{display:block;}
+  tr.batch-header td{padding-top:14px;font-weight:600;color:var(--accent);border-bottom:1px solid var(--panel-border);font-size:12px;}
+  .note{color:var(--text-dim);font-size:11px;margin-top:14px;line-height:1.5;}
+  .tab-page{display:none;flex:1;flex-direction:column;min-height:0;}
+  .tab-page.active{display:flex;}
   .skeleton-box{background:#12141c;border:1px dashed var(--panel-border);border-radius:6px;height:60px;margin-bottom:10px;}
   .btn{background:var(--accent);color:#0c0e13;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
   .btn.secondary{background:transparent;border:1px solid var(--panel-border);color:var(--text);}
-  .btn-row{display:flex;gap:10px;margin-bottom:16px;}
-  .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:6px;padding:12px;font-family:Consolas,monospace;font-size:12px;color:var(--accent2);height:160px;overflow:auto;}
+  .btn.small{padding:5px 10px;font-size:11px;}
+  .btn-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .console-panel{flex:1;display:flex;flex-direction:column;min-height:0;}
+  .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:6px;padding:12px;font-family:Consolas,monospace;font-size:12px;color:var(--accent2);flex:1;overflow:auto;min-height:0;}
   .console .dim{color:var(--text-dim);}
-  .chip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-  .chip{background:#12141c;border:1px solid var(--panel-border);border-radius:14px;padding:5px 12px;font-size:12px;color:var(--text-dim);}
+  .chip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .chip{background:#12141c;border:1px solid var(--panel-border);border-radius:14px;padding:5px 12px;font-size:12px;color:var(--text-dim);cursor:pointer;}
   .chip.active{color:var(--text);border-color:var(--accent);}
   .far-future{opacity:.6;}
+  .toolbar-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .col-picker{position:relative;}
+  .col-picker-panel{display:none;position:absolute;right:0;top:32px;background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;padding:10px;z-index:10;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .col-picker-panel.open{display:block;}
+  .col-picker-panel label{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 2px;color:var(--text-dim);cursor:pointer;}
+  .col-picker-panel label input{accent-color:var(--accent);}
+  .view-toggle{display:flex;gap:4px;}
+  .view-toggle button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:12px;padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;}
+  .view-toggle button.active{color:var(--text);border-color:var(--accent);}
+  .lib-table td.opt, .lib-table th.opt{display:none;}
+  .lib-table.show-track td.opt-track,.lib-table.show-track th.opt-track{display:table-cell;}
+  .lib-table.show-length td.opt-length,.lib-table.show-length th.opt-length{display:table-cell;}
+  .lib-table.show-added td.opt-added,.lib-table.show-added th.opt-added{display:table-cell;}
+  .lib-table.show-comp td.opt-comp,.lib-table.show-comp th.opt-comp{display:table-cell;}
+  .lib-table.show-cover td.opt-cover,.lib-table.show-cover th.opt-cover{display:table-cell;}
+  .card-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+  .card-grid.active{display:grid;}
+  .track-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;overflow:hidden;}
+  .cover-placeholder{aspect-ratio:1;background:linear-gradient(135deg,#2a2e3a,#181b24);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--text-dim);}
+  .track-card .info{padding:8px 10px;}
+  .track-card .t-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .track-card .t-artist{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .track-card .t-meta{font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .status-bar{height:4px;}
+  .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--text-dim);}
+  .pagination .pages{display:flex;gap:4px;}
+  .pagination .pages span{padding:4px 9px;border:1px solid var(--panel-border);border-radius:4px;cursor:pointer;}
+  .pagination .pages span.active{color:var(--text);border-color:var(--accent);}
+  .pagination .jump input{width:50px;background:#12141c;border:1px solid var(--panel-border);color:var(--text);border-radius:4px;padding:4px 6px;}
+  .rule-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+  .rule-card .rule-head{display:flex;justify-content:space-between;align-items:center;}
+  .rule-card .rule-name{font-size:14px;font-weight:600;}
+  .rule-card .rule-desc{color:var(--text-dim);font-size:12px;margin-top:4px;}
+  .rule-card .rule-meta{display:flex;gap:22px;margin-top:12px;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;}
+  .rule-card .rule-meta b{display:block;color:var(--text);font-size:13px;text-transform:none;margin-top:2px;font-weight:600;}
+  .rule-card .rule-actions{margin-top:12px;display:flex;gap:8px;}
+  .status-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;text-transform:uppercase;}
+  .status-badge.active{color:var(--accent2);background:rgba(127,209,174,.12);}
+  .status-badge.draft{color:var(--accent3);background:rgba(242,184,75,.12);}
+  .service-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:16px;margin-bottom:14px;}
+  .service-card h3{margin:0 0 6px;font-size:14px;}
+  .service-card .stretch-badge{font-size:9px;color:var(--accent3);border:1px solid var(--accent3);border-radius:3px;padding:1px 5px;margin-left:8px;}
+  .ring-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
 </style>
 </head>
 <body>
@@ -68,14 +124,27 @@
     <div class="tab-page active" id="tab-stats">
       <header class="page">
         <h1>Statistics Dashboard</h1>
-        <div class="meta">Fake data - layout/chart-type mockup only</div>
+        <div class="header-controls">
+          <span class="meta">Fake data - layout/chart-type mockup only</span>
+          <select class="date-range" id="globalDateRange">
+            <option>All time</option>
+            <option>2026</option>
+            <option>2025</option>
+            <option>2024</option>
+            <option>Last integration batch</option>
+          </select>
+        </div>
       </header>
 
       <div class="totals">
-        <div class="stat-tile"><div class="label">Tracks</div><div class="value">5,650</div></div>
+        <div class="stat-tile"><div class="label">Tracks</div><div class="value">5,693</div><span class="delta pos">+18 vs last batch</span></div>
         <div class="stat-tile"><div class="label">Artists</div><div class="value">1,214</div></div>
-        <div class="stat-tile"><div class="label">Total Size</div><div class="value">38.2 GB</div></div>
-        <div class="stat-tile"><div class="label">Genres</div><div class="value">42</div></div>
+        <div class="stat-tile"><div class="label">Total Size</div><div class="value">28.46 GB</div><span class="delta pos">+94 MB vs last batch</span></div>
+        <div class="stat-tile"><div class="label">Genres</div><div class="value">16</div></div>
+        <div class="stat-tile"><div class="label">Total Playback</div><div class="value">360.9 hrs</div><span class="delta">&asymp; 15 days</span></div>
+        <div class="stat-tile"><div class="label">Avg Song Length</div><div class="value">3m48s</div></div>
+        <div class="stat-tile"><div class="label">Median Song Length</div><div class="value">3m31s</div></div>
+        <div class="stat-tile"><div class="label">Avg File Size</div><div class="value">5.12 MB</div></div>
       </div>
 
       <div class="grid">
@@ -90,33 +159,20 @@
           <div id="genreChart"></div>
         </div>
         <div class="panel">
-          <h2>Decade Distribution</h2>
+          <h2>Decade Distribution
+            <select id="decadeChartType">
+              <option value="bar">Bar</option>
+              <option value="donut">Donut</option>
+            </select>
+          </h2>
           <div id="decadeChart"></div>
         </div>
       </div>
 
       <div class="grid3">
         <div class="panel">
-          <h2>Top Artists</h2>
-          <div id="artistsChart"></div>
-        </div>
-        <div class="panel">
-          <h2>Recent Additions</h2>
-          <table>
-            <tr><th>Title</th><th>Artist</th><th>Added</th></tr>
-            <tr><td>see the real</td><td>21 Savage</td><td class="num">2 days ago</td></tr>
-            <tr><td>One More Time</td><td>Daft Punk</td><td class="num">4 days ago</td></tr>
-            <tr><td>Master of Puppets</td><td>Metallica</td><td class="num">6 days ago</td></tr>
-            <tr><td>Currents</td><td>Tame Impala</td><td class="num">9 days ago</td></tr>
-            <tr><td>DNA.</td><td>Kendrick Lamar</td><td class="num">11 days ago</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <div class="grid3">
-        <div class="panel">
-          <h2>Library Growth (tracks added per month)</h2>
-          <div id="growthChart"></div>
+          <h2>Year Distribution</h2>
+          <div id="yearChart"></div>
         </div>
         <div class="panel">
           <h2>Genre Balance (radar)</h2>
@@ -125,13 +181,56 @@
       </div>
 
       <div class="grid3">
-        <div class="panel" style="grid-column:1/-1;">
-          <h2>Additions Calendar (last 12 weeks)</h2>
-          <div id="heatmapChart"></div>
+        <div class="panel">
+          <h2>Top Artists
+            <span class="toggle-pair" id="artistToggle">
+              <button class="active" data-mode="excl">Excl. Musivation</button>
+              <button data-mode="all">All Artists</button>
+            </span>
+          </h2>
+          <div id="artistsChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Recent Additions (grouped by integration batch)</h2>
+          <table>
+            <tbody id="recentAdditionsBody"></tbody>
+          </table>
         </div>
       </div>
 
-      <p class="note">Configurability demo: the Genre panel's dropdown swaps chart type live (donut/pie/treemap) using the same underlying data - the real build should support this pattern per panel, plus a date-range filter across the whole dashboard. Chart library shown here: ApexCharts (animated, many chart types, easy config) - final stack choice is Fable's call, see fable-brief.md.</p>
+      <div class="grid3">
+        <div class="panel" style="grid-column:1/-1;">
+          <h2>Tracks Added Per Integration Batch (last 6 batches)</h2>
+          <div id="batchChart"></div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="panel">
+          <h2>Track Age Distribution</h2>
+          <div id="ageChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Cover Art Resolution Breakdown</h2>
+          <div id="coverChart"></div>
+        </div>
+      </div>
+
+      <div class="ring-row">
+        <div class="panel">
+          <h2>Tag Completeness</h2>
+          <div id="tagRing"></div>
+        </div>
+        <div class="panel">
+          <h2>High-Res Cover Art Coverage (&ge;800px)</h2>
+          <div id="coverRing"></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Configurability demo: Genre panel dropdown swaps chart type live (donut/pie/treemap); Decade panel swaps bar/donut; Top Artists toggles between the two ranking lists from AudioReport.md (Excluding Musivation vs All). Global date-range selector (top right) re-renders the whole dashboard against the chosen window - selecting a value here updates the Year and Batch charts in this mockup as a working demo of the pattern; the real build should apply it dashboard-wide.<br><br>
+        <b>Why no daily "additions calendar" heatmap:</b> David integrates new music in one big batch every 2-4 weeks (see AudioManager/CLAUDE.md), not a little each day - a daily heatmap would be empty almost every day and spike hard on integration day, which reads as broken rather than insightful. Replaced with a per-batch bar chart and batch-grouped "Recent Additions," both of which read correctly against real batch-shaped data.
+      </p>
     </div>
 
     <!-- LIBRARY BROWSER TAB -->
@@ -140,13 +239,85 @@
       <div class="chip-row">
         <div class="chip active">All</div><div class="chip">Rap/Hip Hop</div><div class="chip">Rock</div><div class="chip">Electronic</div><div class="chip">2020s</div>
       </div>
-      <table>
-        <tr><th>Title</th><th>Artist</th><th>Album</th><th>Genre</th><th>Year</th></tr>
-        <tr><td>see the real</td><td>21 Savage</td><td>american dream</td><td>Rap</td><td class="num">2024</td></tr>
-        <tr><td>One More Time</td><td>Daft Punk</td><td>Discovery</td><td>Electronic</td><td class="num">2001</td></tr>
-        <tr><td>Master of Puppets</td><td>Metallica</td><td>Master of Puppets</td><td>Metal</td><td class="num">1986</td></tr>
+      <div class="toolbar-row">
+        <div class="view-toggle" id="libViewToggle">
+          <button class="active" data-view="table">Table</button>
+          <button data-view="grid">Grid</button>
+        </div>
+        <div class="col-picker">
+          <button class="btn secondary small" id="colPickerBtn">Columns &#9662;</button>
+          <div class="col-picker-panel" id="colPickerPanel">
+            <label><input type="checkbox" data-col="track" checked> Track Number</label>
+            <label><input type="checkbox" data-col="length" checked> Length</label>
+            <label><input type="checkbox" data-col="added"> Date Added</label>
+            <label><input type="checkbox" data-col="comp"> Compilation</label>
+            <label><input type="checkbox" data-col="cover"> Cover Thumbnail</label>
+          </div>
+        </div>
+      </div>
+      <table class="lib-table show-track show-length" id="libTable">
+        <thead>
+        <tr>
+          <th class="opt opt-cover">Cover</th><th>Title</th><th>Artist</th><th>Album</th><th>Genre</th>
+          <th class="opt opt-track">Track#</th><th class="opt opt-length">Length</th><th class="num">Year</th>
+          <th class="opt opt-added">Added</th><th class="opt opt-comp">Comp.</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td>see the real</td><td>21 Savage</td><td>american dream</td><td>Rap</td>
+          <td class="opt opt-track">10</td><td class="opt opt-length">3:02</td><td class="num">2024</td>
+          <td class="opt opt-added">2026-06-28</td><td class="opt opt-comp">No</td>
+        </tr>
+        <tr>
+          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td>One More Time</td><td>Daft Punk</td><td>Discovery</td><td>Electronic</td>
+          <td class="opt opt-track">3</td><td class="opt opt-length">5:20</td><td class="num">2001</td>
+          <td class="opt opt-added">2026-06-06</td><td class="opt opt-comp">No</td>
+        </tr>
+        <tr>
+          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td>Master of Puppets</td><td>Metallica</td><td>Master of Puppets</td><td>Metal</td>
+          <td class="opt opt-track">4</td><td class="opt opt-length">8:36</td><td class="num">1986</td>
+          <td class="opt opt-added">2026-05-31</td><td class="opt opt-comp">No</td>
+        </tr>
+        <tr>
+          <td class="opt opt-cover"><div class="cover-placeholder" style="width:32px;height:32px;font-size:12px;">&#9835;</div></td>
+          <td>WHAT IF?</td><td>Akira The Don / Scott Adams</td><td>Musivation</td><td>Musivation</td>
+          <td class="opt opt-track">1</td><td class="opt opt-length">2:40</td><td class="num">2019</td>
+          <td class="opt opt-added">2026-05-26</td><td class="opt opt-comp">Yes</td>
+        </tr>
+        </tbody>
       </table>
-      <p class="note">Search + genre/decade/artist filter chips, full-text search across artist/album/title. Read-only, same AudioMirror data source as Statistics.</p>
+      <div class="card-grid" id="libGrid">
+        <div class="track-card">
+          <div class="cover-placeholder">&#9835;</div>
+          <div class="status-bar" style="background:var(--accent4);"></div>
+          <div class="info"><div class="t-title">see the real</div><div class="t-artist">21 Savage</div><div class="t-meta">Rap &middot; 2024</div></div>
+        </div>
+        <div class="track-card">
+          <div class="cover-placeholder">&#9835;</div>
+          <div class="status-bar" style="background:var(--accent);"></div>
+          <div class="info"><div class="t-title">One More Time</div><div class="t-artist">Daft Punk</div><div class="t-meta">Electronic &middot; 2001</div></div>
+        </div>
+        <div class="track-card">
+          <div class="cover-placeholder">&#9835;</div>
+          <div class="status-bar" style="background:var(--accent5);"></div>
+          <div class="info"><div class="t-title">Master of Puppets</div><div class="t-artist">Metallica</div><div class="t-meta">Metal &middot; 1986</div></div>
+        </div>
+        <div class="track-card">
+          <div class="cover-placeholder">&#9835;</div>
+          <div class="status-bar" style="background:var(--accent3);"></div>
+          <div class="info"><div class="t-title">WHAT IF?</div><div class="t-artist">Akira The Don</div><div class="t-meta">Musivation &middot; 2019</div></div>
+        </div>
+      </div>
+      <div class="pagination">
+        <div>5,693 tracks</div>
+        <div class="pages"><span class="active">1</span><span>2</span><span>3</span><span>&hellip;</span><span>114</span><span>Next &rsaquo;</span></div>
+        <div class="jump">Jump to position <input type="text" placeholder="#"> <button class="btn secondary small">Go</button></div>
+      </div>
+      <p class="note">Search + genre/decade/artist filter chips, full-text search across artist/album/title. Read-only, same AudioMirror data source as Statistics. Column picker (iTunes-style) shows/hides optional columns; Table/Grid toggle switches to a Sonarr-style poster-card view using each track's AlbumCover as the card image. Real build paginates server-side rather than loading all 5,693 rows at once.</p>
     </div>
 
     <!-- INTEGRATION TAB -->
@@ -157,16 +328,18 @@
         <button class="btn secondary">Run Integration (dry-run)</button>
         <button class="btn secondary">Run Integration (real)</button>
       </div>
-      <div class="panel">
+      <div class="panel console-panel">
         <h2>Output</h2>
         <div class="console">
 <span class="dim">$ AudioManager.exe analysis --json-output</span><br>
-Loaded 5,650 tracks from AudioMirror<br>
-Validation: 0 errors, 3 warnings<br>
+Loaded 5,693 tracks from AudioMirror<br>
+Validation: 0 errors, 0 warnings<br>
 <span class="dim">$ AudioManager.exe integrate --dry-run --no-input</span><br>
 Found 12 tracks in NewMusic staging<br>
 Proposed routing: 12/12 resolved, 0 conflicts<br>
-<span class="dim">-- dry run, no files moved --</span>
+<span class="dim">-- dry run, no files moved --</span><br>
+<span class="dim">$ AudioManager.exe integrate --dry-run --no-input</span><br>
+<span class="dim">(console fills remaining vertical space in the real build - this box grows with the window instead of forcing an inner scrollbar while the page has empty space below it)</span>
         </div>
       </div>
       <p class="note">Real build: shell out to the existing <code>AudioManager.exe</code> with its already-supported CLI flags (<code>analysis</code>, <code>integrate --dry-run</code>, <code>--json-output</code>) and stream stdout into this console - no C# code changes needed for MVP. Per-track confirm/decline queue with album art is a later pass within this tier if time allows.</p>
@@ -175,9 +348,45 @@ Proposed routing: 12/12 resolved, 0 conflicts<br>
     <!-- TAG FIX TAB -->
     <div class="tab-page" id="tab-tagfix">
       <header class="page"><h1>Tag Fix</h1><div class="meta">TIER G2b - rule-based bulk correction</div></header>
-      <div class="skeleton-box"></div>
-      <div class="skeleton-box"></div>
-      <p class="note">Rule builder ("if genre is empty, set to Unknown"), preview matches before applying, batch apply to library or NewMusic queue. Not an individual track editor.</p>
+      <div class="btn-row">
+        <button class="btn">+ New Rule</button>
+        <button class="btn secondary">Run Rules</button>
+      </div>
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-name">Fill Missing Genre</div>
+          <span class="status-badge active">Active</span>
+        </div>
+        <div class="rule-desc">If genre is empty, set to "Unknown"</div>
+        <div class="rule-meta">
+          <div>Status<b>Active</b></div>
+          <div>Applies to<b>NewMusic queue</b></div>
+          <div>Conditions<b>1</b></div>
+        </div>
+        <div class="rule-actions">
+          <button class="btn secondary small">Preview Matches</button>
+          <button class="btn secondary small">Edit</button>
+          <button class="btn secondary small">Delete</button>
+        </div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-name">Extract Featured Artist</div>
+          <span class="status-badge draft">Draft</span>
+        </div>
+        <div class="rule-desc">If artist name ends with "(feat. X)", move X into the Artists field and strip the parenthetical from the title</div>
+        <div class="rule-meta">
+          <div>Status<b>Draft</b></div>
+          <div>Applies to<b>Library (dry-run only)</b></div>
+          <div>Conditions<b>2</b></div>
+        </div>
+        <div class="rule-actions">
+          <button class="btn secondary small">Preview Matches</button>
+          <button class="btn secondary small">Edit</button>
+          <button class="btn secondary small">Delete</button>
+        </div>
+      </div>
+      <p class="note">Rule builder ("if genre is empty, set to Unknown"), preview matches before applying, batch apply to library or NewMusic queue. Not an individual track editor. Rule-card pattern adapted from Maintainerr (name, description, status badge, scope metadata, Edit/Delete actions, top-level New Rule/Run Rules buttons) - this tab is a functional stub this round: cards render and are editable in the UI, but "Run Rules" does not execute real tag changes yet.</p>
     </div>
 
     <!-- MIRROR TAB -->
@@ -186,7 +395,7 @@ Proposed routing: 12/12 resolved, 0 conflicts<br>
       <div class="panel">
         <h2>Status</h2>
         <table>
-          <tr><th>Last commit</th><td>a3f9c21 - 2026-06-30</td></tr>
+          <tr><th>Last commit</th><td>3439af0 - 2026-06-28</td></tr>
           <tr><th>Uncommitted</th><td>0 changes</td></tr>
         </table>
       </div>
@@ -195,9 +404,16 @@ Proposed routing: 12/12 resolved, 0 conflicts<br>
 
     <!-- SERVICES TAB -->
     <div class="tab-page far-future" id="tab-services">
-      <header class="page"><h1>Services</h1><div class="meta">TIER G5 - far future, not this round</div></header>
-      <div class="skeleton-box"></div>
-      <p class="note">Spotify + Last.fm cross-synthesis. Placeholder tab only - do not build functionality here this session.</p>
+      <header class="page"><h1>Services</h1><div class="meta">TIER G5 - far future, not required this round</div></header>
+      <div class="service-card">
+        <h3>Last.fm read-only<span class="stretch-badge">STRETCH GOAL</span></h3>
+        <p class="note">No OAuth needed - <code>user.getRecentTracks</code> and related read endpoints work with just a free API key, no auth flow. Lowest-effort real integration available: recently-scrobbled tracks overlaid on Library Browser, or a small "never scrobbled" cross-reference panel. Attempt only if Statistics/Integration/Library/TagFix are done with budget to spare.</p>
+      </div>
+      <div class="service-card">
+        <h3>Spotify read-only<span class="stretch-badge">STRETCH GOAL</span></h3>
+        <p class="note">Needs Authorization Code + PKCE flow: register an app in the Spotify Developer dashboard, redirect to <code>localhost</code>, exchange a code for a token. More setup than Last.fm (David needs to create the app registration himself first) but still no client-secret storage risk. Only attempt after Last.fm, and only if there's clear budget remaining.</p>
+      </div>
+      <p class="note">Both are explicitly optional this round - TIER G5 in GUI-ROADMAP.md remains "far future" as the floor. This tab is an invitation to go further if core tabs finish early, not a requirement.</p>
     </div>
 
   </main>
@@ -214,13 +430,19 @@ document.querySelectorAll('.tab-link').forEach(btn=>{
 });
 
 const palette=['#5b8cff','#7fd1ae','#f2b84b','#e26d6d','#b98af0','#5c6270'];
-const genreLabels=['Rap/Hip Hop','Rock','Electronic','Pop','Metal','Other'];
-const genreData=[28,22,18,14,10,8];
+const dim='#9aa0ac';
+const axisLabel={style:{colors:dim,fontSize:'11px'}};
+const legendLabel={labels:{colors:dim}};
+const gridStyle={borderColor:'#2a2e3a'};
+
+const genreLabels=['Rap/Hip Hop','Pop','Musivation','Rock','R&B','Other'];
+const genreData=[31,10,10,3,2,44];
 
 let genreChart = new ApexCharts(document.querySelector("#genreChart"), {
   chart:{type:'donut',height:260,background:'transparent',animations:{speed:500}},
   series:genreData, labels:genreLabels, colors:palette,
-  theme:{mode:'dark'}, legend:{position:'bottom',labels:{colors:'#9aa0ac'}}, dataLabels:{style:{fontSize:'11px'}}
+  theme:{mode:'dark'}, legend:{position:'bottom',...legendLabel}, dataLabels:{style:{fontSize:'11px',colors:['#0c0e13']}},
+  tooltip:{theme:'dark'}
 });
 genreChart.render();
 
@@ -231,59 +453,176 @@ document.getElementById('genreChartType').addEventListener('change',(e)=>{
     genreChart = new ApexCharts(document.querySelector("#genreChart"), {
       chart:{type:'treemap',height:260,background:'transparent'},
       series:[{data:genreLabels.map((l,i)=>({x:l,y:genreData[i]}))}],
-      colors:palette, theme:{mode:'dark'}
+      colors:palette, theme:{mode:'dark'}, tooltip:{theme:'dark'},
+      dataLabels:{style:{colors:['#0c0e13']}}
     });
   } else {
     genreChart = new ApexCharts(document.querySelector("#genreChart"), {
       chart:{type:type,height:260,background:'transparent'},
       series:genreData, labels:genreLabels, colors:palette,
-      theme:{mode:'dark'}, legend:{position:'bottom',labels:{colors:'#9aa0ac'}}
+      theme:{mode:'dark'}, legend:{position:'bottom',...legendLabel}, tooltip:{theme:'dark'},
+      dataLabels:{style:{colors:['#0c0e13']}}
     });
   }
   genreChart.render();
 });
 
-new ApexCharts(document.querySelector("#decadeChart"), {
+const decadeLabels=['1980s','1990s','2000s','2010s','2020s'];
+const decadeData=[67,194,983,2187,2187];
+let decadeChart = new ApexCharts(document.querySelector("#decadeChart"), {
   chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
-  series:[{name:'Tracks',data:[120,340,980,2200,2010]}],
-  xaxis:{categories:['1980s','1990s','2000s','2010s','2020s'],labels:{style:{colors:'#9aa0ac'}}},
-  yaxis:{labels:{style:{colors:'#9aa0ac'}}},
-  colors:['#5b8cff'], theme:{mode:'dark'}, grid:{borderColor:'#2a2e3a'}
-}).render();
+  series:[{name:'Tracks',data:decadeData}],
+  xaxis:{categories:decadeLabels,labels:axisLabel},
+  yaxis:{labels:axisLabel},
+  colors:['#5b8cff'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
+});
+decadeChart.render();
 
-new ApexCharts(document.querySelector("#artistsChart"), {
-  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
-  series:[{name:'Tracks',data:[92,78,65,58,44]}],
-  xaxis:{categories:['21 Savage','Metallica','Daft Punk','Kendrick Lamar','Tame Impala'],labels:{style:{colors:'#9aa0ac'}}},
+document.getElementById('decadeChartType').addEventListener('change',(e)=>{
+  decadeChart.destroy();
+  if(e.target.value==='donut'){
+    decadeChart = new ApexCharts(document.querySelector("#decadeChart"), {
+      chart:{type:'donut',height:260,background:'transparent'},
+      series:decadeData, labels:decadeLabels, colors:palette,
+      theme:{mode:'dark'}, legend:{position:'bottom',...legendLabel}, tooltip:{theme:'dark'},
+      dataLabels:{style:{colors:['#0c0e13']}}
+    });
+  } else {
+    decadeChart = new ApexCharts(document.querySelector("#decadeChart"), {
+      chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
+      series:[{name:'Tracks',data:decadeData}],
+      xaxis:{categories:decadeLabels,labels:axisLabel}, yaxis:{labels:axisLabel},
+      colors:['#5b8cff'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
+    });
+  }
+  decadeChart.render();
+});
+
+const yearLabelsAll=['2022','2020','2021','2019','2023','2024','2012','2018','2013','2025'];
+const yearDataAll=[515,414,397,372,282,281,275,263,255,235];
+let yearChart = new ApexCharts(document.querySelector("#yearChart"), {
+  chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks',data:yearDataAll}],
+  xaxis:{categories:yearLabelsAll,labels:axisLabel}, yaxis:{labels:axisLabel},
   plotOptions:{bar:{horizontal:true,borderRadius:3}},
-  colors:['#7fd1ae'], theme:{mode:'dark'}, grid:{borderColor:'#2a2e3a'}
+  colors:['#f2b84b'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
 }).render();
-
-new ApexCharts(document.querySelector("#growthChart"), {
-  chart:{type:'area',height:220,background:'transparent',toolbar:{show:false}},
-  series:[{name:'Added',data:[40,55,30,70,65,90,25]}],
-  xaxis:{categories:['Jan','Feb','Mar','Apr','May','Jun','Jul'],labels:{style:{colors:'#9aa0ac'}}},
-  colors:['#f2b84b'], theme:{mode:'dark'}, fill:{type:'gradient',gradient:{opacityFrom:.5,opacityTo:0}}, grid:{borderColor:'#2a2e3a'}
-}).render();
+window.yearChartRef=yearChart;
 
 new ApexCharts(document.querySelector("#radarChart"), {
-  chart:{type:'radar',height:220,background:'transparent'},
-  series:[{name:'Track share %',data:[28,22,18,14,10,8]}],
-  labels:['Rap','Rock','Electronic','Pop','Metal','Other'],
+  chart:{type:'radar',height:240,background:'transparent'},
+  series:[{name:'Track share %',data:[31,3,10,2,10,44]}],
+  labels:['Rap/Hip Hop','Rock','Pop','R&B','Musivation','Other'],
   colors:['#b98af0'], theme:{mode:'dark'},
-  xaxis:{labels:{style:{colors:['#9aa0ac','#9aa0ac','#9aa0ac','#9aa0ac','#9aa0ac','#9aa0ac']}}}
+  xaxis:{labels:axisLabel},
+  yaxis:{labels:axisLabel},
+  tooltip:{theme:'dark'}
 }).render();
 
-function genHeatmapData(){
-  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  return days.map(d=>({name:d,data:Array.from({length:12},(_,i)=>({x:'W'+(i+1),y:Math.floor(Math.random()*8)}))}));
-}
-new ApexCharts(document.querySelector("#heatmapChart"), {
-  chart:{type:'heatmap',height:220,background:'transparent',toolbar:{show:false}},
-  series:genHeatmapData(),
-  colors:['#5b8cff'], theme:{mode:'dark'},
-  xaxis:{labels:{style:{colors:'#9aa0ac'}}}
+const artistsExcl={labels:['Eminem','Kodak Black','Kevin Gates','Kanye West','Russ'],data:[155,115,114,99,87]};
+const artistsAll={labels:['Akira The Don','Eminem','Eric Thomas','Kodak Black','Kevin Gates'],data:[510,155,130,115,114]};
+let artistsChart = new ApexCharts(document.querySelector("#artistsChart"), {
+  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks',data:artistsExcl.data}],
+  xaxis:{categories:artistsExcl.labels,labels:axisLabel}, yaxis:{labels:axisLabel},
+  plotOptions:{bar:{horizontal:true,borderRadius:3}},
+  colors:['#7fd1ae'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
+});
+artistsChart.render();
+
+document.querySelectorAll('#artistToggle button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#artistToggle button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const src = b.dataset.mode==='all' ? artistsAll : artistsExcl;
+    artistsChart.updateOptions({xaxis:{categories:src.labels,labels:axisLabel}});
+    artistsChart.updateSeries([{name:'Tracks',data:src.data}]);
+  });
+});
+
+const recentBatches=[
+  {label:'Batch 2026-06-28 (18 tracks)', rows:[['see the real','21 Savage'],['One More Time','Daft Punk'],['Master of Puppets','Metallica']]},
+  {label:'Batch 2026-06-06 (12 tracks)', rows:[['Currents','Tame Impala'],['DNA.','Kendrick Lamar']]},
+  {label:'Batch 2026-05-31 (9 tracks)', rows:[['WHAT IF?','Akira The Don']]}
+];
+const recentBody=document.getElementById('recentAdditionsBody');
+recentBatches.forEach(b=>{
+  const hdr=document.createElement('tr'); hdr.className='batch-header';
+  hdr.innerHTML=`<td colspan="3">${b.label}</td>`;
+  recentBody.appendChild(hdr);
+  b.rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td class="num"></td>`;
+    recentBody.appendChild(tr);
+  });
+});
+
+new ApexCharts(document.querySelector("#batchChart"), {
+  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks added',data:[22,15,31,9,12,18]}],
+  xaxis:{categories:['2026-04-14','2026-04-29','2026-05-08','2026-05-26','2026-06-06','2026-06-28'],labels:axisLabel},
+  yaxis:{labels:axisLabel},
+  colors:['#5b8cff'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'},
+  plotOptions:{bar:{borderRadius:4,columnWidth:'55%'}}
 }).render();
+
+new ApexCharts(document.querySelector("#ageChart"), {
+  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks',data:[850,1400,1900,1300,243]}],
+  xaxis:{categories:['0-2y','2-5y','5-10y','10-20y','20y+'],labels:axisLabel},
+  yaxis:{labels:axisLabel},
+  colors:['#e26d6d'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
+}).render();
+
+new ApexCharts(document.querySelector("#coverChart"), {
+  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  series:[{name:'Tracks',data:[3080,1711,430,90,84,298]}],
+  xaxis:{categories:['800x800','1200x1200','1000x1000','1400x1400','500x500','Other'],labels:axisLabel},
+  yaxis:{labels:axisLabel},
+  colors:['#b98af0'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
+}).render();
+
+new ApexCharts(document.querySelector("#tagRing"), {
+  chart:{type:'radialBar',height:220,background:'transparent'},
+  series:[91], labels:['Complete'],
+  colors:['#5b8cff'], theme:{mode:'dark'},
+  plotOptions:{radialBar:{dataLabels:{name:{color:dim},value:{color:'#e6e8ee',fontSize:'22px'}}}}
+}).render();
+
+new ApexCharts(document.querySelector("#coverRing"), {
+  chart:{type:'radialBar',height:220,background:'transparent'},
+  series:[96], labels:['&ge;800px'],
+  colors:['#7fd1ae'], theme:{mode:'dark'},
+  plotOptions:{radialBar:{dataLabels:{name:{color:dim},value:{color:'#e6e8ee',fontSize:'22px'}}}}
+}).render();
+
+document.getElementById('globalDateRange').addEventListener('change',(e)=>{
+  const v=e.target.value;
+  const scaled = v==='All time' ? [515,414,397,372,282,281,275,263,255,235]
+    : v==='Last integration batch' ? [18,0,0,0,0,0,0,0,0,0]
+    : yearDataAll.map(n=>Math.round(n*(v==='2026'?0.4:v==='2025'?0.6:0.8)));
+  window.yearChartRef.updateSeries([{name:'Tracks',data:scaled}]);
+});
+
+document.getElementById('colPickerBtn').addEventListener('click',()=>{
+  document.getElementById('colPickerPanel').classList.toggle('open');
+});
+document.querySelectorAll('#colPickerPanel input').forEach(cb=>{
+  cb.addEventListener('change',()=>{
+    const table=document.getElementById('libTable');
+    const cls='show-'+cb.dataset.col;
+    table.classList.toggle(cls, cb.checked);
+  });
+});
+document.querySelectorAll('#libViewToggle button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#libViewToggle button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const isGrid = b.dataset.view==='grid';
+    document.getElementById('libGrid').classList.toggle('active', isGrid);
+    document.getElementById('libTable').style.display = isGrid ? 'none' : 'table';
+  });
+});
 </script>
 </body>
 </html>
