@@ -147,36 +147,11 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 - **Scan-ahead applies everywhere subfolder routing applies.** If you add a new routing path that picks Singles/ vs Album/, apply the same scan-ahead + album-threshold logic used in the Artists/ path. Factor it out - do not duplicate it.
 - **Before implementing any new routing path:** read `docs/References/Music-Library-Rules.md` and verify the expected folder structure. Then check whether the subfolder-before-song rule applies.
 
-## Workflow Rules
+## Workflow Note
 
-- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
+**David's actual integration cadence: one big batch every 2-4 weeks, not daily.** Any UI/report design (GUI dashboards, stats, "recent activity" views) that assumes daily/steady-drip additions will look wrong or empty most days and spike hard on integration day - design for batch-shaped data (group by integration-run/week, not by day). Noted 2026-07-02 during GUI mockup review.
 
-- **Post-integration validation always force-regens.** Program.cs calls `AgeChecker.ForceRegen()` before `new Reflector()` in the post-integration block. Any future code that runs Reflector after integration-level file moves/deletes must do the same - force-regen gives a guaranteed clean rebuild after bulk moves, as defense-in-depth.
-
-- **Post-integration LibChecker warnings - confirm with force-regen before acting.** Incremental Reflector now prunes orphaned XMLs, so ghost hits are much less likely than before. If warnings appear post-integration, run `analysis --force-regen --no-input --no-auto-commit` first to rule out any residual ghost. Warnings that survive a force-regen are real. Full mechanism: `docs/References/Post-Integration-Validation.md`.
-
-- **AudioMirror dirty state after force-regen = expected, not corruption.** XDocument.Save() writes CRLF; .gitattributes enforces eol=lf storage - so every regen leaves all XMLs "modified" until committed.
-- **Temporarily disabled checks need tests commented out too.** When a LibChecker check is commented out, its unit tests must also be commented (not deleted) - both re-enable together. Leaving tests active causes false failures.
-- **AudioMirror commit policy:** never commit AudioMirror or push if LibChecker reported any hits. Fix all issues first, re-run to get a clean run, then commit and push.
-- **AudioMirror rebuild reliability:** Analysis (non-force regen) runs with `Recreated: False` (incremental mirror update) - NOT reliable for LibChecker pass claims or auto-commit. Only analysis (force regen) and integration produce a fully reliable mirror state. Auto-commit must only trigger on force regen or integration.
-- **Force regen = canonical fresh-data operation.** Incremental Reflector creates XMLs for new MP3s, refreshes XMLs when the MP3 is newer (tag edits in Mp3tag), and now also prunes XMLs for deleted MP3s. Force regen deletes the mirror entirely and rebuilds - use when you want a guaranteed clean state regardless of incremental history. ParseCache (logs/parse-cache.txt) serves data consistent with XMLs. See DevContext.md for the three-layer cache architecture.
-- **Check library via filesystem:** check artist/folder existence by browsing `C:\Users\David\Audio\` directly - not by opening the AudioManager app.
-- **Tag editing tool: Mp3tag.** When a library file needs its tags fixed manually, advise the user to use Mp3tag. Do not suggest VLC or Windows file properties for tag editing.
-- **David's actual integration cadence: one big batch every 2-4 weeks, not daily.** He does not run `integrate` a little each day - tracks accumulate in NewMusic and get integrated in a single large batch periodically. Any UI/report design (GUI dashboards, stats, "recent activity" views) that assumes daily/steady-drip additions will look wrong or empty most days and spike hard on integration day - design for batch-shaped data (e.g. group by integration-run/week, not by day) rather than daily granularity. Noted 2026-07-02 during GUI mockup review - the first mockup's daily "additions calendar heatmap" was flagged as not matching this pattern.
-
-## Audit Metadata in Version Control
-
-**AudioMirror audit metadata (LastRunInfo.txt) is as much part of the artifact as the data itself.** It lives in git because:
-- Answers "when was this mirror regenerated?" for every commit
-- Enables audit trail and diagnostics (regen failed? cache stale? force-regen active?)
-- Changes on every force-regen, so commits on every regen are expected and acceptable
-- Not noise - metadata IS the artifact state
-
-Treat it like you treat the XML files: version-control it, don't relegate it to ephemeral-only.
-
-## Avoid Output-Capture for Control Flow
-
-**Never use string-search of stdout to gate decisions.** Example: detecting "LibChecker: Clean" by grepping Program.cs's captured output. This couples output format to control logic - if LibChecker's message changes, the detection breaks. Better: return explicit status codes or enums from modules, not relying on stdout parsing for branching logic.
+For LibChecker-warning triage, post-integration validation mechanics, AudioMirror commit/regen policy, and audit-metadata rationale, see `docs/References/DevContext.md`.
 
 ## Critical Safety Rule
 
