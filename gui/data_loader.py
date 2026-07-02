@@ -188,10 +188,9 @@ class TrackIndex:
         return len(self.tracks)
 
     def by_id(self, track_id: str) -> dict | None:
-        for t in self.tracks:
-            if t.get("id") == track_id:
-                return t
-        return None
+        if not hasattr(self, "_id_map"):
+            self._id_map = {t.get("id"): t for t in self.tracks if t.get("id")}
+        return self._id_map.get(track_id)
 
     def genres(self, top: int = 10) -> list[str]:
         """Most common primary genres, for filter chips."""
