@@ -159,6 +159,8 @@ namespace AudioManager
                         {
                             string statsJsonPath = StatsJson.Write(p.audioTags);
                             Console.WriteLine($"\nStats JSON written: {statsJsonPath}");
+                            string tracksJsonPath = TracksJson.Write(p.audioTags);
+                            Console.WriteLine($"Tracks JSON written: {tracksJsonPath}");
                         }
 
                         // Auto-commit AudioMirror after report save

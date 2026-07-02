@@ -20,7 +20,7 @@ namespace AudioManager
 
             Out("\n###### AudioManager Tests ######\n");
 
-            var testTypes = new[] { typeof(TagFixerTests), typeof(RoutingTests), typeof(ParseCacheTests), typeof(LibCheckerTests), typeof(TrackTests), typeof(StatListTests), typeof(StatsJsonTests), typeof(TrackXMLTests), typeof(ParserTests), typeof(ReflectorTests), typeof(AgeCheckerTests), typeof(TeeWriterTests), typeof(AudioMirrorCommitterTests), typeof(LibCheckerExceptionTests), typeof(ManifestRunnerTests), typeof(IntegrationTests), typeof(DuplicateDetectionTests), typeof(ProjectedLibCheckerTests) };
+            var testTypes = new[] { typeof(TagFixerTests), typeof(RoutingTests), typeof(ParseCacheTests), typeof(LibCheckerTests), typeof(TrackTests), typeof(StatListTests), typeof(StatsJsonTests), typeof(TracksJsonTests), typeof(TrackXMLTests), typeof(ParserTests), typeof(ReflectorTests), typeof(AgeCheckerTests), typeof(TeeWriterTests), typeof(AudioMirrorCommitterTests), typeof(LibCheckerExceptionTests), typeof(ManifestRunnerTests), typeof(IntegrationTests), typeof(DuplicateDetectionTests), typeof(ProjectedLibCheckerTests) };
             passed = 0; failed = 0;
 
             foreach (var type in testTypes)
