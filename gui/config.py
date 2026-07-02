@@ -16,6 +16,11 @@ TRACKS_JSON = LOGS_DIR / "tracks.json"
 
 AUDIOMIRROR_REPO = REPO_ROOT.parent / "AudioMirror"
 
+# NewMusic staging inbox (matches Constants.cs). The GUI only READS files
+# here (album-art extraction for the review queue) - it never moves,
+# renames or deletes anything in it; only the exe's own integrate mode does.
+NEWMUSIC_DIR = Path(r"C:\Users\David\Downloads\NewMusic")
+
 CACHE_DIR = GUI_ROOT / ".cache"
 THUMBS_DIR = CACHE_DIR / "thumbs"
 STATS_HISTORY_JSON = CACHE_DIR / "stats-history.json"
