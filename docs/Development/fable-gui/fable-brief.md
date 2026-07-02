@@ -29,12 +29,24 @@ The **AudioMirror** is a sibling git repo (`C:\Users\David\GitHubRepos\AudioMirr
 
 David wants to see the whole app shape this round, not just one tab, and is comfortable with simple/skeleton versions of the later tiers as long as Statistics and Integration are functionally real. Build in this priority order, and stop moving down the list once you're running low on session budget - a fully-working Statistics + Integration with skeleton Library/TagFix/Mirror/Services is a good outcome; don't sacrifice Statistics/Integration quality to rush the rest.
 
+**Gate between tabs on a real check, not a feeling:** before moving from one tab to the next, load it in the browser and confirm its data actually renders correctly against real data (not just "the code compiles"). If Statistics hits a data or performance problem, fix that before starting Library Browser - don't rush ahead to "show the whole shape" while leaving Statistics half-working, since that violates the priority order above (Statistics/Integration quality over breadth).
+
 1. **Statistics** (real, full-featured - this is the centerpiece, see chart requirements below)
-2. **Integration** (real - trigger the exe's existing `analysis` / `integrate --dry-run` / `integrate` modes as subprocesses, stream output into a console panel that fills available vertical space, not a cramped fixed box)
+2. **Integration** (real - trigger the exe's existing `analysis` / `integrate --dry-run` / `integrate --no-input` modes as subprocesses, stream output into a console panel that fills available vertical space, not a cramped fixed box. **Always pass `--no-input` on subprocess-triggered runs** - the exe supports an interactive confirm flow, and a subprocess with no stdin attached will hang the GUI indefinitely if it ever hits a prompt.)
 3. **Library Browser** (MVP - browse/search/filter over the same AudioMirror data already loaded for Statistics, with the richer column set and view toggle described below)
 4. **Tag Fix** (skeleton acceptable - rule-card UI per the mockup, "Run Rules" does not need to execute real tag changes yet, but the cards should render as a real feature-in-progress, not empty boxes)
 5. **Mirror** (skeleton acceptable - read-only status display: last commit SHA/date, uncommitted count, from `git log`/`git status` run against the AudioMirror repo path, read-only)
 6. **Services** (placeholder tab with two stretch-goal stub cards - see "Services tab" section below, do not build required functionality)
+
+### Build one data loader first, before any UI code
+
+Statistics, Library Browser, and the Recent Additions/batch panels all read from the same two sources: `analysis --json-output` and the AudioMirror XML files. Write a single module (e.g. `gui/data_loader.py`) that owns both:
+
+- Runs `analysis --json-output` once at startup (and on manual refresh), and documents the exact fields it actually returns in `gui/README.md` before writing any tile/chart code against it - don't assume the JSON schema covers every stat tile; check it first, and only fall back to AudioReport.md text parsing for fields genuinely missing from JSON.
+- Globs and parses the AudioMirror XML once at startup, builds an in-memory (or `gui/.cache/mirror-index.json`) index, and exposes typed accessors - don't re-glob or re-parse 5,693 XML files on every panel render or every page load.
+- Owns the `stats-history.json` batch-delta cache described below and exposes a `refresh()` method.
+
+Every panel, tile, and the Library Browser consume this loader; none of them touch the exe, the JSON, or the XML files directly. This is the single highest-leverage structural decision in this brief - it's the shared root of the JSON-schema risk, the XML-performance risk, and the batch-delta risk below, and fixing it once here means you don't re-solve it per panel.
 
 ### Why subprocess, not core-library extraction
 
@@ -69,7 +81,7 @@ The mockup's Statistics tab is the structural target. Every panel in it maps to 
 
 **Batch delta definition:** compare the current stat snapshot to the stat snapshot as of the previous `analysis`/`integrate` run. Simplest implementation: store each analysis run's summary stats (tiny JSON) in a local cache file the GUI writes to (NOT AudioMirror, NOT the library - a new small file under the GUI's own folder, e.g. `gui/.cache/stats-history.json`), and diff against the second-most-recent entry. This is the "batch-shaped comparison" pattern from Last.fm's "+7% vs 2024" tile - only meaningful against batch data, never a fabricated daily/monthly delta.
 
-**File size / Date Added note:** the AudioMirror XML has no file-size or date-added field. Resolve the real MP3 path under `C:\Users\David\Audio\` (read-only, never write) for exact size/mtime, OR use the XML file's own mtime as a proxy. Either is defensible for MVP - pick one, note your choice in `GUI-ROADMAP.md`. (Round-1 brief left this open; still open for you to decide - it doesn't block anything else.)
+**File size / Date Added note - decided, don't re-open:** use the XML file's own mtime and a proxy size (e.g. estimate from bitrate x length, or omit exact size and show "~" if no cheap proxy exists). **Do not resolve real MP3 paths under `C:\Users\David\Audio\` for this** - at 5,693 tracks, per-track disk stat calls on every load/refresh is a real performance risk with no caching layer to absorb it, and it's not worth building one just for a size column. Note this choice in `GUI-ROADMAP.md` as already made, not as an open decision.
 
 ### Panels
 
@@ -156,7 +168,7 @@ Round 1 shipped 5 columns (Title/Artist/Album/Genre/Year) and no view options. T
 
 **Default visible columns:** Title, Artist, Album, Genre, Year, Track Number, Length (formatted m:ss from the XML `Length` TimeSpan).
 
-**Optional columns (iTunes-style show/hide column picker, off by default except where noted):** Date Added (from the file-size/date-added proxy decision made in the Statistics section above - reuse the same choice), Compilation (Yes/No from the `Compilation` field), Cover Thumbnail (small square rendered from the track's actual album art if you can extract it via TagLib# or similar - a colored placeholder icon is an acceptable fallback if extracting real thumbnails is too costly for this round).
+**Optional columns (iTunes-style show/hide column picker, off by default except where noted):** Date Added (from the file-size/date-added proxy decision made in the Statistics section above - reuse the same choice), Compilation (Yes/No from the `Compilation` field), Cover Thumbnail (small square rendered from the track's actual album art if you can extract it via a Python tag-reading library such as `mutagen` (pure-Python, reads embedded APIC/cover-art frames directly, no cross-language bridge needed) - a colored placeholder icon is an acceptable fallback if extracting real thumbnails is too costly for this round).
 
 **Do not add:** Play Count, Rating, BPM, or other columns with no backing field in AudioMirror - these don't exist in the data (this was flagged explicitly in round-1 review against the iTunes reference screenshot; the iTunes column list is broader than what applies here).
 
@@ -170,7 +182,7 @@ Round 1 shipped 5 columns (Title/Artist/Album/Genre/Year) and no view options. T
 
 ## Integration tab
 
-Trigger `analysis`, `integrate --dry-run`, and `integrate` (real) against the real exe as subprocesses, streaming stdout into the console panel. **Layout fix, mandatory:** the console panel must be a flex child that grows to fill available vertical space (`flex:1` on the panel, parent `main`/tab-page as a flex column) - round 1 shipped a fixed 160px console box with a large empty area below it on the page, which was flagged explicitly. Port the mockup's flex layout structure directly - it already implements this correctly.
+Trigger `analysis`, `integrate --dry-run`, and `integrate --no-input` (real) against the real exe as subprocesses, streaming stdout into the console panel. **`--no-input` is mandatory on every subprocess call, including dry-run** - without it, any confirm prompt the exe emits will hang the subprocess waiting on stdin the GUI never provides. **Layout fix, mandatory:** the console panel must be a flex child that grows to fill available vertical space (`flex:1` on the panel, parent `main`/tab-page as a flex column) - round 1 shipped a fixed 160px console box with a large empty area below it on the page, which was flagged explicitly. Port the mockup's flex layout structure directly - it already implements this correctly.
 
 Per-track confirm/decline queue with album art is a later pass within this tier if time allows, not required for MVP.
 
