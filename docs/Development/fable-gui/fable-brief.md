@@ -212,6 +212,8 @@ New top-level folder in this repo, e.g. `AudioManager\gui\`. Keep it fully separ
 
 The mockup is the **structural floor** - tab layout, dark theme, panel grid, chart selection, interaction patterns (column picker, view toggle, rule cards, radial rings). It is explicitly **not** the polish ceiling. David's own framing: "go FAR BEYOND the mockup, plus ultra." Once the structure above is locked in and the required tabs are functionally real, you have license to exceed the mockup's visual richness - better spacing, micro-interactions, loading states, empty states, animation on chart transitions, whatever makes it feel like a finished product rather than a wired-up wireframe. Don't spend this license before the structural requirements above are met; spend it after.
 
+The `frontend-design` plugin skill is enabled for this session. Use it **only** for this polish pass - typography pairing, spacing/weight extremes, background depth (the mockup's system-font stack `Segoe UI/Roboto/Arial` and uniform 6-8px radius are exactly the kind of generic default it exists to catch). Do **not** let it override the mockup's already-approved dark theme, tab structure, chart-library choice, or accent-color system - those were locked through two rounds of human review and are not open for reconsideration.
+
 ---
 
 ## Definition of done

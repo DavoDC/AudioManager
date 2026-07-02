@@ -4,15 +4,29 @@
 <meta charset="UTF-8">
 <title>AudioManager GUI - Mockup round 2 (fake data, all tabs)</title>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#14161c; --panel:#1c1f28; --panel-border:#2a2e3a;
     --text:#e6e8ee; --text-dim:#9aa0ac; --accent:#5b8cff;
     --accent2:#7fd1ae; --accent3:#f2b84b; --accent4:#e26d6d; --accent5:#b98af0;
+    /* Type: IBM Plex pairing (technical/data category) - deliberately not Inter/Roboto/Arial/system-ui.
+       Mono carries every number in the UI (stat values, table figures, console) so data reads as
+       measured/instrumented rather than decorative - fits an audio-library analysis tool. */
+    --font-body:'IBM Plex Sans',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+    /* Radius scale: sharp/architectural for structural containers (panels, cards), full pill for
+       tactile interactive controls (buttons, toggles, chips). Replaces a single uniform 6-8px
+       radius, which is one of the more common AI-generated-UI tells. */
+    --radius-panel:3px;
+    --radius-control:4px;
+    --radius-pill:999px;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;}
-  body{font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);}
   .shell{display:flex;height:100vh;}
   nav{width:210px;background:#10121a;border-right:1px solid var(--panel-border);padding:20px 0;flex-shrink:0;overflow-y:auto;}
   nav .brand{padding:0 20px 20px;font-weight:600;font-size:15px;color:var(--text);border-bottom:1px solid var(--panel-border);margin-bottom:10px;}
@@ -27,36 +41,36 @@
   header.page .header-controls{display:flex;align-items:center;gap:10px;}
   select.date-range{background:#12141c;color:var(--text);border:1px solid var(--panel-border);border-radius:5px;font-size:12px;padding:6px 10px;}
   .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
-  .stat-tile{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:14px 16px;}
+  .stat-tile{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:14px 16px;}
   .stat-tile .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;}
-  .stat-tile .value{font-size:22px;font-weight:600;margin-top:4px;}
+  .stat-tile .value{font-family:var(--font-mono);font-size:22px;font-weight:600;margin-top:4px;}
   .stat-tile .delta{display:block;font-size:11px;margin-top:3px;font-weight:500;}
   .delta.pos{color:var(--accent2);}
   .delta.neg{color:var(--accent4);}
   .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
   .grid3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
   .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px;}
-  .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:16px;}
+  .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:16px;}
   .panel h2{font-size:13px;font-weight:600;margin:0 0 4px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
   .panel h2 select{background:#12141c;color:var(--text);border:1px solid var(--panel-border);border-radius:4px;font-size:11px;padding:2px 6px;text-transform:none;letter-spacing:0;}
   .toggle-pair{display:flex;gap:4px;}
-  .toggle-pair button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:inherit;}
+  .toggle-pair button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0;padding:3px 10px;border-radius:var(--radius-pill);cursor:pointer;font-family:inherit;}
   .toggle-pair button.active{color:var(--text);border-color:var(--accent);background:#181b2e;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--panel-border);}
   th{color:var(--text-dim);font-weight:500;font-size:11px;text-transform:uppercase;}
-  td.num{text-align:right;color:var(--text-dim);}
+  td.num{font-family:var(--font-mono);text-align:right;color:var(--text-dim);}
   tr.batch-header td{padding-top:14px;font-weight:600;color:var(--accent);border-bottom:1px solid var(--panel-border);font-size:12px;}
   .note{color:var(--text-dim);font-size:11px;margin-top:14px;line-height:1.5;}
   .tab-page{display:none;flex:1;flex-direction:column;min-height:0;}
   .tab-page.active{display:flex;}
-  .skeleton-box{background:#12141c;border:1px dashed var(--panel-border);border-radius:6px;height:60px;margin-bottom:10px;}
-  .btn{background:var(--accent);color:#0c0e13;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .skeleton-box{background:#12141c;border:1px dashed var(--panel-border);border-radius:var(--radius-panel);height:60px;margin-bottom:10px;}
+  .btn{background:var(--accent);color:#0c0e13;border:none;border-radius:var(--radius-pill);padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;}
   .btn.secondary{background:transparent;border:1px solid var(--panel-border);color:var(--text);}
   .btn.small{padding:5px 10px;font-size:11px;}
   .btn-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
   .console-panel{flex:1;display:flex;flex-direction:column;min-height:0;}
-  .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:6px;padding:12px;font-family:Consolas,monospace;font-size:12px;color:var(--accent2);flex:1;overflow:auto;min-height:0;}
+  .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--accent2);flex:1;overflow:auto;min-height:0;}
   .console .dim{color:var(--text-dim);}
   .chip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
   .chip{background:#12141c;border:1px solid var(--panel-border);border-radius:14px;padding:5px 12px;font-size:12px;color:var(--text-dim);cursor:pointer;}
@@ -64,12 +78,12 @@
   .far-future{opacity:.6;}
   .toolbar-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
   .col-picker{position:relative;}
-  .col-picker-panel{display:none;position:absolute;right:0;top:32px;background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;padding:10px;z-index:10;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .col-picker-panel{display:none;position:absolute;right:0;top:32px;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:10px;z-index:10;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
   .col-picker-panel.open{display:block;}
   .col-picker-panel label{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 2px;color:var(--text-dim);cursor:pointer;}
   .col-picker-panel label input{accent-color:var(--accent);}
   .view-toggle{display:flex;gap:4px;}
-  .view-toggle button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:12px;padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;}
+  .view-toggle button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:12px;padding:6px 14px;border-radius:var(--radius-pill);cursor:pointer;font-family:inherit;}
   .view-toggle button.active{color:var(--text);border-color:var(--accent);}
   .lib-table td.opt, .lib-table th.opt{display:none;}
   .lib-table.show-track td.opt-track,.lib-table.show-track th.opt-track{display:table-cell;}
@@ -79,7 +93,7 @@
   .lib-table.show-cover td.opt-cover,.lib-table.show-cover th.opt-cover{display:table-cell;}
   .card-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
   .card-grid.active{display:grid;}
-  .track-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;overflow:hidden;}
+  .track-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);overflow:hidden;}
   .cover-placeholder{aspect-ratio:1;background:linear-gradient(135deg,#2a2e3a,#181b24);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--text-dim);}
   .track-card .info{padding:8px 10px;}
   .track-card .t-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -91,7 +105,7 @@
   .pagination .pages span{padding:4px 9px;border:1px solid var(--panel-border);border-radius:4px;cursor:pointer;}
   .pagination .pages span.active{color:var(--text);border-color:var(--accent);}
   .pagination .jump input{width:50px;background:#12141c;border:1px solid var(--panel-border);color:var(--text);border-radius:4px;padding:4px 6px;}
-  .rule-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+  .rule-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:14px 16px;margin-bottom:12px;}
   .rule-card .rule-head{display:flex;justify-content:space-between;align-items:center;}
   .rule-card .rule-name{font-size:14px;font-weight:600;}
   .rule-card .rule-desc{color:var(--text-dim);font-size:12px;margin-top:4px;}
@@ -101,7 +115,7 @@
   .status-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;text-transform:uppercase;}
   .status-badge.active{color:var(--accent2);background:rgba(127,209,174,.12);}
   .status-badge.draft{color:var(--accent3);background:rgba(242,184,75,.12);}
-  .service-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:16px;margin-bottom:14px;}
+  .service-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:16px;margin-bottom:14px;}
   .service-card h3{margin:0 0 6px;font-size:14px;}
   .service-card .stretch-badge{font-size:9px;color:var(--accent3);border:1px solid var(--accent3);border-radius:3px;padding:1px 5px;margin-left:8px;}
   .ring-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
@@ -439,7 +453,7 @@ const genreLabels=['Rap/Hip Hop','Pop','Musivation','Rock','R&B','Other'];
 const genreData=[31,10,10,3,2,44];
 
 let genreChart = new ApexCharts(document.querySelector("#genreChart"), {
-  chart:{type:'donut',height:260,background:'transparent',animations:{speed:500}},
+  chart:{type:'donut',height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',animations:{speed:500}},
   series:genreData, labels:genreLabels, colors:palette,
   theme:{mode:'dark'}, legend:{position:'bottom',...legendLabel}, dataLabels:{style:{fontSize:'11px',colors:['#0c0e13']}},
   tooltip:{theme:'dark'}
@@ -451,14 +465,14 @@ document.getElementById('genreChartType').addEventListener('change',(e)=>{
   const type=e.target.value;
   if(type==='treemap'){
     genreChart = new ApexCharts(document.querySelector("#genreChart"), {
-      chart:{type:'treemap',height:260,background:'transparent'},
+      chart:{type:'treemap',height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif'},
       series:[{data:genreLabels.map((l,i)=>({x:l,y:genreData[i]}))}],
       colors:palette, theme:{mode:'dark'}, tooltip:{theme:'dark'},
       dataLabels:{style:{colors:['#0c0e13']}}
     });
   } else {
     genreChart = new ApexCharts(document.querySelector("#genreChart"), {
-      chart:{type:type,height:260,background:'transparent'},
+      chart:{type:type,height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif'},
       series:genreData, labels:genreLabels, colors:palette,
       theme:{mode:'dark'}, legend:{position:'bottom',...legendLabel}, tooltip:{theme:'dark'},
       dataLabels:{style:{colors:['#0c0e13']}}
@@ -470,7 +484,7 @@ document.getElementById('genreChartType').addEventListener('change',(e)=>{
 const decadeLabels=['1980s','1990s','2000s','2010s','2020s'];
 const decadeData=[67,194,983,2187,2187];
 let decadeChart = new ApexCharts(document.querySelector("#decadeChart"), {
-  chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
+  chart:{type:'bar',height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
   series:[{name:'Tracks',data:decadeData}],
   xaxis:{categories:decadeLabels,labels:axisLabel},
   yaxis:{labels:axisLabel},
@@ -482,14 +496,14 @@ document.getElementById('decadeChartType').addEventListener('change',(e)=>{
   decadeChart.destroy();
   if(e.target.value==='donut'){
     decadeChart = new ApexCharts(document.querySelector("#decadeChart"), {
-      chart:{type:'donut',height:260,background:'transparent'},
+      chart:{type:'donut',height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif'},
       series:decadeData, labels:decadeLabels, colors:palette,
       theme:{mode:'dark'}, legend:{position:'bottom',...legendLabel}, tooltip:{theme:'dark'},
       dataLabels:{style:{colors:['#0c0e13']}}
     });
   } else {
     decadeChart = new ApexCharts(document.querySelector("#decadeChart"), {
-      chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
+      chart:{type:'bar',height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
       series:[{name:'Tracks',data:decadeData}],
       xaxis:{categories:decadeLabels,labels:axisLabel}, yaxis:{labels:axisLabel},
       colors:['#5b8cff'], theme:{mode:'dark'}, grid:gridStyle, tooltip:{theme:'dark'}
@@ -501,7 +515,7 @@ document.getElementById('decadeChartType').addEventListener('change',(e)=>{
 const yearLabelsAll=['2022','2020','2021','2019','2023','2024','2012','2018','2013','2025'];
 const yearDataAll=[515,414,397,372,282,281,275,263,255,235];
 let yearChart = new ApexCharts(document.querySelector("#yearChart"), {
-  chart:{type:'bar',height:260,background:'transparent',toolbar:{show:false}},
+  chart:{type:'bar',height:260,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
   series:[{name:'Tracks',data:yearDataAll}],
   xaxis:{categories:yearLabelsAll,labels:axisLabel}, yaxis:{labels:axisLabel},
   plotOptions:{bar:{horizontal:true,borderRadius:3}},
@@ -510,7 +524,7 @@ let yearChart = new ApexCharts(document.querySelector("#yearChart"), {
 window.yearChartRef=yearChart;
 
 new ApexCharts(document.querySelector("#radarChart"), {
-  chart:{type:'radar',height:240,background:'transparent'},
+  chart:{type:'radar',height:240,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif'},
   series:[{name:'Track share %',data:[31,3,10,2,10,44]}],
   labels:['Rap/Hip Hop','Rock','Pop','R&B','Musivation','Other'],
   colors:['#b98af0'], theme:{mode:'dark'},
@@ -522,7 +536,7 @@ new ApexCharts(document.querySelector("#radarChart"), {
 const artistsExcl={labels:['Eminem','Kodak Black','Kevin Gates','Kanye West','Russ'],data:[155,115,114,99,87]};
 const artistsAll={labels:['Akira The Don','Eminem','Eric Thomas','Kodak Black','Kevin Gates'],data:[510,155,130,115,114]};
 let artistsChart = new ApexCharts(document.querySelector("#artistsChart"), {
-  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  chart:{type:'bar',height:220,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
   series:[{name:'Tracks',data:artistsExcl.data}],
   xaxis:{categories:artistsExcl.labels,labels:axisLabel}, yaxis:{labels:axisLabel},
   plotOptions:{bar:{horizontal:true,borderRadius:3}},
@@ -558,7 +572,7 @@ recentBatches.forEach(b=>{
 });
 
 new ApexCharts(document.querySelector("#batchChart"), {
-  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  chart:{type:'bar',height:220,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
   series:[{name:'Tracks added',data:[22,15,31,9,12,18]}],
   xaxis:{categories:['2026-04-14','2026-04-29','2026-05-08','2026-05-26','2026-06-06','2026-06-28'],labels:axisLabel},
   yaxis:{labels:axisLabel},
@@ -567,7 +581,7 @@ new ApexCharts(document.querySelector("#batchChart"), {
 }).render();
 
 new ApexCharts(document.querySelector("#ageChart"), {
-  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  chart:{type:'bar',height:220,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
   series:[{name:'Tracks',data:[850,1400,1900,1300,243]}],
   xaxis:{categories:['0-2y','2-5y','5-10y','10-20y','20y+'],labels:axisLabel},
   yaxis:{labels:axisLabel},
@@ -575,7 +589,7 @@ new ApexCharts(document.querySelector("#ageChart"), {
 }).render();
 
 new ApexCharts(document.querySelector("#coverChart"), {
-  chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+  chart:{type:'bar',height:220,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif',toolbar:{show:false}},
   series:[{name:'Tracks',data:[3080,1711,430,90,84,298]}],
   xaxis:{categories:['800x800','1200x1200','1000x1000','1400x1400','500x500','Other'],labels:axisLabel},
   yaxis:{labels:axisLabel},
@@ -583,14 +597,14 @@ new ApexCharts(document.querySelector("#coverChart"), {
 }).render();
 
 new ApexCharts(document.querySelector("#tagRing"), {
-  chart:{type:'radialBar',height:220,background:'transparent'},
+  chart:{type:'radialBar',height:220,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif'},
   series:[91], labels:['Complete'],
   colors:['#5b8cff'], theme:{mode:'dark'},
   plotOptions:{radialBar:{dataLabels:{name:{color:dim},value:{color:'#e6e8ee',fontSize:'22px'}}}}
 }).render();
 
 new ApexCharts(document.querySelector("#coverRing"), {
-  chart:{type:'radialBar',height:220,background:'transparent'},
+  chart:{type:'radialBar',height:220,background:'transparent',fontFamily:'IBM Plex Sans,sans-serif'},
   series:[96], labels:['&ge;800px'],
   colors:['#7fd1ae'], theme:{mode:'dark'},
   plotOptions:{radialBar:{dataLabels:{name:{color:dim},value:{color:'#e6e8ee',fontSize:'22px'}}}}
