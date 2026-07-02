@@ -52,7 +52,8 @@ def _builder(name: str):
 
 
 @ui.page("/")
-def index():
+def index(tab: str = "stats"):
+    initial_tab = tab if tab in {t[0] for t in TABS} else "stats"
     ui.add_head_html(theme.HEAD_HTML)
     ui.dark_mode().enable()
     ui.query(".nicegui-content").style("padding:0;gap:0;")
@@ -65,7 +66,7 @@ def index():
             ui.html('<div class="am-brand"><span>Audio</span>Manager</div>')
             for key, label, badge in TABS:
                 badge_html = f' <span class="badge">{badge}</span>' if badge else ""
-                active = " active" if key == "stats" else ""
+                active = " active" if key == initial_tab else ""
                 btn = ui.html(
                     f'<button class="tab-link{active}" id="nav-{key}">{label}{badge_html}</button>'
                 )
@@ -95,7 +96,7 @@ def index():
         except Exception:
             pass  # initial build: client not connected yet; stats starts active via HTML
 
-    switch("stats")
+    switch(initial_tab)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
