@@ -93,7 +93,7 @@ namespace AudioManager
                     }
                     else
                     {
-                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] | integrate [--dry-run [--json-output]] | tagfix [--dry-run]");
+                        Console.WriteLine($"Unknown mode '{args[0]}'. Use: analysis [--force-regen] [--json-output] | integrate [--dry-run] [--json-output] | tagfix [--dry-run]");
                         Environment.Exit(1);
                         return;
                     }
@@ -152,6 +152,14 @@ namespace AudioManager
 
                         // Save report (reports with issues go to gitignored folder to avoid cluttering diffs)
                         ReportWriter.Save(captureWriter.ToString(), libCheckerClean);
+
+                        // Emit structured stats JSON for the GUI (opt-in via --json-output).
+                        // Reuses the same StatList primitives the report uses, so JSON can't drift from the report.
+                        if (jsonOutput)
+                        {
+                            string statsJsonPath = StatsJson.Write(p.audioTags);
+                            Console.WriteLine($"\nStats JSON written: {statsJsonPath}");
+                        }
 
                         // Auto-commit AudioMirror after report save
                         // Runs after report save so the commit output is not captured into the report.
