@@ -260,7 +260,10 @@ def _render(window: str) -> None:
                 if m == "Treemap":
                     _echart(charts.treemap(data), 300)
                 else:
-                    _echart(charts.donut(data, pie=(m == "Pie")), 300)
+                    total = s.summary_num("trackCount")
+                    _echart(charts.donut(
+                        data, pie=(m == "Pie"),
+                        center_label=f"{fmt_int(total)}\ntracks"), 300)
 
             with ui.element("div").classes("panel-title"):
                 ui.html("<span>Genre Distribution</span>")
@@ -434,7 +437,7 @@ def _render(window: str) -> None:
         '<p class="note">Windowed panels (Year, Decade, Age, batches) follow the header '
         "date filter; Genre and Cover panels are library-wide by nature. All numbers come "
         "from <b>analysis-stats.json</b>, computed by the C# Analyser - the GUI parses no XML.</p>"
-    )
+    ).classes("w-full")
 
 
 def tiles(s) -> None:
@@ -465,7 +468,7 @@ def tiles(s) -> None:
         f'<div class="value">{value}</div>{delta}</div>'
         for label, value, delta in tiles_def
     )
-    ui.html(f'<div class="totals">{tile_html}</div>')
+    ui.html(f'<div class="totals">{tile_html}</div>').classes("w-full")
 
 
 def recent_additions(window: str) -> None:

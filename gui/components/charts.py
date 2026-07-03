@@ -29,11 +29,14 @@ def _base() -> dict:
         "backgroundColor": "transparent",
         "textStyle": {"fontFamily": FONT, "color": TEXT},
         "tooltip": {**TOOLTIP, "trigger": "item"},
+        "animationDuration": 700,
+        "animationEasing": "cubicOut",
     }
 
 
-def donut(data: list[dict], *, pie: bool = False) -> dict:
-    """data: [{label, count}] -> donut (or full pie) with bottom legend."""
+def donut(data: list[dict], *, pie: bool = False, center_label: str | None = None) -> dict:
+    """data: [{label, count}] -> donut (or full pie) with bottom legend.
+    center_label puts a headline figure in the donut's hole."""
     opt = _base()
     opt["legend"] = {
         "bottom": 0, "type": "scroll",
@@ -43,16 +46,33 @@ def donut(data: list[dict], *, pie: bool = False) -> dict:
         "pageIconInactiveColor": theme.PANEL_BORDER,
     }
     opt["color"] = theme.CHART_PALETTE
+    total = sum(d["count"] for d in data)
     opt["series"] = [{
         "type": "pie",
-        "radius": ["0%", "68%"] if pie else ["42%", "68%"],
+        "radius": ["0%", "70%"] if pie else ["46%", "70%"],
         "center": ["50%", "44%"],
         "data": [{"name": d["label"], "value": d["count"]} for d in data],
-        "label": {"color": DIM, "fontSize": 11, "fontFamily": FONT},
-        "labelLine": {"lineStyle": {"color": theme.PANEL_BORDER}},
-        "itemStyle": {"borderColor": theme.PANEL, "borderWidth": 2},
-        "emphasis": {"scaleSize": 4},
+        # legend + tooltip carry the small slices; only label sizeable ones
+        "label": {"color": DIM, "fontSize": 11, "fontFamily": FONT,
+                  "formatter": "{b}", "show": True,
+                  "minAngle": 0},
+        "labelLine": {"lineStyle": {"color": theme.PANEL_BORDER}, "length": 12, "length2": 8},
+        "minShowLabelAngle": 14,
+        "itemStyle": {"borderColor": theme.PANEL, "borderWidth": 2, "borderRadius": 4},
+        "emphasis": {"scaleSize": 6,
+                     "itemStyle": {"shadowBlur": 18, "shadowColor": "rgba(91,140,255,.35)"}},
     }]
+    if center_label and not pie:
+        head, _, sub = center_label.partition("\n")
+        opt["graphic"] = [{
+            "type": "text", "left": "center", "top": "38%",
+            "style": {"text": head, "fill": TEXT, "fontSize": 24,
+                      "fontWeight": 700, "fontFamily": MONO, "textAlign": "center"},
+        }, {
+            "type": "text", "left": "center", "top": "48%",
+            "style": {"text": sub, "fill": DIM, "fontSize": 11,
+                      "fontFamily": FONT, "textAlign": "center"},
+        }]
     return opt
 
 
@@ -114,7 +134,7 @@ def radar(data: list[dict], color: str = theme.ACCENT5) -> dict:
         "splitLine": {"lineStyle": {"color": theme.PANEL_BORDER}},
         "splitArea": {"areaStyle": {"color": ["rgba(255,255,255,.015)", "rgba(255,255,255,0)"]}},
         "axisLine": {"lineStyle": {"color": theme.PANEL_BORDER}},
-        "radius": "62%",
+        "radius": "72%",
     }
     opt["series"] = [{
         "type": "radar",

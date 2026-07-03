@@ -81,7 +81,7 @@ def index(tab: str = "stats"):
             el.set_visibility(k == key)
         if key not in built:
             with main_area:
-                container = ui.column().classes("w-full").style("gap:0;")
+                container = ui.column().classes("w-full tab-enter").style("gap:0;")
                 built[key] = container
                 with container:
                     try:
@@ -92,6 +92,12 @@ def index(tab: str = "stats"):
             ui.run_javascript(
                 "document.querySelectorAll('.tab-link').forEach(b=>b.classList.remove('active'));"
                 f"document.getElementById('nav-{key}')?.classList.add('active');"
+                # replay the entrance animation on the now-visible tab container
+                "const m=document.querySelector('.am-main');"
+                "if(m){[...m.children].forEach(c=>{"
+                "  if(getComputedStyle(c).display!=='none'){"
+                "    c.classList.remove('tab-enter');void c.offsetWidth;c.classList.add('tab-enter');}"
+                "});}"
             )
         except Exception:
             pass  # initial build: client not connected yet; stats starts active via HTML
@@ -107,12 +113,14 @@ if __name__ in {"__main__", "__mp_main__"}:
         _log = open(config.CACHE_DIR / "gui.log", "a", buffering=1, encoding="utf-8")
         sys.stdout = sys.stdout or _log
         sys.stderr = sys.stderr or _log
+    import os
     ui.run(
         title="AudioManager",
         host="127.0.0.1",
         port=8471,
         reload=False,
-        show=True,
+        # AM_GUI_NO_BROWSER=1 suppresses the auto-opened tab (dev restarts)
+        show=os.environ.get("AM_GUI_NO_BROWSER") != "1",
         favicon="🎵",
         dark=True,
     )
