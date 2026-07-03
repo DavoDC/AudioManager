@@ -50,11 +50,13 @@ The reuse worry behind extracting a shared core library (Python re-implementing 
 All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui.bat`). See `gui/README.md`.
 
 - **Statistics - FULL.** Stat tiles with vs-last-batch deltas, genre donut/pie/treemap swap, decade bar/donut, year top-N/show-all, genre radar, top artists excl/all toggle, batch-grouped recent additions, per-batch bar chart (AudioMirror git history is the canonical batch source), age buckets + callout, cover-resolution histogram, tag-completeness and hi-res-cover rings, global date window, freshness controls (Re-run analysis / Force full regen with confirm; force-regen passes `--no-auto-commit` and routes mirror changes to the Mirror tab).
-- **Integration - FULL (accept-all execution).** Staged scan -> review queue (real album art, destination, reason, tag-change chips, badges, per-track accept/decline) -> confirm -> structured per-track progress. Open gap: per-track SELECTIVE execution needs an `integrate --manifest <accepted.json> --no-input` exe mode - the review queue is already shaped to drive it (tracked in IDEAS.md).
+- **Integration - FULL (selective execution).** Staged scan -> review queue (real album art, destination, reason, tag-change chips, badges, per-track accept/decline) -> confirm -> structured per-track progress. Declined tracks are excluded via `integrate --manifest <accepted.json> --no-input` (added 2026-07-03): the GUI writes the accepted set to `gui/.cache/accepted-manifest.json`, the exe filters before scan-ahead/duplicate review, and manifests match by raw dry-run filename OR the canonical TagFixer rename so they survive renames between dry and real runs.
 - **Library Browser - MVP.** `tracks.json` rows, search + genre/decade chips, column picker, table/grid with real mutagen-extracted covers (page-lazy, cached), server-side pagination.
 - **Tag Fix - skeleton.** Cards document the exe's real fixed transforms; Run Fixed Rules = `tagfix --dry-run`. Open gap: configurable rules need a C# change (tracked in IDEAS.md).
-- **Mirror - skeleton.** Read-only status/dirty listing. Open gap: one-click Commit AudioMirror action (tracked in IDEAS.md).
+- **Mirror - functional.** Status/dirty listing + one-click Commit AudioMirror (confirm dialog, editable message, local commit only - added 2026-07-03). The GUI's only AudioMirror write; everything else stays read-only.
 - **Services - placeholder.** Two stub cards, deliberately not built - see Services design below.
+
+**Visual system (2026-07-03):** fluid motion layer (pointer-tracking spotlight via delegated JS + CSS vars, hover lift, staggered entrances, tab transitions, reduced-motion respect) plus a **mood-reactive theme** - the dominant genre in `analysis-stats.json` tints the accent system at startup (`theme.apply_mood`, genre->palette map in `gui/theme.py`) with a "Mood" chip in the nav. Chart colors bind at import time, so `apply_mood` must run before tab modules import (enforced in `gui/main.py`).
 
 ---
 
