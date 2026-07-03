@@ -18,6 +18,58 @@ ACCENT5 = "#b98af0"
 CHART_PALETTE = [ACCENT, ACCENT2, ACCENT3, ACCENT4, ACCENT5, "#5c6270",
                  "#5bb8ff", "#e2905b", "#8a7ff0", "#d1c37f", "#e26db8", "#7a9f6a"]
 
+# ---------------------------------------------------------- mood reactivity
+# The dominant genre in analysis-stats.json tints the whole UI: accent color,
+# spotlight glow, brand gradient. Applied once at startup via apply_mood()
+# (before any tab/chart module is imported - chart default args bind theme
+# colors at import time).
+MOOD_NAME = "Neutral"
+GENRE_MOODS = {
+    # genre keyword -> (accent, secondary accent for the brand gradient)
+    "hip hop": ("#6d7bff", "#b98af0"),   # electric, punchy
+    "rap": ("#6d7bff", "#b98af0"),
+    "rock": ("#e2585b", "#f2b84b"),      # hot, driven
+    "metal": ("#e2585b", "#9aa0ac"),
+    "pop": ("#e26db8", "#8a7ff0"),       # bright, playful
+    "electronic": ("#5bd0ff", "#8a7ff0"),
+    "dance": ("#5bd0ff", "#e26db8"),
+    "jazz": ("#e2a05b", "#d1c37f"),      # warm, smooth
+    "soul": ("#e2a05b", "#e26db8"),
+    "r&b": ("#e2a05b", "#e26db8"),
+    "classical": ("#d1c37f", "#9aa0ac"),
+    "musivation": ("#7fd1ae", "#5b8cff"),
+    "motivation": ("#7fd1ae", "#f2b84b"),
+}
+
+
+def _hex_to_rgb(h: str) -> str:
+    h = h.lstrip("#")
+    return f"{int(h[0:2], 16)},{int(h[2:4], 16)},{int(h[4:6], 16)}"
+
+
+def apply_mood(dominant_genre: str | None) -> None:
+    """Retint the theme for the library's dominant genre. No-op for unknown
+    genres. Must run before tab/chart modules are imported."""
+    global ACCENT, ACCENT5, CHART_PALETTE, HEAD_HTML, MOOD_NAME
+    if not dominant_genre:
+        return
+    key = dominant_genre.strip().lower()
+    mood = GENRE_MOODS.get(key) or next(
+        (v for k, v in GENRE_MOODS.items() if k in key), None)
+    if mood is None:
+        return
+    new_accent, new_secondary = mood
+    old_rgb = _hex_to_rgb(ACCENT)
+    HEAD_HTML = (HEAD_HTML
+                 .replace(ACCENT, new_accent)
+                 .replace(ACCENT5, new_secondary)
+                 .replace(old_rgb, _hex_to_rgb(new_accent)))
+    CHART_PALETTE = [new_accent if c == ACCENT else new_secondary if c == ACCENT5 else c
+                     for c in CHART_PALETTE]
+    ACCENT = new_accent
+    ACCENT5 = new_secondary
+    MOOD_NAME = dominant_genre
+
 HEAD_HTML = """
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

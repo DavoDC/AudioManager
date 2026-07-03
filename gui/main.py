@@ -33,6 +33,11 @@ app.add_static_files("/thumbs", str(config.THUMBS_DIR))
 
 state.load()
 
+# Mood-reactive theme: the library's dominant genre tints the accent system.
+# Must run before tab modules import (chart defaults bind colors at import).
+if state.stats and state.stats.genre_distribution:
+    theme.apply_mood(state.stats.genre_distribution[0]["label"])
+
 
 def _builder(name: str):
     """Import tab modules lazily so one tab's failure can't kill the app."""
@@ -72,6 +77,15 @@ def index(tab: str = "stats"):
                 )
                 nav_buttons[key] = btn
                 btn.on("click", lambda _, k=key: switch(k))
+            if theme.MOOD_NAME != "Neutral":
+                ui.html(
+                    '<div style="margin:18px 20px 0;font-size:10px;color:var(--text-dim);'
+                    'text-transform:uppercase;letter-spacing:.06em;">Mood</div>'
+                    f'<div style="margin:4px 20px 0;font-size:12px;color:var(--accent);'
+                    f'font-weight:600;">&#9835; {theme.MOOD_NAME}</div>'
+                    '<div style="margin:2px 20px 0;font-size:10px;color:var(--text-dim);'
+                    'line-height:1.4;">accent tuned to your library&#39;s dominant genre</div>'
+                )
 
         with ui.column().classes("am-main").style("gap:0;") as main_area:
             pass
