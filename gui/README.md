@@ -60,7 +60,7 @@ own modes, behind its own safety gates. The GUI's only writes are its cache
 **Known gaps (deliberate, surfaced in the UI):** per-track selective
 integration needs an `integrate --manifest` exe mode; committing AudioMirror
 still needs a terminal; tag rules are not configurable without a C# change.
-Details: `docs/Development/GUI-ROADMAP.md`.
+Details: `docs/References/GUI-Architecture.md`.
 
 ## Tests
 

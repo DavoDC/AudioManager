@@ -1,8 +1,10 @@
 # Ideas & Future Work
 
-Single source of truth for all pending work. **CLI only.** GUI planning: `GUI-ROADMAP.md`. Completed items -> `HISTORY.md`.
+Single source of truth for all pending work - CLI and GUI both, tagged `[GUI]` where relevant, in the same priority tiers below. Not a home for architecture/design writeups: those live in `docs/References/GUI-Architecture.md` (GUI stack/tab reference), `fable-gui/fable-brief.md` (Fable build brief), `docs/References/` (format specs). Completed items -> `HISTORY.md`.
 
 Items are tiered by priority. Do not advance to the next tier until the current tier is verified on real data.
+
+**Fable session status (2026-07-03, promo window closes 2026-07-07):** all six GUI tabs built and verified (18 pytest passing), 7 commits on `main` not yet pushed (David's job). AudioMirror is clean and committed (`413f9d1a`) - no longer a blocker. `[GUI]` items in TIER 1-2 below are this session's next actions, in priority order.
 
 ---
 
@@ -16,6 +18,14 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **Rename malformed multi-artist library files missing semicolon delimiter** - An audit on 2026-06-27 found ~436 library files where multi-artist filenames are missing the `;` delimiter (e.g. `T.I.Cee Lo Green - Hello.mp3`, `UsherAlicia Keys - ...`, `Polo GLil Wayne - ...`, `FredoDave - ...`). These are pre-TagFixer era imports where artists were concatenated without `;`. LibChecker has a check for this (code exists, currently commented out in LibChecker.cs) which will be re-enabled after remediation. Fix: use Mp3tag on Raphael bulk-rename using tag field `%artist% - %title%` for all affected files, which inserts correct `;` delimiters from ID3 tags. Then re-enable the LibChecker check. Must be done before enabling LibChecker validation. Known worst offenders: T.I. Singles, Polo G, Lil Wayne collaborations, Dave featured tracks.
 
 - [ ] **Fix MP3 filename casing to match artist ID3 tags** - several files have filenames with old/inconsistent artist casing that diverges from the ID3 tag (e.g., `Bowling For Soup - 1985.mp3` but tag says `Bowling for Soup`; `24kgoldnDaBaby - Coco.mp3` but tag says `24kGoldn`; similarly `Iann Dior` vs `iann dior`, `JAY-Z` vs `Jay-Z`, `Kota the Friend` vs `KOTA The Friend`). Fix via Mp3tag on Raphael (master copy) - rename files to match the ID3 artist tag casing. This WILL fix all current LibChecker casing warnings (genuine mismatches, not false positives). Must be done before next integration so LibChecker is clean.
+
+- [ ] **[GUI] Statistics tab header mismatch vs mockup** - top stat-tile row doesn't match the approved mockup (`fable-gui/mockup.html`). Compare live vs mockup with the browser tool and correct layout/tiles/spacing. Quick win, do first.
+
+- [ ] **[GUI] `integrate --manifest <accepted.json> --no-input`** - the Integration tab's review queue already produces the accept/decline shape; wire the C# exe to accept a manifest for per-track selective execution instead of accept-all only.
+
+- [ ] **[GUI] Commit AudioMirror action** - one-click commit button on the Mirror tab (currently read-only status/diff view only).
+
+- [ ] **[GUI] Fluid dynamic UI** - GUI should feel alive: subtle transparency, elements that respond to mouse hover/movement with fluid motion instead of static panels. Framework-appropriate approach for NiceGUI/ECharts (CSS transitions, JS hover listeners via `ui.add_head_html` or per-component `.on('mouseenter', ...)`). Start with one component (stat tiles or nav sidebar) as a spike before rolling out everywhere. Time-boxed here (not TIER 3) because David wants this prioritised before the Fable promo window closes 2026-07-07.
 
 ---
 
@@ -34,6 +44,12 @@ Items are tiered by priority. Do not advance to the next tier until the current 
     - AudioMirrorCommitter: the gating logic (skip on incremental, skip on dirty) has no return value so tests require either a refactor to return a status enum, or injecting a spy. The git operations require a temp git repo.
     - LibChecker exceptions mechanism: **done** - `LibCheckerExceptionTests.cs` covers wildcard, specific-match, and non-match cases (3 tests, all passing as of 2026-06-01).
   - **Scope discipline:** Test feature behavior, not individual function internals. "Artist casing is preserved end-to-end" not "ExtractAndFixArtists() branch 47". Internals are tested indirectly; changing internals should not break tests if behavior is unchanged.
+
+- [ ] **[GUI] TagFix configurable rules** - Tag Fix tab currently shows the exe's fixed transforms only (`tagfix --dry-run`). Needs a C# change to accept user-defined rules (condition -> fix); see the rule-builder design in `docs/References/GUI-Architecture.md`.
+
+- [ ] **[GUI] Library Browser polish** - MVP is table/grid + search/chips/pagination; still missing: track detail panel (full tags, file path), multi-select for batch TagFix apply.
+
+- [ ] **[GUI] Mood-reactive UI** - UI styling shifts based on library analysis results: dominant genre changes the palette/motion feel (jazz = smoother/warmer, hip-hop/rap = punchier/bolder). Depends on the Fluid Dynamic UI item above landing first (this is a styling-rules layer on top of it) and on genre data, which `analysis-stats.json` already provides.
 
 ---
 
@@ -92,12 +108,22 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - **Fuzzy lyric search** - Search the library by lyric fragment. Match partial/approximate text against `<Lyrics>` elements in AudioMirror XMLs. New mode: `--search-lyrics "some fragment"`. Output: ranked matches. Implementation: normalise text (lowercase, strip punctuation), then Levenshtein distance or n-gram similarity for fuzzy matching. Depends on lyrics enrichment being in place first.
 
+- **[GUI] Services tab data sources** - Services tab is currently two placeholder stub cards. Should support any combination of: (1) Last.fm (scrobble history, listening stats, play counts overlaid on Library Browser), (2) Spotify (via SpotifyPlaylistGen or a generalized SpotifyTools lib - decision deferred, see `docs/References/GUI-Architecture.md`), (3) offline library/AudioMirror (already the only source today). Design goal: any combination usable at once (e.g. offline + Last.fm without Spotify) - each an independent, toggleable data source feeding one cross-synthesis view (owned-but-unplayed, played-but-not-owned, etc.), not an all-or-nothing switch.
+
+- **[GUI] Multi-user path** - AudioManager is built around one person's library and one hardcoded AudioMirror repo path. To eventually serve other users: (1) make the library mirror's git repo configurable - point at an arbitrary existing remote, or initialize an AudioMirror-style repo inside the app's own data directory on first run with no external GitHub account required; (2) generalize routing rules and folder-structure assumptions (LibChecker hardcoded folder names, above) away from David's specific layout. Prerequisite for any other user running the tool, independent of the hosting question below.
+
+- **[GUI] Proper hostable web service** - account system, logins, multi-tenant, usable by other people over the internet (not just localhost). Freemium model: core local tool free, hosted/sync features paid. The actual commercialization path if the AudioManager business-plan review (see workspace `pending-actions.md`) comes back positive. Big lift - needs auth, per-user data isolation, and the multi-user path above done first.
+
+- **Rewrite core in Python** - eliminate the current JSON/XML double-up (C# writes XML to AudioMirror + JSON contract to the GUI) by having one language own both the data layer and the interface. Not scoped, not urgent - the current subprocess+JSON-contract architecture (decided 2026-07-03, see `docs/References/GUI-Architecture.md`) already isolates the GUI from the XML entirely, so this is a "someday, if maintaining two languages becomes real pain" idea, not a fix for a current problem.
+
+- **Modernize AudioMirror Storage Contract (XML -> JSON / Compiler Pattern)** - AudioMirror stores one raw XML file per track: great for Git diffs and conflict-free merges, but XML is verbose, needs character escaping (`&amp;` etc.), and parsing thousands of separate files is a disk I/O bottleneck at GUI startup (mitigated today by the compiled `tracks.json`/`analysis-stats.json` contract, but the underlying per-track store is still XML). Proposed: (1) migrate per-track storage from XML to flat JSON (`<track>.json`) - same one-file-per-track Git-diff-friendly layout, less overhead, no escaping; (2) formalize the "Compiler Pattern" the C# Analyser already does informally - ingest the decentralized per-track JSONs and output one optimized runtime cache (unified `tracks.json` array, or SQLite/DuckDB if query needs grow past flat-file scans); (3) the Python GUI keeps strictly reading the compiled runtime cache only, same as today. Evolution of the current architecture, not a rewrite - the read/write contract (GUI never touches per-track files directly) is already in place.
+
 ---
 
 ## See Also
 
 - `docs/Development/HISTORY.md` - completed features, settled design decisions, parked ideas
-- `docs/Development/GUI-ROADMAP.md` - GUI planning: webapp, tabs, Sonarr/Radarr vision, far-future integrations
+- `docs/References/GUI-Architecture.md` - GUI architecture/design reference: stack decision, tab table, third-party libs
 - `docs/References/Music-Library-Rules.md` - canonical rules for library structure
 - `docs/References/Post-Integration-Validation.md` - why post-integration LibChecker warnings are often ghost-XML false positives, the dry-run projection fix, and the 2026-06-28 run analysis
 - `docs/Historical/NewMusic-Integration-Plan-20260308.md` - past batch integration (March 2026 batch A)
