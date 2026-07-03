@@ -4,7 +4,7 @@ Single source of truth for all pending work - CLI and GUI both, tagged `[GUI]` w
 
 Items are tiered by priority. Do not advance to the next tier until the current tier is verified on real data.
 
-**Fable session status (2026-07-03, promo window closes 2026-07-07):** all six GUI tabs built and verified (18 pytest passing), 7 commits on `main` not yet pushed (David's job). AudioMirror is clean and committed (`413f9d1a`) - no longer a blocker. `[GUI]` items in TIER 1-2 below are this session's next actions, in priority order.
+**Fable session status (2026-07-03, promo window closes 2026-07-07):** round 2 complete - all five TIER 1-2 `[GUI]` items closed (layout fix, fluid UI, `--manifest` selective integration, Mirror commit action, mood-reactive theme; see HISTORY.md 2026-07-03). Commits on `main` not yet pushed (David's job). NOTE: LibChecker currently flags `Hagrid & Harry` (not set as compilation) - integration is gate-blocked until that track's TCMP is fixed (Mp3tag on the library file, or next tagfix pass if it returns to NewMusic).
 
 ---
 
@@ -18,14 +18,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **Rename malformed multi-artist library files missing semicolon delimiter** - An audit on 2026-06-27 found ~436 library files where multi-artist filenames are missing the `;` delimiter (e.g. `T.I.Cee Lo Green - Hello.mp3`, `UsherAlicia Keys - ...`, `Polo GLil Wayne - ...`, `FredoDave - ...`). These are pre-TagFixer era imports where artists were concatenated without `;`. LibChecker has a check for this (code exists, currently commented out in LibChecker.cs) which will be re-enabled after remediation. Fix: use Mp3tag on Raphael bulk-rename using tag field `%artist% - %title%` for all affected files, which inserts correct `;` delimiters from ID3 tags. Then re-enable the LibChecker check. Must be done before enabling LibChecker validation. Known worst offenders: T.I. Singles, Polo G, Lil Wayne collaborations, Dave featured tracks.
 
 - [ ] **Fix MP3 filename casing to match artist ID3 tags** - several files have filenames with old/inconsistent artist casing that diverges from the ID3 tag (e.g., `Bowling For Soup - 1985.mp3` but tag says `Bowling for Soup`; `24kgoldnDaBaby - Coco.mp3` but tag says `24kGoldn`; similarly `Iann Dior` vs `iann dior`, `JAY-Z` vs `Jay-Z`, `Kota the Friend` vs `KOTA The Friend`). Fix via Mp3tag on Raphael (master copy) - rename files to match the ID3 artist tag casing. This WILL fix all current LibChecker casing warnings (genuine mismatches, not false positives). Must be done before next integration so LibChecker is clean.
-
-- [ ] **[GUI] Statistics tab header mismatch vs mockup** - top stat-tile row doesn't match the approved mockup (`fable-gui/mockup.html`). Compare live vs mockup with the browser tool and correct layout/tiles/spacing. Quick win, do first.
-
-- [ ] **[GUI] `integrate --manifest <accepted.json> --no-input`** - the Integration tab's review queue already produces the accept/decline shape; wire the C# exe to accept a manifest for per-track selective execution instead of accept-all only.
-
-- [ ] **[GUI] Commit AudioMirror action** - one-click commit button on the Mirror tab (currently read-only status/diff view only).
-
-- [ ] **[GUI] Fluid dynamic UI** - GUI should feel alive: subtle transparency, elements that respond to mouse hover/movement with fluid motion instead of static panels. Framework-appropriate approach for NiceGUI/ECharts (CSS transitions, JS hover listeners via `ui.add_head_html` or per-component `.on('mouseenter', ...)`). Start with one component (stat tiles or nav sidebar) as a spike before rolling out everywhere. Time-boxed here (not TIER 3) because David wants this prioritised before the Fable promo window closes 2026-07-07.
 
 ---
 
@@ -48,8 +40,6 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **[GUI] TagFix configurable rules** - Tag Fix tab currently shows the exe's fixed transforms only (`tagfix --dry-run`). Needs a C# change to accept user-defined rules (condition -> fix); see the rule-builder design in `docs/References/GUI-Architecture.md`.
 
 - [ ] **[GUI] Library Browser polish** - MVP is table/grid + search/chips/pagination; still missing: track detail panel (full tags, file path), multi-select for batch TagFix apply.
-
-- [ ] **[GUI] Mood-reactive UI** - UI styling shifts based on library analysis results: dominant genre changes the palette/motion feel (jazz = smoother/warmer, hip-hop/rap = punchier/bolder). Depends on the Fluid Dynamic UI item above landing first (this is a styling-rules layer on top of it) and on genre data, which `analysis-stats.json` already provides.
 
 ---
 

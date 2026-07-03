@@ -54,13 +54,13 @@ own modes, behind its own safety gates. The GUI's only writes are its cache
 | Integration | Full (accept-all) | Staged scan/review/confirm/execute; declines block execution (see gaps) |
 | Library Browser | MVP | Table/grid, real album art, search, filter chips, column picker, pagination |
 | Tag Fix | Skeleton | Documents the exe's fixed transforms; Run = `tagfix --dry-run` |
-| Mirror | Skeleton | Read-only status; commit action is the named next step |
-| Services | Placeholder | Last.fm / Spotify stretch stubs (TIER G5) |
+| Mirror | Functional | Status + one-click Commit AudioMirror (confirm dialog, local commit only) |
+| Services | Placeholder | Last.fm / Spotify stretch stubs (far future) |
 
-**Known gaps (deliberate, surfaced in the UI):** per-track selective
-integration needs an `integrate --manifest` exe mode; committing AudioMirror
-still needs a terminal; tag rules are not configurable without a C# change.
-Details: `docs/References/GUI-Architecture.md`.
+Integration is fully selective: declined tracks are excluded via
+`integrate --manifest gui/.cache/accepted-manifest.json` and stay untouched
+in NewMusic. **Remaining gap (surfaced in the UI):** tag rules are not
+configurable without a C# change. Details: `docs/References/GUI-Architecture.md`.
 
 ## Tests
 

@@ -4,6 +4,35 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-07-03 - Fable session round 2: five [GUI] items closed (visual + functional)
+
+Second pass of the Fable promo session, iterated live in Chrome against the running GUI:
+
+- **Statistics header mismatch (TIER 1):** root cause was NiceGUI `ui.html` wrappers shrink-wrapping
+  inside flex columns - the stat-tile row rendered as a narrow vertical column. Fixed with explicit
+  full-width wrappers; tiles now match the mockup's responsive row.
+- **Fluid dynamic UI (TIER 1):** motion layer across all tabs - pointer-tracking spotlight on
+  panels/tiles/cards (delegated JS + CSS vars), hover lift + border warm + shadow bloom, nav
+  slide/glow, staggered tile entrance, tab-switch transitions, pulsing freshness dot, animated
+  progress shine, cover-art zoom, background depth wash, slim scrollbars, reduced-motion respect.
+  Chart layer: entrance animation, donut center headline + rounded segments + hover glow.
+- **`integrate --manifest <accepted.json> --no-input` (TIER 1):** selective per-track integration.
+  New `IntegrationManifest` (minimal JSON parse, no new deps) matches by raw dry-run filename OR
+  the canonical TagFixer rename, so manifests survive renames between dry run and real run. Filter
+  applies before scan-ahead + duplicate review (declined files influence nothing). Bad/empty
+  manifest exits 1. 9 new tests; verify.bat 255/255. GUI writes gui/.cache/accepted-manifest.json
+  and executes selectively when tracks are declined - declines no longer block execution.
+- **Commit AudioMirror action (TIER 1):** Mirror tab one-click commit (confirm dialog, editable
+  message, git add -A + commit, local only). The last terminal step in the integration loop is gone.
+- **Mood-reactive theme (TIER 2):** the dominant genre in analysis-stats.json tints the accent
+  system (accent + brand gradient + spotlight + chart palette) with a nav "Mood" chip. Hip Hop
+  library reads electric violet-blue; rock would read hot red, jazz warm amber, etc.
+
+Also: `AM_GUI_NO_BROWSER=1` env flag (dev restarts stop spawning browser tabs), library grid card
+meta switched to genre/year (force-regen resets mirror mtimes, making addedDate read as noise).
+
+---
+
 ## 2026-07-01 - MusicIntegrator constructor decomposition
 
 Broke the 400+ line public constructor into three per-phase private methods: `RunDuplicateReview` (Step 2 - presents in-batch duplicates, returns false on user quit), `ExecuteDuplicateDecisions` (Step 3a - executes D/L decisions, groups their output before routing begins), and `RouteAllFiles` (Step 3b - the main per-file routing loop). The constructor is now a ~95-line orchestrator that calls each phase in order and stops early via the returned bool where the original had inline `return` statements.
