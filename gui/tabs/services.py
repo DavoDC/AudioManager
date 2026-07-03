@@ -31,5 +31,5 @@ def build() -> None:
             '<span style="font-family:var(--font-mono)">localhost</span> redirect, no client-secret '
             "storage. Higher effort than Last.fm - only after it, only with clear budget.</div>"
         )
-    ui.html('<p class="note">Both remain TIER G5 in GUI-ROADMAP.md - an invitation to go further '
+    ui.html('<p class="note">Both remain far-future in docs/References/GUI-Architecture.md - an invitation to go further '
             "once the core tabs are polished, not a commitment.</p>")

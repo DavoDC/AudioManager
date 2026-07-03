@@ -51,7 +51,7 @@ def build() -> None:
             "<b>What this tab really is:</b> the exe&#39;s TagFixer applies the FIXED transforms "
             "below to NewMusic - it is not yet rule-configurable. The cards document the real "
             "behavior; a configurable rule builder (new/edit/delete, custom conditions) needs a "
-            "C# change and is tracked as future work in GUI-ROADMAP.md. Nothing here edits "
+            "C# change and is tracked as future work in IDEAS.md. Nothing here edits "
             "library files - TagFixer only ever touches the NewMusic inbox."
         )
 
