@@ -1,0 +1,4 @@
+nicegui>=2.0
+mutagen>=1.47
+pillow>=10.0
+pytest>=8.0

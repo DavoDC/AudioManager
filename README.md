@@ -12,7 +12,23 @@ A C# console application for managing, analysing, and auditing a personal music 
 - **Analyse** - generates timestamped statistical reports, runs full library validation (LibChecker), and auto-commits AudioMirror if the library is clean
 - **Integrate** - scans a staging folder for new MP3s, pre-processes tags, routes files automatically, and produces a confidence report
 
-## Usage
+## Graphical Interface
+
+A dark, Sonarr-style dashboard replaces the terminal for everyday use: live library
+statistics (a dozen interactive charts with swappable views), a staged visual
+integration workflow - scan, review every proposed move with album art, tag changes
+and routing rationale, then execute with per-track progress - and a browsable
+album-art wall of the entire library with search, filters and pagination.
+
+- **Launch:** double-click `scripts/launch-gui.bat` (windowless; opens in your browser)
+- **Engineering:** the Python GUI parses zero library XML - the C# engine emits
+  versioned JSON contracts (`analysis-stats.json`, `tracks.json`, routing JSON) that
+  the GUI consumes, so statistics can never drift from the canonical analyser. All
+  file operations stay inside the engine's safety-gated modes; subprocess calls are
+  serialized, cancellable, and surface failures in a structured error dialog.
+- Details: [`gui/README.md`](gui/README.md)
+
+## CLI Usage
 
 Run via the launcher or CLI:
 

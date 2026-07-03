@@ -45,6 +45,30 @@ Planning doc for the GUI layer of AudioManager. CLI work lives in IDEAS.md. GUI 
 
 ## TIER G0 - Decisions (Before Writing Code)
 
+**DECIDED 2026-07-03 (Fable build session):**
+
+- [x] **Architecture: subprocess + JSON contract. Core-library extraction AND daemon both explicitly deferred.**
+  The reuse worry behind Option 1 (Python re-implementing parsing/stats and drifting) is solved at the
+  data layer instead: `analysis --json-output` emits `logs/analysis-stats.json` (aggregate stats, computed
+  by the C# Analyser's own StatList primitives) and `logs/tracks.json` (full per-track array). The GUI
+  shells out to the exe and reads those files - zero duplicated logic, zero XML parsing in Python,
+  enforced by code not discipline. A daemon buys nothing for a single-user local tool (process lifecycle,
+  IPC surface, crash recovery) when "run the exe, read the JSON it wrote" is crash-proof and fast
+  (warm-cache analysis over the full library completes in seconds). Revisit only if a future tier needs
+  real-time push (G5 live scrobbles) - a daemon/websocket can then be ADDED as another JSON consumer
+  without touching this path.
+- [x] **Stack: NiceGUI** (Python-native, FastAPI + Vue/Quasar under the hood, ECharts via `ui.echart`).
+  Pure-Python event handlers wire subprocess calls and file reads directly; no JS build step; every chart
+  type the spec needs (donut/pie/treemap/bar/radar/gauge). Code lives in top-level `gui/`, fully separate
+  from the C# solution.
+- [x] **Real file sizes resolved:** `summary.totalLibraryBytes` / `avgFileBytes` come from a single disk
+  walk inside the exe and arrive in the stats JSON - the earlier "fake it from bitrate in Python" plan is
+  dead. (Per-track exact size still has no cheap source; the Library Browser deliberately has no Size column.)
+- [ ] (deferred) REST API layer - unchanged: add later only if an external consumer appears.
+- [ ] (deferred) SpotifyTools generalization - unchanged; decide before any Spotify tab.
+
+<details><summary>Original G0 option analysis (kept for history)</summary>
+
 - [ ] **CLI vs GUI vs Both - Architecture Decision** (**CRITICAL**)
   - **Option 1 (recommended): Keep both. CLI + GUI consume a shared core library.**
     - Extract AudioManager business logic into a library (no CLI, no GUI). All routing, tagging, integration logic lives here.
@@ -74,6 +98,33 @@ Planning doc for the GUI layer of AudioManager. CLI work lives in IDEAS.md. GUI 
   - Modular (independent repos): simpler short-term, duplication risk long-term
   - SpotifyTools shared lib: more upfront work, cleaner if 3+ repos need Spotify
   - Write the decision in HISTORY.md before building any Spotify tab.
+
+</details>
+
+---
+
+## Build status after the 2026-07-03 Fable session
+
+All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui.bat`). See `gui/README.md`.
+
+- **Statistics - FULL.** Every panel in the round-3 brief: stat tiles with vs-last-batch deltas,
+  genre donut/pie/treemap swap, decade bar/donut, year top-N/show-all, genre radar, top artists
+  excl/all toggle, batch-grouped recent additions, per-batch bar chart (AudioMirror git history is
+  the canonical batch source), age buckets + callout, cover-resolution histogram, tag-completeness
+  and hi-res-cover rings, global date window, freshness controls (Re-run analysis / Force full
+  regen with confirm; force-regen passes --no-auto-commit and routes mirror changes to the Mirror tab).
+- **Integration - FULL (accept-all execution).** Staged scan -> review queue (real album art,
+  destination, reason, tag-change chips, badges, per-track accept/decline) -> confirm -> structured
+  per-track progress. GAP (surfaced in-UI): per-track SELECTIVE execution needs an
+  `integrate --manifest <accepted.json> --no-input` exe mode - the review queue is already shaped
+  to drive it. Declines currently block execution with an explanation.
+- **Library Browser - MVP.** tracks.json rows, search + genre/decade chips, column picker,
+  table/grid with real mutagen-extracted covers (page-lazy, cached), server-side pagination.
+- **Tag Fix - skeleton.** Cards document the exe's real fixed transforms; Run Fixed Rules =
+  `tagfix --dry-run`. GAP (surfaced in-UI): configurable rules need a C# change.
+- **Mirror - skeleton.** Read-only status/dirty listing. GAP (surfaced in-UI): one-click
+  **Commit AudioMirror** is the remaining terminal dependency in the integration loop.
+- **Services - placeholder.** Two G5 stub cards, deliberately not built.
 
 ---
 

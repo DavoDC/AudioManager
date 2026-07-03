@@ -100,6 +100,13 @@ def index(tab: str = "stats"):
 
 
 if __name__ in {"__main__", "__mp_main__"}:
+    # Under pythonw (windowless launch) stdout/stderr are None and any print
+    # crashes the process - route them to a log file instead.
+    if sys.stdout is None or sys.stderr is None:
+        config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        _log = open(config.CACHE_DIR / "gui.log", "a", buffering=1, encoding="utf-8")
+        sys.stdout = sys.stdout or _log
+        sys.stderr = sys.stderr or _log
     ui.run(
         title="AudioManager",
         host="127.0.0.1",
