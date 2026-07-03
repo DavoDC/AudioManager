@@ -87,7 +87,7 @@ def stepper() -> None:
         mark = "&#10003;" if S.stage > n else str(n)
         html.append(f'<div class="step {cls}"><span class="n">{mark}</span> {label}</div>')
     html.append("</div>")
-    ui.html("".join(html))
+    ui.html("".join(html)).classes("w-full")
 
 
 # ------------------------------------------------------------ stage 1 scan

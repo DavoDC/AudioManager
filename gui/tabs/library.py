@@ -193,7 +193,7 @@ def _table(rows: list[dict]) -> None:
     ui.html(
         '<table class="am-table"><thead><tr>' + "".join(head) + "</tr></thead>"
         "<tbody>" + "".join(body) + "</tbody></table>"
-    )
+    ).classes("w-full")
 
 
 # ------------------------------------------------------------------- grid
@@ -207,8 +207,9 @@ def _grid(rows: list[dict]) -> None:
         artist = _esc(str(t.get("primaryArtist", "")))
         genre = str(t.get("primaryGenre", "") or "?")
         year = _esc(str(t.get("year", "")))
-        added = t.get("addedDate")
-        added_html = f"Added: {_esc(str(added))}" if added else f"{_esc(genre)} &middot; {year}"
+        # genre + year beats addedDate here: force-regen resets every mirror
+        # mtime, so addedDate reads as "everything added today" - noise
+        added_html = f"{_esc(genre)} &middot; {year}"
 
         thumb = get_thumbnail(tid, t.get("filePath"), t.get("hasArt", False))
         badge = "" if t.get("hiResArt") or not t.get("hasArt") else '<span class="lowres-badge">low-res</span>'
@@ -226,7 +227,7 @@ def _grid(rows: list[dict]) -> None:
             f'<div class="t-artist">{artist}</div>'
             f'<div class="t-meta">{added_html}</div></div></div>'
         )
-    ui.html(f'<div class="card-grid">{"".join(cards)}</div>')
+    ui.html(f'<div class="card-grid">{"".join(cards)}</div>').classes("w-full")
 
 
 # -------------------------------------------------------------- pagination

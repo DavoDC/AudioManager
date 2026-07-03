@@ -155,5 +155,92 @@ HEAD_HTML = """
   q-dialog .q-card{background:var(--panel);}
   .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--text-dim);border-top-color:var(--accent);border-radius:50%;animation:amspin .8s linear infinite;vertical-align:-2px;margin-right:6px;}
   @keyframes amspin{to{transform:rotate(360deg);}}
+
+  /* ================= Fluid motion layer ================= */
+  body{background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(91,140,255,.075), transparent 60%),
+    radial-gradient(900px 650px at -8% 112%, rgba(185,138,240,.055), transparent 60%),
+    var(--bg)!important;
+    background-attachment:fixed;}
+  .am-nav{background:linear-gradient(180deg,#10121a 0%,#0e1017 100%);}
+  /* living surfaces: lift + border warm + pointer spotlight */
+  .panel,.stat-tile,.rule-card,.review-card,.track-card,.service-card,.freshness-bar{
+    position:relative;
+    background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 45%),var(--panel);
+    transition:transform .25s cubic-bezier(.2,.7,.3,1),border-color .25s ease,box-shadow .25s ease;
+  }
+  .panel:hover,.stat-tile:hover,.rule-card:hover,.review-card:hover,.service-card:hover{
+    transform:translateY(-2px);
+    border-color:#3a4154;
+    box-shadow:0 12px 32px -14px rgba(0,0,0,.65),0 0 0 1px rgba(91,140,255,.06);
+  }
+  .track-card:hover{transform:translateY(-3px);border-color:#3a4154;
+    box-shadow:0 14px 34px -14px rgba(0,0,0,.7);}
+  .panel::after,.stat-tile::after,.review-card::after,.track-card::after,.rule-card::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;
+    transition:opacity .35s ease;
+    background:radial-gradient(460px circle at var(--mx,50%) var(--my,50%),rgba(91,140,255,.09),transparent 45%);
+  }
+  .panel:hover::after,.stat-tile:hover::after,.review-card:hover::after,
+  .track-card:hover::after,.rule-card:hover::after{opacity:1;}
+  .stat-tile .value{transition:color .25s ease;}
+  .stat-tile:hover .value{color:#cfe0ff;}
+  /* nav life */
+  .tab-link{transition:color .18s ease,background .18s ease,padding-left .18s ease,border-color .18s ease;}
+  .tab-link:hover{padding-left:26px;background:#151823;}
+  .tab-link.active{box-shadow:inset 12px 0 22px -18px rgba(91,140,255,.55);}
+  .am-brand span{background:linear-gradient(90deg,var(--accent),var(--accent5));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  /* controls */
+  .am-btn,.chip,.toggle-pair button,.view-toggle button,.rc-decision button,.pages span,.q-btn{
+    transition:transform .15s ease,border-color .2s ease,color .2s ease,background .2s ease,box-shadow .2s ease;}
+  .chip:hover,.toggle-pair button:hover,.view-toggle button:hover,.pages span:hover{
+    border-color:var(--accent);color:var(--text);transform:translateY(-1px);}
+  .chip.active{box-shadow:0 0 12px -4px rgba(91,140,255,.5);}
+  /* album art breath */
+  .cover-art{overflow:hidden;}
+  .cover-art img{transition:transform .4s cubic-bezier(.2,.7,.3,1);}
+  .track-card:hover .cover-art img{transform:scale(1.07);}
+  .review-card:hover .cover-art img{transform:scale(1.08);}
+  /* pulse + progress shine */
+  .fresh-dot{display:inline-block;animation:ampulse 2.4s ease-in-out infinite;}
+  @keyframes ampulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .progress-track .fill{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
+    background-size:200% 100%;animation:amflow 2.2s linear infinite;}
+  @keyframes amflow{to{background-position:-200% 0;}}
+  .step{transition:border-color .25s ease,background .25s ease,color .25s ease;}
+  .step.active{box-shadow:0 0 16px -6px rgba(91,140,255,.55);}
+  /* tab entrance */
+  .tab-enter{animation:tabin .4s cubic-bezier(.2,.7,.3,1);}
+  @keyframes tabin{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  /* stagger stat tiles on entrance */
+  .tab-enter .stat-tile{animation:tabin .5s cubic-bezier(.2,.7,.3,1) backwards;}
+  .tab-enter .stat-tile:nth-child(1){animation-delay:.02s;}
+  .tab-enter .stat-tile:nth-child(2){animation-delay:.06s;}
+  .tab-enter .stat-tile:nth-child(3){animation-delay:.10s;}
+  .tab-enter .stat-tile:nth-child(4){animation-delay:.14s;}
+  .tab-enter .stat-tile:nth-child(5){animation-delay:.18s;}
+  .tab-enter .stat-tile:nth-child(6){animation-delay:.22s;}
+  .tab-enter .stat-tile:nth-child(7){animation-delay:.26s;}
+  .tab-enter .stat-tile:nth-child(8){animation-delay:.30s;}
+  /* slim dark scrollbars */
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#262b38;border-radius:999px;border:2px solid var(--bg);}
+  ::-webkit-scrollbar-thumb:hover{background:#3a4154;}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important;}
+  }
 </style>
+<script>
+  // Pointer-tracking spotlight: one delegated listener feeds --mx/--my to the
+  // hovered surface; CSS paints the radial highlight. GPU-cheap, no reflow.
+  document.addEventListener('mousemove', (e) => {
+    const el = e.target.closest('.panel,.stat-tile,.review-card,.track-card,.rule-card');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, {passive: true});
+</script>
 """
