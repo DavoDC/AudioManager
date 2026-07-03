@@ -4,7 +4,7 @@ Single source of truth for all pending work - CLI and GUI both, tagged `[GUI]` w
 
 Items are tiered by priority. Do not advance to the next tier until the current tier is verified on real data.
 
-**Fable session status (2026-07-03, promo window closes 2026-07-07):** round 2 complete - all five TIER 1-2 `[GUI]` items closed (layout fix, fluid UI, `--manifest` selective integration, Mirror commit action, mood-reactive theme; see HISTORY.md 2026-07-03). Commits on `main` not yet pushed (David's job). NOTE: LibChecker currently flags `Hagrid & Harry` (not set as compilation) - integration is gate-blocked until that track's TCMP is fixed (Mp3tag on the library file, or next tagfix pass if it returns to NewMusic).
+**Fable session status (2026-07-03, promo window closes 2026-07-07):** round 2 complete - all five TIER 1-2 `[GUI]` items closed (layout fix, fluid UI, `--manifest` selective integration, Mirror commit action, mood-reactive theme; see HISTORY.md 2026-07-03). Commits on `main` not yet pushed (David's job). `Hagrid & Harry` TCMP fix confirmed done (2026-07-03) - the LibChecker gate-block is resolved, integration flows again.
 
 ---
 
@@ -40,6 +40,11 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - [ ] **[GUI] TagFix configurable rules** - Tag Fix tab currently shows the exe's fixed transforms only (`tagfix --dry-run`). Needs a C# change to accept user-defined rules (condition -> fix); see the rule-builder design in `docs/References/GUI-Architecture.md`.
 
 - [ ] **[GUI] Library Browser polish** - MVP is table/grid + search/chips/pagination; still missing: track detail panel (full tags, file path), multi-select for batch TagFix apply.
+
+- [ ] **[GUI] Audio player - basic local playback (iTunes-like, next concrete build milestone)** - added 2026-07-03. Play the library directly from the GUI: play/pause, seek, volume, a persistent Now Playing bar (not a new tab), queue built from whatever's currently selected in Library Browser or Statistics drill-downs. Scope deliberately bounded for a single Fable push:
+  - IN: local playback only, one audio backend (NAudio - already listed in `GUI-Architecture.md` third-party candidates), single Now Playing bar reusing existing Library Browser rows for track selection.
+  - OUT (explicitly, this round): syncing, AI DJ / smart queue, ratings/reviews, mobile - these are the `custom-iphone-music-app` directive's territory (`PRIVATE_NOTES/roadmap/directives/custom-iphone-music-app.md`, currently blocked on Mac/Xcode access) and shouldn't be pulled into this GUI's scope prematurely.
+  - Why bounded: this is meant to be the last major feature push of the current Fable session, not the start of an open-ended player subsystem - ship it, verify it, stop.
 
 ---
 
@@ -105,6 +110,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 - **[GUI] Proper hostable web service** - account system, logins, multi-tenant, usable by other people over the internet (not just localhost). Freemium model: core local tool free, hosted/sync features paid. The actual commercialization path if the AudioManager business-plan review (see workspace `pending-actions.md`) comes back positive. Big lift - needs auth, per-user data isolation, and the multi-user path above done first.
 
 - **Rewrite core in Python** - eliminate the current JSON/XML double-up (C# writes XML to AudioMirror + JSON contract to the GUI) by having one language own both the data layer and the interface. Not scoped, not urgent - the current subprocess+JSON-contract architecture (decided 2026-07-03, see `docs/References/GUI-Architecture.md`) already isolates the GUI from the XML entirely, so this is a "someday, if maintaining two languages becomes real pain" idea, not a fix for a current problem.
+
+- **Centralise the entire desktop music workflow (far future, not scoped)** - added 2026-07-03. Once basic playback lands (TIER 2 above), the natural next question: could AudioManager become the one place for everything David does with his music library on PC - listening, organizing, syncing - instead of that being spread across AudioManager (organize) + Windows Media Player/other player (listen) + iTunes (phone sync)? This is the desktop-side sibling of the `custom-iphone-music-app` directive's mobile-side vision (unified playback, AI DJ, blended Spotify+offline) - same underlying pain (fragmented tools for one library), different device. Not scoped and not Fable-ready as-is: needs a Sonnet pass first to define what "centralise" actually means in bounded terms (replace Windows' default player entirely? just add playback? add sync orchestration?) before it's buildable. Revisit after the basic audio player ships and proves out the player-in-GUI pattern.
 
 - **Modernize AudioMirror Storage Contract (XML -> JSON / Compiler Pattern)** - AudioMirror stores one raw XML file per track: great for Git diffs and conflict-free merges, but XML is verbose, needs character escaping (`&amp;` etc.), and parsing thousands of separate files is a disk I/O bottleneck at GUI startup (mitigated today by the compiled `tracks.json`/`analysis-stats.json` contract, but the underlying per-track store is still XML). Proposed: (1) migrate per-track storage from XML to flat JSON (`<track>.json`) - same one-file-per-track Git-diff-friendly layout, less overhead, no escaping; (2) formalize the "Compiler Pattern" the C# Analyser already does informally - ingest the decentralized per-track JSONs and output one optimized runtime cache (unified `tracks.json` array, or SQLite/DuckDB if query needs grow past flat-file scans); (3) the Python GUI keeps strictly reading the compiled runtime cache only, same as today. Evolution of the current architecture, not a rewrite - the read/write contract (GUI never touches per-track files directly) is already in place.
 
