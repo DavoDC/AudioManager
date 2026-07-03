@@ -7,16 +7,16 @@ Stage 3  Confirm    summary bar + single primary action
 Stage 4  Execute    real integrate --no-input with structured per-track
                     progress parsed from the exe's live output
 
-Honest MVP limitation (surfaced in the UI): the exe integrates
-all-of-NewMusic or nothing, so real execution requires every scanned track
-accepted. Declining tracks blocks execution with an explanation - the GUI
-never moves or deletes NewMusic files itself (safety rule). Per-track
-selective execution is unlocked by a future `integrate --manifest` exe mode;
-this review queue is already shaped to drive it.
+Per-track selective execution is real: when tracks are declined, the GUI
+writes the accepted set to gui/.cache/accepted-manifest.json and runs
+`integrate --manifest <path> --no-input` - the exe moves only the accepted
+files and leaves declined ones untouched in NewMusic (the GUI itself never
+moves or deletes NewMusic files; the exe owns all file operations).
 """
 from __future__ import annotations
 
 import asyncio
+import json
 
 from nicegui import ui
 
@@ -35,6 +35,7 @@ class IntegrationState:
         self.scan_lines: list[str] = []
         self.exec_lines: list[str] = []
         self.exec_status: dict[str, str] = {}  # filename -> queued/moving/done/failed
+        self.exec_targets: list[dict] = []     # the accepted entries being executed
         self.exec_done = False
         self.exec_summary = ""
         self.refresh = lambda: None
@@ -255,30 +256,32 @@ def confirm_bar() -> None:
                    f"{artists} artists &middot; {n_new} new folders &middot; {n_dupe} duplicates")
         ui.html(f'<div style="font-size:12px;color:var(--text-dim);">{summary}</div>')
 
-        if declined:
-            with ui.element("div").classes("gap-note").style("max-width:520px;"):
-                ui.html(
-                    "<b>Cannot execute with declines (yet):</b> the exe integrates all-of-NewMusic "
-                    "or nothing, and the GUI never moves or deletes NewMusic files itself. To skip "
-                    "the declined tracks, remove them from the NewMusic folder manually and re-scan. "
-                    "Per-track selective integration arrives with the planned "
-                    '<span style="font-family:var(--font-mono)">integrate --manifest</span> exe mode.'
-                )
-        elif runner.busy:
+        if runner.busy:
             ui.html('<div class="note" style="margin:0;"><span class="spin"></span>working&hellip;</div>')
+        elif not accepted:
+            ui.html('<div class="note" style="margin:0;">Nothing accepted - accept at least one track '
+                    "to integrate, or re-scan.</div>")
         else:
-            ui.button(f"Integrate all {len(accepted)} tracks",
-                      on_click=_confirm_execute).props("unelevated color=primary")
+            with ui.row().style("gap:12px;align-items:center;flex-wrap:wrap;"):
+                if declined:
+                    ui.html('<div class="note" style="margin:0;max-width:380px;">'
+                            f"{len(declined)} declined track(s) stay untouched in NewMusic "
+                            "(manifest-based selective integration).</div>")
+                label = (f"Integrate {len(accepted)} accepted tracks" if declined
+                         else f"Integrate all {len(accepted)} tracks")
+                ui.button(label, on_click=_confirm_execute).props("unelevated color=primary")
 
 
 def _confirm_execute() -> None:
     with ui.dialog() as dlg, ui.card().style(
             "background:var(--panel);color:var(--text);padding:20px;max-width:480px;gap:12px;"):
         ui.label("Run real integration?").style("font-weight:600;font-size:15px;")
+        declined_note = (f" The {len(S.declined)} declined track(s) are excluded via manifest and stay "
+                         "in NewMusic." if S.declined else "")
         ui.label(
-            f"This MOVES all {len(S.accepted)} files from NewMusic into the library - the same "
+            f"This MOVES {len(S.accepted)} file(s) from NewMusic into the library - the same "
             "operation as the CLI's y/N confirm, protected by the exe's own pre-integration "
-            "safety gate (stale mirror / dirty LibChecker blocks the run)."
+            f"safety gate (stale mirror / dirty LibChecker blocks the run).{declined_note}"
         ).classes("note").style("margin:0;")
         with ui.row().classes("w-full justify-end").style("gap:10px;"):
             ui.button("Cancel", on_click=dlg.close).props("flat color=grey")
@@ -298,11 +301,28 @@ async def run_execute() -> None:
     if runner.busy:
         ui.notify("Another operation is already running", type="warning")
         return
+    targets = S.accepted
+    args = ["integrate"]
+    if S.declined:
+        # Selective integration: hand the exe the accepted set; declined files
+        # are never touched. The GUI writes only into its own cache dir.
+        manifest_path = config.CACHE_DIR / "accepted-manifest.json"
+        try:
+            config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                json.dump([{"filename": e["filename"], "artist": e["artist"],
+                            "title": e["title"]} for e in targets], f, indent=2)
+        except OSError as e:
+            ui.notify(f"Could not write manifest: {e}", type="negative")
+            return
+        args += ["--manifest", str(manifest_path)]
+
     S.stage = 4
     S.exec_lines = []
     S.exec_done = False
     S.exec_summary = ""
-    S.exec_status = {e["filename"]: "queued" for e in S.entries}
+    S.exec_targets = targets
+    S.exec_status = {e["filename"]: "queued" for e in targets}
     S.refresh()
 
     throttle = {"pending": False}
@@ -319,7 +339,7 @@ async def run_execute() -> None:
             ui.timer(0.5, flush, once=True)
 
     result = await runner.run(
-        ["integrate"],
+        args,
         action="Integration",
         on_line=on_line,
         timeout=config.TIMEOUT_INTEGRATE,
@@ -331,8 +351,10 @@ async def run_execute() -> None:
             if v in ("queued", "moving"):
                 S.exec_status[k] = "done"
         moved = sum(1 for v in S.exec_status.values() if v == "done")
+        skipped_note = f", {len(S.declined)} declined left in NewMusic" if S.declined else ""
         S.exec_summary = (f"Integration complete - {moved} moved"
                           + (f", {failed} skipped/failed" if failed else "")
+                          + skipped_note
                           + ". Statistics will reflect the new batch after the next analysis run.")
     else:
         S.exec_summary = result.interpreted("Integration")
@@ -349,7 +371,7 @@ def _update_exec_status(line: str) -> None:
     output means that file is being processed; [MOVED]/[SKIPPED] confidence
     report lines settle the final state."""
     low = line.lower()
-    for e in S.entries:
+    for e in S.exec_targets:
         fn = e["filename"]
         if fn.lower() in low:
             if "[moved]" in low or "moved:" in low:
@@ -359,7 +381,7 @@ def _update_exec_status(line: str) -> None:
             elif S.exec_status.get(fn) == "queued":
                 S.exec_status[fn] = "moving"
                 # everything that started before this one has finished moving
-                for prev in S.entries:
+                for prev in S.exec_targets:
                     if prev["filename"] == fn:
                         break
                     if S.exec_status.get(prev["filename"]) == "moving":
@@ -367,7 +389,7 @@ def _update_exec_status(line: str) -> None:
 
 
 def stage_execute() -> None:
-    total = max(1, len(S.entries))
+    total = max(1, len(S.exec_targets))
     done = sum(1 for v in S.exec_status.values() if v in ("done", "failed"))
     moving = sum(1 for v in S.exec_status.values() if v == "moving")
     pct = 100 if S.exec_done else int(100 * (done + 0.5 * moving) / total)
@@ -381,7 +403,7 @@ def stage_execute() -> None:
         ui.html(f'<div class="progress-track"><div class="fill" style="width:{pct}%;"></div></div>')
 
         rows = []
-        for e in S.entries:
+        for e in S.exec_targets:
             st = S.exec_status.get(e["filename"], "queued")
             dest = _esc(e["destination"]) if e["destination"] else ""
             arrow = f' <span style="color:var(--text-dim)">&rarr;</span> {dest}' if dest else ""

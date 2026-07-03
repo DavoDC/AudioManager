@@ -67,6 +67,7 @@ namespace AudioManager
                 bool jsonOutput = false;
                 bool noAutoCommit = false;
                 bool interactiveMode = false;
+                string manifestPath = null;
                 if (args.Length > 0)
                 {
                     string modeArg = args[0].ToLower();
@@ -75,6 +76,17 @@ namespace AudioManager
                     noInput = args.Any(a => a.Equals("--no-input", StringComparison.OrdinalIgnoreCase));
                     jsonOutput = args.Any(a => a.Equals("--json-output", StringComparison.OrdinalIgnoreCase));
                     noAutoCommit = args.Any(a => a.Equals("--no-auto-commit", StringComparison.OrdinalIgnoreCase));
+                    int manifestIdx = Array.FindIndex(args, a => a.Equals("--manifest", StringComparison.OrdinalIgnoreCase));
+                    if (manifestIdx >= 0)
+                    {
+                        if (manifestIdx + 1 >= args.Length)
+                        {
+                            Console.WriteLine(" - ERROR: --manifest requires a path argument.");
+                            Environment.Exit(1);
+                            return;
+                        }
+                        manifestPath = args[manifestIdx + 1];
+                    }
 
                     if (modeArg == "analysis" || modeArg == "analyse" || modeArg == "analyze")
                     {
@@ -181,6 +193,20 @@ namespace AudioManager
                     }
                     else if (mode == 2)
                     {
+                        // Selective integration: load + validate the manifest BEFORE the gate,
+                        // so a bad manifest fails fast and never means "integrate everything".
+                        IntegrationManifest manifest = null;
+                        if (manifestPath != null)
+                        {
+                            manifest = IntegrationManifest.Load(manifestPath, out string manifestError);
+                            if (manifest == null)
+                            {
+                                Console.WriteLine($" - ERROR: {manifestError}");
+                                Environment.Exit(1);
+                            }
+                            Console.WriteLine($"Manifest: {manifest.Entries.Count} accepted track(s) from {Path.GetFileName(manifestPath)}");
+                        }
+
                         // Integrate mode - run pre-integration gate first
                         if (!RunPreIntegrationGate(mirrorPath))
                         {
@@ -206,7 +232,7 @@ namespace AudioManager
                         }
 
                         // Gate passed - proceed with integration
-                        MusicIntegrator mi = new MusicIntegrator(dryRun, noInput, jsonOutput);
+                        MusicIntegrator mi = new MusicIntegrator(dryRun, noInput, jsonOutput, manifest);
 
                         // Post-integration validation: regenerate mirror and run LibChecker
                         if (!dryRun)

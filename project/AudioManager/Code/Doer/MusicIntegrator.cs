@@ -93,7 +93,10 @@ namespace AudioManager
         /// <param name="dryRun">If true, print planned actions without executing any file moves.</param>
         /// <param name="noInput">If true, skip all interactive prompts and auto-accept recommended decisions.</param>
         /// <param name="jsonOutput">If true, write routing decisions as JSON to logs/routing-{timestamp}.json after dry-run.</param>
-        public MusicIntegrator(bool dryRun = false, bool noInput = false, bool jsonOutput = false)
+        /// <param name="manifest">If set, only NewMusic files matching the manifest are integrated;
+        /// all other files are left untouched in NewMusic (selective integration).</param>
+        public MusicIntegrator(bool dryRun = false, bool noInput = false, bool jsonOutput = false,
+            IntegrationManifest manifest = null)
         {
             this.dryRun = dryRun;
             this.noInput = noInput;
@@ -116,6 +119,26 @@ namespace AudioManager
                 var files = Directory.Exists(Constants.NewMusicPath)
                     ? Directory.GetFiles(Constants.NewMusicPath, "*.mp3", SearchOption.AllDirectories)
                     : Array.Empty<string>();
+
+                // Selective integration: keep only manifest-accepted files. Applied before
+                // scan-ahead and duplicate review so declined files influence nothing
+                // (no folder-threshold counts, no dup prompts) and are never touched.
+                if (manifest != null && files.Length > 0)
+                {
+                    int beforeCount = files.Length;
+                    files = files.Where(f => manifest.Matches(Path.GetFileName(f))).ToArray();
+                    int excluded = beforeCount - files.Length;
+                    Console.WriteLine($" - Manifest filter: {files.Length} of {beforeCount} NewMusic file(s) selected" +
+                        (excluded > 0 ? $"; {excluded} left untouched in NewMusic" : ""));
+                    foreach (var miss in manifest.UnmatchedEntries())
+                        Console.WriteLine($" - [WARN] Manifest entry matched no NewMusic file: " +
+                            $"{miss.Filename ?? $"{miss.Artist} - {miss.Title}"} (stale scan? re-run the dry run)");
+                    if (files.Length == 0)
+                    {
+                        Console.WriteLine(" - ERROR: manifest matched no files in NewMusic - nothing integrated.");
+                        return;
+                    }
+                }
 
                 totalFiles = files.Length;
 
