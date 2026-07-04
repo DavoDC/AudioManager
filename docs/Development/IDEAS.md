@@ -52,6 +52,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: close structural gaps and improve developer experience. Non-blocking.**
 
+- [ ] **[GUI] Rename the GUI to something better than "AudioManager GUI"** - added 2026-07-04, David's own note during a Fable strategy session. No name decided yet - revisit when doing a public-facing pass on the GUI (README, GitHub description).
+
 - [ ] **ParseCache mtime check doesn't detect deletions within same second** - IsMirrorStale() checks if any XML mtime is newer than cache. But if an XML is deleted and recreated within the same second, the check might miss it (same mtime). Low probability, but possible. Consider: track file count in cache header as well as mtime.
 
 
