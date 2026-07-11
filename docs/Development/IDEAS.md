@@ -120,6 +120,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
+- **[GUI] Investigate: 3D/liquid/gradient UI effect libraries for visual polish** - added 2026-07-11, investigate later, do not build now. David found GitHub repos/skill collections for advanced frontend effects (shader gradients, liquid-glass, animation patterns) that could apply to the GUI's visual polish once the audio player milestone ships. Full link list and stack-fit notes in `PRIVATE_NOTES/memory/reference/frontend-ui-design-reference.md` - check against this GUI's actual framework (`docs/References/GUI-Architecture.md`) before scoping.
+
 ## See Also
 
 - `docs/Development/HISTORY.md` - completed features, settled design decisions, parked ideas
