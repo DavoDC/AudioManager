@@ -42,6 +42,18 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **[GUI] Library Browser polish** - MVP is table/grid + search/chips/pagination; still missing: track detail panel (full tags, file path), multi-select for batch TagFix apply.
 
+- [ ] **[GUI] Metadata enrichment tab - album art review/approve workflow** - added 2026-07-14.
+
+  **Raw (David, verbatim, typos fixed):** "AudioManager GUI metadata enrichment tab, use for album art improvement - show current song metadata, find better album art, say yes or no. See album art resolution issue in ideas or recorded somewhere. Would be nice to have GUI where I can see the current song metadata and the proposed new album art pulled from some metadata library, or multiple possibilities, and I can say No to all, or say Yes to one of them and the song automatically gets its metadata updated with the new album art - will prevent me from having to do all this manually looking at metadata and googling each one."
+
+  **Processed:** New GUI tab (Services tab or its own tab - see design note below) for reviewing and approving album art fixes one track at a time:
+  - Panel shows the track's current metadata (artist, album, title, current embedded art thumbnail) side by side with one or more candidate covers pulled from an external metadata source (MusicBrainz/Cover Art Archive, per TIER 4 "Album art remediation" option (b) below).
+  - Multiple candidates can be shown per track if the source returns more than one match (different releases/pressings/resolutions) - user picks one or rejects all.
+  - Actions: **No to all** (skip, leave art untouched, move to next track) or **Yes on one candidate** (embed that art into the file's ID3 tag immediately, no separate confirmation step).
+  - Queue driven off the existing sub-800px low-res list already flagged by `CheckAlbumCoverDimensions` in LibChecker (currently commented out per TIER 2 "Re-enable album art dimensions check" above) - this tab is the natural front-end for working through that backlog track-by-track instead of a bulk/automated fetch.
+  - Replaces the current fully-manual workflow: opening each track, reading its tags, googling the cover art by hand, and embedding it manually via Mp3tag.
+  - Directly related to / front-end for TIER 4 "Album art remediation (Phase 4)" below - that entry frames the fetch-source decision (a/b/c); this tab is the accept/reject UI specifically for option (b) once a fetch source is chosen. Should be scoped together with that decision, not built before it.
+
 - [ ] **[GUI] Audio player - basic local playback (iTunes-like, next concrete build milestone)** - added 2026-07-03. Play the library directly from the GUI: play/pause, seek, volume, a persistent Now Playing bar (not a new tab), queue built from whatever's currently selected in Library Browser or Statistics drill-downs. Scope deliberately bounded for a single Fable push:
   - IN: local playback only, one audio backend (NAudio - already listed in `GUI-Architecture.md` third-party candidates), single Now Playing bar reusing existing Library Browser rows for track selection.
   - OUT (explicitly, this round): syncing, AI DJ / smart queue, ratings/reviews, mobile - these are the `custom-iphone-music-app` directive's territory (`PRIVATE_NOTES/roadmap/directives/custom-iphone-music-app.md`, currently blocked on Mac/Xcode access) and shouldn't be pulled into this GUI's scope prematurely.
