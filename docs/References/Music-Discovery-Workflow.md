@@ -2,7 +2,7 @@
 
 Complete end-to-end process: Spotify discovery → local library → phone sync.
 
-> **Scope:** This document is user-facing workflow only. It describes WHAT to do and in WHAT ORDER. Implementation details (TagFixer architecture, routing algorithm, internal validation) belong in CLAUDE.md and Music-Library-Rules.md. See `feedback_doc_scope_discipline.md` for the maintenance rule.
+> **Scope:** This document is user-facing workflow only. It describes WHAT to do and in WHAT ORDER. Implementation details (TagFixer architecture, routing algorithm, internal validation) belong in CLAUDE.md and Music-Library-Rules.md.
 
 ## Workflow Overview
 
