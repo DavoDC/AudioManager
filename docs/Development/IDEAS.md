@@ -56,7 +56,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - [ ] **[GUI] Audio player - basic local playback (iTunes-like, next concrete build milestone)** - added 2026-07-03. Play the library directly from the GUI: play/pause, seek, volume, a persistent Now Playing bar (not a new tab), queue built from whatever's currently selected in Library Browser or Statistics drill-downs. Scope deliberately bounded for a single Fable push:
   - IN: local playback only, one audio backend (NAudio - already listed in `GUI-Architecture.md` third-party candidates), single Now Playing bar reusing existing Library Browser rows for track selection.
-  - OUT (explicitly, this round): syncing, AI DJ / smart queue, ratings/reviews, mobile - these are the `custom-iphone-music-app` directive's territory (`PRIVATE_NOTES/roadmap/directives/custom-iphone-music-app.md`, currently blocked on Mac/Xcode access) and shouldn't be pulled into this GUI's scope prematurely.
+  - OUT (explicitly, this round): syncing, AI DJ / smart queue, ratings/reviews, mobile - these belong to a separate planned iPhone music app project (currently blocked on Mac/Xcode access) and shouldn't be pulled into this GUI's scope prematurely.
   - Why bounded: this is meant to be the last major feature push of the current Fable session, not the start of an open-ended player subsystem - ship it, verify it, stop.
 
 ---
@@ -122,7 +122,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 - **[GUI] Multi-user path** - AudioManager is built around one person's library and one hardcoded AudioMirror repo path. To eventually serve other users: (1) make the library mirror's git repo configurable - point at an arbitrary existing remote, or initialize an AudioMirror-style repo inside the app's own data directory on first run with no external GitHub account required; (2) generalize routing rules and folder-structure assumptions (LibChecker hardcoded folder names, above) away from David's specific layout. Prerequisite for any other user running the tool, independent of the hosting question below.
 
-- **[GUI] Proper hostable web service** - account system, logins, multi-tenant, usable by other people over the internet (not just localhost). Freemium model: core local tool free, hosted/sync features paid. The actual commercialization path if the AudioManager business-plan review (see workspace `pending-actions.md`) comes back positive. Big lift - needs auth, per-user data isolation, and the multi-user path above done first.
+- **[GUI] Proper hostable web service** - account system, logins, multi-tenant, usable by other people over the internet (not just localhost). Freemium model: core local tool free, hosted/sync features paid. The actual commercialization path if the AudioManager business-plan review comes back positive. Big lift - needs auth, per-user data isolation, and the multi-user path above done first.
 
 - **Rewrite core in Python** - eliminate the current JSON/XML double-up (C# writes XML to AudioMirror + JSON contract to the GUI) by having one language own both the data layer and the interface. Not scoped, not urgent - the current subprocess+JSON-contract architecture (decided 2026-07-03, see `docs/References/GUI-Architecture.md`) already isolates the GUI from the XML entirely, so this is a "someday, if maintaining two languages becomes real pain" idea, not a fix for a current problem.
 
@@ -132,7 +132,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 ---
 
-- **[GUI] Investigate: 3D/liquid/gradient UI effect libraries for visual polish** - added 2026-07-11, investigate later, do not build now. David found GitHub repos/skill collections for advanced frontend effects (shader gradients, liquid-glass, animation patterns) that could apply to the GUI's visual polish once the audio player milestone ships. Full link list and stack-fit notes in `PRIVATE_NOTES/memory/reference/frontend-ui-design-reference.md` - check against this GUI's actual framework (`docs/References/GUI-Architecture.md`) before scoping.
+- **[GUI] Investigate: 3D/liquid/gradient UI effect libraries for visual polish** - added 2026-07-11, investigate later, do not build now. David found GitHub repos/skill collections for advanced frontend effects (shader gradients, liquid-glass, animation patterns) that could apply to the GUI's visual polish once the audio player milestone ships. Full link list and stack-fit notes kept privately - check against this GUI's actual framework (`docs/References/GUI-Architecture.md`) before scoping.
 
 ## See Also
 

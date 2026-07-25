@@ -55,8 +55,6 @@ Over the past week, extensive development sessions were run using `/dev-session`
 
 **Confidence Level:** Dry-run successful. Integration now ready to execute.
 
-See `PRIVATE_NOTES/memory/session-history.md` for detailed session notes and feedback cycles.
-
 ---
 
 ## Execution Status (2026-05-03 - FAILED → 2026-05-05 - DRY RUN SUCCESSFUL)

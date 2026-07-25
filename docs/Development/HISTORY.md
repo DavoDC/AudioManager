@@ -749,7 +749,7 @@ Comprehensive post-integration analysis completed for Stage 3C (April 26 - May 7
 - Deliverable: TIER 2+ work prioritized by findings and validated by 502 real integration outcomes (Musivation batch, Stage 3C blocker fixes verified)
 - Impact: All downstream TIER 2 items now cross-referenced to retrospective root cause analysis and evidence
 
-**Claude Workspace Reflection:** `PRIVATE_NOTES/memory/overnight-reflections/2026-05-07-Stage3C-reflection.md` (650 lines)
+**Claude Workspace Reflection:** post-mortem analysis archived privately by the maintainer (650 lines)
 - Post-mortem analysis of Claude's performance during AudioManager Stage 3C (12 /dev-session invocations, 247 commits)
 - Decision audit: validated decisions (character sanitization, artist casing overrides, routing logic, decision logging), partially validated decisions (album suffix stripping, dry-run methodology), unvalidated decisions (parser optimization, full library consistency)
 - Rule system effectiveness: improvement loop broken (learnings captured in narrative but not converted to rules), TDD gate missing (2% test commits vs 30% expected), scope creep visible (82 IDEAS updates untracked mid-session)
@@ -764,7 +764,7 @@ Comprehensive post-integration analysis completed for Stage 3C (April 26 - May 7
 
 **Blocker resolution:** Scott Adams title-casing rule was accidentally lost during the initial refactor to add `artist-name-overrides.xml` system. Rule existed in code comments but was not ported to the new config. Added `<Artist canonical="Scott Adams" />` to config/artist-name-overrides.xml. Clarified config file comment to document that override entries apply to both primary and featured (secondary) artists - one entry per artist covers all positions.
 
-**Lesson:** When refactoring code that handles rules/config/overrides, audit existing rules BEFORE refactoring and ensure ALL are migrated to the new system. Silent data loss is serious. Feedback file created: `feedback_audit_rules_before_refactoring.md`.
+**Lesson:** When refactoring code that handles rules/config/overrides, audit existing rules BEFORE refactoring and ensure ALL are migrated to the new system. Silent data loss is serious.
 
 ---
 

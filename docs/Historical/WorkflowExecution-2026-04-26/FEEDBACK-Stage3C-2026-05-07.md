@@ -369,7 +369,7 @@
 
 **Execution period:** April 26 - May 7, 2026 (11 days, mostly evenings/overnight)
 
-**Commits:** 251 total across both AudioManager and spanned PRIVATE_NOTES sessions
+**Commits:** 251 total across both AudioManager and the maintainer's private planning sessions
 
 **IDEAS.md iterations:** 96 separate commits modifying task priorities, adding findings, deleting low-value conditionals
 
