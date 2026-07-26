@@ -355,9 +355,6 @@ reports/with-issues/
 # Aider AI files
 .aider*
 
-# Claude Code - local only, except shared guard rules
+# Claude Code - local only. The guard hook is registered at machine (user) level,
+# not per-repo - never commit anything under .claude/ in this repo.
 .claude/
-!.claude/hooks/
-!.claude/hooks/guard.sh
-!.claude/hooks/guard.py
-!.claude/settings.json
