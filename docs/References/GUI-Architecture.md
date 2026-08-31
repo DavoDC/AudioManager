@@ -28,6 +28,8 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 
 **Tab order as built:** Statistics -> Integration -> TagFix -> Library Browser -> Mirror -> Services (Spotify/Last.fm/cross-synthesis, far future).
 
+**Tab order, next addition:** Acquire slots in right after Statistics - see "Acquire tab design" below - because Stage 2 (Acquiring) is the first action David actually takes each session, before Library Browser or Integration are relevant.
+
 ---
 
 ## Architecture Decisions
@@ -39,7 +41,9 @@ The reuse worry behind extracting a shared core library (Python re-implementing 
 
 **Real file sizes:** `summary.totalLibraryBytes` / `avgFileBytes` come from a single disk walk inside the exe and arrive in the stats JSON - no bitrate-based estimation in Python. Per-track exact size still has no cheap source, so the Library Browser deliberately has no Size column.
 
-**Deferred, unchanged:** REST API layer (add later only if an external consumer appears); SpotifyTools generalization (decide before building any Spotify tab - see Services design below).
+**Deferred, unchanged:** REST API layer (add later only if an external consumer appears).
+
+**Resolved (2026-08-31):** SpotifyTools generalization - decided NOT to extract a shared library. The Acquire tab imports SpotifyPlaylistGen's `SpotifyInterface`/`RealSpotifyClient` directly (same `sys.path.insert` pattern `open_playlist.py` already uses for its own sibling imports), same language, same process, no new abstraction layer. Revisit only if a second consumer of Spotify data appears (e.g. Services' cross-synthesis view) and the duplication actually shows up.
 
 **GUI does not auto-run analysis at startup** - deviation from the original brief. It loads the existing JSON instantly and shows "last run X ago" with a Re-run button. Rationale: instant startup, no surprise subprocess/mirror writes on every launch, staleness fully visible to the user. Easy to flip if this turns out to be the wrong call.
 
@@ -57,6 +61,20 @@ All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui.bat`). S
 - **Services - placeholder.** Two stub cards, deliberately not built - see Services design below.
 
 **Visual system (2026-07-03):** fluid motion layer (pointer-tracking spotlight via delegated JS + CSS vars, hover lift, staggered entrances, tab transitions, reduced-motion respect) plus a **mood-reactive theme** - the dominant genre in `analysis-stats.json` tints the accent system at startup (`theme.apply_mood`, genre->palette map in `gui/theme.py`) with a "Mood" chip in the nav. Chart colors bind at import time, so `apply_mood` must run before tab modules import (enforced in `gui/main.py`).
+
+---
+
+## Acquire tab design (2026-08-31, replaces Stage 2 of Music-Discovery-Workflow.md)
+
+Automates the mechanical half of Stage 2 (Acquiring) from `docs/References/Music-Discovery-Workflow.md`; the judgment half (which tracks to like on Spotify, which Deemix search result to pick) stays manual - see the `/think` writeup in the commit that introduced this section for the full reasoning. Reuses SpotifyPlaylistGen and `gui.config.NEWMUSIC_DIR` (already read-only by convention) directly - no new subprocess/CLI/JSON-contract layer, since both sides are Python in the same process family (see "Resolved" note above).
+
+**Card 1 - Sync Liked Songs -> Inbox playlist.** One button. Calls a new `SpotifyPlaylistGen.src.acquire.move_liked_to_playlist()` (reads all liked tracks, gets-or-creates a playlist named `AudioManager Inbox`, adds the tracks, only then clears liked songs). Requires the `user-library-read`/`user-library-modify` scopes added to `SCOPES` in `spotify_client.py` - the cached OAuth token's scope no longer matches so spotipy reprompts for consent automatically on first use; this is a one-time manual browser step, not something Claude or the GUI can do for David.
+
+**Card 2 - Open playlist tracks.** Input defaults to the last-used inbox playlist id (cached in `gui/.cache/acquire-state.json`, mirroring `data/playlist_cache/` on the SpotifyPlaylistGen side). Fetch renders a table of tracks, each row a clickable "Open in Deemix" link built via SpotifyPlaylistGen's existing `_clean_for_search`/`_open_in_manager` logic (primary-artist-only, feat-stripped) - imported, not reimplemented, so behavior matches `open_playlist.py` exactly. An "Open All" button fires the links in a staggered JS loop instead of the old one-by-one Enter/'q' prompt.
+
+**Card 3 - Verify downloads.** Read-only scan of `gui.config.NEWMUSIC_DIR` for `*.mp3`, fuzzy-matched against the fetched track list via SpotifyPlaylistGen's `matcher.py` (`clean_title`/`clean_artist`/`normalise`) - same matching logic already proven in that repo's own tests. Shows per-track found/missing plus a summary count. Directly answers the gap the 2026-04-26 Stage 2 post-mortem hit (28-vs-126 track discrepancy, no automated way to check).
+
+**Explicitly out of scope:** driving Deemix's own search/result-selection (that's the human judgment call the whole pipeline exists to protect); any Stage 1 (Discovery) automation - no real leverage point exists there, liking tracks on Spotify already is the interface.
 
 ---
 
