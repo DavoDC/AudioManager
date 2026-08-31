@@ -15,6 +15,7 @@ STATS_JSON = LOGS_DIR / "analysis-stats.json"
 TRACKS_JSON = LOGS_DIR / "tracks.json"
 
 AUDIOMIRROR_REPO = REPO_ROOT.parent / "AudioMirror"
+SPOTIFYGEN_ROOT = REPO_ROOT.parent / "SpotifyPlaylistGen"
 
 # NewMusic staging inbox (matches Constants.cs). The GUI only READS files
 # here (album-art extraction for the review queue) - it never moves,
@@ -24,6 +25,7 @@ NEWMUSIC_DIR = Path(r"C:\Users\David\Downloads\NewMusic")
 CACHE_DIR = GUI_ROOT / ".cache"
 THUMBS_DIR = CACHE_DIR / "thumbs"
 STATS_HISTORY_JSON = CACHE_DIR / "stats-history.json"
+ACQUIRE_STATE_JSON = CACHE_DIR / "acquire-state.json"
 
 # Schema versions this GUI was built against (see docs/References/AnalysisJson-Format.md)
 STATS_SCHEMA_VERSION = 1

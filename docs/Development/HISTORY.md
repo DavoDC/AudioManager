@@ -4,6 +4,23 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-08-31 - [GUI] Acquire tab MVP - Stage 2 (Acquiring) automation
+
+Replaces the terminal `open_playlist.py` Enter/'q' loop for the mechanical half of Stage 2
+(judgment calls - which tracks to like, which Deemix search result to pick - stay manual by
+design, see the `/think` writeup in the introducing commit). Backend: `SpotifyInterface` gained
+`get_liked_track_uris`/`remove_liked_tracks`/`get_or_create_playlist`, implemented in both
+`RealSpotifyClient` (new `user-library-read`/`user-library-modify` scopes - one-time browser
+re-consent) and `SimulatedSpotifyClient`, plus `src/acquire.py`'s `move_liked_to_playlist()`
+orchestration (SpotifyPlaylistGen repo). GUI: new Acquire tab (slots in right after Statistics)
+- sync Liked Songs to an "AudioManager Inbox" playlist, fetch-and-open Deemix links per track
+(reuses `open_playlist.py`'s extracted `_build_deemix_url`), and a read-only fuzzy-match Verify
+Downloads scan of `NEWMUSIC_DIR` against the fetched track list. Deliberately cheap/MVP - see
+TIER 2/3 for the polish items deferred out of this build. Design: `GUI-Architecture.md` "Acquire
+tab design".
+
+---
+
 ## 2026-07-03 - Fable session round 2: five [GUI] items closed (visual + functional)
 
 Second pass of the Fable promo session, iterated live in Chrome against the running GUI:

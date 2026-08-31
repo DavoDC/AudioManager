@@ -26,7 +26,7 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
-- [ ] **[GUI] Acquire tab - Stage 2 (Acquiring) automation** - added 2026-08-31. Replaces the terminal-driven `open_playlist.py` flow with a GUI tab: sync Liked Songs to an inbox playlist and clear Liked Songs, clickable Deemix search links per track, and a read-only "Verify downloads" scan of `NewMusic\` against the playlist. Design + scope: `docs/References/GUI-Architecture.md` "Acquire tab design". Needs SpotifyPlaylistGen `SCOPES` extended for Liked Songs (one-time re-consent, manual).
+- [ ] **[GUI] Acquire tab polish** - MVP shipped 2026-08-31 (see HISTORY.md), cheap/fast on purpose. Deferred: cache fetched tracks to disk (currently in-memory only, lost on tab rebuild/refresh); manual override for a verify-download false negative/positive (fuzzy match has no correction UI); progress feedback during Fetch/Sync (spinner only via label text, no per-track progress); handle a Liked Songs / inbox playlist larger than one API page gracefully in the GUI (backend already paginates, GUI has no test against a large real playlist yet); dedupe protection if Sync Liked is clicked twice before a page refresh.
 
 - [ ] **Re-enable album art dimensions check in LibChecker** - `CheckAlbumCoverDimensions` was temporarily commented out (2026-06-24) to unblock integration while the existing library has ~150+ low-res tracks. Re-enable once album art remediation is done (see TIER 4 "Album art remediation" entry). Also: print a single summary line instead of one line per track - the full list floods terminal output and belongs in the report file only.
 
