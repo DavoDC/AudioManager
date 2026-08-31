@@ -59,6 +59,7 @@ All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui.bat`). S
 - **Tag Fix - skeleton.** Cards document the exe's real fixed transforms; Run Fixed Rules = `tagfix --dry-run`. Open gap: configurable rules need a C# change (tracked in IDEAS.md).
 - **Mirror - functional.** Status/dirty listing + one-click Commit AudioMirror (confirm dialog, editable message, local commit only - added 2026-07-03). The GUI's only AudioMirror write; everything else stays read-only.
 - **Services - placeholder.** Two stub cards, deliberately not built - see Services design below.
+- **Acquire - MVP (2026-08-31).** Sync Liked Songs -> Inbox playlist, fetch-and-open Deemix links per track (staggered `window.open`, no more Enter/'q' loop), read-only Verify Downloads scan of `NEWMUSIC_DIR`. Cheap build, no caching layer for fetched tracks beyond the last-used playlist id (`gui/.cache/acquire-state.json`), no manual per-track match override. Polish items: `IDEAS.md` TIER 2/3.
 
 **Visual system (2026-07-03):** fluid motion layer (pointer-tracking spotlight via delegated JS + CSS vars, hover lift, staggered entrances, tab transitions, reduced-motion respect) plus a **mood-reactive theme** - the dominant genre in `analysis-stats.json` tints the accent system at startup (`theme.apply_mood`, genre->palette map in `gui/theme.py`) with a "Mood" chip in the nav. Chart colors bind at import time, so `apply_mood` must run before tab modules import (enforced in `gui/main.py`).
 

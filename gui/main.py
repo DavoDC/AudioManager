@@ -20,6 +20,7 @@ from gui.state import state  # noqa: E402
 
 TABS = [
     ("stats", "Statistics", None),
+    ("acquire", "Acquire", None),
     ("library", "Library Browser", None),
     ("integration", "Integration", None),
     ("tagfix", "Tag Fix", None),
@@ -43,6 +44,8 @@ def _builder(name: str):
     """Import tab modules lazily so one tab's failure can't kill the app."""
     if name == "stats":
         from gui.tabs.statistics import build
+    elif name == "acquire":
+        from gui.tabs.acquire import build
     elif name == "library":
         from gui.tabs.library import build
     elif name == "integration":
