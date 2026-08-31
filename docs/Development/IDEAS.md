@@ -26,6 +26,8 @@ Items are tiered by priority. Do not advance to the next tier until the current 
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
+- [ ] **[GUI] Acquire tab - Stage 2 (Acquiring) automation** - added 2026-08-31. Replaces the terminal-driven `open_playlist.py` flow with a GUI tab: sync Liked Songs to an inbox playlist and clear Liked Songs, clickable Deemix search links per track, and a read-only "Verify downloads" scan of `NewMusic\` against the playlist. Design + scope: `docs/References/GUI-Architecture.md` "Acquire tab design". Needs SpotifyPlaylistGen `SCOPES` extended for Liked Songs (one-time re-consent, manual).
+
 - [ ] **Re-enable album art dimensions check in LibChecker** - `CheckAlbumCoverDimensions` was temporarily commented out (2026-06-24) to unblock integration while the existing library has ~150+ low-res tracks. Re-enable once album art remediation is done (see TIER 4 "Album art remediation" entry). Also: print a single summary line instead of one line per track - the full list floods terminal output and belongs in the report file only.
 
 - [ ] **Automated tests - long-term: broad program coverage** - TagFixer tests (done) and routing tests (Tier 1) deliver the foundation first. This entry covers ongoing expansion once routing tests are stable. Expand only when a real bug escapes current test coverage - never speculatively.
