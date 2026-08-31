@@ -103,8 +103,14 @@ def build() -> None:
                 result_label.set_text(msg)
                 ui.notify(msg, type="positive")
             except Exception as e:
-                result_label.set_text(f"Failed: {e}")
-                ui.notify(f"Sync failed: {e}", type="negative", multi_line=True)
+                hint = ""
+                if "403" in str(e):
+                    hint = (" - likely your Spotify account isn't allowlisted for this app "
+                            "(Development Mode apps require adding your account under "
+                            "Users Management on https://developer.spotify.com/dashboard, "
+                            "separate from OAuth scope consent)")
+                result_label.set_text(f"Failed: {e}{hint}")
+                ui.notify(f"Sync failed: {e}{hint}", type="negative", multi_line=True)
 
         ui.button("Move Liked Songs to Inbox", icon="playlist_add", on_click=sync) \
             .props("unelevated dense color=primary size=sm")
@@ -125,7 +131,8 @@ def build() -> None:
                 return
             rows = "".join(
                 f'<tr><td>{_esc(a)}</td><td>{_esc(t)}</td>'
-                f'<td><a href="{_esc(u)}" target="_blank">Open in Deemix</a></td></tr>'
+                f'<td><a href="#" onclick="window.open({json.dumps(u)},\'_blank\',\'noopener\');'
+                f'return false;">Open in Deemix</a></td></tr>'
                 for a, t, u in _state["tracks"]
             )
             ui.html(f'<table class="am-table"><tr><th>Artist</th><th>Title</th><th></th></tr>{rows}</table>') \
@@ -141,9 +148,18 @@ def build() -> None:
 
         def open_all():
             urls = [u for _, _, u in _state["tracks"]]
-            js = ";".join(f"setTimeout(()=>window.open({json.dumps(u)},'_blank'),{i * 200})"
-                           for i, u in enumerate(urls))
+            # No setTimeout: a deferred call loses the click's "user gesture" status
+            # and Chrome's popup blocker silently drops every tab after the first.
+            # Firing window.open() synchronously for all of them keeps the gesture -
+            # if the browser still blocks any, it shows a one-time "popups blocked"
+            # icon in the address bar; click it -> Always allow for this site.
+            js = ";".join(f"window.open({json.dumps(u)},'_blank','noopener')" for u in urls)
             ui.run_javascript(js)
+            ui.notify(
+                "If only one tab opened, click the blocked-popups icon in the address "
+                "bar and choose 'Always allow' for this site.",
+                type="info",
+            )
 
         with ui.row().style("gap:8px;margin:8px 0;"):
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
