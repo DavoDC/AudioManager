@@ -4,7 +4,7 @@ Six tabs (Statistics, Library Browser, Integration, Tag Fix, Mirror,
 Services) behind a left nav, per mockup.html. Tabs are built lazily on
 first visit and then shown/hidden, so startup stays instant.
 
-Run:  python -m gui.main   (or scripts/launch-gui.bat for the windowless way)
+Run:  python -m gui.main   (or scripts/launch-gui-dev.bat for the windowless way)
 """
 from __future__ import annotations
 

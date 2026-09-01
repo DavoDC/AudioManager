@@ -20,7 +20,7 @@ integration workflow - scan, review every proposed move with album art, tag chan
 and routing rationale, then execute with per-track progress - and a browsable
 album-art wall of the entire library with search, filters and pagination.
 
-- **Launch:** double-click `scripts/launch-gui.bat` (windowless; opens in your browser)
+- **Launch:** double-click `scripts/launch-gui-dev.bat` (windowless; opens in your browser)
 - **Engineering:** the Python GUI parses zero library XML - the C# engine emits
   versioned JSON contracts (`analysis-stats.json`, `tracks.json`, routing JSON) that
   the GUI consumes, so statistics can never drift from the canonical analyser. All
