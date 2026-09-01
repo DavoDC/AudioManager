@@ -7,6 +7,12 @@ rem an edit is fully wired up; the app restarts in place within ~1s and the
 rem open browser tab reconnects on its own (NiceGUI's built-in socket.io
 rem reconnect) - no manual close/reopen needed. See CLAUDE.md "Dev mode: hot-reload".
 rem The GUI opens in the default browser at http://localhost:8471
+rem Kills any already-running instance first (double-click while it's still
+rem open, or a crashed/orphaned process) - avoids stacking up duplicates that
+rem would fight over port 8471.
 cd /d "%~dp0.."
+
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe' or Name='pythonw.exe'\" | Where-Object { $_.CommandLine -match 'gui\.main' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
 set AM_GUI_WATCH=1
 start "" pythonw -m gui.main

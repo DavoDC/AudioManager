@@ -115,6 +115,8 @@ def index(tab: str = "stats"):
                 "  if(getComputedStyle(c).display!=='none'){"
                 "    c.classList.remove('tab-enter');void c.offsetWidth;c.classList.add('tab-enter');}"
                 "});}"
+                # keep the URL in sync so an F5 reload lands back on this tab
+                f"history.replaceState(null,'','/?tab={key}');"
             )
         except Exception:
             pass  # initial build: client not connected yet; stats starts active via HTML
@@ -132,11 +134,10 @@ if __name__ in {"__main__", "__mp_main__"}:
         sys.stderr = sys.stderr or _log
     import os
 
-    # AM_GUI_WATCH=1 (set by scripts/launch-gui-dev.bat) starts the poor-man's
-    # hot-reload watcher: touch gui/.cache/reload.trigger and the next poll
-    # restarts the whole process in place, picking up any edit. Off by
-    # default - never runs during the normal windowless launch. See
-    # gui/hot_reload.py.
+    # AM_GUI_WATCH=1 (set by scripts/launch-gui-dev.bat, the sole launcher)
+    # starts the poor-man's hot-reload watcher: touch gui/.cache/reload.trigger
+    # and the next poll restarts the whole process in place, picking up any
+    # edit. See gui/hot_reload.py.
     _is_hot_reload_restart = False
     if os.environ.get("AM_GUI_WATCH") == "1":
         from gui import hot_reload
