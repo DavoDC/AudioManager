@@ -186,7 +186,11 @@ def build() -> None:
                                     .style("font-weight:normal;text-transform:none;")
                 for i, (artist, title, album, year, url) in enumerate(_state["tracks"]):
                     row_key = f"{i}:{artist}:{title}"
-                    with ui.element("tr"):
+                    row_style = (
+                        "background-color:rgba(64,150,255,0.08);"
+                        if _state["downloaded"].get(row_key) else ""
+                    )
+                    with ui.element("tr").style(row_style):
                         with ui.element("td"):
                             ui.label(artist)
                         with ui.element("td"):
