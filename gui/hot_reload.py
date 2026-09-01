@@ -19,9 +19,8 @@ restarting into a guaranteed crash. This does NOT catch a semantic/runtime
 bug - a green pytest run does not prove the live GUI survived the edit;
 verify liveness in the browser after a risky change, not just at the end.
 
-Opt-in via AM_GUI_WATCH=1 (set by scripts/launch-gui-dev.bat). Never runs
-during the normal windowless launch (launch-gui.bat) - stdlib only, no
-watchdog dependency.
+Enabled via AM_GUI_WATCH=1, set by the sole launcher scripts/launch-gui-dev.bat
+(runs windowless via pythonw) - stdlib only, no watchdog dependency.
 """
 
 import logging
