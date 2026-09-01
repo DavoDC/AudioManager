@@ -8,7 +8,7 @@ whole library - all without opening a terminal.
 ## Launch
 
 Double-click **`scripts\launch-gui.bat`** - starts windowless and opens the app in
-your browser at `http://127.0.0.1:8471`.
+your browser at `http://localhost:8471`.
 
 **Desktop / Start-Menu shortcut:** right-click `scripts\launch-gui.bat` >
 *Send to* > *Desktop (create shortcut)* (or copy a shortcut into
@@ -17,7 +17,14 @@ your browser at `http://127.0.0.1:8471`.
 First-time setup: `pip install -r gui/requirements.txt`
 
 Dev run with console output: `python -m gui.main` from the repo root.
-Deep-link a tab: `http://127.0.0.1:8471/?tab=integration`
+Deep-link a tab: `http://localhost:8471/?tab=integration`
+
+**Dev run with hot-reload:** `scripts\launch-gui-dev.bat` - same as above plus
+`gui/hot_reload.py`'s file watcher. Once an edit is fully wired up, touch/create
+`gui/.cache/reload.trigger` (any content) and the app restarts in place within
+~1s; the open browser tab reconnects on its own (NiceGUI's built-in socket.io
+reconnect handles the reload - no custom JS needed). A syntax error blocks the
+restart and keeps the old process running. See CLAUDE.md "Dev mode: hot-reload".
 
 ## Architecture (the one rule that matters)
 

@@ -79,6 +79,50 @@ Automates the mechanical half of Stage 2 (Acquiring) from `docs/References/Music
 
 ---
 
+## Dev mode: hot-reload (2026-09-01)
+
+**Opt-in via `scripts\launch-gui-dev.bat`** (`AM_GUI_WATCH=1`, console visible) -
+the normal windowless `launch-gui.bat` never runs the watcher, so casual GUI use
+(actually doing music-library work) never gets an unexpected restart. Ported from
+StreamPilot's `src/hot_reload.py` (same contract, same tests): `gui/hot_reload.py`
+polls every `.py` file under `gui/` once a second (stdlib only, no watchdog dep).
+
+**Two ways a restart triggers - use the explicit one when building a feature:**
+- **Explicit "reload now" signal (preferred):** touch/create
+  `gui/.cache/reload.trigger` (any content, even empty) - the very next poll
+  consumes it (deletes the file) and restarts immediately. This is the mechanism
+  for a deliberate multi-file/multi-minute build: keep editing across several
+  files for as long as needed, then touch the trigger once everything is wired
+  up. From Claude's Bash tool: `touch "C:/Users/David/GitHubRepos/AudioManager/gui/.cache/reload.trigger"`.
+- **Passive fallback (1 hour debounce):** if nobody signals, the watcher
+  eventually restarts on its own once the file set has gone quiet that long -
+  purely a "forgot to touch the trigger" backstop.
+
+Either path is gated by a syntax check (`compile()`, no bytecode-cache side
+effect) before actually restarting - a half-written edit that doesn't parse
+just keeps the old (working) process running, re-checked every poll, instead of
+restarting into a guaranteed crash. This does NOT catch a semantic/runtime bug -
+verify the change actually works in the browser after a risky edit, not just at
+the end. Restart is `os.execv(sys.executable, sys.argv)` (whole-process re-exec,
+same args) - reloads all code, not just one module, since Python doesn't
+hot-reload imported modules on its own.
+
+**No custom browser-reload JS needed, unlike StreamPilot's dashboard:** NiceGUI's
+own socket.io client already reloads the page (`window.location.reload()`) when
+its websocket disconnects and a subsequent reconnect/handshake doesn't match the
+old session (`nicegui/static/nicegui.js`, `connect_error`/`try_reconnect`/
+`finish_handshake` handlers) - a backend restart naturally triggers this, so the
+open browser tab picks up the new process on its own within a couple seconds of
+the restart, no extra wiring on the AudioManager side.
+
+**Host is `localhost`, not `127.0.0.1`** (`ui.run(host="localhost", ...)` in
+`gui/main.py`) - unlike StreamPilot's hand-rolled `http.server`, NiceGUI's
+`ui.run` uses the same `host=` value for both the uvicorn bind and the
+auto-opened browser URL, so there's no need for StreamPilot's bind-vs-display
+split; setting `host` alone covers both.
+
+---
+
 ## Services tab design (far future)
 
 - **Spotify tab** - integrate SpotifyPlaylistGen (or a generalized SpotifyTools lib, if that's decided before building this): playlist generator from the offline library, cross-reference offline tracks vs Spotify availability, recently played on Spotify.
