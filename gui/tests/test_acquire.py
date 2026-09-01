@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2].parent / "SpotifyPlaylistGen"))
 
-from gui.tabs.acquire import match_downloads
+from gui.tabs.acquire import find_extra_newmusic_files, match_downloads
 
 
 def test_matches_downloaded_file(tmp_path):
@@ -45,6 +45,25 @@ def test_shared_artist_does_not_false_positive_across_titles(tmp_path):
     )
     assert found == ["Jack Harlow - Lonesome"]
     assert missing == ["Jack Harlow - Prague", "Jack Harlow - My Winter"]
+
+
+def test_extra_finds_file_not_in_playlist(tmp_path):
+    (tmp_path / "Eminem - Lose Yourself.mp3").write_bytes(b"")
+    (tmp_path / "Drake - Hotline Bling.mp3").write_bytes(b"")
+    extra = find_extra_newmusic_files([("Eminem", "Lose Yourself")], tmp_path)
+    assert extra == [("Drake", "Hotline Bling")]
+
+
+def test_extra_empty_when_all_files_match_playlist(tmp_path):
+    (tmp_path / "Eminem - Lose Yourself.mp3").write_bytes(b"")
+    extra = find_extra_newmusic_files([("Eminem", "Lose Yourself")], tmp_path)
+    assert extra == []
+
+
+def test_extra_returns_every_file_when_no_playlist_loaded(tmp_path):
+    (tmp_path / "Eminem - Lose Yourself.mp3").write_bytes(b"")
+    extra = find_extra_newmusic_files([], tmp_path)
+    assert extra == [("Eminem", "Lose Yourself")]
 
 
 def test_matches_when_fetched_track_has_extra_collab_artists(tmp_path):
