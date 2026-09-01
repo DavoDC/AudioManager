@@ -131,13 +131,27 @@ if __name__ in {"__main__", "__mp_main__"}:
         sys.stdout = sys.stdout or _log
         sys.stderr = sys.stderr or _log
     import os
+
+    # AM_GUI_WATCH=1 (set by scripts/launch-gui-dev.bat) starts the poor-man's
+    # hot-reload watcher: touch gui/.cache/reload.trigger and the next poll
+    # restarts the whole process in place, picking up any edit. Off by
+    # default - never runs during the normal windowless launch. See
+    # gui/hot_reload.py.
+    _is_hot_reload_restart = False
+    if os.environ.get("AM_GUI_WATCH") == "1":
+        from gui import hot_reload
+        _is_hot_reload_restart = os.environ.get(hot_reload.RESTART_ENV_VAR) == "1"
+        hot_reload.start_watcher(str(config.GUI_ROOT))
+
     ui.run(
         title="AudioManager",
-        host="127.0.0.1",
+        host="localhost",  # never a bare IP - browser URL and bind share this value
         port=8471,
         reload=False,
-        # AM_GUI_NO_BROWSER=1 suppresses the auto-opened tab (dev restarts)
-        show=os.environ.get("AM_GUI_NO_BROWSER") != "1",
+        # AM_GUI_NO_BROWSER=1 suppresses the auto-opened tab (dev restarts);
+        # a hot-reload self-restart implies the same thing (the tab is
+        # already open and will reconnect on its own).
+        show=os.environ.get("AM_GUI_NO_BROWSER") != "1" and not _is_hot_reload_restart,
         favicon="🎵",
         dark=True,
     )
