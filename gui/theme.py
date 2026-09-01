@@ -129,6 +129,11 @@ HEAD_HTML = """
   .am-table th,.am-table td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--panel-border);}
   .am-table th{color:var(--text-dim);font-weight:500;font-size:11px;text-transform:uppercase;}
   .am-table td.num{font-family:var(--font-mono);text-align:right;color:var(--text-dim);}
+  .am-table.acquire-table{font-size:15px;}
+  .am-table.acquire-table th,.am-table.acquire-table td{padding:10px 12px;}
+  .am-table.acquire-table tr:nth-child(even){background:rgba(255,255,255,.02);}
+  .am-table.acquire-table a{color:var(--accent);}
+  .am-table.acquire-table input[type=checkbox]{width:18px;height:18px;cursor:pointer;}
   tr.batch-header td{padding-top:14px;font-weight:600;color:var(--accent);font-size:12px;}
   .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--accent2);overflow:auto;white-space:pre-wrap;}
   .console .dim{color:var(--text-dim);}
