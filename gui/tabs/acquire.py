@@ -3,7 +3,10 @@
 Fetch a playlist's tracks into a checklist table (artist/title/album/year,
 per-row Deemix link, read-only Downloaded tickbox). The
 Downloaded column is filled by "Check Against Downloads", a read-only fuzzy
-match against NEWMUSIC_DIR (see match_downloads()). See "Acquire tab design"
+match against NEWMUSIC_DIR (see match_downloads()), which also runs once on
+fetch and then on a 2s poll timer (_poll_downloads()) while the tab is open
+and tracks are loaded, so ticks fill in as files land in NEWMUSIC_DIR with
+no manual button press needed. See "Acquire tab design"
 in docs/References/GUI-Architecture.md.
 Sync Liked Songs is built but hidden (Spotify 403 - see _build_sync_liked_card).
 Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
@@ -235,3 +238,24 @@ def build() -> None:
             ui.button("Check Against Downloads", icon="refresh", on_click=check_against_downloads) \
                 .props("dense outline size=sm")
         track_table()
+
+        _poll = {"busy": False}
+
+        async def _poll_downloads():
+            """Re-runs the downloads match on a timer so ticked rows fill in
+            without a manual button press while the tab sits open (2s between
+            runs, next run only starts after the previous one finishes and the
+            table only redraws when a match actually changed - a fresh mp3
+            drops in mid-download, so this stays cheap rather than one-shot)."""
+            if not _state["tracks"] or _poll["busy"]:
+                return
+            _poll["busy"] = True
+            try:
+                before = dict(_state["downloaded"])
+                await asyncio.to_thread(_run_check_against_downloads)
+                if _state["downloaded"] != before:
+                    track_table.refresh()
+            finally:
+                _poll["busy"] = False
+
+        ui.timer(2.0, _poll_downloads)
