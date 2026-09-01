@@ -25,7 +25,7 @@ TABS = [
     ("integration", "Integration", None),
     ("tagfix", "Tag Fix", None),
     ("mirror", "Mirror", None),
-    ("services", "Services", "G5"),
+    ("services", "Services", None),
 ]
 
 # Serve cached album-art thumbnails (extraction writes only into gui/.cache)

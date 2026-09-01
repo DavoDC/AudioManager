@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -79,28 +80,47 @@ def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[
     no filesystem writes, matches gui/config.py's read-only NEWMUSIC_DIR contract.
 
     Filenames follow the "Artist - Title.mp3" convention. Artist and title
-    are matched separately (normalised-exact artist AND >=0.5 title-word
-    overlap) - matching on the combined word set let a shared artist name
-    swamp the ratio and produced false positives across an artist's whole
-    catalogue (e.g. every Jack Harlow track ticking "downloaded" once one was)."""
+    are matched separately - matching on the combined word set let a shared
+    artist name swamp the ratio and produced false positives across an
+    artist's whole catalogue (e.g. every Jack Harlow track ticking
+    "downloaded" once one was). Artist match uses only the PRIMARY artist
+    (text before " & "/";"/",") because a track's Spotify artist field can
+    carry featured/collab artists ("DC The Don & Someone") that the
+    downloaded filename never includes - case-insensitive substring either
+    direction, not exact equality. Title match is normalised-exact, a
+    substring either direction, or >=0.4 word overlap - looser than a strict
+    equality/0.5-overlap check missed real matches (e.g. "DC THE DON -
+    Yellow.mp3" not ticking for a fetched "DC The Don" / "Yellow" track)."""
     from src.matcher import clean_artist, clean_title, normalise
+
+    def primary_artist(artist: str) -> str:
+        return re.split(r"\s*&\s*|\s*;\s*|\s*,\s*", clean_artist(artist))[0]
 
     filename_parts = []
     if newmusic_dir.is_dir():
         for p in newmusic_dir.glob("*.mp3"):
             fa, _, ft = p.stem.partition(" - ")
-            filename_parts.append((normalise(fa), set(normalise(ft).split())))
+            filename_parts.append((normalise(primary_artist(fa)), normalise(clean_title(ft))))
 
     found, missing = [], []
     for artist, title in tracks:
         label = f"{artist} - {title}"
-        norm_artist = normalise(clean_artist(artist))
-        title_words = set(normalise(clean_title(title)).split())
-        hit = any(
-            norm_artist == fa and title_words and ft
-            and len(title_words & ft) / max(len(title_words), len(ft)) >= 0.5
-            for fa, ft in filename_parts
-        )
+        norm_artist = normalise(primary_artist(artist))
+        norm_title = normalise(clean_title(title))
+        title_words = set(norm_title.split())
+
+        def artist_matches(fa: str) -> bool:
+            return bool(norm_artist and fa) and (norm_artist in fa or fa in norm_artist)
+
+        def title_matches(ft: str) -> bool:
+            if not norm_title or not ft:
+                return False
+            if norm_title == ft or norm_title in ft or ft in norm_title:
+                return True
+            ft_words = set(ft.split())
+            return bool(title_words and ft_words) and len(title_words & ft_words) / max(len(title_words), len(ft_words)) >= 0.4
+
+        hit = any(artist_matches(fa) and title_matches(ft) for fa, ft in filename_parts)
         (found if hit else missing).append(label)
     return found, missing
 
