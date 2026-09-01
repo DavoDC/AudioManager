@@ -1,7 +1,7 @@
 """Acquire tab - Stage 2 (Acquiring) of Music-Discovery-Workflow.md.
 
-Fetch a playlist's tracks into a checklist table (artist/title/album/year,
-per-row Deemix link, read-only Downloaded tickbox). The Downloaded column is
+Fetch a playlist's tracks into a checklist table (artist/title/album/year/
+length, per-row Deemix link, read-only Downloaded tickbox). The Downloaded column is
 filled by a read-only fuzzy match against NEWMUSIC_DIR (see
 match_downloads()), run once on fetch and then on a 2s poll timer
 (_poll_downloads()) while the tab is open and tracks are loaded, so ticks
@@ -25,7 +25,7 @@ from gui import config
 
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT))
 
-_state = {"tracks": [], "downloaded": {}}  # tracks: [(artist, title, album, year, url), ...]; downloaded: {row_key: bool}
+_state = {"tracks": [], "downloaded": {}}  # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool}
 
 
 def _load_last_playlist_id() -> str:
@@ -64,14 +64,22 @@ def _do_sync_liked() -> str:
     return msg
 
 
-def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, str]]:
+def _format_duration(duration_ms: int) -> str:
+    total_seconds = duration_ms // 1000
+    return f"{total_seconds // 60}:{total_seconds % 60:02d}"
+
+
+def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, str, str]]:
     from src.open_playlist import extract_playlist_id, _build_deemix_url
     playlist_id = extract_playlist_id(playlist_id_or_url)
     client = _spotify_client()
     tracks = client.get_playlist_tracks_detailed(playlist_id)
     _save_last_playlist_id(playlist_id)
     return [
-        (t["artist"], t["title"], t["album"], t["year"], _build_deemix_url(t["artist"], t["title"]))
+        (
+            t["artist"], t["title"], t["album"], t["year"],
+            _format_duration(t.get("duration_ms", 0)), _build_deemix_url(t["artist"], t["title"]),
+        )
         for t in tracks
     ]
 
@@ -177,7 +185,7 @@ def build() -> None:
                 return
             with ui.element("table").classes("am-table acquire-table").style("width:100%;"):
                 with ui.element("tr"):
-                    for h in ("Artist", "Title", "Album", "Year", "Deemix", "Downloaded"):
+                    for h in ("Artist", "Title", "Album", "Year", "Length", "Deemix", "Downloaded"):
                         with ui.element("th").style(
                             "text-align:center;" if h == "Downloaded" else "text-align:left;"
                         ):
@@ -186,7 +194,7 @@ def build() -> None:
                                 found = sum(1 for v in _state["downloaded"].values() if v)
                                 ui.label(f"{found}/{len(_state['downloaded'])}").classes("note") \
                                     .style("font-weight:normal;text-transform:none;")
-                for i, (artist, title, album, year, url) in enumerate(_state["tracks"]):
+                for i, (artist, title, album, year, length, url) in enumerate(_state["tracks"]):
                     row_key = f"{i}:{artist}:{title}"
                     row_style = (
                         "background-color:rgba(64,150,255,0.08);"
@@ -202,18 +210,20 @@ def build() -> None:
                         with ui.element("td"):
                             ui.label(year)
                         with ui.element("td"):
+                            ui.label(length)
+                        with ui.element("td"):
                             ui.link("Search", url, new_tab=True)
                         with ui.element("td").style("text-align:center;"):
                             ui.checkbox(value=_state["downloaded"].get(row_key, False)).props("disable")
 
         def _run_check_against_downloads():
             found, _missing = match_downloads(
-                [(a, t) for a, t, _album, _year, _url in _state["tracks"]], config.NEWMUSIC_DIR
+                [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]], config.NEWMUSIC_DIR
             )
             found_set = set(found)
             _state["downloaded"] = {
                 f"{i}:{artist}:{title}": f"{artist} - {title}" in found_set
-                for i, (artist, title, _album, _year, _url) in enumerate(_state["tracks"])
+                for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"])
             }
 
         async def fetch():
