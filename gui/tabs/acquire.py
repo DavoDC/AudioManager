@@ -76,19 +76,30 @@ def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, 
 def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[list[str], list[str]]:
     """Read-only fuzzy match of (artist, title) pairs against filenames already
     in newmusic_dir. Returns (found_labels, missing_labels). Pure/testable -
-    no filesystem writes, matches gui/config.py's read-only NEWMUSIC_DIR contract."""
+    no filesystem writes, matches gui/config.py's read-only NEWMUSIC_DIR contract.
+
+    Filenames follow the "Artist - Title.mp3" convention. Artist and title
+    are matched separately (normalised-exact artist AND >=0.5 title-word
+    overlap) - matching on the combined word set let a shared artist name
+    swamp the ratio and produced false positives across an artist's whole
+    catalogue (e.g. every Jack Harlow track ticking "downloaded" once one was)."""
     from src.matcher import clean_artist, clean_title, normalise
 
-    filenames = [p.stem for p in newmusic_dir.glob("*.mp3")] if newmusic_dir.is_dir() else []
-    filename_words = [set(normalise(f).split()) for f in filenames]
+    filename_parts = []
+    if newmusic_dir.is_dir():
+        for p in newmusic_dir.glob("*.mp3"):
+            fa, _, ft = p.stem.partition(" - ")
+            filename_parts.append((normalise(fa), set(normalise(ft).split())))
 
     found, missing = [], []
     for artist, title in tracks:
         label = f"{artist} - {title}"
-        track_words = set(normalise(f"{clean_artist(artist)} {clean_title(title)}").split())
+        norm_artist = normalise(clean_artist(artist))
+        title_words = set(normalise(clean_title(title)).split())
         hit = any(
-            track_words and fw and len(track_words & fw) / max(len(track_words), len(fw)) >= 0.5
-            for fw in filename_words
+            norm_artist == fa and title_words and ft
+            and len(title_words & ft) / max(len(title_words), len(ft)) >= 0.5
+            for fa, ft in filename_parts
         )
         (found if hit else missing).append(label)
     return found, missing
