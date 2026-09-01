@@ -31,3 +31,17 @@ def test_nonexistent_dir_reports_all_missing(tmp_path):
     found, missing = match_downloads([("Eminem", "Lose Yourself")], tmp_path / "does_not_exist")
     assert found == []
     assert len(missing) == 1
+
+
+def test_shared_artist_does_not_false_positive_across_titles(tmp_path):
+    """Regression: combined artist+title word-set overlap let a shared artist
+    name swamp the ratio - "Jack Harlow" (2 words) + a short title tipped the
+    overlap over 0.5 against any other Jack Harlow file, marking whole
+    catalogues downloaded off one real file. Titles must match independently."""
+    (tmp_path / "Jack Harlow - Lonesome.mp3").write_bytes(b"")
+    found, missing = match_downloads(
+        [("Jack Harlow", "Lonesome"), ("Jack Harlow", "Prague"), ("Jack Harlow", "My Winter")],
+        tmp_path,
+    )
+    assert found == ["Jack Harlow - Lonesome"]
+    assert missing == ["Jack Harlow - Prague", "Jack Harlow - My Winter"]
