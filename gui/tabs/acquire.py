@@ -1,13 +1,12 @@
 """Acquire tab - Stage 2 (Acquiring) of Music-Discovery-Workflow.md.
 
 Fetch a playlist's tracks into a checklist table (artist/title/album/year,
-per-row Deemix link, read-only Downloaded tickbox). The
-Downloaded column is filled by "Check Against Downloads", a read-only fuzzy
-match against NEWMUSIC_DIR (see match_downloads()), which also runs once on
-fetch and then on a 2s poll timer (_poll_downloads()) while the tab is open
-and tracks are loaded, so ticks fill in as files land in NEWMUSIC_DIR with
-no manual button press needed. See "Acquire tab design"
-in docs/References/GUI-Architecture.md.
+per-row Deemix link, read-only Downloaded tickbox). The Downloaded column is
+filled by a read-only fuzzy match against NEWMUSIC_DIR (see
+match_downloads()), run once on fetch and then on a 2s poll timer
+(_poll_downloads()) while the tab is open and tracks are loaded, so ticks
+fill in as files land in NEWMUSIC_DIR with no manual button needed. See
+"Acquire tab design" in docs/References/GUI-Architecture.md.
 Sync Liked Songs is built but hidden (Spotify 403 - see _build_sync_liked_card).
 Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
 merged into table 2026-09-01) - polish items are tracked in IDEAS.md, not built here.
@@ -226,17 +225,8 @@ def build() -> None:
             except Exception as e:
                 ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
 
-        def check_against_downloads():
-            if not _state["tracks"]:
-                ui.notify("Fetch tracks first.", type="warning")
-                return
-            _run_check_against_downloads()
-            track_table.refresh()
-
         with ui.row().style("gap:8px;margin:8px 0;"):
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
-            ui.button("Check Against Downloads", icon="refresh", on_click=check_against_downloads) \
-                .props("dense outline size=sm")
         track_table()
 
         _poll = {"busy": False}
