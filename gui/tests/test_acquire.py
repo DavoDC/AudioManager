@@ -45,3 +45,14 @@ def test_shared_artist_does_not_false_positive_across_titles(tmp_path):
     )
     assert found == ["Jack Harlow - Lonesome"]
     assert missing == ["Jack Harlow - Prague", "Jack Harlow - My Winter"]
+
+
+def test_matches_when_fetched_track_has_extra_collab_artists(tmp_path):
+    """Regression: a Spotify track's artist field can carry featured/collab
+    artists ("DC The Don & Someone") that the downloaded filename never
+    includes, so exact-artist equality missed a real match. Primary artist
+    (text before " & ") plus a case-insensitive substring check now covers it."""
+    (tmp_path / "DC THE DON - Yellow.mp3").write_bytes(b"")
+    found, missing = match_downloads([("DC The Don & Someone", "Yellow")], tmp_path)
+    assert found == ["DC The Don & Someone - Yellow"]
+    assert missing == []
