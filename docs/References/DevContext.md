@@ -247,6 +247,10 @@ Treat it like you treat the XML files: version-control it, don't relegate it to 
 
 **Never use string-search of stdout to gate decisions.** Example: detecting "LibChecker: Clean" by grepping Program.cs's captured output. This couples output format to control logic - if LibChecker's message changes, the detection breaks. Better: return explicit status codes or enums from modules, not relying on stdout parsing for branching logic.
 
+## GUI Dev Hot-Reload: Trigger Directory Not Guaranteed to Exist
+
+**`gui/.cache/reload.trigger` needs its parent `.cache` directory created before the first touch on a fresh checkout.** Nothing creates that directory automatically, so on a clone with no prior dev-mode run, touching the trigger file directly fails with a path-not-found error. Create the directory first (`New-Item -ItemType Directory -Force`), then create/touch the trigger file.
+
 ## Mirror Generation Architecture: Stub-to-Replacement Pattern
 
 **Reflector creates text-file stubs with MP3 paths; Parser reads MP3s via TagLib#; TrackXML overwrites stubs with actual XML.** This is the current design, not a bug - it works. However, the stubs are never read as input, only as intermediate placeholders. The pattern is vestigial: Reflector writes stub (path file) → Parser reads MP3 and caches → TrackXML overwrites stub with XML. The stubs exist but are never actually parsed - they're just temporary. Not a performance issue now, but worth refactoring if parsing becomes a bottleneck (Reflector could skip stub creation and TrackXML could read MP3 directly, bypassing the temp file stage entirely). Current design trades immediate clarity (the stubs are there) for simplicity (Reflector doesn't need to import TagLib# or know about XML generation).
