@@ -25,7 +25,33 @@ from gui import config
 
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT))
 
-_state = {"tracks": [], "downloaded": {}}  # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool}
+_state = {"tracks": [], "downloaded": {}, "sort_col": None, "sort_reverse": False}  # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool}
+
+_SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
+
+
+def _length_to_seconds(length: str) -> int:
+    minutes, _, seconds = length.partition(":")
+    try:
+        return int(minutes) * 60 + int(seconds)
+    except ValueError:
+        return 0
+
+
+def _sorted_tracks() -> list[tuple[str, str, str, str, str, str]]:
+    """Sorted view of _state['tracks'] for display; original list (and its
+    indices used in row_key) is left untouched so Downloaded-match keys stay stable."""
+    col = _state["sort_col"]
+    if col is None:
+        return list(enumerate(_state["tracks"]))
+    idx = _SORT_COLUMNS[col]
+    if idx == 3:
+        key = lambda row: (row[1][3] == "", row[1][3])  # Year: blanks last, else lexical (YYYY string)
+    elif idx == 4:
+        key = lambda row: _length_to_seconds(row[1][4])
+    else:
+        key = lambda row: row[1][idx].lower()
+    return sorted(enumerate(_state["tracks"]), key=key, reverse=_state["sort_reverse"])
 
 
 def _load_last_playlist_id() -> str:
@@ -189,12 +215,33 @@ def build() -> None:
                         with ui.element("th").style(
                             "text-align:center;" if h == "Downloaded" else "text-align:left;"
                         ):
-                            ui.label(h)
+                            if h in _SORT_COLUMNS:
+                                arrow = ""
+                                if _state["sort_col"] == h:
+                                    arrow = " ▲" if not _state["sort_reverse"] else " ▼"
+
+                                def _make_sort_handler(col=h):
+                                    def handler():
+                                        # cycle: unset -> asc -> desc -> unset (back to playlist order)
+                                        if _state["sort_col"] != col:
+                                            _state["sort_col"] = col
+                                            _state["sort_reverse"] = False
+                                        elif not _state["sort_reverse"]:
+                                            _state["sort_reverse"] = True
+                                        else:
+                                            _state["sort_col"] = None
+                                            _state["sort_reverse"] = False
+                                        track_table.refresh()
+                                    return handler
+
+                                ui.label(h + arrow).style("cursor:pointer;").on("click", _make_sort_handler())
+                            else:
+                                ui.label(h)
                             if h == "Downloaded" and _state["downloaded"]:
                                 found = sum(1 for v in _state["downloaded"].values() if v)
                                 ui.label(f"{found}/{len(_state['downloaded'])}").classes("note") \
                                     .style("font-weight:normal;text-transform:none;")
-                for i, (artist, title, album, year, length, url) in enumerate(_state["tracks"]):
+                for i, (artist, title, album, year, length, url) in _sorted_tracks():
                     row_key = f"{i}:{artist}:{title}"
                     row_style = (
                         "background-color:rgba(64,150,255,0.08);"
