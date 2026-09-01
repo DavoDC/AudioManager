@@ -1,7 +1,7 @@
 """Acquire tab - Stage 2 (Acquiring) of Music-Discovery-Workflow.md.
 
 Fetch a playlist's tracks into a checklist table (artist/title/album/year,
-per-row Deemix link, manual tickbox, read-only Downloaded tickbox). The
+per-row Deemix link, read-only Downloaded tickbox). The
 Downloaded column is filled by "Check Against Downloads", a read-only fuzzy
 match against NEWMUSIC_DIR (see match_downloads()). See "Acquire tab design"
 in docs/References/GUI-Architecture.md.
@@ -23,7 +23,7 @@ from gui import config
 
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT))
 
-_state = {"tracks": [], "manual": {}, "downloaded": {}}  # tracks: [(artist, title, album, year, url), ...]; manual/downloaded: {row_key: bool}
+_state = {"tracks": [], "downloaded": {}}  # tracks: [(artist, title, album, year, url), ...]; downloaded: {row_key: bool}
 
 
 def _load_last_playlist_id() -> str:
@@ -168,11 +168,6 @@ def build() -> None:
         playlist_input = ui.input("Playlist URL or ID", value=_load_last_playlist_id()) \
             .props("dense dark outlined").classes("w-full")
 
-        def _set_manual(row_key: str, value: bool) -> None:
-            _state["manual"][row_key] = value
-
-        verify_label = ui.label("").classes("note")
-
         @ui.refreshable
         def track_table():
             if not _state["tracks"]:
@@ -180,11 +175,15 @@ def build() -> None:
                 return
             with ui.element("table").classes("am-table acquire-table").style("width:100%;"):
                 with ui.element("tr"):
-                    for h in ("Artist", "Title", "Album", "Year", "Deemix", "Manual", "Downloaded"):
+                    for h in ("Artist", "Title", "Album", "Year", "Deemix", "Downloaded"):
                         with ui.element("th").style(
-                            "text-align:center;" if h in ("Manual", "Downloaded") else "text-align:left;"
+                            "text-align:center;" if h == "Downloaded" else "text-align:left;"
                         ):
                             ui.label(h)
+                            if h == "Downloaded" and _state["downloaded"]:
+                                found = sum(1 for v in _state["downloaded"].values() if v)
+                                ui.label(f"{found}/{len(_state['downloaded'])}").classes("note") \
+                                    .style("font-weight:normal;text-transform:none;")
                 for i, (artist, title, album, year, url) in enumerate(_state["tracks"]):
                     row_key = f"{i}:{artist}:{title}"
                     with ui.element("tr"):
@@ -197,30 +196,11 @@ def build() -> None:
                         with ui.element("td"):
                             ui.label(year)
                         with ui.element("td"):
-                            ui.link("Open in Deemix", url, new_tab=True)
-                        with ui.element("td").style("text-align:center;"):
-                            ui.checkbox(
-                                value=_state["manual"].get(row_key, False),
-                                on_change=lambda e, k=row_key: _set_manual(k, e.value),
-                            )
+                            ui.link("Search", url, new_tab=True)
                         with ui.element("td").style("text-align:center;"):
                             ui.checkbox(value=_state["downloaded"].get(row_key, False)).props("disable")
 
-        async def fetch():
-            try:
-                _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
-                _state["manual"] = {}
-                _state["downloaded"] = {}
-                verify_label.set_text("")
-                track_table.refresh()
-                ui.notify(f"Fetched {len(_state['tracks'])} tracks", type="positive")
-            except Exception as e:
-                ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
-
-        def check_against_downloads():
-            if not _state["tracks"]:
-                verify_label.set_text("Fetch tracks first.")
-                return
+        def _run_check_against_downloads():
             found, _missing = match_downloads(
                 [(a, t) for a, t, _album, _year, _url in _state["tracks"]], config.NEWMUSIC_DIR
             )
@@ -229,7 +209,21 @@ def build() -> None:
                 f"{i}:{artist}:{title}": f"{artist} - {title}" in found_set
                 for i, (artist, title, _album, _year, _url) in enumerate(_state["tracks"])
             }
-            verify_label.set_text(f"{len(found)}/{len(_state['tracks'])} downloaded")
+
+        async def fetch():
+            try:
+                _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
+                await asyncio.to_thread(_run_check_against_downloads)
+                track_table.refresh()
+                ui.notify(f"Fetched {len(_state['tracks'])} tracks", type="positive")
+            except Exception as e:
+                ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
+
+        def check_against_downloads():
+            if not _state["tracks"]:
+                ui.notify("Fetch tracks first.", type="warning")
+                return
+            _run_check_against_downloads()
             track_table.refresh()
 
         with ui.row().style("gap:8px;margin:8px 0;"):
