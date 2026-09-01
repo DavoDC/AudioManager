@@ -1,9 +1,13 @@
 """Acquire tab - Stage 2 (Acquiring) of Music-Discovery-Workflow.md.
 
-Sync Liked Songs -> inbox playlist, clickable Deemix links per track, and a
-read-only Verify Downloads scan of NEWMUSIC_DIR. See "Acquire tab design" in
-docs/References/GUI-Architecture.md. Cheap/MVP build (2026-08-31) - polish
-items are tracked in IDEAS.md, not built here.
+Fetch a playlist's tracks into a checklist table (artist/title/album/year,
+per-row Deemix link, manual tickbox, read-only Downloaded tickbox). The
+Downloaded column is filled by "Check Against Downloads", a read-only fuzzy
+match against NEWMUSIC_DIR (see match_downloads()). See "Acquire tab design"
+in docs/References/GUI-Architecture.md.
+Sync Liked Songs is built but hidden (Spotify 403 - see _build_sync_liked_card).
+Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
+merged into table 2026-09-01) - polish items are tracked in IDEAS.md, not built here.
 """
 from __future__ import annotations
 
@@ -18,7 +22,7 @@ from gui import config
 
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT))
 
-_state = {"tracks": []}  # [(artist, title, url), ...] from the last fetch
+_state = {"tracks": [], "manual": {}, "downloaded": {}}  # tracks: [(artist, title, album, year, url), ...]; manual/downloaded: {row_key: bool}
 
 
 def _load_last_playlist_id() -> str:
@@ -45,6 +49,8 @@ def _spotify_client():
 
 
 def _do_sync_liked() -> str:
+    """Deferred - see IDEAS.md TIER 2 'Sync Liked Songs broken (403)'. Card is
+    hidden via _build_sync_liked_card() not being called; logic kept intact."""
     from src.acquire import move_liked_to_playlist
     client = _spotify_client()
     result = move_liked_to_playlist(client)
@@ -55,13 +61,16 @@ def _do_sync_liked() -> str:
     return msg
 
 
-def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str]]:
+def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, str]]:
     from src.open_playlist import extract_playlist_id, _build_deemix_url
     playlist_id = extract_playlist_id(playlist_id_or_url)
     client = _spotify_client()
-    tracks = client.get_playlist_tracks(playlist_id)
+    tracks = client.get_playlist_tracks_detailed(playlist_id)
     _save_last_playlist_id(playlist_id)
-    return [(artist, title, _build_deemix_url(artist, title)) for artist, title in tracks]
+    return [
+        (t["artist"], t["title"], t["album"], t["year"], _build_deemix_url(t["artist"], t["title"]))
+        for t in tracks
+    ]
 
 
 def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[list[str], list[str]]:
@@ -85,12 +94,10 @@ def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[
     return found, missing
 
 
-def build() -> None:
-    with ui.element("header").classes("page"):
-        ui.html("<h1>Acquire</h1>")
-        ui.html('<div class="meta">Stage 2 - Liked Songs &rarr; inbox playlist &rarr; Deemix &rarr; NewMusic</div>')
-
-    # Card 1 - sync liked songs
+def _build_sync_liked_card() -> None:
+    """Deferred, not called from build() - Spotify 403s in Development Mode
+    (account not allowlisted). See IDEAS.md TIER 2 'Sync Liked Songs broken'.
+    Kept intact so re-enabling later is one line (call this from build())."""
     with ui.element("div").classes("panel w-full").style("margin-bottom:16px;"):
         with ui.element("div").classes("panel-title"):
             ui.html("<span>Sync Liked Songs &rarr; Inbox Playlist</span>")
@@ -117,84 +124,85 @@ def build() -> None:
         ui.html('<p class="note" style="margin:6px 0 0;">First run needs a one-time Spotify browser '
                 "consent (Liked Songs scope was just added).</p>")
 
-    # Card 2 - fetch + open tracks
+
+def build() -> None:
+    with ui.element("header").classes("page"):
+        ui.html("<h1>Acquire</h1>")
+        ui.html('<div class="meta">Stage 2 - Liked Songs &rarr; inbox playlist &rarr; Deemix &rarr; NewMusic</div>')
+
+    # Card 2 - fetch + open tracks (Card 1, Sync Liked Songs, is hidden - see _build_sync_liked_card)
     with ui.element("div").classes("panel w-full").style("margin-bottom:16px;"):
         with ui.element("div").classes("panel-title"):
             ui.html("<span>Open Playlist Tracks</span>")
         playlist_input = ui.input("Playlist URL or ID", value=_load_last_playlist_id()) \
             .props("dense dark outlined").classes("w-full")
 
+        def _set_manual(row_key: str, value: bool) -> None:
+            _state["manual"][row_key] = value
+
+        verify_label = ui.label("").classes("note")
+
         @ui.refreshable
         def track_table():
             if not _state["tracks"]:
                 ui.label("No tracks fetched yet.").classes("note")
                 return
-            rows = "".join(
-                f'<tr><td>{_esc(a)}</td><td>{_esc(t)}</td>'
-                f'<td><a href="#" onclick="window.open({json.dumps(u)},\'_blank\',\'noopener\');'
-                f'return false;">Open in Deemix</a></td></tr>'
-                for a, t, u in _state["tracks"]
-            )
-            ui.html(f'<table class="am-table"><tr><th>Artist</th><th>Title</th><th></th></tr>{rows}</table>') \
-                .style("max-height:360px;overflow:auto;display:block;")
+            with ui.element("table").classes("am-table acquire-table").style("width:100%;"):
+                with ui.element("tr"):
+                    for h in ("Artist", "Title", "Album", "Year", "Deemix", "Manual", "Downloaded"):
+                        with ui.element("th").style(
+                            "text-align:center;" if h in ("Manual", "Downloaded") else "text-align:left;"
+                        ):
+                            ui.label(h)
+                for i, (artist, title, album, year, url) in enumerate(_state["tracks"]):
+                    row_key = f"{i}:{artist}:{title}"
+                    with ui.element("tr"):
+                        with ui.element("td"):
+                            ui.label(artist)
+                        with ui.element("td"):
+                            ui.label(title)
+                        with ui.element("td"):
+                            ui.label(album)
+                        with ui.element("td"):
+                            ui.label(year)
+                        with ui.element("td"):
+                            ui.link("Open in Deemix", url, new_tab=True)
+                        with ui.element("td").style("text-align:center;"):
+                            ui.checkbox(
+                                value=_state["manual"].get(row_key, False),
+                                on_change=lambda e, k=row_key: _set_manual(k, e.value),
+                            )
+                        with ui.element("td").style("text-align:center;"):
+                            ui.checkbox(value=_state["downloaded"].get(row_key, False)).props("disable")
 
         async def fetch():
             try:
                 _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
+                _state["manual"] = {}
+                _state["downloaded"] = {}
+                verify_label.set_text("")
                 track_table.refresh()
                 ui.notify(f"Fetched {len(_state['tracks'])} tracks", type="positive")
             except Exception as e:
                 ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
 
-        def open_all():
-            urls = [u for _, _, u in _state["tracks"]]
-            # No setTimeout: a deferred call loses the click's "user gesture" status
-            # and Chrome's popup blocker silently drops every tab after the first.
-            # Firing window.open() synchronously for all of them keeps the gesture -
-            # if the browser still blocks any, it shows a one-time "popups blocked"
-            # icon in the address bar; click it -> Always allow for this site.
-            js = ";".join(f"window.open({json.dumps(u)},'_blank','noopener')" for u in urls)
-            ui.run_javascript(js)
-            ui.notify(
-                "If only one tab opened, click the blocked-popups icon in the address "
-                "bar and choose 'Always allow' for this site.",
-                type="info",
-            )
-
-        with ui.row().style("gap:8px;margin:8px 0;"):
-            ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
-            ui.button("Open All in Deemix", icon="open_in_new", on_click=open_all).props("dense outline size=sm")
-        track_table()
-
-    # Card 3 - verify downloads
-    with ui.element("div").classes("panel w-full"):
-        with ui.element("div").classes("panel-title"):
-            ui.html("<span>Verify Downloads</span>")
-        verify_label = ui.label("").classes("note")
-        _missing: list[str] = []
-
-        @ui.refreshable
-        def missing_listing():
-            if not _missing:
-                return
-            shown = _missing[:40]
-            listing = "\n".join(shown)
-            if len(_missing) > len(shown):
-                listing += f"\n... and {len(_missing) - len(shown)} more"
-            ui.html(f'<div class="console" style="max-height:220px;">{_esc(listing)}</div>')
-
-        def verify():
+        def check_against_downloads():
             if not _state["tracks"]:
                 verify_label.set_text("Fetch tracks first.")
                 return
-            found, missing = match_downloads([(a, t) for a, t, _ in _state["tracks"]], config.NEWMUSIC_DIR)
-            verify_label.set_text(f"{len(found)}/{len(found) + len(missing)} downloaded")
-            _missing[:] = missing
-            missing_listing.refresh()
+            found, _missing = match_downloads(
+                [(a, t) for a, t, _album, _year, _url in _state["tracks"]], config.NEWMUSIC_DIR
+            )
+            found_set = set(found)
+            _state["downloaded"] = {
+                f"{i}:{artist}:{title}": f"{artist} - {title}" in found_set
+                for i, (artist, title, _album, _year, _url) in enumerate(_state["tracks"])
+            }
+            verify_label.set_text(f"{len(found)}/{len(_state['tracks'])} downloaded")
+            track_table.refresh()
 
-        ui.button("Check NewMusic Folder", icon="refresh", on_click=verify).props("dense outline size=sm")
-        missing_listing()
-
-
-def _esc(text: str) -> str:
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        with ui.row().style("gap:8px;margin:8px 0;"):
+            ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
+            ui.button("Check Against Downloads", icon="refresh", on_click=check_against_downloads) \
+                .props("dense outline size=sm")
+        track_table()
