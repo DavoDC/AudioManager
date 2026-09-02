@@ -110,7 +110,7 @@ def _spotify_client():
     from spotify_tools.spotify_client import RealSpotifyClient
     cfg = load_config(CONFIG_PATH)
     if not cfg:
-        raise RuntimeError(f"SpotifyPlaylistGen config not found at {CONFIG_PATH}")
+        raise RuntimeError(f"SpotifyTools config not found at {CONFIG_PATH}")
     return RealSpotifyClient(cfg)
 
 

@@ -15,7 +15,7 @@ STATS_JSON = LOGS_DIR / "analysis-stats.json"
 TRACKS_JSON = LOGS_DIR / "tracks.json"
 
 AUDIOMIRROR_REPO = REPO_ROOT.parent / "AudioMirror"
-SPOTIFYGEN_ROOT = REPO_ROOT.parent / "SpotifyPlaylistGen"
+SPOTIFYGEN_ROOT = REPO_ROOT.parent / "SpotifyTools"
 
 # NewMusic staging inbox (matches Constants.cs). The GUI only READS files
 # here (album-art extraction for the review queue) - it never moves,
