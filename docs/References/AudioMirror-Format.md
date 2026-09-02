@@ -38,4 +38,4 @@ Under `AUDIO_MIRROR/`:
 - `Artists/<ArtistName>/<Album>/` - standard tracks
 - `Compilations/`, `Miscellaneous Songs/`, `Motivation/`, `Musivation/`, `Sources/` - special categories
 
-`audiomirror_path` in SpotifyPlaylistGen config should point to the `AUDIO_MIRROR/` folder (not a single file).
+`audiomirror_path` in SpotifyTools config should point to the `AUDIO_MIRROR/` folder (not a single file).

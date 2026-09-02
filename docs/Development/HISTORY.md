@@ -55,7 +55,7 @@ design, see the `/think` writeup in the introducing commit). Backend: `SpotifyIn
 `get_liked_track_uris`/`remove_liked_tracks`/`get_or_create_playlist`, implemented in both
 `RealSpotifyClient` (new `user-library-read`/`user-library-modify` scopes - one-time browser
 re-consent) and `SimulatedSpotifyClient`, plus `src/acquire.py`'s `move_liked_to_playlist()`
-orchestration (SpotifyPlaylistGen repo). GUI: new Acquire tab (slots in right after Statistics)
+orchestration (SpotifyTools repo, named SpotifyPlaylistGen at the time). GUI: new Acquire tab (slots in right after Statistics)
 - sync Liked Songs to an "AudioManager Inbox" playlist, fetch-and-open Deemix links per track
 (reuses `open_playlist.py`'s extracted `_build_deemix_url`), and a read-only fuzzy-match Verify
 Downloads scan of `NEWMUSIC_DIR` against the fetched track list. Deliberately cheap/MVP - see
