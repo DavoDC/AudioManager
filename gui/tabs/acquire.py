@@ -106,8 +106,8 @@ def _save_last_playlist(playlist_id: str, name: str) -> None:
 
 
 def _spotify_client():
-    from src.config import load_config, CONFIG_PATH
-    from src.spotify_client import RealSpotifyClient
+    from spotify_tools.config import load_config, CONFIG_PATH
+    from spotify_tools.spotify_client import RealSpotifyClient
     cfg = load_config(CONFIG_PATH)
     if not cfg:
         raise RuntimeError(f"SpotifyPlaylistGen config not found at {CONFIG_PATH}")
@@ -117,7 +117,7 @@ def _spotify_client():
 def _do_sync_liked() -> str:
     """Deferred - see IDEAS.md TIER 2 'Sync Liked Songs broken (403)'. Card is
     hidden via _build_sync_liked_card() not being called; logic kept intact."""
-    from src.acquire import move_liked_to_playlist
+    from spotify_tools.acquire import move_liked_to_playlist
     client = _spotify_client()
     result = move_liked_to_playlist(client)
     _save_last_playlist(result.playlist_id, result.playlist_name)
@@ -133,7 +133,7 @@ def _format_duration(duration_ms: int) -> str:
 
 
 def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, str, str]]:
-    from src.open_playlist import extract_playlist_id, _build_deemix_url
+    from spotify_tools.open_playlist import extract_playlist_id, _build_deemix_url
     playlist_id = extract_playlist_id(playlist_id_or_url)
     client = _spotify_client()
     tracks = client.get_playlist_tracks_detailed(playlist_id)
@@ -162,7 +162,7 @@ def _scan_newmusic_filenames(newmusic_dir: Path) -> list[tuple[str, str, str, st
     (raw_artist, raw_title, norm_artist, norm_title). Shared by match_downloads
     (playlist -> filenames) and find_extra_newmusic_files (filenames -> playlist,
     the reverse direction) so both use identical normalisation."""
-    from src.matcher import clean_artist, clean_title, normalise
+    from spotify_tools.matcher import clean_artist, clean_title, normalise
 
     parts = []
     if newmusic_dir.is_dir():
@@ -198,7 +198,7 @@ def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[
     name swamp the ratio and produced false positives across an artist's whole
     catalogue (e.g. every Jack Harlow track ticking "downloaded" once one was).
     See _artist_title_match for the per-pair matching rule."""
-    from src.matcher import clean_artist, clean_title, normalise
+    from spotify_tools.matcher import clean_artist, clean_title, normalise
 
     filename_parts = _scan_newmusic_filenames(newmusic_dir)
 
@@ -218,7 +218,7 @@ def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path)
     no playlist is loaded). Surfaces files that were downloaded outright, or
     downloaded from a playlist this table was never pointed at. Returns
     [(artist, title), ...] parsed straight from each filename, read-only."""
-    from src.matcher import clean_artist, clean_title, normalise
+    from spotify_tools.matcher import clean_artist, clean_title, normalise
 
     track_norms = [(normalise(_primary_artist(a, clean_artist)), normalise(clean_title(t))) for a, t in tracks]
 
@@ -415,7 +415,7 @@ def build() -> None:
                                 ui.checkbox(value=True).props("disable")
 
         def _run_check_against_downloads():
-            from src.open_playlist import _build_deemix_url
+            from spotify_tools.open_playlist import _build_deemix_url
             current_tracks = [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]]
             found, _missing = match_downloads(current_tracks, config.NEWMUSIC_DIR)
             found_set = set(found)
