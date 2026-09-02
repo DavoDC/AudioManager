@@ -4,6 +4,37 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Three pre-batch integration-tab defects fixed
+
+Ranked-risk items from IDEAS.md TIER 2 "Do these before the next real batch integration", closed one
+per commit, each with `scripts\dev\verify.bat --no-pause` green after.
+
+**A file added to NewMusic after the dry run was moved without ever being reviewed.** `run_execute` in
+`gui/tabs/integration.py` passed `--manifest` only when `S.declined` was non-empty, so an
+accept-everything run (the common case) invoked a bare `integrate --no-input` and the exe re-scanned
+`NEWMUSIC_DIR` from scratch - anything that arrived between the Stage 1 dry run and the Stage 4 execute
+(e.g. via the Acquire tab downloading into the same folder) was integrated with no review. The manifest
+write was extracted into `_write_manifest()` and is now always called and always passed. Test:
+`test_write_manifest_passes_manifest_flag_with_zero_declines`.
+
+**Substring filename matching cross-contaminated per-track status.** `_update_exec_status` matched a
+target filename via `fn.lower() in low`, so an accepted filename that is a substring of another accepted
+filename (`Song.mp3` inside `Another Song.mp3`) had its status flipped by the other file's log line. Now
+a match only counts when no other target's filename containing it as a substring also matches the same
+line, so the longer/more specific filename wins. The "everything before this one has finished moving"
+cascade relied on the same substring signal and was removed with it. The regression-documenting test at
+`gui/tests/test_integration.py` was inverted to assert the correct (non-contaminating) behaviour.
+
+**The GUI's own record of a run was capped and ephemeral.** `S.exec_lines` is capped at 300 lines and
+cleared at the start of every run, and the GUI wrote no log of its own. `run_execute` now opens
+`gui/.cache/run-logs/integration-<timestamp>.log` at the start of each run and tees every exe output
+line to it, in addition to the existing in-memory `S.exec_lines`.
+
+Left open, on purpose: the partially-failed-run status labelling (same file, lines ~360-365) needs a
+design decision about the exe's real output format and stays `[OPUS]` in IDEAS.md.
+
+---
+
 ## 2026-09-02 - verify.bat now covers the Python GUI suite (the repo's objective judge)
 
 `scripts\dev\verify.bat` previously built the C# and ran `AudioManager.exe --verify` and nothing
