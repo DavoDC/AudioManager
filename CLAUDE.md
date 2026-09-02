@@ -16,38 +16,7 @@ C# console app for managing a personal music library. Two modes:
 
 ## Project Structure
 
-```
-AudioManager/
-  CLAUDE.md
-  README.md
-  .gitignore
-  config/                      # libchecker-exceptions.xml (edit without recompiling)
-  docs/                        # IDEAS.md, HISTORY.md, design docs
-  logs/                        # integration run logs (gitignored, written by MusicIntegrator)
-  scripts/                     # launchers and one-off utility scripts
-  project/                     # C# solution
-    AudioManager.sln
-    AudioManager/
-      Code/                    # all C# source
-        Program.cs             # entry point, mode selection, CLI args handler
-        Constants.cs           # all paths and settings (single source of truth)
-        TeeWriter.cs           # dual output: screen + log file simultaneously
-        Doer/                  # core processing modules (all auto-timed via Doer base class)
-          Analyser/            # statistics generation
-          AgeChecker.cs        # checks age of mirror, triggers regen if stale
-          AudioMirrorCommitter.cs  # auto-commits AudioMirror after clean LibChecker run
-          DecisionLog.cs       # logs routing decisions to XML for audit trail
-          LibChecker.cs        # library validation rules
-          MusicIntegrator.cs   # staging folder scan, calls TagFixer, routes files, logs decisions
-          Parser.cs            # parses XML mirror into tag list
-          Reflector.cs         # XML mirror creation
-          ReportWriter.cs      # timestamped report output
-          TagFixer.cs          # comprehensive tag cleanup (TCMP, genres, parentheticals, featured artists, file renames)
-        Track/                 # data models: Track, TrackTag, TrackXML
-  reports/                     # auto-generated timestamped reports (gitignored, written by C# app)
-    YYYY/
-      YYYY-MM-DD - AudioReport.txt
-```
+See "Project Structure" in `docs/References/DevContext.md` for the full tree.
 
 ## Build and Run
 
@@ -58,67 +27,40 @@ AudioManager/
 .\scripts\launch.bat
 ```
 
-Menu options (arrow-key navigable, shown in the exe after build):
-- Analysis - standard analysis run
-- Analysis (Force Regen) - forces full AudioMirror regeneration
-- Integrate - runs dry run first, then prompts "Proceed with real integration? [y/N]"
-
-launch.bat handles build internally; the exe shows the interactive menu (no menu logic in the bat).
+Menu (arrow-key navigable, shown in the exe after build): Analysis, Analysis (Force Regen), Integrate (dry run first, then prompts "Proceed with real integration? [y/N]"). launch.bat handles build internally; the exe shows the menu.
 
 ### Claude: Building the Program
 
-**Always use PowerShell (never Bash) for .bat files. Use full absolute path with --no-pause flag (no cd needed - build.bat uses %~dp0 internally):**
+**Always use PowerShell (never Bash) for .bat files, full absolute path, `--no-pause` flag** (no cd needed - build.bat uses `%~dp0` internally):
 ```powershell
 & "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\build.bat" --no-pause
 ```
-
-Build completes in ~2-3 seconds without blocking.
-
-**Success looks like:**
-```
-[BUILD] Compiling AudioManager...
-[BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\dev\..\..\project\AudioManager\bin\Release\AudioManager.exe
-```
+Completes in ~2-3 seconds without blocking. Success output example: "Build success/failure" in `docs/References/DevContext.md`.
 
 ### Claude: Running Tests (MANDATORY after any C# code change)
 
-**After every C# code change, run tests before committing.** Tests are fast (< 1 second) and catch tag logic regressions immediately. Do not skip this step even for "obviously safe" changes.
+**After every C# code change, run tests before committing** - fast (< 1 second), catches tag logic regressions. Files that trigger this: anything in `Code/`, especially TagFixer.cs, Track/Track.cs, Constants.cs, Code/Tests/.
 
 ```powershell
 & "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\verify.bat" --no-pause
 ```
 
-Runs build + unit tests + routing manifest tests. All must pass before any C# commit.
+Runs build + unit tests + routing manifest tests. All must pass before any C# commit. All bats support `--no-pause` (always pass it from Claude). If a test fails: fix the code, not the test (unless the test is wrong - state why).
 
-**NOTE: All bats support `--no-pause` (clean exit for Claude) vs no args (window stays open for human use). Always pass `--no-pause` when calling any bat from Claude.**
-
-If a test fails after a change: fix the code, not the test (unless the test is wrong - state why explicitly).
-
-Files where a change triggers mandatory test run: anything in `Code/` - especially TagFixer.cs, Track/Track.cs, Constants.cs (string constants), and all files in Code/Tests/.
-
-**If build fails:**
-- Check `logs\build.log` for full MSBuild output and error details
-- Common errors: missing csproj file registration (see CRITICAL below), platform mismatch
-
-**CRITICAL: Legacy csproj format - manual file registration required.**
-
-This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs` files are NOT auto-included in the build.
-
-**Every new file must be manually registered:**
-1. Create the `.cs` file in the appropriate folder
-2. Open `project\AudioManager\AudioManager.csproj`
-3. Add a `<Compile Include="Code\...\NewFile.cs" />` entry in the correct section
-4. Build to verify: `.\scripts\dev\build.bat`
-
-**If you forget:** Build fails with `CS0103: The name '...' does not exist in the current context`
-
-**Platform constraint:** Solution only defines `Any CPU`. Never pass `-p:Platform=x86` to MSBuild - it will fail with `MSB4126: The specified solution configuration "Release|x86" is invalid`. Always use `-p:Platform="Any CPU"` (which is the default in build.bat).
+Legacy csproj format, csproj file registration, and the `Any CPU`-only platform constraint: see "Build troubleshooting" in `docs/References/DevContext.md`.
 
 ### Claude: GUI dev hot-reload - use the trigger, don't kill the process
 
 If `scripts\launch-gui-dev.bat` is running while editing `gui/`, touch/create
 `gui/.cache/reload.trigger` once ready instead of `taskkill`/closing the window.
 Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
+
+### Claude: GUI visual design - read docs/DESIGN.md first
+
+Before adding or changing any control, panel, table, or layout in `gui/`,
+read `docs/DESIGN.md` - palette, alignment/spacing rules, and when a view
+should be a table vs a card grid. Every control must reuse the CSS vars and
+patterns it defines rather than inventing new styling per tab.
 
 ## Key Paths (from Constants.cs)
 
@@ -145,13 +87,9 @@ Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
 - Never say "In library" with an XML path, or "In AudioMirror" with an MP3 path. Match label to file type.
 - Duplicate detection surfaces AudioMirror XML paths - display as "In AudioMirror" so the user knows where the detection came from.
 
-## Library Routing Rules (read before touching GetDestDir or any routing code)
+## Library Routing Rules
 
-These are invariants from Music-Library-Rules.md. Violating them causes files to land in wrong locations.
-
-- **Subfolder before song - at every level.** No song file ever sits directly in an artist folder. Always `Artist/Singles/song.mp3` or `Artist/AlbumName/song.mp3`. This applies at ALL nesting levels - including `Musivation/Akira The Don/People/{Person}/`. `People/Scott Adams/song.mp3` is wrong; `People/Scott Adams/Singles/song.mp3` is correct.
-- **Scan-ahead applies everywhere subfolder routing applies.** If you add a new routing path that picks Singles/ vs Album/, apply the same scan-ahead + album-threshold logic used in the Artists/ path. Factor it out - do not duplicate it.
-- **Before implementing any new routing path:** read `docs/References/Music-Library-Rules.md` and verify the expected folder structure. Then check whether the subfolder-before-song rule applies.
+**Before touching GetDestDir or any routing code**, read `docs/References/Music-Library-Rules.md` and see "Library Routing Rules" in `docs/References/DevContext.md` - subfolder-before-song and scan-ahead invariants. Violating them causes files to land in wrong locations.
 
 ## Workflow Note
 
@@ -184,12 +122,7 @@ After the run: check `git -C AudioMirror diff HEAD`, confirm the diff looks corr
 -> Select option 3 (Integration) - runs dry run first, prompts "Proceed with real integration? [y/N]"
 ```
 
-**Claude dev workflow for verifying fixes:**
-```
-& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\build.bat" --no-pause
-& "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" integrate --dry-run --no-input
-```
-`--no-input` skips all interactive prompts. Run after any routing or tag fix to see real output without blocking.
+**Claude dev workflow for verifying fixes:** build, then run `integrate --dry-run --no-input` (skips interactive prompts) to see real output without blocking - see "Claude dev verify workflow" in `docs/References/DevContext.md` for the exact commands.
 
 ## Tag Fixer Constraint
 

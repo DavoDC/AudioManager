@@ -31,6 +31,29 @@ question - it's consistent spacing, not an Acquire-specific bug). Don't
 special-case a smaller margin on one tab; if the spacing is wrong, fix
 `header.page` in `theme.py` so every tab changes together.
 
+## Alignment
+
+Everything should line up and look intentional - a row of controls with one
+element sitting higher/lower/bigger than its neighbors reads as broken even
+when every individual control is "correct" in isolation. Before shipping a
+new row of controls:
+
+- Every element in a `ui.row()` shares the same visual baseline. Quasar
+  components (`q-checkbox`, `q-btn`) carry their own internal padding/margin
+  that doesn't match plain `ui.label`/`ui.button` sizing - check rendered
+  alignment against neighbors, don't assume `align-items:center` alone fixes it
+  (see the "Hide downloaded" checkbox fix, `gui/tabs/acquire.py`, which needed
+  an explicit `margin:0;padding:0;` override to sit level with the buttons
+  beside it).
+- Don't stack a second block-level label inside a table `<th>` "for extra
+  info" - it grows that header cell (and the whole header row) taller than
+  its neighbors. If a number needs surfacing, put it somewhere with its own
+  row (a stat tile, the progress bar) rather than doubling up a header cell.
+- When two adjacent elements should read as one unit (a toggle and the table
+  it filters, a count and the bar it summarizes), duplicating the same
+  information in two places is worse than picking one location - it also
+  causes the taller-row problem above.
+
 ## Color palette
 
 `gui/theme.py`'s `:root` block is the single source of truth - never
