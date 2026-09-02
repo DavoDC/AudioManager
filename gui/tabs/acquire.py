@@ -442,10 +442,13 @@ def build() -> None:
         def clear():
             _state["tracks"] = []
             _state["downloaded"] = {}
+            _state["sort_col"] = None
+            _state["sort_reverse"] = False
             playlist_input.value = ""
             _run_check_against_downloads()
             track_table.refresh()
             progress_bar.refresh()
+            history_items.refresh()
 
         def _toggle_hide_downloaded(e):
             _state["hide_downloaded"] = e.value

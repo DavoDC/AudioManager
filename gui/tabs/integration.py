@@ -16,6 +16,7 @@ moves or deletes NewMusic files; the exe owns all file operations).
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 
 from nicegui import ui
@@ -438,4 +439,4 @@ def advanced_log() -> None:
 
 
 def _esc(text: str) -> str:
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return html.escape(text, quote=True)
