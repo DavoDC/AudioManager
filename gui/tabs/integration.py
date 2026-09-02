@@ -298,25 +298,32 @@ def _confirm_execute() -> None:
 # -------------------------------------------------------- stage 4 execute
 
 
+def _write_manifest(targets: list[dict]) -> list[str]:
+    """Write the accepted set to the manifest file and return the ["integrate",
+    "--manifest", path] args. Always called, even with zero declines: the
+    accepted set at review time is the reviewed set, and a bare
+    `integrate --no-input` would re-scan NEWMUSIC_DIR from scratch, picking up
+    anything that arrived after the dry run with no review at all.
+
+    Raises OSError on write failure - the caller decides how to surface it."""
+    manifest_path = config.CACHE_DIR / "accepted-manifest.json"
+    config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump([{"filename": e["filename"], "artist": e["artist"],
+                    "title": e["title"]} for e in targets], f, indent=2)
+    return ["integrate", "--manifest", str(manifest_path)]
+
+
 async def run_execute() -> None:
     if runner.busy:
         ui.notify("Another operation is already running", type="warning")
         return
     targets = S.accepted
-    args = ["integrate"]
-    if S.declined:
-        # Selective integration: hand the exe the accepted set; declined files
-        # are never touched. The GUI writes only into its own cache dir.
-        manifest_path = config.CACHE_DIR / "accepted-manifest.json"
-        try:
-            config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            with open(manifest_path, "w", encoding="utf-8") as f:
-                json.dump([{"filename": e["filename"], "artist": e["artist"],
-                            "title": e["title"]} for e in targets], f, indent=2)
-        except OSError as e:
-            ui.notify(f"Could not write manifest: {e}", type="negative")
-            return
-        args += ["--manifest", str(manifest_path)]
+    try:
+        args = _write_manifest(targets)
+    except OSError as e:
+        ui.notify(f"Could not write manifest: {e}", type="negative")
+        return
 
     S.stage = 4
     S.exec_lines = []
