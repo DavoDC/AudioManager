@@ -32,7 +32,7 @@ For each new song, check that artist out - look at top 10 streamed songs, find o
 **Output:** Downloaded MP3 files in `C:\Users\David\Downloads\NewMusic\`
 
 1. Add all songs to a playlist and remove all songs from liked songs
-2. Run `C:\Users\David\GitHubRepos\SpotifyPlaylistGen\scripts\open_playlist.bat` on that playlist
+2. Run `C:\Users\David\GitHubRepos\SpotifyTools\scripts\open_playlist.bat` on that playlist
    - Music service places MP3s in `C:\Users\David\Downloads\NewMusic\`
 3. Verify all tracks downloaded successfully
 
