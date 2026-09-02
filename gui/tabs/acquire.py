@@ -13,8 +13,11 @@ same poll. Last-5 fetched playlists (id + name) persist to
 config.ACQUIRE_STATE_JSON and are reachable via the history button next to
 the playlist field. A "Hide downloaded" checkbox next to Fetch/Clear filters
 already-ticked rows out of the fetched-tracks view only (extra rows are
-untouched). See "Acquire tab design" in docs/References/GUI-Architecture.md
-and docs/DESIGN.md for the GUI's visual-design rules.
+untouched). A segmented progress bar above the panel (progress_bar()) gives
+an at-a-glance blue/grey/yellow read of downloaded/missing/extra counts,
+refreshed alongside track_table() on fetch, clear, and the poll timer. See
+"Acquire tab design" in docs/References/GUI-Architecture.md and docs/DESIGN.md
+for the GUI's visual-design rules.
 Sync Liked Songs is built but hidden (Spotify 403 - see _build_sync_liked_card).
 Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
 merged into table 2026-09-01, NewMusic-surfacing/history/clear 2026-09-02,
@@ -262,6 +265,46 @@ def build() -> None:
         ui.html("<h1>Acquire</h1>")
         ui.html('<div class="meta">Stage 2 - Liked Songs &rarr; inbox playlist &rarr; Deemix &rarr; NewMusic</div>')
 
+    @ui.refreshable
+    def progress_bar():
+        """At-a-glance segmented bar: blue = playlist tracks already in
+        NewMusic (Downloaded), grey = playlist tracks still missing, yellow =
+        files in NewMusic that match no track in the loaded playlist (extra).
+        Segment widths are proportional to counts; a flat grey bar (0 tracks,
+        0 extra) means nothing has been fetched or scanned yet."""
+        downloaded = sum(1 for v in _state["downloaded"].values() if v)
+        missing = len(_state["tracks"]) - downloaded
+        extra = len(_state["extra"])
+        total = downloaded + missing + extra
+        segments = [
+            (downloaded, "var(--accent)", f"{downloaded} downloaded"),
+            (missing, "#3a3f4d", f"{missing} missing"),
+            (extra, "var(--accent3)", f"{extra} extra in NewMusic"),
+        ]
+        with ui.element("div").style(
+            "display:flex;align-items:center;gap:12px;background:var(--panel);"
+            "border:1px solid var(--panel-border);border-radius:var(--radius-panel);"
+            "padding:10px 14px;margin-bottom:16px;width:100%;"
+        ):
+            with ui.element("div").style(
+                "flex:1;height:14px;border-radius:var(--radius-pill);overflow:hidden;"
+                "display:flex;background:#3a3f4d;"
+            ):
+                for count, color, _label in segments:
+                    if count:
+                        ui.element("div").style(f"width:{count / total * 100 if total else 0}%;background:{color};height:100%;")
+            for count, color, label in segments:
+                if count:
+                    ui.html(
+                        f'<span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">'
+                        f'<span style="display:inline-block;width:8px;height:8px;border-radius:2px;'
+                        f'background:{color};margin-right:5px;vertical-align:middle;"></span>{label}</span>'
+                    )
+            if not total:
+                ui.label("Fetch a playlist to see progress").classes("note").style("margin:0;")
+
+    progress_bar()
+
     # Card 2 - fetch + open tracks (Card 1, Sync Liked Songs, is hidden - see _build_sync_liked_card)
     with ui.element("div").classes("panel w-full").style("margin-bottom:16px;"):
         with ui.element("div").classes("panel-title"):
@@ -386,6 +429,7 @@ def build() -> None:
                 _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
                 await asyncio.to_thread(_run_check_against_downloads)
                 track_table.refresh()
+                progress_bar.refresh()
                 history_items.refresh()
                 ui.notify(f"Fetched {len(_state['tracks'])} tracks", type="positive")
             except Exception as e:
@@ -397,6 +441,7 @@ def build() -> None:
             playlist_input.value = ""
             _run_check_against_downloads()
             track_table.refresh()
+            progress_bar.refresh()
 
         def _toggle_hide_downloaded(e):
             _state["hide_downloaded"] = e.value
@@ -430,6 +475,7 @@ def build() -> None:
                 await asyncio.to_thread(_run_check_against_downloads)
                 if (_state["downloaded"], _state["extra"]) != before:
                     track_table.refresh()
+                    progress_bar.refresh()
             finally:
                 _poll["busy"] = False
 
