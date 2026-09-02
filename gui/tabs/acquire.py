@@ -371,10 +371,6 @@ def build() -> None:
                                 ui.label(h + arrow).style("cursor:pointer;").on("click", _make_sort_handler())
                             else:
                                 ui.label(h)
-                            if h == "Downloaded" and _state["downloaded"]:
-                                found = sum(1 for v in _state["downloaded"].values() if v)
-                                ui.label(f"{found}/{len(_state['downloaded'])}").classes("note") \
-                                    .style("font-weight:normal;text-transform:none;")
                 for i, (artist, title, album, year, length, url) in _sorted_tracks():
                     row_key = f"{i}:{artist}:{title}"
                     is_downloaded = _state["downloaded"].get(row_key, False)
@@ -459,7 +455,7 @@ def build() -> None:
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
             ui.button("Clear", icon="clear", on_click=clear).props("dense outline size=sm color=grey")
             ui.checkbox("Hide downloaded", value=_state["hide_downloaded"], on_change=_toggle_hide_downloaded) \
-                .props("dense").classes("note")
+                .props("dense").classes("note").style("margin:0;padding:0;")
         # Runs once synchronously on tab build so NewMusic-only files ("extra"
         # rows) surface immediately, even before any playlist has been fetched.
         _run_check_against_downloads()
