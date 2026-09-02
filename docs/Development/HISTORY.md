@@ -4,6 +4,21 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-02 - [GUI] Integration tab test coverage and `_esc` hardening (backlog items closed)
+
+Two IDEAS.md TIER 2 entries added by the same day's deep-dive were already resolved by commits
+`ba94271c` (new integration/acquire tests) and `64ce7397` (`_esc`/`clear()` maintainability fixes)
+but had not been removed from the backlog. Verified against the current source and closed here:
+`gui/tests/test_integration.py` exists and covers `IntegrationState.accepted`/`declined`, `_bulk`,
+`_decide`, `_esc` and `_update_exec_status`, including a deliberate regression-documenting test for
+the substring-filename cross-contamination case; and `_esc` is no longer hand-rolled, it delegates
+to `html.escape(text, quote=True)` (`gui/tabs/integration.py` line 441-442) with a test asserting
+quote escaping. The substring-matching bug itself stays open and has been promoted into the new
+batch-integration risk sub-section of IDEAS.md, since the test documents it rather than fixes it.
+
+A stale backlog entry is worse than a missing one: a delegated session picking up "`_esc()` is a
+hand-rolled escaper missing quote-escaping" as written would have re-broken correct code.
+
 ## 2026-09-02 - [GUI] Acquire tab deep-dive fixes: history-picker no-op, color drift
 
 Deep-dive audit of Acquire/Integration tabs found `_apply_history_pick` (`gui/tabs/acquire.py`)
