@@ -158,7 +158,7 @@ TagFixer modifies tags in NewMusic with no library rollback plan:
 | Operation | Scope | Action | Compliant? | Safety Concern |
 |-----------|-------|--------|-----------|-----------------|
 | TagFixer cleanup | NewMusic | Modify tags, rename files | ✅ Yes | None (NewMusic only) |
-| Duplicate detection | AudioMirror XML | Read + hash compare | ✅ Yes | Accuracy depends on hash logic |
+| Duplicate detection | AudioMirror XML | Read + metadata compare | ✅ Yes | Accuracy depends on artist/title matching (no hash-based comparison) |
 | D decision (keep lib) | NewMusic | Delete duplicate | ✅ Yes | None |
 | L decision (replace) | Library | Delete old, route new | ✅ Yes | Only if duplicate detection correct |
 | K decision (keep both) | NewMusic → Library | Move file | ✅ Yes | None |
@@ -170,8 +170,8 @@ TagFixer modifies tags in NewMusic with no library rollback plan:
 
 ## Required Constraints (from CLAUDE.md)
 
-**From CLAUDE.md:**
-> Only the user (David) executes integration. Claude implements features and prepares workflows, but stops before running any integration.
+**From CLAUDE.md ("Critical Safety Rule", current wording as of 2026-09-02):**
+> Only the user (David) runs real integration. Real integration moves files from NewMusic into the library - user must manually trigger via `launch.bat` for data safety and auditability.
 
 **Status: ✅ ENFORCED IN CODE**
 
