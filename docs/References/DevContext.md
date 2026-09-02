@@ -4,6 +4,90 @@ Implementation invariants, architecture notes, and code patterns. Read this when
 
 ---
 
+## Project Structure
+
+```
+AudioManager/
+  CLAUDE.md
+  README.md
+  .gitignore
+  config/                      # libchecker-exceptions.xml (edit without recompiling)
+  docs/                        # IDEAS.md, HISTORY.md, design docs
+  logs/                        # integration run logs (gitignored, written by MusicIntegrator)
+  scripts/                     # launchers and one-off utility scripts
+  project/                     # C# solution
+    AudioManager.sln
+    AudioManager/
+      Code/                    # all C# source
+        Program.cs             # entry point, mode selection, CLI args handler
+        Constants.cs           # all paths and settings (single source of truth)
+        TeeWriter.cs           # dual output: screen + log file simultaneously
+        Doer/                  # core processing modules (all auto-timed via Doer base class)
+          Analyser/            # statistics generation
+          AgeChecker.cs        # checks age of mirror, triggers regen if stale
+          AudioMirrorCommitter.cs  # auto-commits AudioMirror after clean LibChecker run
+          DecisionLog.cs       # logs routing decisions to XML for audit trail
+          LibChecker.cs        # library validation rules
+          MusicIntegrator.cs   # staging folder scan, calls TagFixer, routes files, logs decisions
+          Parser.cs            # parses XML mirror into tag list
+          Reflector.cs         # XML mirror creation
+          ReportWriter.cs      # timestamped report output
+          TagFixer.cs          # comprehensive tag cleanup (TCMP, genres, parentheticals, featured artists, file renames)
+        Track/                 # data models: Track, TrackTag, TrackXML
+  reports/                     # auto-generated timestamped reports (gitignored, written by C# app)
+    YYYY/
+      YYYY-MM-DD - AudioReport.txt
+```
+
+---
+
+## Library Routing Rules
+
+These are invariants from Music-Library-Rules.md. Violating them causes files to land in wrong locations.
+
+- **Subfolder before song - at every level.** No song file ever sits directly in an artist folder. Always `Artist/Singles/song.mp3` or `Artist/AlbumName/song.mp3`. This applies at ALL nesting levels - including `Musivation/Akira The Don/People/{Person}/`. `People/Scott Adams/song.mp3` is wrong; `People/Scott Adams/Singles/song.mp3` is correct.
+- **Scan-ahead applies everywhere subfolder routing applies.** If you add a new routing path that picks Singles/ vs Album/, apply the same scan-ahead + album-threshold logic used in the Artists/ path. Factor it out - do not duplicate it.
+
+---
+
+## Claude dev verify workflow
+
+```
+& "C:\Users\David\GitHubRepos\AudioManager\scripts\dev\build.bat" --no-pause
+& "C:\Users\David\GitHubRepos\AudioManager\project\AudioManager\bin\Release\AudioManager.exe" integrate --dry-run --no-input
+```
+`--no-input` skips all interactive prompts. Run after any routing or tag fix to see real output without blocking.
+
+---
+
+## Build success/failure
+
+Success output:
+```
+[BUILD] Compiling AudioManager...
+[BUILD] Done. Exe: C:\Users\David\GitHubRepos\AudioManager\scripts\dev\..\..\project\AudioManager\bin\Release\AudioManager.exe
+```
+
+---
+
+## Build troubleshooting
+
+**CRITICAL: Legacy csproj format - manual file registration required.** This is a .NET Framework 4.8 project with the old-style csproj format. New `.cs` files are NOT auto-included in the build.
+
+**Every new file must be manually registered:**
+1. Create the `.cs` file in the appropriate folder
+2. Open `project\AudioManager\AudioManager.csproj`
+3. Add a `<Compile Include="Code\...\NewFile.cs" />` entry in the correct section
+4. Build to verify: `.\scripts\dev\build.bat`
+
+**If you forget:** Build fails with `CS0103: The name '...' does not exist in the current context`
+
+**Platform constraint:** Solution only defines `Any CPU`. Never pass `-p:Platform=x86` to MSBuild - it will fail with `MSB4126: The specified solution configuration "Release|x86" is invalid`. Always use `-p:Platform="Any CPU"` (the default in build.bat).
+
+**If build fails generally:** check `logs\build.log` for full MSBuild output and error details.
+
+---
+
 ## AudioMirror as Classification Oracle
 
 **The AudioMirror is the source of truth for facts about the library. Use it to answer classification questions - not name heuristics.**
