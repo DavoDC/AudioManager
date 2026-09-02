@@ -1,12 +1,14 @@
 """Unit tests for gui.tabs.integration - pure logic only (IntegrationState,
 _esc, _update_exec_status). UI-building functions (stage_scan/review_card/etc.)
 need a NiceGUI page context and are exercised manually per gui/README.md."""
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from gui.tabs.integration import IntegrationState, _esc, _update_exec_status
+from gui import config
+from gui.tabs.integration import IntegrationState, _esc, _update_exec_status, _write_manifest
 
 
 def _entry(filename, **overrides):
@@ -61,6 +63,23 @@ def test_filtered_conflicts_includes_dupes_and_non_clean_status():
     s.filter = "conflicts"
     names = {e["filename"] for e in s.filtered()}
     assert names == {"dupe.mp3", "err.mp3"}
+
+
+# --------------------------------------------------------- _write_manifest
+
+
+def test_write_manifest_passes_manifest_flag_with_zero_declines(tmp_path, monkeypatch):
+    """A zero-declines run (accept-everything, the common case) must still
+    write and pass --manifest - otherwise the exe re-scans NEWMUSIC_DIR from
+    scratch and integrates anything that arrived after the dry run unreviewed."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    targets = [_entry("a.mp3"), _entry("b.mp3")]
+    args = _write_manifest(targets)
+    assert "--manifest" in args
+    manifest_path = Path(args[args.index("--manifest") + 1])
+    assert manifest_path.exists()
+    written = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert [e["filename"] for e in written] == ["a.mp3", "b.mp3"]
 
 
 # --------------------------------------------------------------------- _esc
