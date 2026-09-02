@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import html
 import json
+from datetime import datetime
 
 from nicegui import ui
 
@@ -314,6 +315,18 @@ def _write_manifest(targets: list[dict]) -> list[str]:
     return ["integrate", "--manifest", str(manifest_path)]
 
 
+def _open_run_log() -> "object | None":
+    """Open a timestamped log file under the cache dir for this run's exe
+    output. The GUI's own record (S.exec_lines) is capped and cleared on every
+    run, so this is the only durable copy the GUI keeps of what the exe said."""
+    config.RUN_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = config.RUN_LOGS_DIR / f"integration-{datetime.now():%Y%m%d-%H%M%S}.log"
+    try:
+        return open(log_path, "w", encoding="utf-8")
+    except OSError:
+        return None
+
+
 async def run_execute() -> None:
     if runner.busy:
         ui.notify("Another operation is already running", type="warning")
@@ -334,10 +347,17 @@ async def run_execute() -> None:
     S.refresh()
 
     throttle = {"pending": False}
+    log_file = _open_run_log()
 
     def on_line(line: str) -> None:
         S.exec_lines.append(line)
         _update_exec_status(line)
+        if log_file:
+            try:
+                log_file.write(line + "\n")
+                log_file.flush()
+            except OSError:
+                pass
         if not throttle["pending"]:
             throttle["pending"] = True
 
@@ -346,12 +366,16 @@ async def run_execute() -> None:
                 S.refresh()
             ui.timer(0.5, flush, once=True)
 
-    result = await runner.run(
-        args,
-        action="Integration",
-        on_line=on_line,
-        timeout=config.TIMEOUT_INTEGRATE,
-    )
+    try:
+        result = await runner.run(
+            args,
+            action="Integration",
+            on_line=on_line,
+            timeout=config.TIMEOUT_INTEGRATE,
+        )
+    finally:
+        if log_file:
+            log_file.close()
     S.exec_done = True
     if result.ok:
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
