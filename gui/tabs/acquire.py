@@ -277,31 +277,39 @@ def build() -> None:
         extra = len(_state["extra"])
         total = downloaded + missing + extra
         segments = [
-            (downloaded, "var(--accent)", f"{downloaded} downloaded"),
-            (missing, "#3a3f4d", f"{missing} missing"),
-            (extra, "var(--accent3)", f"{extra} extra in NewMusic"),
+            (downloaded, "var(--accent)", "#0c0e13", f"{downloaded} downloaded"),
+            (missing, "#3a3f4d", "var(--text-dim)", f"{missing} missing"),
+            (extra, "var(--accent3)", "#0c0e13", f"{extra} extra in NewMusic"),
         ]
         with ui.element("div").style(
-            "display:flex;align-items:center;gap:12px;background:var(--panel);"
-            "border:1px solid var(--panel-border);border-radius:var(--radius-panel);"
-            "padding:10px 14px;margin-bottom:16px;width:100%;"
+            "background:var(--panel);border:1px solid var(--panel-border);"
+            "border-radius:var(--radius-panel);padding:10px 14px;margin-bottom:16px;width:100%;"
         ):
-            with ui.element("div").style(
-                "flex:1;height:14px;border-radius:var(--radius-pill);overflow:hidden;"
-                "display:flex;background:#3a3f4d;"
-            ):
-                for count, color, _label in segments:
-                    if count:
-                        ui.element("div").style(f"width:{count / total * 100 if total else 0}%;background:{color};height:100%;")
-            for count, color, label in segments:
-                if count:
-                    ui.html(
-                        f'<span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">'
-                        f'<span style="display:inline-block;width:8px;height:8px;border-radius:2px;'
-                        f'background:{color};margin-right:5px;vertical-align:middle;"></span>{label}</span>'
-                    )
             if not total:
                 ui.label("Fetch a playlist to see progress").classes("note").style("margin:0;")
+                return
+            with ui.element("div").style(
+                "height:26px;border-radius:var(--radius-pill);overflow:hidden;"
+                "display:flex;background:#3a3f4d;width:100%;"
+            ):
+                for count, bg, fg, label in segments:
+                    if not count:
+                        continue
+                    pct = count / total * 100
+                    # Labels only fit legibly once a segment is wide enough - a
+                    # narrower slice (e.g. a handful of extras next to 60+
+                    # downloaded) shows the count as a native title tooltip
+                    # instead of squeezing/wrapping text into a sliver.
+                    seg = ui.element("div").style(
+                        f"width:{pct}%;background:{bg};height:100%;display:flex;"
+                        "align-items:center;justify-content:center;overflow:hidden;"
+                        f"font-size:11px;font-weight:600;color:{fg};white-space:nowrap;"
+                    )
+                    if pct >= 12:
+                        with seg:
+                            ui.label(label)
+                    else:
+                        seg.props(f'title="{label}"')
 
     progress_bar()
 
