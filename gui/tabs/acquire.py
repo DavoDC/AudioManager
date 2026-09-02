@@ -36,7 +36,7 @@ from nicegui import ui
 
 from gui import config
 
-sys.path.insert(0, str(config.SPOTIFYGEN_ROOT))
+sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
           "hide_downloaded": False}
