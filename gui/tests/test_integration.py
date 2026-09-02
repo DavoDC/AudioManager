@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui import config
-from gui.tabs.integration import IntegrationState, _esc, _update_exec_status, _write_manifest
+from gui.tabs.integration import IntegrationState, _esc, _open_run_log, _update_exec_status, _write_manifest
 
 
 def _entry(filename, **overrides):
@@ -80,6 +80,24 @@ def test_write_manifest_passes_manifest_flag_with_zero_declines(tmp_path, monkey
     assert manifest_path.exists()
     written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert [e["filename"] for e in written] == ["a.mp3", "b.mp3"]
+
+
+# --------------------------------------------------------------- _open_run_log
+
+
+def test_open_run_log_creates_timestamped_file_under_run_logs_dir(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    f = _open_run_log()
+    try:
+        assert f is not None
+        f.write("hello\n")
+        f.flush()
+        logged = list((tmp_path / "run-logs").glob("integration-*.log"))
+        assert len(logged) == 1
+        assert logged[0].read_text(encoding="utf-8") == "hello\n"
+    finally:
+        if f:
+            f.close()
 
 
 # --------------------------------------------------------------------- _esc
