@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-02 - [GUI] Acquire tab deep-dive fixes: history-picker no-op, color drift
+
+Deep-dive audit of Acquire/Integration tabs found `_apply_history_pick` (`gui/tabs/acquire.py`)
+called `fetch()` - an `async def` - directly with no `await`/`asyncio.create_task(...)`, so
+clicking a playlist in the history menu set the input text but silently discarded the fetch
+coroutine and never loaded tracks. Fixed by wrapping in `asyncio.create_task(fetch())`, matching
+`integration.py`'s established pattern. Also fixed downloaded-row highlight color drift: the
+hardcoded `rgba(64,150,255,0.08)` didn't match `--accent` (`#5b8cff` = `rgb(91,140,255)`) and
+wouldn't retint with `apply_mood()`; corrected to `rgba(91,140,255,0.08)`.
+
 ## 2026-08-31 - [GUI] Acquire tab MVP - Stage 2 (Acquiring) automation
 
 Replaces the terminal `open_playlist.py` Enter/'q' loop for the mechanical half of Stage 2

@@ -323,7 +323,7 @@ def build() -> None:
 
             def _apply_history_pick(playlist_id: str):
                 playlist_input.value = playlist_id
-                fetch()
+                asyncio.create_task(fetch())
 
             with ui.button(icon="history").props("dense outline size=sm"):
                 with ui.menu() as history_menu:
@@ -376,7 +376,7 @@ def build() -> None:
                     is_downloaded = _state["downloaded"].get(row_key, False)
                     if _state["hide_downloaded"] and is_downloaded:
                         continue
-                    row_style = "background-color:rgba(64,150,255,0.08);" if is_downloaded else ""
+                    row_style = "background-color:rgba(91,140,255,0.08);" if is_downloaded else ""
                     with ui.element("tr").style(row_style):
                         with ui.element("td"):
                             ui.label(artist)
