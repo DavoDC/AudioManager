@@ -4,6 +4,24 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-02 - verify.bat now covers the Python GUI suite (the repo's objective judge)
+
+`scripts\dev\verify.bat` previously built the C# and ran `AudioManager.exe --verify` and nothing
+else, while `gui/tests/` had six test files and no wired entry point anywhere under `scripts/`. The
+repo's single documented pass/fail command therefore could not see a regression in any Python GUI
+code, which is where all current backlog work lives. It now runs `python -m pytest gui\tests\ -q`
+from the repo root after the C# verify, captures both exit codes separately, fails if either fails,
+and prints the verdict as the last line of the log: `[PASS] C# verify + GUI tests` or
+`[FAIL] C# verify=<code> GUI tests=<code>`.
+
+Verified by running it: 255 C# plus 62 GUI tests, exit 0. The failure path was proven with a
+deliberately failing temporary test, which returned exit 1 and the FAIL line with pytest's own
+output visible, and was then removed.
+
+This is what moved the Sonnet-readiness verdict in IDEAS.md from "bounded delegated tasks only" to
+"unattended sessions, except the guarded decline-to-exe-arguments path". A delegated session can now
+establish for itself whether what it wrote is correct.
+
 ## 2026-09-02 - [GUI] Integration tab test coverage and `_esc` hardening (backlog items closed)
 
 Two IDEAS.md TIER 2 entries added by the same day's deep-dive were already resolved by commits
