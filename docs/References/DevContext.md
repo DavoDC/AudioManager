@@ -335,6 +335,10 @@ Treat it like you treat the XML files: version-control it, don't relegate it to 
 
 **`gui/.cache/reload.trigger` needs its parent `.cache` directory created before the first touch on a fresh checkout.** Nothing creates that directory automatically, so on a clone with no prior dev-mode run, touching the trigger file directly fails with a path-not-found error. Create the directory first (`New-Item -ItemType Directory -Force`), then create/touch the trigger file.
 
+## SpotifyTools Sibling-Import: Multiple sys.path.insert Sites
+
+**The `gui/tabs/acquire.py` sys.path.insert into SpotifyTools's `src/` is not the only one.** `gui/tests/test_acquire.py` has its own independent `sys.path.insert` for the same sibling repo. Confirmed during the 2026-09-02 SpotifyPlaylistGen -> SpotifyTools rename: fixing only the main module's insert path left the test file broken until a second, separate fix. Any future rename/path change on the SpotifyTools side must grep this repo for every `sys.path.insert` occurrence, not just the obvious consumer module.
+
 ## Mirror Generation Architecture: Stub-to-Replacement Pattern
 
 **Reflector creates text-file stubs with MP3 paths; Parser reads MP3s via TagLib#; TrackXML overwrites stubs with actual XML.** This is the current design, not a bug - it works. However, the stubs are never read as input, only as intermediate placeholders. The pattern is vestigial: Reflector writes stub (path file) → Parser reads MP3 and caches → TrackXML overwrites stub with XML. The stubs exist but are never actually parsed - they're just temporary. Not a performance issue now, but worth refactoring if parsing becomes a bottleneck (Reflector could skip stub creation and TrackXML could read MP3 directly, bypassing the temp file stage entirely). Current design trades immediate clarity (the stubs are there) for simplicity (Reflector doesn't need to import TagLib# or know about XML generation).
