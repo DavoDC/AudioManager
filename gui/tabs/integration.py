@@ -377,23 +377,25 @@ async def run_execute() -> None:
 def _update_exec_status(line: str) -> None:
     """Best-effort structured progress: a filename appearing in the exe's
     output means that file is being processed; [MOVED]/[SKIPPED] confidence
-    report lines settle the final state."""
+    report lines settle the final state.
+
+    A filename match only counts if no OTHER target's filename containing it
+    as a substring also appears in the line - otherwise "Song.mp3" would match
+    inside "Another Song.mp3" and flip the wrong track's status."""
     low = line.lower()
-    for e in S.exec_targets:
+    candidates = [e for e in S.exec_targets if e["filename"].lower() in low]
+    names = [c["filename"].lower() for c in candidates]
+    matches = [c for c in candidates
+               if not any(c["filename"].lower() != other and c["filename"].lower() in other
+                          for other in names)]
+    for e in matches:
         fn = e["filename"]
-        if fn.lower() in low:
-            if "[moved]" in low or "moved:" in low:
-                S.exec_status[fn] = "done"
-            elif "[skipped]" in low or "[error]" in low or "[failed]" in low:
-                S.exec_status[fn] = "failed"
-            elif S.exec_status.get(fn) == "queued":
-                S.exec_status[fn] = "moving"
-                # everything that started before this one has finished moving
-                for prev in S.exec_targets:
-                    if prev["filename"] == fn:
-                        break
-                    if S.exec_status.get(prev["filename"]) == "moving":
-                        S.exec_status[prev["filename"]] = "done"
+        if "[moved]" in low or "moved:" in low:
+            S.exec_status[fn] = "done"
+        elif "[skipped]" in low or "[error]" in low or "[failed]" in low:
+            S.exec_status[fn] = "failed"
+        elif S.exec_status.get(fn) == "queued":
+            S.exec_status[fn] = "moving"
 
 
 def stage_execute() -> None:

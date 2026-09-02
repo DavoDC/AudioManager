@@ -113,18 +113,17 @@ def test_update_exec_status_marks_failed():
     assert s.exec_status["Song.mp3"] == "failed"
 
 
-def test_update_exec_status_overlapping_filenames_can_cross_contaminate():
-    """Regression-documenting test, not a fix: a shorter accepted filename that is
-    a substring of a longer one can have its status flipped by a log line meant
-    for the other file, since _update_exec_status matches via substring
-    containment (`fn.lower() in low`). See IDEAS.md TIER 2 'Integration tab has
-    zero automated test coverage' for the tracked follow-up."""
+def test_update_exec_status_overlapping_filenames_do_not_cross_contaminate():
+    """A shorter accepted filename that is a substring of a longer one must NOT
+    have its status flipped by a log line meant for the other file:
+    _update_exec_status prefers the longest matching filename and ignores a
+    substring match when a longer target also matches the same line."""
     s = IntegrationState()
     s.exec_targets = [_entry("Song.mp3"), _entry("Another Song.mp3")]
     s.exec_status = {"Song.mp3": "queued", "Another Song.mp3": "queued"}
     _update_exec_status_on(s, "[MOVED] Another Song.mp3 -> Artists/Artist/Another Song.mp3")
     assert s.exec_status["Another Song.mp3"] == "done"
-    assert s.exec_status["Song.mp3"] == "done"  # cross-contaminated: "song.mp3" is a substring match
+    assert s.exec_status["Song.mp3"] == "queued"  # untouched: not the file this line is about
 
 
 def _update_exec_status_on(state, line):
