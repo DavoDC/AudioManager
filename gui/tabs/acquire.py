@@ -11,11 +11,15 @@ that match no track in the loaded playlist (or every file, with no playlist
 loaded) as yellow-highlighted rows appended below the fetched tracks, on the
 same poll. Last-5 fetched playlists (id + name) persist to
 config.ACQUIRE_STATE_JSON and are reachable via the history button next to
-the playlist field. See "Acquire tab design" in docs/References/GUI-Architecture.md.
+the playlist field. A "Hide downloaded" checkbox next to Fetch/Clear filters
+already-ticked rows out of the fetched-tracks view only (extra rows are
+untouched). See "Acquire tab design" in docs/References/GUI-Architecture.md
+and docs/DESIGN.md for the GUI's visual-design rules.
 Sync Liked Songs is built but hidden (Spotify 403 - see _build_sync_liked_card).
 Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
-merged into table 2026-09-01, NewMusic-surfacing/history/clear 2026-09-02) -
-polish items are tracked in IDEAS.md, not built here.
+merged into table 2026-09-01, NewMusic-surfacing/history/clear 2026-09-02,
+hide-downloaded toggle 2026-09-02) - polish items are tracked in IDEAS.md,
+not built here.
 """
 from __future__ import annotations
 
@@ -31,9 +35,11 @@ from gui import config
 
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT))
 
-_state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False}
+_state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
+          "hide_downloaded": False}
 # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool};
 # extra: [(artist, title, url), ...] - files in NEWMUSIC_DIR matching no loaded track
+# hide_downloaded: when True, track_table() skips rows already ticked Downloaded
 
 _SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
 
@@ -320,10 +326,10 @@ def build() -> None:
                                     .style("font-weight:normal;text-transform:none;")
                 for i, (artist, title, album, year, length, url) in _sorted_tracks():
                     row_key = f"{i}:{artist}:{title}"
-                    row_style = (
-                        "background-color:rgba(64,150,255,0.08);"
-                        if _state["downloaded"].get(row_key) else ""
-                    )
+                    is_downloaded = _state["downloaded"].get(row_key, False)
+                    if _state["hide_downloaded"] and is_downloaded:
+                        continue
+                    row_style = "background-color:rgba(64,150,255,0.08);" if is_downloaded else ""
                     with ui.element("tr").style(row_style):
                         with ui.element("td"):
                             ui.label(artist)
@@ -392,9 +398,15 @@ def build() -> None:
             _run_check_against_downloads()
             track_table.refresh()
 
-        with ui.row().style("gap:8px;margin:8px 0;"):
+        def _toggle_hide_downloaded(e):
+            _state["hide_downloaded"] = e.value
+            track_table.refresh()
+
+        with ui.row().style("gap:8px;margin:8px 0;align-items:center;"):
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
             ui.button("Clear", icon="clear", on_click=clear).props("dense outline size=sm color=grey")
+            ui.checkbox("Hide downloaded", value=_state["hide_downloaded"], on_change=_toggle_hide_downloaded) \
+                .props("dense").classes("note")
         # Runs once synchronously on tab build so NewMusic-only files ("extra"
         # rows) surface immediately, even before any playlist has been fetched.
         _run_check_against_downloads()
