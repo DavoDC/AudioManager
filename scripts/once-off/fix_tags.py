@@ -23,7 +23,7 @@ def strip_feat(s):
 errors = []
 
 # ─────────────────────────────────────────────
-# 1. JAY-Z TPE1 fix — match folder name 'Jay-Z'
+# 1. JAY-Z TPE1 fix - match folder name 'Jay-Z'
 # ─────────────────────────────────────────────
 print("\n[1] Fixing JAY-Z TPE1 to match folder 'Jay-Z'...")
 p = f"{ARTISTS}/Jay-Z/Singles/JAY-Z;Mr Hudson - Young Forever.mp3"
@@ -79,7 +79,7 @@ for path, fix_title, fix_album in feat_tracks:
         print(f"  Already clean: {os.path.basename(path)}")
 
 # ─────────────────────────────────────────────
-# 3. TCMP fix — 3 pre-existing tracks
+# 3. TCMP fix - 3 pre-existing tracks
 # ─────────────────────────────────────────────
 print("\n[3] Fixing TCMP on pre-existing tracks...")
 tcmp_tracks = [
@@ -95,7 +95,7 @@ for path in tcmp_tracks:
         errors.append(path)
 
 # ─────────────────────────────────────────────
-# 4. David Fleming — fix album tag
+# 4. David Fleming - fix album tag
 # ─────────────────────────────────────────────
 print("\n[4] Fixing David Fleming album tag...")
 p = f"{MISC}/David Fleming - Last Son.mp3"

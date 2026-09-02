@@ -179,7 +179,7 @@ move(NEWMUSIC, "Loot Bryon Smith - Polarity.mp3",
      f"{MUSIV}/Loot Bryon Smith/Spotify Albums/Refined Yet Rebellious")
 
 # ─────────────────────────────────────────────
-# 7. MOVE: Artists — existing folders
+# 7. MOVE: Artists - existing folders
 # ─────────────────────────────────────────────
 print("\n[7] Moving to existing Artist folders...")
 # Avril Lavigne
@@ -207,7 +207,7 @@ move(NEWMUSIC, "Wiz Khalifa;Akon - Let It Go (feat. Akon).mp3", f"{ARTISTS}/Wiz 
 move(NEWMUSIC, "mike. - woke up new.mp3",                    f"{ARTISTS}/mike/Singles")
 
 # ─────────────────────────────────────────────
-# 8. MOVE: Artists — new folders (threshold triggered)
+# 8. MOVE: Artists - new folders (threshold triggered)
 # ─────────────────────────────────────────────
 print("\n[8] Moving to new Artist folders (threshold)...")
 

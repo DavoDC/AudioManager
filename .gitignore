@@ -358,3 +358,6 @@ reports/with-issues/
 # Claude Code - local only. The guard hook is registered at machine (user) level,
 # not per-repo - never commit anything under .claude/ in this repo.
 .claude/
+
+# Python test cache
+.pytest_cache/
