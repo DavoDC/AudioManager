@@ -146,3 +146,9 @@ TagFixer modifies ID3 tags and renames files to match library convention. Tag ch
 - Reorganise existing library structure without user approval
 
 **Audit trail:** See `docs/References/SAFETY_CONSTRAINTS.md` for a detailed safety review against these rules.
+
+## What the Test Suite Can and Cannot Prove
+
+`scripts\dev\verify.bat --no-pause` is the single pass/fail judge - it runs the C# build and unit tests, the routing manifest check, and the GUI pytest suite. A green run proves the logic is right. It can never prove the batch is safe: nothing in the suite observes the exe actually moving files. On any change touching the integration path, treat green as "the logic is right", never as "the run is safe to fire".
+
+The code-change escalation boundary for the GUI is recorded in `docs/Development/IDEAS.md` under the readiness verdict. Growing that guarded set always needs David; shrinking it never does.
