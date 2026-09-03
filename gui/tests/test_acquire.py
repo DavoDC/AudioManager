@@ -1,4 +1,5 @@
 """Unit tests for gui.tabs.acquire.match_downloads (pure, no filesystem writes)."""
+import re
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from gui import config
 from gui.tabs.acquire import (
     _length_to_seconds,
     _load_history,
+    _read_mp3_tags,
     _save_last_playlist,
     _sorted_tracks,
     _state,
@@ -60,7 +62,7 @@ def test_extra_finds_file_not_in_playlist(tmp_path):
     (tmp_path / "Eminem - Lose Yourself.mp3").write_bytes(b"")
     (tmp_path / "Drake - Hotline Bling.mp3").write_bytes(b"")
     extra = find_extra_newmusic_files([("Eminem", "Lose Yourself")], tmp_path)
-    assert extra == [("Drake", "Hotline Bling")]
+    assert extra == [("Drake", "Hotline Bling", tmp_path / "Drake - Hotline Bling.mp3")]
 
 
 def test_extra_empty_when_all_files_match_playlist(tmp_path):
@@ -72,7 +74,42 @@ def test_extra_empty_when_all_files_match_playlist(tmp_path):
 def test_extra_returns_every_file_when_no_playlist_loaded(tmp_path):
     (tmp_path / "Eminem - Lose Yourself.mp3").write_bytes(b"")
     extra = find_extra_newmusic_files([], tmp_path)
-    assert extra == [("Eminem", "Lose Yourself")]
+    assert extra == [("Eminem", "Lose Yourself", tmp_path / "Eminem - Lose Yourself.mp3")]
+
+
+# --------------------------------------------------------------- tag reading
+
+
+def test_read_mp3_tags_nonexistent_file_returns_blanks(tmp_path):
+    album, year, length = _read_mp3_tags(tmp_path / "does_not_exist.mp3")
+    assert (album, year, length) == ("", "", "")
+
+
+def test_read_mp3_tags_corrupt_file_returns_blanks(tmp_path):
+    """A file that exists but isn't a valid mp3 (e.g. an empty placeholder
+    written in a test fixture) must never raise - both mutagen calls are
+    wrapped independently so a bad file degrades to blanks, never crashes
+    the row render."""
+    bad = tmp_path / "Artist - Title.mp3"
+    bad.write_bytes(b"not a real mp3 file")
+    album, year, length = _read_mp3_tags(bad)
+    assert (album, year, length) == ("", "", "")
+
+
+def test_read_mp3_tags_reads_real_newmusic_file_if_any_exist():
+    """Integration check against the real NEWMUSIC_DIR (read-only) - skipped
+    if the folder isn't present/empty on this machine (e.g. CI). Confirms
+    _read_mp3_tags doesn't blow up on real files and Length, when present,
+    matches the "M:SS" format used elsewhere in this file."""
+    if not config.NEWMUSIC_DIR.is_dir():
+        return
+    mp3_files = list(config.NEWMUSIC_DIR.glob("*.mp3"))
+    if not mp3_files:
+        return
+    album, year, length = _read_mp3_tags(mp3_files[0])
+    assert isinstance(album, str) and isinstance(year, str) and isinstance(length, str)
+    if length:
+        assert re.match(r"^\d+:\d{2}$", length)
 
 
 # ------------------------------------------------------- history persistence
