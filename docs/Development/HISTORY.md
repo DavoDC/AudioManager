@@ -4,6 +4,13 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Fix: Simulate mode no longer opens NewMusic thumbnails it claims not to touch
+
+T3 polish item. `review_card()` unconditionally called `routing.newmusic_path()` then
+`get_thumbnail()` for every entry regardless of `S.simulated` - harmless (nothing modified, sample
+filenames don't exist) but contradicted the Simulate banner's "no NewMusic file is read" guarantee.
+Gated the lookup on `not S.simulated`. Full suite: 255 C# passed, 102 GUI passed (`verify.bat`).
+
 ## 2026-09-03 - Feature: surface the post-run CONFIDENCE REPORT instead of hiding it in debug
 
 `PrintConfidenceReport` (`MusicIntegrator.cs` ~900-990) is the exe's strongest guarantee that a
