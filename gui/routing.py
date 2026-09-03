@@ -52,6 +52,38 @@ def routing_path_from_output(lines: list[str]) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def parse_projected_libchecker(lines: list[str]) -> dict | None:
+    """The dry run's actual safety verdict (`MusicIntegrator.cs` ~1941-2033):
+    a "Projected LibChecker (Dry Run)" header, a projected-count summary line,
+    then either " - LibChecker: Clean" or a run of issue lines each ending in
+    zero or more " - Total hits: N" subtotals. Returns None if the section
+    never printed (e.g. RunProjectedLibChecker's own "could not load current
+    library tags" SKIP path)."""
+    start = next((i for i, ln in enumerate(lines) if "Projected LibChecker (Dry Run)" in ln), None)
+    if start is None:
+        return None
+    summary = ""
+    clean = False
+    skipped = False
+    total_hits = 0
+    for ln in lines[start:]:
+        if " - SKIP:" in ln:
+            skipped = True
+            summary = ln.strip().lstrip("-").strip()
+            break
+        if " - Projected library:" in ln:
+            summary = ln.strip().lstrip("-").strip()
+        elif "LibChecker: Clean" in ln:
+            clean = True
+        elif " - Time taken:" in ln:
+            break
+        else:
+            m = re.search(r"Total hits:\s*(\d+)", ln)
+            if m:
+                total_hits += int(m.group(1))
+    return {"summary": summary, "clean": clean, "skipped": skipped, "total_hits": total_hits}
+
+
 def newmusic_path(filename: str) -> Path:
     """Absolute path of a scanned file in the NewMusic inbox (read-only use:
     album-art extraction). filename may already be relative with subfolders."""

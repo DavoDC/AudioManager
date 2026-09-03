@@ -121,6 +121,59 @@ def test_routing_path_from_output_returns_none_when_nothing_found(tmp_path, monk
     assert routing.routing_path_from_output(["no json line here"]) is None
 
 
+# ------------------------------------------------- parse_projected_libchecker
+
+
+def test_parse_projected_libchecker_returns_none_when_section_absent():
+    assert routing.parse_projected_libchecker(["some", "other", "output"]) is None
+
+
+def test_parse_projected_libchecker_clean_run():
+    lines = [
+        "===========================================================================",
+        "Projected LibChecker (Dry Run)",
+        "===========================================================================",
+        " - Projected library: 412 current, -0 removals, +6 additions = 418 projected",
+        " - Checking all tags against filenames..",
+        " - LibChecker: Clean",
+        "",
+        " - Time taken: 00:00:01.2340000",
+    ]
+    v = routing.parse_projected_libchecker(lines)
+    assert v == {
+        "summary": "Projected library: 412 current, -0 removals, +6 additions = 418 projected",
+        "clean": True, "skipped": False, "total_hits": 0,
+    }
+
+
+def test_parse_projected_libchecker_dirty_run_sums_total_hits():
+    lines = [
+        "Projected LibChecker (Dry Run)",
+        " - Projected library: 412 current, -0 removals, +6 additions = 418 projected",
+        " - Checking all tags against filenames..",
+        "  - 'Song.mp3' has no title set!",
+        "  - Total hits: 1",
+        " - Checking for duplicates...",
+        "  - 'Other.mp3' duplicates another track!",
+        "  - Total hits: 2",
+        " - Time taken: 00:00:01.2340000",
+    ]
+    v = routing.parse_projected_libchecker(lines)
+    assert v["clean"] is False
+    assert v["skipped"] is False
+    assert v["total_hits"] == 3
+
+
+def test_parse_projected_libchecker_skip_when_library_tags_unloadable():
+    lines = [
+        "Projected LibChecker (Dry Run)",
+        " - SKIP: could not load current library tags: file not found",
+    ]
+    v = routing.parse_projected_libchecker(lines)
+    assert v["skipped"] is True
+    assert v["clean"] is False
+
+
 # ------------------------------------------------------------- newmusic_path
 
 
