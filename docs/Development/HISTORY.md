@@ -4,6 +4,26 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Fix: `_update_exec_status` mislabelled successful files as "not run" after a mid-batch failure
+
+Top-priority fix from the Opus design-review pass below. Root cause: `_update_exec_status` looked
+for `[moved]`/`moved:`/`[skipped]`/`[error]`/`[failed]` substrings, but the real exe's per-track
+output is `[AUTO] {Artist} - {Title}` (success), `[SKIP] {Artist} - {Title}: ...` (deliberately
+skipped), and, only on the halt-on-error path, `Error processing file: {filename}` - none of the
+old patterns ever matched, so every row stayed `queued` until end-of-run, and `_finish_execute`'s
+failure branch then relabelled every still-`queued` row `NOT RUN`, including files the exe's own
+output already confirmed as moved. Rewrote `_update_exec_status` to match on "artist - title" tag
+text for `[AUTO]`/`[SKIP]` lines (both now settle straight to `done` - there's no observable
+"moving" state between them, the exe never prints a start-of-file line) and on filename for the
+`Error processing file:` line, with the same longest-match anti-cross-contamination guard as
+before. `_finish_execute` and the failure-labelling logic (`_failed_filename_from_output`) needed
+no changes - they already only had to trust `S.exec_status`'s per-file state, which is now correct.
+
+Updated 4 existing `_update_exec_status` unit tests to the exe's real output formats and added an
+explicit regression assertion in the simulated-partial-failure test: every sample entry processed
+before the injected failure must land on `done`, never `notrun`. `scripts\dev\verify.bat --no-pause`
+green (255 C# + 88 GUI tests).
+
 ## 2026-09-03 - Integration tab: Opus design review via Simulate mode
 
 An Opus subagent exercised the new Simulate mode end to end via browser automation (Simulate path
