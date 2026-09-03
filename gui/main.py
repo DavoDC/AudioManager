@@ -1,7 +1,7 @@
 """AudioManager GUI - NiceGUI app entry point.
 
-Six tabs (Statistics, Library Browser, Integration, Tag Fix, Mirror,
-Services) behind a left nav, per mockup.html. Tabs are built lazily on
+Six tabs (Statistics, Acquire, Integration, Tag Fix, Mirror,
+Library Browser, Services) behind a left nav, per mockup.html. Tabs are built lazily on
 first visit and then shown/hidden, so startup stays instant.
 
 Run:  python -m gui.main   (or scripts/launch-gui-dev.bat for the windowless way)
@@ -21,10 +21,10 @@ from gui.state import state  # noqa: E402
 TABS = [
     ("stats", "Statistics", None),
     ("acquire", "Acquire", None),
-    ("library", "Library Browser", None),
     ("integration", "Integration", None),
     ("tagfix", "Tag Fix", None),
     ("mirror", "Mirror", None),
+    ("library", "Library Browser", None),
     ("services", "Services", None),
 ]
 
