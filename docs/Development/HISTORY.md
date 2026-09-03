@@ -4,6 +4,29 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Integration-tab test coverage: routing.py and the manifest call site
+
+TIER 2 items, integration-focused. No production code changed - both were pure coverage gaps.
+
+**`routing.py` had zero test coverage.** Added `gui/tests/test_routing.py` (13 tests): `parse_routing_file`'s
+defaults-on-missing-field contract, dropping non-dict/no-filename entries, non-string optional fields
+(e.g. a JSON `null` where a string is expected) defaulting safely instead of propagating the wrong type,
+UTF-8 BOM handling; `routing_path_from_output`'s regex extraction, its fallback to the newest
+`routing-*.json` in `LOGS_DIR` when the matched path doesn't actually exist on disk, and the
+no-match-found `None` case; `newmusic_path`'s join behaviour including relative subfolders.
+
+**`run_execute`'s manifest-writing call site had no test that declined tracks are excluded.**
+`IntegrationState.accepted`/`declined` and `_write_manifest` were already tested individually, but
+nothing exercised `run_execute` itself - the actual code path between a user's Decline click and the
+manifest the exe receives. Added `test_run_execute_writes_manifest_excluding_declined_tracks` to
+`gui/tests/test_integration.py`, mocking `runner.run` and asserting the written manifest contains only
+the accepted filename. Passed on first run - confirms the call site was already correct, closes the
+coverage gap.
+
+`scripts\dev\verify.bat --no-pause` green after both (255 C# + 78 GUI tests).
+
+---
+
 ## 2026-09-03 - Three pre-batch integration-tab defects fixed
 
 Ranked-risk items from IDEAS.md TIER 2 "Do these before the next real batch integration", closed one
