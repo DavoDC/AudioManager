@@ -95,6 +95,43 @@ for decoration; once color stops meaning something, the eye stops reading it.
   NiceGUI's Quasar components carry their own font defaults that a bare
   `button{font-family:inherit}` rule doesn't reach. Any new custom button-like
   element should set it explicitly too rather than assuming inheritance.
+- Smallest sizes in `theme.py` (9-10px: `.badge`, `.lowres-badge`,
+  `.stretch-badge`, `.rc-badge`, `.tag-change`, `.toggle-pair button`,
+  `.progress-row .st`, `.status-badge`) are all short glanceable pills/labels,
+  never body copy - surveyed 2026-09-03, confirmed legible at 100% zoom.
+  Primary content (table cells, track titles, card text) sits at 11-15px.
+  Keep new micro-labels in that same 9-10px pill pattern rather than shrinking
+  actual readable content below ~11px.
+
+## Zoom & viewport robustness
+
+The shell layout (`.am-nav{width:210px;...position:sticky}` beside
+`.am-main{flex:1;min-width:0;overflow-y:auto;height:100vh}` in a `no-wrap`
+flex row, `gui/main.py`) is deliberately built so the nav sidebar never gets
+pushed off-screen at high zoom / narrow viewports - `flex:1;min-width:0` lets
+`.am-main` shrink to whatever width remains instead of forcing the row wider
+than the viewport. Verified 2026-09-03 against the Acquire tab's wide
+"Open Playlist Tracks" table (Artist/Title/Album/Year/Length/Deemix/
+Downloaded columns) by directly constraining `.am-main`'s width in the live
+DOM (`resize_window` didn't reliably shrink the real browser window in this
+environment, so the container was constrained directly instead):
+- At moderate narrowing (~760px, roughly 130-150% zoom) the table reflows -
+  cell text wraps, no column is lost, no horizontal overflow occurs at all.
+- At extreme narrowing (~500px, well past any zoom level a user would
+  reasonably run at) the table finally overflows its container - but
+  `.am-main{overflow-y:auto}` also computes `overflow-x` to `auto` per the
+  CSS Overflow spec's "visible pairs with the other axis's non-visible value"
+  rule, so a real horizontal scrollbar appears and every column (confirmed:
+  scrolling reached the Downloaded checkbox) stays reachable. Nothing is
+  ever silently clipped.
+- Takeaway for new wide tables: this works automatically as long as the
+  table lives inside `.panel` inside `.am-main` and nothing along that chain
+  sets `overflow-x:hidden` - no per-table CSS fix is needed for zoom
+  robustness. The one real gap is affordance, not access: at narrow widths
+  there's no visible scroll hint (shadow/fade at the clipped edge) telling a
+  user more columns exist off to the right - worth adding as a future nice-
+  to-have (`.panel`-level `overflow-x:auto` with a CSS mask-image fade) but
+  it is not a functional bug today.
 
 ## Buttons
 
