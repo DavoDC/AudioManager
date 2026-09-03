@@ -12,6 +12,16 @@ writes the accepted set to gui/.cache/accepted-manifest.json and runs
 `integrate --manifest <path> --no-input` - the exe moves only the accepted
 files and leaves declined ones untouched in NewMusic (the GUI itself never
 moves or deletes NewMusic files; the exe owns all file operations).
+
+Simulate mode: "Simulate (sample data)" on the scan stage skips the real exe
+entirely and loads synthetic entries covering every review-card state, then
+"Integrate" on the confirm stage runs a synthetic execute (run_execute_simulated)
+that feeds the exe's real per-line output formats through the same status/
+summary logic as a real run (_finish_execute), including one synthetic
+mid-batch failure - so the full stage 1-4 flow, including the failure-labelling
+path, can be exercised and screenshotted without ever invoking AudioManager.exe
+or touching a real NewMusic file. `IntegrationState.simulated` gates this and
+is surfaced in the UI so a simulated run can never be mistaken for a real one.
 """
 from __future__ import annotations
 
@@ -25,7 +35,9 @@ from nicegui import ui
 from gui import config, routing
 from gui.art import get_thumbnail, initials, placeholder_style
 from gui.components.error_modal import show_error_modal
-from gui.runner import runner
+from gui.runner import RunResult, runner
+
+SIMULATE_STEP_DELAY = 0.15
 
 
 class IntegrationState:
@@ -36,10 +48,11 @@ class IntegrationState:
         self.filter = "all"                 # all | conflicts | newfolders
         self.scan_lines: list[str] = []
         self.exec_lines: list[str] = []
-        self.exec_status: dict[str, str] = {}  # filename -> queued/moving/done/failed
+        self.exec_status: dict[str, str] = {}  # filename -> queued/moving/done/failed/notrun
         self.exec_targets: list[dict] = []     # the accepted entries being executed
         self.exec_done = False
         self.exec_summary = ""
+        self.simulated = False              # True: sample data, no real exe/file touched
         self.refresh = lambda: None
 
     @property
@@ -69,6 +82,9 @@ def build() -> None:
 
     @ui.refreshable
     def content():
+        if S.simulated:
+            ui.html('<div class="simulate-banner">SIMULATED - sample data, no real exe call, '
+                    "no NewMusic file read or moved.</div>")
         stepper()
         if S.stage == 1:
             stage_scan()
@@ -111,6 +127,60 @@ def stage_scan() -> None:
             else:
                 ui.button("Scan NewMusic", on_click=lambda: asyncio.create_task(run_scan())) \
                     .props("unelevated color=primary")
+                ui.button("Simulate (sample data)", on_click=run_simulate) \
+                    .props("outline color=grey dense")
+        ui.html('<div class="note" style="margin:8px 0 0;">Simulate loads synthetic sample entries '
+                "and a synthetic execute run - no real exe call, no NewMusic file is read or moved. "
+                "Use it to review the workflow's design without needing anything in the inbox.</div>")
+
+
+def _sample_entry(filename: str, artist: str, title: str, album: str, **overrides) -> dict:
+    e = {
+        "filename": filename, "artist": artist, "title": title, "album": album,
+        "destination": "", "reason": "", "isNewFolder": False,
+        "status": "ok", "inBatchDuplicate": False, "tagChanges": [],
+    }
+    e.update(overrides)
+    return e
+
+
+def _sample_entries() -> list[dict]:
+    """Synthetic sample data for Simulate mode - one entry per review-card
+    state (clean route, new folder, in-batch duplicate, tag changes, error/
+    unresolved) so a single click exercises every badge and filter."""
+    return [
+        _sample_entry("Bring Me The Horizon - Doomed.mp3", "Bring Me The Horizon", "Doomed",
+                       "Post Human: Survival Horror",
+                       destination="Artists/Bring Me The Horizon/Post Human- Survival Horror"),
+        _sample_entry("Polo G;Lil Wayne - Gang With Me.mp3", "Polo G;Lil Wayne", "Gang With Me", "The Goat",
+                       destination="Artists/Polo G/Singles", isNewFolder=True,
+                       reason="New artist - scan-ahead below 3-song threshold"),
+        _sample_entry("Kendrick Lamar - HUMBLE.mp3", "Kendrick Lamar", "HUMBLE.", "DAMN.",
+                       destination="Artists/Kendrick Lamar/DAMN.", inBatchDuplicate=True,
+                       reason="Duplicate of existing library track (kept, decision: L)"),
+        _sample_entry("Dua Lipa - Levitating.mp3", "Dua Lipa", "Levitating", "Future Nostalgia",
+                       destination="Artists/Dua Lipa/Future Nostalgia",
+                       tagChanges=["Title: 'levitating' -> 'Levitating'", "Album: added"]),
+        _sample_entry("Corrupt Metadata Track.mp3", "", "", "",
+                       destination="", status="error", reason="Missing required tag: artist"),
+        _sample_entry("Fred again.. - Delilah.mp3", "Fred again..", "Delilah (pull me out of this)",
+                       "Actual Life 3", destination="Artists/Fred again../Actual Life 3"),
+    ]
+
+
+def run_simulate() -> None:
+    if runner.busy:
+        ui.notify("Another operation is already running", type="warning")
+        return
+    entries = _sample_entries()
+    S.entries = entries
+    S.decisions = {e["filename"]: True for e in entries}
+    S.exec_status = {}
+    S.exec_done = False
+    S.scan_lines = ["[SIMULATE] Sample data only - nothing in NewMusic was scanned or touched."]
+    S.simulated = True
+    S.stage = 2
+    S.refresh()
 
 
 async def run_scan() -> None:
@@ -118,6 +188,7 @@ async def run_scan() -> None:
         ui.notify("Another operation is already running", type="warning")
         return
     S.scan_lines = []
+    S.simulated = False
     S.refresh()
     result = await runner.run(
         ["integrate", "--dry-run", "--json-output"],
@@ -277,20 +348,30 @@ def confirm_bar() -> None:
 def _confirm_execute() -> None:
     with ui.dialog() as dlg, ui.card().style(
             "background:var(--panel);color:var(--text);padding:20px;max-width:480px;gap:12px;"):
-        ui.label("Run real integration?").style("font-weight:600;font-size:15px;")
-        declined_note = (f" The {len(S.declined)} declined track(s) are excluded via manifest and stay "
-                         "in NewMusic." if S.declined else "")
-        ui.label(
-            f"This MOVES {len(S.accepted)} file(s) from NewMusic into the library - the same "
-            "operation as the CLI's y/N confirm, protected by the exe's own pre-integration "
-            f"safety gate (stale mirror / dirty LibChecker blocks the run).{declined_note}"
-        ).classes("note").style("margin:0;")
+        ui.label("Run simulated integration?" if S.simulated else "Run real integration?") \
+            .style("font-weight:600;font-size:15px;")
+        if S.simulated:
+            ui.label(
+                "SIMULATED - no real exe call, no NewMusic file is read or moved. This just replays "
+                "sample output through the same status/summary logic a real run would use."
+            ).classes("note").style("margin:0;")
+        else:
+            declined_note = (f" The {len(S.declined)} declined track(s) are excluded via manifest and stay "
+                             "in NewMusic." if S.declined else "")
+            ui.label(
+                f"This MOVES {len(S.accepted)} file(s) from NewMusic into the library - the same "
+                "operation as the CLI's y/N confirm, protected by the exe's own pre-integration "
+                f"safety gate (stale mirror / dirty LibChecker blocks the run).{declined_note}"
+            ).classes("note").style("margin:0;")
         with ui.row().classes("w-full justify-end").style("gap:10px;"):
             ui.button("Cancel", on_click=dlg.close).props("flat color=grey")
 
             async def go():
                 dlg.close()
-                await run_execute()
+                if S.simulated:
+                    await run_execute_simulated()
+                else:
+                    await run_execute()
 
             ui.button("Integrate", on_click=go).props("unelevated color=primary")
     dlg.open()
@@ -376,6 +457,13 @@ async def run_execute() -> None:
     finally:
         if log_file:
             log_file.close()
+    _finish_execute(result)
+
+
+def _finish_execute(result: RunResult) -> None:
+    """Shared post-run finalization for both a real run_execute() and the
+    synthetic run_execute_simulated() - both produce a RunResult and must be
+    interpreted identically so a simulated run exercises the real UI logic."""
     S.exec_done = True
     if result.ok:
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
@@ -407,6 +495,51 @@ async def run_execute() -> None:
         if not result.cancelled:
             show_error_modal("Integration", result)
     S.refresh()
+
+
+async def run_execute_simulated() -> None:
+    """Synthetic execute for Simulate mode: no exe subprocess, no manifest
+    file, no NewMusic access - feeds the exe's real per-line output formats
+    through the same on_line/_update_exec_status path a real run uses (so
+    known bugs like _update_exec_status not matching '[AUTO]' lines are
+    faithfully reproduced), then finishes through the same _finish_execute()
+    a real run uses."""
+    if runner.busy:
+        ui.notify("Another operation is already running", type="warning")
+        return
+    targets = S.accepted
+    S.stage = 4
+    S.exec_lines = []
+    S.exec_done = False
+    S.exec_summary = ""
+    S.exec_targets = targets
+    S.exec_status = {e["filename"]: "queued" for e in targets}
+    S.refresh()
+
+    lines: list[str] = []
+    failed = False
+    for e in targets:
+        await asyncio.sleep(SIMULATE_STEP_DELAY)
+        if e.get("status") == "error":
+            line = f"Error processing file: {e['filename']}"
+            lines.append(line)
+            _update_exec_status(line)
+            S.exec_lines.append(line)
+            failed = True
+            S.refresh()
+            break
+        line = f"[AUTO] {e['artist']} - {e['title']}"
+        lines.append(line)
+        _update_exec_status(line)
+        S.exec_lines.append(line)
+        S.refresh()
+
+    if failed:
+        lines.append("INTEGRATION FAILED")
+        result = RunResult(command=["integrate", "--simulate"], returncode=1, lines=lines)
+    else:
+        result = RunResult(command=["integrate", "--simulate"], returncode=0, lines=lines)
+    _finish_execute(result)
 
 
 def _failed_filename_from_output(lines: list[str]) -> str | None:
@@ -486,6 +619,7 @@ def stage_execute() -> None:
             def reset():
                 S.stage = 1
                 S.entries = []
+                S.simulated = False
                 S.refresh()
 
             ui.button("New scan", on_click=reset).props("outline dense color=primary size=sm") \

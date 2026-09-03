@@ -192,6 +192,9 @@ HEAD_HTML = """
   .st-queued{color:var(--text-dim);}
   .st-failed{color:var(--accent4);}
   .st-notrun{color:var(--text-dim);}
+  .simulate-banner{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);
+    font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
+    padding:7px 12px;border-radius:var(--radius-control);margin-bottom:12px;width:100%;}
   .pr-name{color:var(--text);word-break:break-all;}
   /* rule cards / services */
   .rule-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:14px 16px;margin-bottom:12px;width:100%;}

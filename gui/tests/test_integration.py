@@ -12,7 +12,8 @@ from gui import config
 from gui.runner import RunResult
 from gui.tabs.integration import (
     IntegrationState, _esc, _failed_filename_from_output, _open_run_log,
-    _update_exec_status, _write_manifest, run_execute,
+    _sample_entries, _update_exec_status, _write_manifest, run_execute,
+    run_execute_simulated, run_simulate,
 )
 
 
@@ -246,6 +247,104 @@ def test_update_exec_status_overlapping_filenames_do_not_cross_contaminate():
     _update_exec_status_on(s, "[MOVED] Another Song.mp3 -> Artists/Artist/Another Song.mp3")
     assert s.exec_status["Another Song.mp3"] == "done"
     assert s.exec_status["Song.mp3"] == "queued"  # untouched: not the file this line is about
+
+
+# ------------------------------------------------------------- Simulate mode
+
+
+def _with_state(state, fn):
+    """Swap in `state` as the module-level S singleton for the duration of `fn`."""
+    import gui.tabs.integration as integration_module
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        fn()
+    finally:
+        integration_module.S = original
+
+
+def test_sample_entries_cover_every_review_card_state():
+    entries = _sample_entries()
+    assert any(e["isNewFolder"] for e in entries)
+    assert any(e["inBatchDuplicate"] for e in entries)
+    assert any(e["tagChanges"] for e in entries)
+    assert any(e["status"] == "error" for e in entries)
+    assert any(not e["isNewFolder"] and not e["inBatchDuplicate"]
+               and not e["tagChanges"] and e["status"] == "ok" for e in entries)
+
+
+def test_run_simulate_loads_sample_data_without_touching_runner(monkeypatch):
+    import gui.tabs.integration as integration_module
+
+    def fail_if_called(*a, **k):
+        raise AssertionError("run_simulate must never call the real exe runner")
+    monkeypatch.setattr(integration_module.runner, "run", fail_if_called)
+
+    state = IntegrationState()
+    _with_state(state, run_simulate)
+
+    assert state.simulated is True
+    assert state.stage == 2
+    assert state.entries == _sample_entries()
+    assert all(v is True for v in state.decisions.values())
+
+
+def test_run_scan_resets_simulated_flag(monkeypatch):
+    """A real scan must clear any leftover simulated flag from a prior Simulate run."""
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.simulated = True
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=1, lines=[])  # fails fast, no further state changes needed
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+    monkeypatch.setattr(integration_module, "show_error_modal", lambda *a, **k: None)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(integration_module.run_scan())
+    finally:
+        integration_module.S = original
+
+    assert state.simulated is False
+
+
+def test_run_execute_simulated_never_calls_real_runner(monkeypatch):
+    import gui.tabs.integration as integration_module
+
+    def fail_if_called(*a, **k):
+        raise AssertionError("run_execute_simulated must never call the real exe runner")
+    monkeypatch.setattr(integration_module.runner, "run", fail_if_called)
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    state.simulated = True
+
+    _with_state(state, lambda: asyncio.run(run_execute_simulated()))
+
+    assert state.exec_done is True
+    assert state.exec_status["a.mp3"] == "done"
+    assert state.exec_status["b.mp3"] == "done"
+
+
+def test_run_execute_simulated_reproduces_partial_failure_labelling(monkeypatch):
+    """One sample entry has status 'error' - the simulated run must halt there
+    (like the real exe) and label the named file failed, the rest not run,
+    exercising the exact same path real_execute's failure branch does."""
+    import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module, "show_error_modal", lambda *a, **k: None)
+
+    state = IntegrationState()
+    state.entries = _sample_entries()
+
+    _with_state(state, lambda: asyncio.run(run_execute_simulated()))
+
+    failed_entry = next(e for e in _sample_entries() if e["status"] == "error")
+    assert state.exec_status[failed_entry["filename"]] == "failed"
+    assert any(v == "notrun" for v in state.exec_status.values())
+    assert "not attempted" in state.exec_summary
 
 
 def _update_exec_status_on(state, line):
