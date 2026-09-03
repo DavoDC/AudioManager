@@ -174,6 +174,68 @@ def test_parse_projected_libchecker_skip_when_library_tags_unloadable():
     assert v["clean"] is False
 
 
+# --------------------------------------------------- parse_confidence_report
+
+
+def test_parse_confidence_report_returns_none_when_section_absent():
+    assert routing.parse_confidence_report(["some", "other", "output"]) is None
+
+
+def test_parse_confidence_report_clean_run():
+    lines = [
+        "===========================================================================",
+        "  CONFIDENCE REPORT",
+        "===========================================================================",
+        "",
+        "  Files in NewMusic: 12  |  Moved: 12  |  Skipped: 0",
+        "  [MOVED] Song.mp3",
+        "    -> Artists/Artist/Song.mp3",
+        "",
+        "  Sanity check: all 12 moved file(s) exist and are readable.",
+    ]
+    v = routing.parse_confidence_report(lines)
+    assert v == {
+        "count_line": "Files in NewMusic: 12  |  Moved: 12  |  Skipped: 0",
+        "count_ok": True, "sanity_ok": True,
+        "sanity_summary": "Sanity check: all 12 moved file(s) exist and are readable.",
+        "error_count": 0,
+    }
+
+
+def test_parse_confidence_report_count_mismatch():
+    lines = [
+        "CONFIDENCE REPORT",
+        "  Files in NewMusic: 12  |  Moved: 10  |  Skipped: 0",
+        "  [ERROR] Count mismatch! Expected 12 moved, got 10.",
+    ]
+    v = routing.parse_confidence_report(lines)
+    assert v["count_ok"] is False
+
+
+def test_parse_confidence_report_sanity_check_failed():
+    lines = [
+        "CONFIDENCE REPORT",
+        "  Files in NewMusic: 2  |  Moved: 2  |  Skipped: 0",
+        "",
+        "  [ERROR] Destination sanity check FAILED:",
+        "  [MISSING] Artists/Artist/Song.mp3",
+    ]
+    v = routing.parse_confidence_report(lines)
+    assert v["count_ok"] is True
+    assert v["sanity_ok"] is False
+
+
+def test_parse_confidence_report_error_summary_count():
+    lines = [
+        "CONFIDENCE REPORT",
+        "  Files in NewMusic: 1  |  Moved: 0  |  Skipped: 0",
+        "[ERRORS: 1]",
+        "- Song.mp3: could not read tags",
+    ]
+    v = routing.parse_confidence_report(lines)
+    assert v["error_count"] == 1
+
+
 # ------------------------------------------------------------- newmusic_path
 
 
