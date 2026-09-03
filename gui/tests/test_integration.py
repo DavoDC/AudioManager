@@ -1,6 +1,7 @@
 """Unit tests for gui.tabs.integration - pure logic only (IntegrationState,
 _esc, _update_exec_status). UI-building functions (stage_scan/review_card/etc.)
 need a NiceGUI page context and are exercised manually per gui/README.md."""
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -8,7 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui import config
-from gui.tabs.integration import IntegrationState, _esc, _open_run_log, _update_exec_status, _write_manifest
+from gui.runner import RunResult
+from gui.tabs.integration import IntegrationState, _esc, _open_run_log, _update_exec_status, _write_manifest, run_execute
 
 
 def _entry(filename, **overrides):
@@ -80,6 +82,36 @@ def test_write_manifest_passes_manifest_flag_with_zero_declines(tmp_path, monkey
     assert manifest_path.exists()
     written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert [e["filename"] for e in written] == ["a.mp3", "b.mp3"]
+
+
+def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeypatch):
+    """run_execute must build the manifest from S.accepted, not S.entries -
+    a declined track reaching the manifest means the exe would move a file
+    the user explicitly told the GUI to leave in NewMusic."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    state = IntegrationState()
+    state.entries = [_entry("keep.mp3"), _entry("drop.mp3")]
+    state.decisions = {"keep.mp3": True, "drop.mp3": False}
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=0, lines=[])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    manifest_path = tmp_path / "accepted-manifest.json"
+    written = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert [e["filename"] for e in written] == ["keep.mp3"]
 
 
 # --------------------------------------------------------------- _open_run_log
