@@ -390,12 +390,46 @@ async def run_execute() -> None:
                           + ". Statistics will reflect the new batch after the next analysis run.")
     else:
         S.exec_summary = result.interpreted("Integration")
+        failed_name = _failed_filename_from_output(result.lines) if not result.cancelled else None
+        n_notrun = 0
         for k, v in S.exec_status.items():
-            if v in ("queued", "moving"):
+            if v not in ("queued", "moving"):
+                continue
+            if failed_name and k == failed_name:
                 S.exec_status[k] = "failed"
+            else:
+                S.exec_status[k] = "notrun"
+                n_notrun += 1
+        if failed_name:
+            S.exec_summary += f" 1 file failed: {failed_name}."
+        if n_notrun:
+            S.exec_summary += f" {n_notrun} file(s) were not attempted."
         if not result.cancelled:
             show_error_modal("Integration", result)
     S.refresh()
+
+
+def _failed_filename_from_output(lines: list[str]) -> str | None:
+    """The exe processes targets one at a time and halts on the first error,
+    printing 'Error processing file: <filename>' before stopping - the only
+    line in its output that names which specific file failed (everything
+    else, e.g. `[AUTO]`/`[SKIP]`, prints artist/title text, not a filename).
+    Everything still queued/moving after this file is therefore genuinely
+    unattempted, not failed."""
+    prefix = "Error processing file:"
+    for line in lines:
+        idx = line.find(prefix)
+        if idx != -1:
+            name = line[idx + len(prefix):].strip()
+            if name:
+                return name
+    return None
+
+
+EXEC_STATUS_LABELS = {
+    "queued": "queued", "moving": "moving", "done": "done",
+    "failed": "failed", "notrun": "not run",
+}
 
 
 def _update_exec_status(line: str) -> None:
@@ -441,7 +475,7 @@ def stage_execute() -> None:
             st = S.exec_status.get(e["filename"], "queued")
             dest = _esc(e["destination"]) if e["destination"] else ""
             arrow = f' <span style="color:var(--text-dim)">&rarr;</span> {dest}' if dest else ""
-            rows.append(f'<div class="progress-row"><span class="st st-{st}">{st}</span>'
+            rows.append(f'<div class="progress-row"><span class="st st-{st}">{EXEC_STATUS_LABELS[st]}</span>'
                         f'<span class="pr-name">{_esc(e["filename"])}{arrow}</span></div>')
         ui.html('<div style="margin-top:12px;max-height:340px;overflow:auto;width:100%;">'
                 + "".join(rows) + "</div>")
