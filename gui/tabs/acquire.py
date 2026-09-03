@@ -39,11 +39,16 @@ from gui import config
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
-          "hide_downloaded": False}
+          "hide_downloaded": False, "playlist_loaded": False}
 # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool};
 # extra: [(artist, title, url, path), ...] - files in NEWMUSIC_DIR matching no loaded track;
 # path is the file's own Path, read by _read_mp3_tags() for Album/Year/Length at render time
 # hide_downloaded: when True, track_table() skips rows already ticked Downloaded
+# playlist_loaded: True once fetch() has successfully populated tracks from a real
+# playlist, False from init and after clear() - distinguishes "extra" rows meaning
+# "not accounted for by the loaded playlist" (diff framing) from "browsing an empty
+# NewMusic folder with nothing loaded yet" (browse framing) - see _extra_segment_label
+# and _extra_batch_header, which brand only the label text, never the underlying count.
 
 _SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
 
@@ -258,6 +263,25 @@ def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path)
     return extra
 
 
+def _extra_segment_label(count: int, playlist_loaded: bool) -> str:
+    """progress_bar()'s third-segment text. With no playlist loaded,
+    find_extra_newmusic_files() correctly returns literally every NewMusic
+    file (there's nothing to diff against yet) - labelling that "extra"
+    reads as an anomaly, so this branches to plain browse-mode wording.
+    Once a playlist has been fetched, the diff framing is accurate and kept."""
+    if playlist_loaded:
+        return f"{count} extra in NewMusic"
+    return f"{count} files in NewMusic"
+
+
+def _extra_batch_header(count: int, playlist_loaded: bool) -> str:
+    """Batch-header row above the extra-rows table section. Same diff-vs-browse
+    distinction as _extra_segment_label - see its docstring."""
+    if playlist_loaded:
+        return f"IN NEWMUSIC, NOT IN THIS PLAYLIST ({count})"
+    return f"NEWMUSIC FOLDER ({count})"
+
+
 def _build_sync_liked_card() -> None:
     """Deferred, not called from build() - Spotify 403s in Development Mode
     (account not allowlisted). See IDEAS.md TIER 2 'Sync Liked Songs broken'.
@@ -308,7 +332,7 @@ def build() -> None:
         segments = [
             (downloaded, "var(--accent)", "#0c0e13", f"{downloaded} downloaded"),
             (missing, "#3a3f4d", "var(--text-dim)", f"{missing} missing"),
-            (extra, "var(--accent3)", "#0c0e13", f"{extra} extra in NewMusic"),
+            (extra, "var(--accent3)", "#0c0e13", _extra_segment_label(extra, _state["playlist_loaded"])),
         ]
         with ui.element("div").style(
             "background:var(--panel);border:1px solid var(--panel-border);"
@@ -425,7 +449,7 @@ def build() -> None:
                 if _state["extra"]:
                     with ui.element("tr").classes("batch-header"):
                         with ui.element("td").props("colspan=7"):
-                            ui.label(f"IN NEWMUSIC, NOT IN THIS PLAYLIST ({len(_state['extra'])})")
+                            ui.label(_extra_batch_header(len(_state["extra"]), _state["playlist_loaded"]))
                     for artist, title, url, path in sorted(_state["extra"], key=lambda r: r[0].lower()):
                         if _state["hide_downloaded"]:
                             continue
@@ -463,6 +487,7 @@ def build() -> None:
         async def fetch():
             try:
                 _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
+                _state["playlist_loaded"] = True
                 await asyncio.to_thread(_run_check_against_downloads)
                 track_table.refresh()
                 progress_bar.refresh()
@@ -476,6 +501,7 @@ def build() -> None:
             _state["downloaded"] = {}
             _state["sort_col"] = None
             _state["sort_reverse"] = False
+            _state["playlist_loaded"] = False
             playlist_input.value = ""
             _run_check_against_downloads()
             track_table.refresh()
