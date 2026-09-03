@@ -566,27 +566,44 @@ EXEC_STATUS_LABELS = {
 
 
 def _update_exec_status(line: str) -> None:
-    """Best-effort structured progress: a filename appearing in the exe's
-    output means that file is being processed; [MOVED]/[SKIPPED] confidence
-    report lines settle the final state.
+    """Structured progress from the exe's REAL per-track output.
 
-    A filename match only counts if no OTHER target's filename containing it
-    as a substring also appears in the line - otherwise "Song.mp3" would match
-    inside "Another Song.mp3" and flip the wrong track's status."""
+    The exe never prints filenames for a success/skip - only tag text via
+    `[AUTO] {Artists} - {Title}` (moved) and `[SKIP] {Artists} - {Title}`
+    (left in place), one line per file, after it's already done (there's no
+    separate "started processing" line, so there's no observable "moving"
+    state - a file goes straight from queued to done/failed). The one line
+    that DOES carry a filename is the halt-on-error line,
+    `Error processing file: {filename}`, handled separately below.
+
+    A match only counts if no OTHER target's "artist - title" text
+    containing it as a substring also appears in the line - otherwise one
+    track's text matching inside another's would flip the wrong status."""
     low = line.lower()
-    candidates = [e for e in S.exec_targets if e["filename"].lower() in low]
-    names = [c["filename"].lower() for c in candidates]
+
+    error_prefix = "error processing file:"
+    idx = low.find(error_prefix)
+    if idx != -1:
+        failed_name = line[idx + len(error_prefix):].strip().lower()
+        for e in S.exec_targets:
+            if e["filename"].lower() == failed_name:
+                S.exec_status[e["filename"]] = "failed"
+        return
+
+    is_done = "[auto]" in low or "[skip]" in low
+    if not is_done:
+        return
+
+    def tag_text(e: dict) -> str:
+        return f"{e.get('artist', '')} - {e.get('title', '')}".lower()
+
+    candidates = [e for e in S.exec_targets if tag_text(e) and tag_text(e) in low]
+    texts = [tag_text(c) for c in candidates]
     matches = [c for c in candidates
-               if not any(c["filename"].lower() != other and c["filename"].lower() in other
-                          for other in names)]
+               if not any(tag_text(c) != other and tag_text(c) in other
+                          for other in texts)]
     for e in matches:
-        fn = e["filename"]
-        if "[moved]" in low or "moved:" in low:
-            S.exec_status[fn] = "done"
-        elif "[skipped]" in low or "[error]" in low or "[failed]" in low:
-            S.exec_status[fn] = "failed"
-        elif S.exec_status.get(fn) == "queued":
-            S.exec_status[fn] = "moving"
+        S.exec_status[e["filename"]] = "done"
 
 
 def stage_execute() -> None:
