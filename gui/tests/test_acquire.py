@@ -13,12 +13,15 @@ from gui.tabs.acquire import (
     _length_to_seconds,
     _load_history,
     _read_mp3_tags,
+    _sample_extra,
+    _sample_tracks,
     _save_last_playlist,
     _sorted_tracks,
     _spotify_client,
     _state,
     find_extra_newmusic_files,
     match_downloads,
+    simulate,
 )
 
 import spotify_tools.config as spotify_config
@@ -236,6 +239,65 @@ def test_spotify_client_raises_when_config_not_found(monkeypatch):
     except RuntimeError as exc:
         assert "SpotifyTools config not found at" in str(exc)
         assert str(spotify_config.CONFIG_PATH) in str(exc)
+
+
+def test_sample_tracks_returns_expected_shape():
+    """Must match the (artist, title, album, year, length, url) 6-tuple
+    _do_fetch_tracks() returns, since simulate() drops these straight into
+    _state["tracks"] and track_table() unpacks that exact shape."""
+    tracks = _sample_tracks()
+    assert len(tracks) >= 5
+    for row in tracks:
+        assert len(row) == 6
+        artist, title, album, year, length, url = row
+        assert artist and title and url
+
+
+def test_sample_extra_returns_expected_shape():
+    """Must match the (artist, title, url, path) 4-tuple _state["extra"]
+    holds (built in _run_check_against_downloads), not the 3-tuple
+    find_extra_newmusic_files() returns - track_table() unpacks 4 values."""
+    extra = _sample_extra()
+    assert len(extra) >= 3
+    for row in extra:
+        assert len(row) == 4
+        artist, title, url, path = row
+        assert artist and title and url
+        assert isinstance(path, Path)
+
+
+def test_sample_extra_paths_need_not_exist_and_read_mp3_tags_degrades_cleanly():
+    """The synthetic extra paths are fabricated, not real files - confirms
+    _read_mp3_tags() (already covered above for a missing file) is safe to
+    call on every one of them, exactly as track_table() does at render time."""
+    for _artist, _title, _url, path in _sample_extra():
+        assert not path.exists()
+        album, year, length = _read_mp3_tags(path)
+        assert (album, year, length) == ("", "", "")
+
+
+# --------------------------------------------------------------- simulate()
+
+
+def test_simulate_sets_simulated_and_playlist_loaded():
+    simulate()
+    assert _state["simulated"] is True
+    assert _state["playlist_loaded"] is True
+
+
+def test_simulate_populates_tracks_and_extra():
+    simulate()
+    assert _state["tracks"]
+    assert _state["extra"]
+
+
+def test_simulate_produces_both_downloaded_and_missing_tracks():
+    """Regression coverage for the spec: one click must exercise every
+    row-state branch in track_table() - some downloaded, some missing."""
+    simulate()
+    values = list(_state["downloaded"].values())
+    assert any(values)
+    assert not all(values)
 
 
 def test_spotify_client_constructs_real_client_when_config_present(monkeypatch):

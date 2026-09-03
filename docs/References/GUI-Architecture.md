@@ -89,6 +89,8 @@ Both call `_artist_title_match()` for the actual comparison (primary-artist subs
 
 **Explicitly out of scope:** driving Deemix's own search/result-selection (that's the human judgment call the whole pipeline exists to protect); any Stage 1 (Discovery) automation - no real leverage point exists there, liking tracks on Spotify already is the interface.
 
+**Simulate mode (2026-09-04), a testing/exploration harness, not a user-facing feature - mirrors integration.py's own Simulate mode.** "Simulate (sample data)" next to Fetch Tracks calls `simulate()`, which loads synthetic sample tracks/extras (`_sample_tracks()`/`_sample_extra()`) straight into `_state` with no `_spotify_client()` call and no `NEWMUSIC_DIR` read - a subset are marked downloaded, a subset missing, and the extra rows include both an overlap with a downloaded track and files that match nothing, so one click exercises every row state `track_table()` can render. Always lands in diff mode (`_state["playlist_loaded"] = True`) since that's the more complex/common path; browse mode already has a working empty state and needs no synthetic data. A `.simulate-banner` (the same CSS class integration.py uses) marks the tab as showing sample data until a real Fetch or Clear resets `_state["simulated"]`. `simulate()` itself is a module-level, synchronous, side-effect-free-on-NiceGUI function (state mutation plus a set of `_refresh_hooks` callbacks that default to no-ops) so it's directly unit-testable without a live UI context, the same trick `IntegrationState.refresh`'s default no-op plays in integration.py.
+
 ---
 
 ## Dev mode: hot-reload (2026-09-01)
