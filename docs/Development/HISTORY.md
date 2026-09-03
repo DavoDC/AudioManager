@@ -4,6 +4,31 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Partial-failure runs now labelled "not run" instead of "failed"
+
+Closed the last `[OPUS]`-tagged pre-batch item. Opus subagent judged the exe's real output
+(`MusicIntegrator.cs`: sequential per-file loop, halts on first error, prints `Error processing
+file: <filename>` before stopping) supports one reliable distinction and no more: the named file
+in that line was genuinely attempted-and-failed; everything still `queued`/`moving` after it was
+never reached. Per-track success/skip lines (`[AUTO]`/`[SKIP] {Artists} - {Title}`) carry tag text,
+not filenames, so a full attempted-vs-not-attempted mapping for every file isn't supported by
+current output - verdict was the cheap relabel plus this one extra, not the full fix.
+
+`gui/tabs/integration.py`: added `_failed_filename_from_output()` (parses the halt line);
+`run_execute`'s non-ok branch now marks the named file `failed` and everything else still
+queued/moving `notrun`, appends a "not attempted" count and the failed filename to `exec_summary`;
+added `EXEC_STATUS_LABELS` so the row text ("not run") is decoupled from the CSS class (`st-notrun`,
+`gui/theme.py`, widened `.progress-row .st` from 64px to 84px so the label doesn't clip). 4 new
+tests in `gui/tests/test_integration.py` (extraction, named-failure + notrun split, cancel path).
+
+Found and logged separately (not fixed here): `_update_exec_status` matches `[MOVED]`/`[SKIPPED]`
+strings the exe never actually prints, so live per-track progress rows stay `queued` until the
+end-of-run bulk flip regardless of this fix - see IDEAS.md TIER 2.
+
+`scripts\dev\verify.bat --no-pause` green after (255 C# + 82 GUI tests).
+
+---
+
 ## 2026-09-03 - Integration-tab test coverage: routing.py and the manifest call site
 
 TIER 2 items, integration-focused. No production code changed - both were pure coverage gaps.
