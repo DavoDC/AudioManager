@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2].parent / "SpotifyTool
 
 from gui import config
 from gui.tabs.acquire import (
+    _extra_batch_header,
+    _extra_segment_label,
     _length_to_seconds,
     _load_history,
     _read_mp3_tags,
@@ -189,3 +191,22 @@ def test_matches_when_fetched_track_has_extra_collab_artists(tmp_path):
     found, missing = match_downloads([("DC The Don & Someone", "Yellow")], tmp_path)
     assert found == ["DC The Don & Someone - Yellow"]
     assert missing == []
+
+
+def test_extra_segment_label_uses_browse_wording_with_no_playlist_loaded():
+    """Regression: with no playlist ever fetched, find_extra_newmusic_files()
+    correctly returns every NewMusic file, but labelling that "extra" reads
+    as an anomaly - see IDEAS.md "Acquire tab incident, 2026-09-04" P1."""
+    assert _extra_segment_label(25, playlist_loaded=False) == "25 files in NewMusic"
+
+
+def test_extra_segment_label_uses_diff_wording_once_playlist_loaded():
+    assert _extra_segment_label(3, playlist_loaded=True) == "3 extra in NewMusic"
+
+
+def test_extra_batch_header_uses_browse_wording_with_no_playlist_loaded():
+    assert _extra_batch_header(25, playlist_loaded=False) == "NEWMUSIC FOLDER (25)"
+
+
+def test_extra_batch_header_uses_diff_wording_once_playlist_loaded():
+    assert _extra_batch_header(3, playlist_loaded=True) == "IN NEWMUSIC, NOT IN THIS PLAYLIST (3)"
