@@ -185,13 +185,14 @@ HEAD_HTML = """
   .rc-decision button.decline.on{background:rgba(226,109,109,.15);border-color:var(--accent4);color:var(--accent4);}
   .progress-track{height:8px;background:#12141c;border:1px solid var(--panel-border);border-radius:var(--radius-pill);overflow:hidden;width:100%;}
   .progress-track .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s;}
+  .progress-track .fill.fail{background:var(--accent4);}
   .progress-row{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:var(--radius-control);font-size:12px;width:100%;}
   .progress-row .st{font-size:10px;text-transform:uppercase;letter-spacing:.04em;width:84px;flex-shrink:0;}
   .st-done{color:var(--accent2);}
   .st-moving{color:var(--accent3);}
   .st-queued{color:var(--text-dim);}
   .st-failed{color:var(--accent4);}
-  .st-notrun{color:var(--text-dim);}
+  .st-notrun{color:var(--accent3);}
   .simulate-banner{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);
     font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
     padding:7px 12px;border-radius:var(--radius-control);margin-bottom:12px;width:100%;}
@@ -269,6 +270,7 @@ HEAD_HTML = """
   .progress-track .fill{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
     background-size:200% 100%;animation:amflow 2.2s linear infinite;}
   @keyframes amflow{to{background-position:-200% 0;}}
+  .progress-track .fill.fail{background:var(--accent4);animation:none;}
   .step{transition:border-color .25s ease,background .25s ease,color .25s ease;}
   .step.active{box-shadow:0 0 16px -6px rgba(91,140,255,.55);}
   /* tab entrance */

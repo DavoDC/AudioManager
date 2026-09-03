@@ -52,6 +52,7 @@ class IntegrationState:
         self.exec_targets: list[dict] = []     # the accepted entries being executed
         self.exec_done = False
         self.exec_summary = ""
+        self.exec_ok: bool | None = None    # None: no run finished yet; True/False: last run's outcome
         self.simulated = False              # True: sample data, no real exe/file touched
         self.refresh = lambda: None
 
@@ -177,6 +178,7 @@ def run_simulate() -> None:
     S.decisions = {e["filename"]: True for e in entries}
     S.exec_status = {}
     S.exec_done = False
+    S.exec_ok = None
     S.scan_lines = ["[SIMULATE] Sample data only - nothing in NewMusic was scanned or touched."]
     S.simulated = True
     S.stage = 2
@@ -212,6 +214,7 @@ async def run_scan() -> None:
     S.decisions = {e["filename"]: True for e in entries}
     S.exec_status = {}
     S.exec_done = False
+    S.exec_ok = None
     S.stage = 2
     S.refresh()
 
@@ -422,6 +425,7 @@ async def run_execute() -> None:
     S.stage = 4
     S.exec_lines = []
     S.exec_done = False
+    S.exec_ok = None
     S.exec_summary = ""
     S.exec_targets = targets
     S.exec_status = {e["filename"]: "queued" for e in targets}
@@ -465,6 +469,8 @@ def _finish_execute(result: RunResult) -> None:
     synthetic run_execute_simulated() - both produce a RunResult and must be
     interpreted identically so a simulated run exercises the real UI logic."""
     S.exec_done = True
+    S.exec_ok = result.ok
+    show_modal = False
     if result.ok:
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
         for k, v in S.exec_status.items():
@@ -488,13 +494,18 @@ def _finish_execute(result: RunResult) -> None:
             else:
                 S.exec_status[k] = "notrun"
                 n_notrun += 1
-        if failed_name:
-            S.exec_summary += f" 1 file failed: {failed_name}."
+        # failed_name is already named in result.interpreted()'s cause line above -
+        # repeating it here would duplicate the filename with no separator.
         if n_notrun:
             S.exec_summary += f" {n_notrun} file(s) were not attempted."
-        if not result.cancelled:
-            show_error_modal("Integration", result)
+        show_modal = not result.cancelled
+    # Refresh BEFORE opening the error modal: S.refresh() rebuilds the
+    # @ui.refreshable slot this function is called from, which would destroy
+    # a dialog created inside it a moment earlier - opening the modal after
+    # the rebuild lets it survive.
     S.refresh()
+    if show_modal:
+        show_error_modal("Integration", result)
 
 
 async def run_execute_simulated() -> None:
@@ -511,6 +522,7 @@ async def run_execute_simulated() -> None:
     S.stage = 4
     S.exec_lines = []
     S.exec_done = False
+    S.exec_ok = None
     S.exec_summary = ""
     S.exec_targets = targets
     S.exec_status = {e["filename"]: "queued" for e in targets}
@@ -618,7 +630,8 @@ def stage_execute() -> None:
             ui.html(f"<span>{label}</span>")
             if not S.exec_done:
                 ui.button("Cancel", on_click=lambda: runner.cancel()).props("outline dense color=negative size=sm")
-        ui.html(f'<div class="progress-track"><div class="fill" style="width:{pct}%;"></div></div>')
+        fill_class = "fill fail" if S.exec_ok is False else "fill"
+        ui.html(f'<div class="progress-track"><div class="{fill_class}" style="width:{pct}%;"></div></div>')
 
         rows = []
         for e in S.exec_targets:
