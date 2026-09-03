@@ -4,6 +4,20 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Fix: bulk accept/decline ignored the active review filter, chip count mismatched it
+
+Third fix from the Opus design-review pass. `_bulk` (backing "Accept all"/"Decline all") looped
+`S.entries` unconditionally instead of `S.filtered()` - filtering the review stage to "New folders"
+or "Duplicates / conflicts" then clicking "Decline all" silently declined the whole batch, not just
+the visible rows, a genuinely destructive mis-click on a large real batch with no undo beyond
+re-accepting by hand. Fixed by having `_bulk` iterate `S.filtered()`. Separately, the "Duplicates /
+conflicts (N)" chip count used `inBatchDuplicate` alone while `filtered()`'s `conflicts` branch also
+matches any non-clean `status`, so the two disagreed; aligned the chip's count expression with
+`filtered()`'s actual condition.
+
+2 new tests in `gui/tests/test_integration.py`: bulk-with-active-filter only touches filtered rows,
+bulk-with-"all"-filter touches everything. `scripts\dev\verify.bat --no-pause` green (255 C# + 93 GUI).
+
 ## 2026-09-03 - Fix: failed-run UI - error modal destroyed, false-green progress bar, duplicated filename
 
 Second fix from the Opus design-review pass, working down the ranked backlog. Three compounding
