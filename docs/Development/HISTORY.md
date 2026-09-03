@@ -4,6 +4,27 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Fix: failed-run UI - error modal destroyed, false-green progress bar, duplicated filename
+
+Second fix from the Opus design-review pass, working down the ranked backlog. Three compounding
+bugs in the failed-run path: (1) `_finish_execute` called `show_error_modal(...)` then
+`S.refresh()` on the next line - the refresh rebuilds the `@ui.refreshable` slot the dialog was
+created inside, destroying it before it can ever be seen (confirmed via DOM inspection during the
+review: zero `.q-dialog` elements survive a real failure). Reordered so refresh runs first and the
+modal opens after. (2) The progress bar rendered the success blue-to-green gradient at 100%
+regardless of outcome - added `IntegrationState.exec_ok` (set by `_finish_execute`, reset on every
+new scan/simulate/execute) and a `.progress-track .fill.fail` red override in `gui/theme.py`
+(needed twice - once for the base gradient, once to beat the later animated-shine rule that shares
+its specificity and comes after it in the stylesheet). (3) The failure summary duplicated the
+failed filename with no separator (`"...Error processing file: X 1 file failed: X."`) - the file
+is already named by `result.interpreted()`'s cause line, so the redundant clause was dropped
+outright rather than just adding a separator. Also gave `st-notrun` its own colour (amber/accent3)
+- it shared `st-queued`'s exact grey before, making "queued" and "not run" indistinguishable.
+
+4 new tests in `gui/tests/test_integration.py`: modal-opens-after-refresh ordering (via a
+call-order list), `exec_ok` set true/false, and a regression assertion that the failed filename
+appears exactly once in the summary. `scripts\dev\verify.bat --no-pause` green (255 C# + 91 GUI).
+
 ## 2026-09-03 - Fix: `_update_exec_status` mislabelled successful files as "not run" after a mid-batch failure
 
 Top-priority fix from the Opus design-review pass below. Root cause: `_update_exec_status` looked
