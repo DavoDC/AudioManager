@@ -70,6 +70,14 @@ Integration is fully selective: declined tracks are excluded via
 in NewMusic. **Remaining gap (surfaced in the UI):** tag rules are not
 configurable without a C# change. Details: `docs/References/GUI-Architecture.md`.
 
+**Simulate mode:** "Simulate (sample data)" on the Integration tab's scan
+stage loads synthetic sample entries (one per review-card state) and runs a
+synthetic execute through the same status/summary logic a real run uses -
+no exe subprocess, no manifest file, no NewMusic access. A yellow SIMULATED
+banner stays visible for the whole staged flow so it can never be mistaken
+for a real run. Use it to review or screenshot the workflow's design without
+anything in the inbox.
+
 ## Tests
 
 ```

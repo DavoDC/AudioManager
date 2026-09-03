@@ -4,6 +4,33 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Integration tab: Simulate mode (UI dry run, no exe/NewMusic access)
+
+Built ahead of an Opus design-review pass so the review could exercise every Integration-tab
+stage and screenshot the review-card design without ever risking a real integration run.
+
+`gui/tabs/integration.py`: a new "Simulate (sample data)" button on the scan stage
+(`run_simulate()`) loads `_sample_entries()` - six synthetic entries covering every review-card
+state (clean route, new-folder scan-ahead, in-batch duplicate, tag-change chips, an
+error/unresolved status, one more clean route) - straight into stage 2, with no exe call at all.
+Confirming on the confirm stage runs `run_execute_simulated()` instead of the real `run_execute()`
+when `IntegrationState.simulated` is set: it streams synthetic lines through the exact same
+`_update_exec_status`/on_line path a real run uses, using the exe's real confirmed output formats
+(`[AUTO] {Artists} - {Title}`, halting on the sample "error" entry with
+`Error processing file: {filename}`) - so it faithfully reproduces real behavior including the
+already-logged "decorative progress" bug (`_update_exec_status` doesn't match `[AUTO]` lines).
+`run_execute`'s post-run finalization was extracted into a shared `_finish_execute(result)` so
+both the real and simulated paths are interpreted identically. A yellow SIMULATED banner
+(`gui/theme.py` `.simulate-banner`) stays visible across all four stages, and the confirm dialog's
+wording changes when simulated. `S.simulated` is reset to `False` on a real scan and on "New scan".
+
+5 new tests in `gui/tests/test_integration.py` (sample-data shape, never touches the real runner,
+`run_scan` clears a leftover simulated flag, the simulated run reaches `done`, and the simulated
+partial-failure path relabels exactly like a real one). `scripts\dev\verify.bat --no-pause` green
+(255 C# + 87 GUI tests).
+
+---
+
 ## 2026-09-03 - Partial-failure runs now labelled "not run" instead of "failed"
 
 Closed the last `[OPUS]`-tagged pre-batch item. Opus subagent judged the exe's real output
