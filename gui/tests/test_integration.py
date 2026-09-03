@@ -220,31 +220,49 @@ def test_esc_escapes_quotes():
 # ---------------------------------------------------------- _update_exec_status
 
 
-def test_update_exec_status_marks_moved():
+def test_update_exec_status_marks_auto_line_done():
+    """The real exe's success line is `[AUTO] {Artist} - {Title}` - no
+    filename at all, only tag text."""
     s = IntegrationState()
-    s.exec_targets = [_entry("Song.mp3")]
+    s.exec_targets = [_entry("Song.mp3", artist="Some Artist", title="Some Title")]
     s.exec_status = {"Song.mp3": "queued"}
-    _update_exec_status_on(s, "[MOVED] Song.mp3 -> Artists/Artist/Song.mp3")
+    _update_exec_status_on(s, "[AUTO] Some Artist - Some Title")
     assert s.exec_status["Song.mp3"] == "done"
 
 
-def test_update_exec_status_marks_failed():
+def test_update_exec_status_marks_skip_line_done():
+    """`[SKIP]` means the exe deliberately left the file in place (e.g.
+    already exists at destination) - not a failure, so it also settles to
+    'done' rather than 'failed'."""
+    s = IntegrationState()
+    s.exec_targets = [_entry("Song.mp3", artist="Some Artist", title="Some Title")]
+    s.exec_status = {"Song.mp3": "queued"}
+    _update_exec_status_on(s, "[SKIP] Some Artist - Some Title: already exists at destination")
+    assert s.exec_status["Song.mp3"] == "done"
+
+
+def test_update_exec_status_marks_named_file_failed_on_error_line():
+    """The halt-on-error line is the one real-exe line that DOES carry a
+    filename: `Error processing file: {filename}`."""
     s = IntegrationState()
     s.exec_targets = [_entry("Song.mp3")]
     s.exec_status = {"Song.mp3": "queued"}
-    _update_exec_status_on(s, "[SKIPPED] Song.mp3 - duplicate")
+    _update_exec_status_on(s, "Error processing file: Song.mp3")
     assert s.exec_status["Song.mp3"] == "failed"
 
 
-def test_update_exec_status_overlapping_filenames_do_not_cross_contaminate():
-    """A shorter accepted filename that is a substring of a longer one must NOT
-    have its status flipped by a log line meant for the other file:
-    _update_exec_status prefers the longest matching filename and ignores a
-    substring match when a longer target also matches the same line."""
+def test_update_exec_status_overlapping_tag_text_does_not_cross_contaminate():
+    """A shorter accepted track's "artist - title" text that is a substring of
+    another track's must NOT have its status flipped by a line meant for the
+    other file: _update_exec_status ignores a substring match when a longer
+    target's tag text also matches the same line."""
     s = IntegrationState()
-    s.exec_targets = [_entry("Song.mp3"), _entry("Another Song.mp3")]
+    s.exec_targets = [
+        _entry("Song.mp3", artist="Artist", title="Song"),
+        _entry("Another Song.mp3", artist="Artist", title="Another Song"),
+    ]
     s.exec_status = {"Song.mp3": "queued", "Another Song.mp3": "queued"}
-    _update_exec_status_on(s, "[MOVED] Another Song.mp3 -> Artists/Artist/Another Song.mp3")
+    _update_exec_status_on(s, "[AUTO] Artist - Another Song")
     assert s.exec_status["Another Song.mp3"] == "done"
     assert s.exec_status["Song.mp3"] == "queued"  # untouched: not the file this line is about
 
@@ -341,10 +359,19 @@ def test_run_execute_simulated_reproduces_partial_failure_labelling(monkeypatch)
 
     _with_state(state, lambda: asyncio.run(run_execute_simulated()))
 
-    failed_entry = next(e for e in _sample_entries() if e["status"] == "error")
+    samples = _sample_entries()
+    failed_entry = next(e for e in samples if e["status"] == "error")
+    error_idx = samples.index(failed_entry)
     assert state.exec_status[failed_entry["filename"]] == "failed"
     assert any(v == "notrun" for v in state.exec_status.values())
     assert "not attempted" in state.exec_summary
+
+    # Regression: entries processed BEFORE the failure got a real `[AUTO]`
+    # success line and must show "done", never "notrun" - this is the bug
+    # the 2026-09-03 Opus review found (_update_exec_status never matched
+    # `[AUTO]` lines, so successful files were mislabelled not-run).
+    for e in samples[:error_idx]:
+        assert state.exec_status[e["filename"]] == "done"
 
 
 def _update_exec_status_on(state, line):
