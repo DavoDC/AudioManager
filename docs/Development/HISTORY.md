@@ -4,6 +4,43 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Fix batch: Acquire tab incident (Spotify fetch RuntimeError, hide_downloaded, blank extra-row tags, misleading framing, test blind spot)
+
+A screenshot regression review on 2026-09-04 found the Acquire tab still broken: every Spotify fetch
+raised a `RuntimeError`, the "Hide downloaded" checkbox had no visible effect, and "N extra in
+NewMusic" read as an anomaly even with no playlist loaded. Root cause of the fetch failure was in the
+sibling SpotifyTools repo: commit `624d88c` re-nested `spotify_tools/` one directory deeper
+(`spotify_tools/` -> `src/spotify_tools/`) but left `CONFIG_PATH`'s `BASE_DIR` at two `dirname()`
+calls, so it resolved to a nonexistent `src/config/config.json` instead of the real
+`config/config.json` at the repo root. Every test in `test_config.py` passed an explicit `path=`
+override, so the bug shipped through a green 214/214 suite - fixed in SpotifyTools commit `2fca625`
+(add a third `dirname()`, plus a regression test that imports the bare `CONFIG_PATH` constant with no
+override and asserts it exists).
+
+Four AudioManager-side fixes followed, one commit each with `verify.bat` green in between:
+- `d5542c78` - `hide_downloaded`'s filter only applied to the fetched-tracks loop, not the "extra"
+  (NewMusic-only) rows loop; added the same skip there, since every extra row is downloaded by
+  definition.
+- `1809faf3` - extra rows rendered blank Album/Year/Length because the pipeline only ever carried
+  `(artist, title, url)`, never the file's own `Path`. Threaded `Path` through
+  `_scan_newmusic_filenames` -> `find_extra_newmusic_files` -> `_state["extra"]` and added
+  `_read_mp3_tags()` (mirroring `gui/art.py`'s read-only mutagen precedent) to populate those columns
+  from real ID3 tags at render time.
+- `948b7f2c` - "N extra in NewMusic" read as a warning even with no playlist ever loaded. Added
+  `_state["playlist_loaded"]` and extracted `_extra_segment_label()`/`_extra_batch_header()` so the
+  wording switches to plain browse framing ("N files in NewMusic") until a playlist is fetched, then
+  reverts to diff framing once one is loaded. Underlying reconciliation untouched - label-only fix.
+- `9850f6c5` - closed the test blind spot that let the Spotify regression ship silently:
+  `_spotify_client()` was never invoked or imported by `test_acquire.py`, so a green AudioManager
+  suite proved nothing about the fetch path. Added tests for both the config-not-found (raises
+  `RuntimeError`) and config-present (constructs client, no network call) branches.
+
+`56c8a316` closed out the batch by rewriting the "Acquire tab design" section of
+`docs/References/GUI-Architecture.md` to match the shipped behavior: the shared reconciliation model,
+the browse-vs-diff framing as the tab's actual conceptual model rather than a bugfix note, extra-row
+ID3 reads, `hide_downloaded` covering both row kinds, and the `_spotify_client()`/`CONFIG_PATH`
+dependency.
+
 ## 2026-09-03 - Investigation: real embedded album art extraction confirmed against NewMusic (read-only)
 
 David asked where cover-art images come from and whether they can be read
