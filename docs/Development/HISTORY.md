@@ -4,6 +4,28 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Investigation: real embedded album art extraction confirmed against NewMusic (read-only)
+
+David asked where cover-art images come from and whether they can be read
+straight from real NewMusic files without running real integration. Answer:
+`gui/art.py`'s `get_thumbnail()` reads the embedded ID3 APIC/cover frame
+directly out of each MP3 via `mutagen` (`ID3(file_path).getall("APIC")`,
+falling back to `mutagen.File(...).pictures`), downscales it with Pillow to a
+300px JPEG, and disk-caches it under `gui/.cache/thumbs/` keyed by an MD5 hash
+of the track id. It never touches the review pipeline's synthetic placeholder
+art (only Simulate mode uses that) and never writes into the library or
+NewMusic inbox - reading is strictly read-only against the source MP3.
+
+Validated this against the real NewMusic inbox with a standalone read-only
+script (`_extract_image_bytes` + `_to_jpeg_thumb` called directly, bypassing
+`get_thumbnail()`'s cache-write step so nothing touched
+`gui/.cache/thumbs/`, and never calling the Integration tab's exe subprocess):
+all 25 NewMusic MP3s had extractable embedded art, total extraction time
+0.42s. Conclusion: real thumbnails are technically ready to wire into the
+Integration tab's review cards whenever that's wanted - the extraction path
+already works reliably and fast against real files, this just hasn't been
+connected to that UI yet.
+
 ## 2026-09-03 - Fix: album art tile hidden by a browser-extension CSS collision on `.cover-art.lg`
 
 The IDEAS.md item claimed `.cover-art.md` review-card tiles measured `0x0` via
