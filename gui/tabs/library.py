@@ -214,10 +214,10 @@ def _grid(rows: list[dict]) -> None:
         thumb = get_thumbnail(tid, t.get("filePath"), t.get("hasArt", False))
         badge = "" if t.get("hiResArt") or not t.get("hasArt") else '<span class="lowres-badge">low-res</span>'
         if thumb:
-            cover = (f'<div class="cover-art lg" style="position:relative;">'
+            cover = (f'<div class="cover-art cover-lg" style="position:relative;">'
                      f'<img src="/thumbs/{thumb.name}" loading="lazy" alt="">{badge}</div>')
         else:
-            cover = (f'<div class="cover-art lg" style="position:relative;{placeholder_style(tid)}">'
+            cover = (f'<div class="cover-art cover-lg" style="position:relative;{placeholder_style(tid)}">'
                      f'{initials(str(t.get("title", "")), str(t.get("album", "")))}{badge}</div>')
 
         cards.append(

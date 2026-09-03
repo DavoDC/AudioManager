@@ -147,7 +147,7 @@ HEAD_HTML = """
   .cover-art img{width:100%;height:100%;object-fit:cover;display:block;}
   .cover-art.sm{width:32px;height:32px;border-radius:3px;font-size:11px;flex-shrink:0;}
   .cover-art.md{width:56px;height:56px;border-radius:4px;font-size:16px;flex-shrink:0;}
-  .cover-art.lg{font-size:30px;}
+  .cover-art.cover-lg{font-size:30px;}
   .track-card .info{padding:8px 10px;}
   .track-card .t-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
   .track-card .t-artist{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
