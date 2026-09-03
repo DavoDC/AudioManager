@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Fix: Acquire tab's 2s poll timer clobbered Simulate mode's sample data
+
+`_poll_downloads()`'s `ui.timer(2.0, ...)` re-ran `_run_check_against_downloads()` unconditionally every 2
+seconds while the Acquire tab was open, regardless of `_state["simulated"]` - so clicking "Simulate (sample
+data)" worked for well under 2 seconds before the real `NEWMUSIC_DIR`/playlist match silently overwrote the
+sample `downloaded`/`extra` data with real disk-scan results. Fixed by adding an early return in
+`_poll_downloads()` - guarded via a new module-level `_poll_should_skip()` helper (returns
+`_state["simulated"]`) so the guard condition is directly unit-testable without a live NiceGUI page, mirroring
+`integration.py`'s existing `if not S.simulated:` pattern around its own background/real-execution logic.
+Live-verified against the running dev server: clicked Simulate, watched the sample counts (2 downloaded, 4
+missing, 3 extra, 33%) hold steady across 13+ seconds (multiple poll cycles).
+
 ## 2026-09-04 - Acquire tab: Simulate (sample data) mode
 
 Added a "Simulate (sample data)" button to the Acquire tab, mirroring the Integration tab's existing

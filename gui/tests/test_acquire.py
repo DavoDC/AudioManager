@@ -12,6 +12,7 @@ from gui.tabs.acquire import (
     _extra_segment_label,
     _length_to_seconds,
     _load_history,
+    _poll_should_skip,
     _read_mp3_tags,
     _sample_extra,
     _sample_tracks,
@@ -298,6 +299,36 @@ def test_simulate_produces_both_downloaded_and_missing_tracks():
     values = list(_state["downloaded"].values())
     assert any(values)
     assert not all(values)
+
+
+def test_poll_should_skip_true_while_simulated():
+    """Regression: _poll_downloads()'s 2s timer used to recompute
+    _state["downloaded"]/["extra"] from the real NEWMUSIC_DIR unconditionally,
+    clobbering simulate()'s sample data within a couple of poll cycles - see
+    IDEAS.md "Acquire tab Simulate-mode exploration, 2026-09-04". Confirms the
+    guard the poll checks before touching _state at all."""
+    simulate()
+    assert _poll_should_skip() is True
+
+
+def test_poll_should_skip_false_after_clear():
+    simulate()
+    assert _poll_should_skip() is True
+    _state["simulated"] = False
+    assert _poll_should_skip() is False
+
+
+def test_simulate_then_poll_should_skip_leaves_sample_data_untouched():
+    """Confirms the guard is load-bearing: simulate()'s sample downloaded/extra
+    data is still exactly what simulate() set once _poll_should_skip() has
+    been checked (nothing in the guard check itself mutates _state), matching
+    what _poll_downloads()'s early return guarantees against a real poll tick."""
+    simulate()
+    sample_downloaded = dict(_state["downloaded"])
+    sample_extra = list(_state["extra"])
+    assert _poll_should_skip() is True
+    assert _state["downloaded"] == sample_downloaded
+    assert _state["extra"] == sample_extra
 
 
 def test_spotify_client_constructs_real_client_when_config_present(monkeypatch):

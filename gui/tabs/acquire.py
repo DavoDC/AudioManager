@@ -347,6 +347,18 @@ def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path)
     return extra
 
 
+def _poll_should_skip() -> bool:
+    """Guard for _poll_downloads()'s early return: while _state["simulated"]
+    is True, the 2s poll must not touch _state at all, or simulate()'s
+    synthetic downloaded/extra data gets silently clobbered by a real
+    NEWMUSIC_DIR scan within a couple of poll cycles (mirrors integration.py's
+    `if not S.simulated:` guard around its own background/real-execution
+    logic). Extracted to module level - unlike _poll_downloads itself, which
+    is a closure nested in build() and needs a live NiceGUI page - so the
+    guard condition is directly unit-testable."""
+    return _state["simulated"]
+
+
 def _extra_segment_label(count: int, playlist_loaded: bool) -> str:
     """progress_bar()'s third-segment text. With no playlist loaded,
     find_extra_newmusic_files() correctly returns literally every NewMusic
@@ -641,8 +653,9 @@ def build() -> None:
             run only starts after the previous one finishes and the table only
             redraws when something actually changed - a fresh mp3 drops in
             mid-download, so this stays cheap rather than one-shot). Runs even
-            with no playlist loaded, so extras still update."""
-            if _poll["busy"]:
+            with no playlist loaded, so extras still update. Skips entirely
+            while _state["simulated"] is True - see _poll_should_skip()."""
+            if _poll["busy"] or _poll_should_skip():
                 return
             _poll["busy"] = True
             try:
