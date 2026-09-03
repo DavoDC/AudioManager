@@ -4,6 +4,22 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Feature: surface the post-run CONFIDENCE REPORT instead of hiding it in debug
+
+`PrintConfidenceReport` (`MusicIntegrator.cs` ~900-990) is the exe's strongest guarantee that a
+claimed-successful real run actually succeeded: a `Files in NewMusic: N | Moved: M | Skipped: S`
+count check (flagged `[ERROR] Count mismatch!` on disagreement) and a destination sanity check that
+re-reads every moved file with TagLib. Both printed to `S.exec_lines` but were only reachable via
+"Advanced / raw output (debug)" - calling the strongest integrity signal in the whole run "debug"
+buried it exactly where it mattered most. Added `routing.parse_confidence_report(lines)` and a
+`confidence_report_strip()` pass/fail banner on the execute-result stage (reusing the
+`.libchecker-strip` clean/dirty styling from the Projected LibChecker feature above), wired into
+both the real run's `_finish_execute()` path and Simulate mode's synthetic execute path so the
+strip is exercised without touching a real file. 4 new routing-parser tests + full suite: 255 C#
+passed, 102 GUI passed (`verify.bat`). Not yet verified in a live browser - the Chrome MCP
+extension was not connected in this session (`tabs_context_mcp` failed 3x with "extension not
+connected"); visual/interactive confirmation is still outstanding.
+
 ## 2026-09-03 - Feature: surface the dry run's Projected LibChecker verdict on the review stage
 
 Fourth item from the Opus design-review pass. `integrate --dry-run --json-output` already computes
