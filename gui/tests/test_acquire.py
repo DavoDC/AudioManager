@@ -15,10 +15,14 @@ from gui.tabs.acquire import (
     _read_mp3_tags,
     _save_last_playlist,
     _sorted_tracks,
+    _spotify_client,
     _state,
     find_extra_newmusic_files,
     match_downloads,
 )
+
+import spotify_tools.config as spotify_config
+import spotify_tools.spotify_client as spotify_client_module
 
 
 def test_matches_downloaded_file(tmp_path):
@@ -210,3 +214,45 @@ def test_extra_batch_header_uses_browse_wording_with_no_playlist_loaded():
 
 def test_extra_batch_header_uses_diff_wording_once_playlist_loaded():
     assert _extra_batch_header(3, playlist_loaded=True) == "IN NEWMUSIC, NOT IN THIS PLAYLIST (3)"
+
+
+# --------------------------------------------------------- _spotify_client()
+#
+# Regression coverage for the Acquire tab incident, 2026-09-04 (see IDEAS.md):
+# SpotifyTools' CONFIG_PATH silently pointed at a nonexistent path after a
+# refactor, and _spotify_client() - the function that actually loads that
+# config and constructs the real Spotify client - was never exercised by any
+# test, so a fully green AudioManager suite shipped a broken fetch path.
+# These tests cover both branches of _spotify_client()'s own logic (config
+# missing vs. config present) without touching the network or a real
+# config.json.
+
+
+def test_spotify_client_raises_when_config_not_found(monkeypatch):
+    monkeypatch.setattr(spotify_config, "load_config", lambda path: None)
+    try:
+        _spotify_client()
+        assert False, "_spotify_client() should have raised RuntimeError"
+    except RuntimeError as exc:
+        assert "SpotifyTools config not found at" in str(exc)
+        assert str(spotify_config.CONFIG_PATH) in str(exc)
+
+
+def test_spotify_client_constructs_real_client_when_config_present(monkeypatch):
+    fake_cfg = {"client_id": "id", "client_secret": "secret", "redirect_uri": "http://localhost"}
+    monkeypatch.setattr(spotify_config, "load_config", lambda path: fake_cfg)
+
+    calls = []
+
+    class FakeRealSpotifyClient:
+        def __init__(self, cfg):
+            calls.append(cfg)
+            self.cfg = cfg
+
+    monkeypatch.setattr(spotify_client_module, "RealSpotifyClient", FakeRealSpotifyClient)
+
+    client = _spotify_client()
+
+    assert isinstance(client, FakeRealSpotifyClient)
+    assert client.cfg == fake_cfg
+    assert calls == [fake_cfg]
