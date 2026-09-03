@@ -4,6 +4,25 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Integration tab: Opus design review via Simulate mode
+
+An Opus subagent exercised the new Simulate mode end to end via browser automation (Simulate path
+only, verified the confirm dialog before every click - no real integration was ever run) to review
+the Integration tab's design/aesthetics/UX against project history and the old CLI's interactive
+menus. Findings logged to `docs/Development/IDEAS.md`: the existing `_update_exec_status`
+false-match item was escalated to TIER 1 after the review proved it now causes a real correctness
+bug (successfully-moved files get mislabelled "not run" after a mid-batch failure, not merely
+"decorative" progress), plus ten new items - a broken failed-run UI (no error modal, false-green
+progress bar, string glitches), the missing duplicate-resolution UI (CLI's D/L/K/Q menu has no GUI
+equivalent at all), the hidden Projected LibChecker verdict and post-run count/sanity
+reconciliation (both computed, both buried behind a panel labelled "debug"), missing scan-ahead
+batch context (route distribution, Misc auto-migration notice, compilation-album detection), and a
+review-card layout/hierarchy critique (wasted width, inverted typography hierarchy, noisy "clean
+route" badges, weak decline affordance, no keyboard path) plus smaller GUI bugs (art tile never
+renders, bulk accept/decline ignoring the active filter, simulate mode's own thumbnail-lookup
+exception to its no-NewMusic-access claim, dialog/stepper polish). No fixes implemented - reported
+to David for prioritization per this workspace's backlog-first rule.
+
 ## 2026-09-03 - Integration tab: Simulate mode (UI dry run, no exe/NewMusic access)
 
 Built ahead of an Opus design-review pass so the review could exercise every Integration-tab
