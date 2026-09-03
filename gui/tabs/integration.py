@@ -234,7 +234,8 @@ def stage_review() -> None:
         return
 
     n_new = sum(1 for e in S.entries if e["isNewFolder"])
-    n_dupe = sum(1 for e in S.entries if e["inBatchDuplicate"])
+    n_dupe = sum(1 for e in S.entries
+                 if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route"))
 
     with ui.row().classes("w-full items-center justify-between").style("margin-bottom:12px;flex-wrap:wrap;gap:10px;"):
         with ui.row().style("gap:8px;flex-wrap:wrap;"):
@@ -262,7 +263,10 @@ def _set_filter(k: str) -> None:
 
 
 def _bulk(accept: bool) -> None:
-    for e in S.entries:
+    """Applies only to the active filter's entries - S.entries would silently
+    accept/decline files the user can't currently see, a mis-click risk on a
+    filtered view."""
+    for e in S.filtered():
         S.decisions[e["filename"]] = accept
     S.refresh()
 
