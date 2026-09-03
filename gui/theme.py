@@ -196,6 +196,11 @@ HEAD_HTML = """
   .simulate-banner{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);
     font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
     padding:7px 12px;border-radius:var(--radius-control);margin-bottom:12px;width:100%;}
+  .libchecker-strip{font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--radius-control);
+    margin-bottom:12px;width:100%;}
+  .libchecker-strip.clean{background:rgba(127,209,174,.12);border:1px solid var(--accent2);color:var(--accent2);}
+  .libchecker-strip.dirty{background:rgba(226,109,109,.13);border:1px solid var(--accent4);color:var(--accent4);}
+  .libchecker-strip.skip{background:rgba(242,184,75,.12);border:1px solid var(--accent3);color:var(--accent3);}
   .pr-name{color:var(--text);word-break:break-all;}
   /* rule cards / services */
   .rule-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:14px 16px;margin-bottom:12px;width:100%;}

@@ -54,6 +54,7 @@ class IntegrationState:
         self.exec_summary = ""
         self.exec_ok: bool | None = None    # None: no run finished yet; True/False: last run's outcome
         self.simulated = False              # True: sample data, no real exe/file touched
+        self.projected_libchecker: dict | None = None  # dry run's own safety verdict
         self.refresh = lambda: None
 
     @property
@@ -181,6 +182,10 @@ def run_simulate() -> None:
     S.exec_ok = None
     S.scan_lines = ["[SIMULATE] Sample data only - nothing in NewMusic was scanned or touched."]
     S.simulated = True
+    S.projected_libchecker = {
+        "summary": "Projected library: 412 current, -0 removals, +6 additions = 418 projected",
+        "clean": True, "skipped": False, "total_hits": 0,
+    }
     S.stage = 2
     S.refresh()
 
@@ -215,6 +220,7 @@ async def run_scan() -> None:
     S.exec_status = {}
     S.exec_done = False
     S.exec_ok = None
+    S.projected_libchecker = routing.parse_projected_libchecker(result.lines)
     S.stage = 2
     S.refresh()
 
@@ -237,6 +243,8 @@ def stage_review() -> None:
     n_dupe = sum(1 for e in S.entries
                  if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route"))
 
+    projected_libchecker_strip()
+
     with ui.row().classes("w-full items-center justify-between").style("margin-bottom:12px;flex-wrap:wrap;gap:10px;"):
         with ui.row().style("gap:8px;flex-wrap:wrap;"):
             for key, label in [("all", f"All ({len(S.entries)})"),
@@ -255,6 +263,26 @@ def stage_review() -> None:
         review_card(e)
 
     confirm_bar()
+
+
+def projected_libchecker_strip() -> None:
+    """The dry run already answers "will my library still be clean after
+    this" (RunProjectedLibChecker in MusicIntegrator.cs) - surface that
+    verdict here instead of leaving it buried in the collapsed raw-output
+    panel, which is where it lives today."""
+    v = S.projected_libchecker
+    if v is None:
+        return
+    if v["skipped"]:
+        ui.html(f'<div class="libchecker-strip skip">Projected LibChecker: not run - '
+                f'{_esc(v["summary"])}</div>')
+    elif v["clean"]:
+        ui.html(f'<div class="libchecker-strip clean">&#10003; Projected LibChecker: clean - '
+                f'{_esc(v["summary"])}</div>')
+    else:
+        hits = f'{v["total_hits"]} issue(s)' if v["total_hits"] else "issues found"
+        ui.html(f'<div class="libchecker-strip dirty">&#9888; Projected LibChecker: {hits} - '
+                f'this run would leave the library dirty. See Advanced / raw output for detail.</div>')
 
 
 def _set_filter(k: str) -> None:
