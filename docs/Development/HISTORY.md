@@ -4,6 +4,23 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Fix: album art tile hidden by a browser-extension CSS collision on `.cover-art.lg`
+
+The IDEAS.md item claimed `.cover-art.md` review-card tiles measured `0x0` via
+`getBoundingClientRect()`. Live MCP measurement in Simulate mode disproved that: all 6 tiles came
+back a correct 56x56px in both computed style and bounding rect - that branch was never actually
+broken. The real bug was one tab over and one size class over: Library Browser's Grid view, the
+`.cover-art.lg` real-`<img>` branch (only reachable with a live thumbnail cache, so Simulate mode
+never exercised it). Live measurement there showed `getComputedStyle(el).display === "none"` with
+`getBoundingClientRect()` returning `0x0` - but no rule in any of the 6 accessible
+`document.styleSheets` set `display` on `.cover-art.lg`, and forcing `display:flex !important` via
+inline style immediately fixed it (tiles rendered at the correct size, images decoded fine,
+`naturalWidth`/`naturalHeight` were already 300x300). Conclusion: something outside the app's own
+CSS - not visible to page JS, almost certainly a browser extension's (or Brave Shields') cosmetic
+element-hiding filter matching the bare, generic `.lg` class - was stomping it. Renamed the class
+to `.cover-lg` in `gui/theme.py` and `gui/tabs/library.py` to remove the collision surface; confirmed
+fixed live via MCP screenshot with no JS override needed after the rename and hot-reload.
+
 ## 2026-09-03 - Fix: Simulate mode no longer opens NewMusic thumbnails it claims not to touch
 
 T3 polish item. `review_card()` unconditionally called `routing.newmusic_path()` then
