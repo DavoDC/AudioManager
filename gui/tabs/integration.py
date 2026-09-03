@@ -330,9 +330,14 @@ def review_card(e: dict) -> None:
     accepted = S.decisions.get(e["filename"], True)
     card_cls = "review-card" + ("" if accepted else " declined")
     with ui.element("div").classes(card_cls).style("margin-bottom:10px;"):
-        # album art from the NewMusic file itself (read-only extraction)
-        src_path = routing.newmusic_path(e["filename"])
-        thumb = get_thumbnail(f"newmusic::{e['filename']}", str(src_path), has_art=True)
+        # album art from the NewMusic file itself (read-only extraction) -
+        # Simulate mode's sample filenames don't exist in NewMusic, and the
+        # banner promises no NewMusic file is read, so skip the lookup
+        # entirely rather than let it silently stat/open a nonexistent path.
+        thumb = None
+        if not S.simulated:
+            src_path = routing.newmusic_path(e["filename"])
+            thumb = get_thumbnail(f"newmusic::{e['filename']}", str(src_path), has_art=True)
         if thumb:
             ui.html(f'<div class="cover-art md"><img src="/thumbs/{thumb.name}" alt=""></div>')
         else:
