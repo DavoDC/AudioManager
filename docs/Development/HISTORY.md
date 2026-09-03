@@ -4,6 +4,24 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-03 - Feature: surface the dry run's Projected LibChecker verdict on the review stage
+
+Fourth item from the Opus design-review pass. `integrate --dry-run --json-output` already computes
+and prints the "Projected LibChecker (Dry Run)" block every scan (`MusicIntegrator.cs`
+`RunProjectedLibChecker`, ~1939-2034) - the actual answer to "will my library still be clean after
+this run" - but it only ever landed in `S.scan_lines`, reachable by expanding the collapsed
+"Advanced / raw output (debug)" panel, while the confirm dialog claimed the run was "protected by
+the exe's own pre-integration safety gate" without showing any evidence of that gate's result.
+Added `routing.parse_projected_libchecker(lines)` - a pure parser matching the header, the
+" - Projected library: N current, -R removals, +A additions = P projected" summary line, the
+" - LibChecker: Clean" line when clean, and summing every " - Total hits: N" subtotal when dirty
+(plus a distinct `skipped` case for the "SKIP: could not load current library tags" early-return
+path) - and render it as a `.libchecker-strip` pass/fail/skip banner at the top of the review stage.
+Simulate mode gets a synthetic clean verdict so the strip renders without a real exe call.
+
+4 new tests in `gui/tests/test_routing.py` (absent/clean/dirty-with-summed-hits/skipped).
+`scripts\dev\verify.bat --no-pause` green (255 C# + 97 GUI).
+
 ## 2026-09-03 - Fix: bulk accept/decline ignored the active review filter, chip count mismatched it
 
 Third fix from the Opus design-review pass. `_bulk` (backing "Accept all"/"Decline all") looped
