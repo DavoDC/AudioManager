@@ -398,6 +398,8 @@ def build() -> None:
                         with ui.element("td").props("colspan=7"):
                             ui.label(f"IN NEWMUSIC, NOT IN THIS PLAYLIST ({len(_state['extra'])})")
                     for artist, title, url in sorted(_state["extra"], key=lambda r: r[0].lower()):
+                        if _state["hide_downloaded"]:
+                            continue
                         with ui.element("tr").style("background-color:rgba(242,184,75,0.10);"):
                             with ui.element("td"):
                                 ui.label(artist)
