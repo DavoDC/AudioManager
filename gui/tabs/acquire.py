@@ -41,7 +41,8 @@ sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
           "hide_downloaded": False}
 # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool};
-# extra: [(artist, title, url), ...] - files in NEWMUSIC_DIR matching no loaded track
+# extra: [(artist, title, url, path), ...] - files in NEWMUSIC_DIR matching no loaded track;
+# path is the file's own Path, read by _read_mp3_tags() for Album/Year/Length at render time
 # hide_downloaded: when True, track_table() skips rows already ticked Downloaded
 
 _SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
@@ -151,24 +152,50 @@ def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, 
     ]
 
 
+def _read_mp3_tags(path: Path) -> tuple[str, str, str]:
+    """Read-only (album, year, length) straight from an mp3's own ID3 tags,
+    mirroring gui/art.py's read-only mutagen precedent for album art. Used
+    only for "extra" NewMusic rows (files with no matching playlist track,
+    so there's no Spotify API data to show Album/Year/Length from instead -
+    the file's own tags are the only source). Never raises: missing file,
+    missing tags, or an unreadable/corrupt mp3 all fall back to blanks so a
+    single bad file never breaks the row render."""
+    album = year = length_str = ""
+    try:
+        from mutagen.easyid3 import EasyID3
+        tags = EasyID3(str(path))
+        album = (tags.get("album") or [""])[0]
+        year = (tags.get("date") or [""])[0][:4]
+    except Exception:
+        pass
+    try:
+        from mutagen.mp3 import MP3
+        length_str = _format_duration(int(MP3(str(path)).info.length * 1000))
+    except Exception:
+        pass
+    return album, year, length_str
+
+
 def _primary_artist(artist: str, clean_artist) -> str:
     """Text before " & "/";"/"," - a Spotify track's artist field can carry
     featured/collab artists that a downloaded filename never includes."""
     return re.split(r"\s*&\s*|\s*;\s*|\s*,\s*", clean_artist(artist))[0]
 
 
-def _scan_newmusic_filenames(newmusic_dir: Path) -> list[tuple[str, str, str, str]]:
+def _scan_newmusic_filenames(newmusic_dir: Path) -> list[tuple[str, str, str, str, Path]]:
     """Parses every "Artist - Title.mp3" file in newmusic_dir into
-    (raw_artist, raw_title, norm_artist, norm_title). Shared by match_downloads
+    (raw_artist, raw_title, norm_artist, norm_title, path). Shared by match_downloads
     (playlist -> filenames) and find_extra_newmusic_files (filenames -> playlist,
-    the reverse direction) so both use identical normalisation."""
+    the reverse direction) so both use identical normalisation. The path is
+    carried through so extra rows can read the file's own ID3 tags (see
+    _read_mp3_tags) - never used for matching, only display."""
     from spotify_tools.matcher import clean_artist, clean_title, normalise
 
     parts = []
     if newmusic_dir.is_dir():
         for p in newmusic_dir.glob("*.mp3"):
             fa, _, ft = p.stem.partition(" - ")
-            parts.append((fa.strip(), ft.strip(), normalise(_primary_artist(fa, clean_artist)), normalise(clean_title(ft))))
+            parts.append((fa.strip(), ft.strip(), normalise(_primary_artist(fa, clean_artist)), normalise(clean_title(ft)), p))
     return parts
 
 
@@ -207,25 +234,27 @@ def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[
         label = f"{artist} - {title}"
         norm_artist = normalise(_primary_artist(artist, clean_artist))
         norm_title = normalise(clean_title(title))
-        hit = any(_artist_title_match(norm_artist, norm_title, fa, ft) for _, _, fa, ft in filename_parts)
+        hit = any(_artist_title_match(norm_artist, norm_title, fa, ft) for _, _, fa, ft, _ in filename_parts)
         (found if hit else missing).append(label)
     return found, missing
 
 
-def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path) -> list[tuple[str, str]]:
+def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path) -> list[tuple[str, str, Path]]:
     """Reverse of match_downloads: files already sitting in newmusic_dir that
     don't match ANY track in the currently loaded playlist (or every file, if
     no playlist is loaded). Surfaces files that were downloaded outright, or
     downloaded from a playlist this table was never pointed at. Returns
-    [(artist, title), ...] parsed straight from each filename, read-only."""
+    [(artist, title, path), ...] parsed straight from each filename plus the
+    file's own Path (read-only, never used for matching - lets callers read
+    the file's real ID3 tags for Album/Year/Length, see _read_mp3_tags)."""
     from spotify_tools.matcher import clean_artist, clean_title, normalise
 
     track_norms = [(normalise(_primary_artist(a, clean_artist)), normalise(clean_title(t))) for a, t in tracks]
 
     extra = []
-    for raw_artist, raw_title, norm_artist, norm_title in _scan_newmusic_filenames(newmusic_dir):
+    for raw_artist, raw_title, norm_artist, norm_title, path in _scan_newmusic_filenames(newmusic_dir):
         if not any(_artist_title_match(ta, tt, norm_artist, norm_title) for ta, tt in track_norms):
-            extra.append((raw_artist, raw_title))
+            extra.append((raw_artist, raw_title, path))
     return extra
 
 
@@ -397,20 +426,21 @@ def build() -> None:
                     with ui.element("tr").classes("batch-header"):
                         with ui.element("td").props("colspan=7"):
                             ui.label(f"IN NEWMUSIC, NOT IN THIS PLAYLIST ({len(_state['extra'])})")
-                    for artist, title, url in sorted(_state["extra"], key=lambda r: r[0].lower()):
+                    for artist, title, url, path in sorted(_state["extra"], key=lambda r: r[0].lower()):
                         if _state["hide_downloaded"]:
                             continue
+                        album, year, length = _read_mp3_tags(path)
                         with ui.element("tr").style("background-color:rgba(242,184,75,0.10);"):
                             with ui.element("td"):
                                 ui.label(artist)
                             with ui.element("td"):
                                 ui.label(title)
                             with ui.element("td"):
-                                ui.label("")
+                                ui.label(album)
                             with ui.element("td"):
-                                ui.label("")
+                                ui.label(year)
                             with ui.element("td"):
-                                ui.label("")
+                                ui.label(length)
                             with ui.element("td"):
                                 ui.link("Search", url, new_tab=True)
                             with ui.element("td").style("text-align:center;"):
@@ -426,8 +456,8 @@ def build() -> None:
                 for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"])
             }
             _state["extra"] = [
-                (artist, title, _build_deemix_url(artist, title))
-                for artist, title in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
+                (artist, title, _build_deemix_url(artist, title), path)
+                for artist, title, path in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
             ]
 
         async def fetch():
