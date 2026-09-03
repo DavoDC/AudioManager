@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gui import config
 from gui.runner import RunResult
 from gui.tabs.integration import (
-    IntegrationState, _esc, _failed_filename_from_output, _open_run_log,
+    IntegrationState, _bulk, _esc, _failed_filename_from_output, _open_run_log,
     _sample_entries, _update_exec_status, _write_manifest, run_execute,
     run_execute_simulated, run_simulate,
 )
@@ -69,6 +69,31 @@ def test_filtered_conflicts_includes_dupes_and_non_clean_status():
     s.filter = "conflicts"
     names = {e["filename"] for e in s.filtered()}
     assert names == {"dupe.mp3", "err.mp3"}
+
+
+def test_bulk_accept_only_touches_active_filter_not_all_entries():
+    """_bulk must respect S.filtered() - looping S.entries unconditionally
+    would silently accept/decline files hidden by the active filter."""
+    s = IntegrationState()
+    s.entries = [
+        _entry("new.mp3", isNewFolder=True),
+        _entry("other.mp3", isNewFolder=False),
+    ]
+    s.decisions = {"new.mp3": True, "other.mp3": True}
+    s.filter = "newfolders"
+    _with_state(s, lambda: _bulk(False))
+    assert s.decisions["new.mp3"] is False
+    assert s.decisions["other.mp3"] is True
+
+
+def test_bulk_accept_all_filter_touches_every_entry():
+    s = IntegrationState()
+    s.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    s.decisions = {"a.mp3": False, "b.mp3": False}
+    s.filter = "all"
+    _with_state(s, lambda: _bulk(True))
+    assert s.decisions["a.mp3"] is True
+    assert s.decisions["b.mp3"] is True
 
 
 # --------------------------------------------------------- _write_manifest
