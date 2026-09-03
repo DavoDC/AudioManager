@@ -161,6 +161,67 @@ def test_run_execute_on_exe_failure_marks_named_file_failed_others_notrun(tmp_pa
     assert state.exec_status["c.mp3"] == "notrun"
     assert "b.mp3" in state.exec_summary
     assert "2 file(s) were not attempted" in state.exec_summary
+    # Regression: the old code appended "1 file failed: b.mp3." after a
+    # summary that already ends in "...Error processing file: b.mp3" with no
+    # separator, producing a duplicated, run-on filename mention.
+    assert state.exec_summary.count("b.mp3") == 1
+
+
+def test_run_execute_on_failure_refreshes_before_opening_error_modal(tmp_path, monkeypatch):
+    """S.refresh() rebuilds the @ui.refreshable slot _finish_execute runs
+    inside - opening the error modal before that refresh gets it destroyed
+    the instant the rebuild happens. The modal must open AFTER refresh."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    call_order = []
+    monkeypatch.setattr(integration_module, "show_error_modal",
+                         lambda *a, **k: call_order.append("modal"))
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+    state.refresh = lambda: call_order.append("refresh")
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=1,
+                          lines=["Error processing file: a.mp3", "INTEGRATION FAILED"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    # run_execute() also refreshes once before the exe call - only the
+    # relative order around the modal matters here.
+    assert call_order[-1] == "modal"
+    assert call_order[-2] == "refresh"
+
+
+def test_finish_execute_sets_exec_ok_true_on_success():
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3")]
+    state.exec_status = {"a.mp3": "queued"}
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=[])))
+    assert state.exec_ok is True
+
+
+def test_finish_execute_sets_exec_ok_false_on_failure(monkeypatch):
+    import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module, "show_error_modal", lambda *a, **k: None)
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3")]
+    state.exec_status = {"a.mp3": "queued"}
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=1, lines=["INTEGRATION FAILED"])))
+    assert state.exec_ok is False
 
 
 def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monkeypatch):
