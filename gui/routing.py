@@ -84,6 +84,45 @@ def parse_projected_libchecker(lines: list[str]) -> dict | None:
     return {"summary": summary, "clean": clean, "skipped": skipped, "total_hits": total_hits}
 
 
+def parse_confidence_report(lines: list[str]) -> dict | None:
+    """The exe's strongest post-run guarantee that a claimed-successful real
+    run actually succeeded (`PrintConfidenceReport` in `MusicIntegrator.cs`
+    ~900-990): a "Files in NewMusic: N | Moved: M | Skipped: S" count line
+    (flagged with "[ERROR] Count mismatch!" if the counts don't reconcile),
+    then a destination sanity check that re-reads every moved file with
+    TagLib and reports "[ERROR] Destination sanity check FAILED" plus a
+    [MISSING]/[UNREADABLE] line per bad file, or a single "all N moved
+    file(s) exist and are readable" line when clean. Returns None if the
+    section never printed (dry runs never reach the sanity-check step)."""
+    start = next((i for i, ln in enumerate(lines) if "CONFIDENCE REPORT" in ln), None)
+    if start is None:
+        return None
+    count_line = ""
+    count_ok = True
+    sanity_ok = True
+    sanity_summary = ""
+    error_count = 0
+    for ln in lines[start:]:
+        s = ln.strip()
+        if s.startswith("Files in NewMusic:"):
+            count_line = s
+        elif "[ERROR] Count mismatch!" in ln:
+            count_ok = False
+        elif "[ERROR] Destination sanity check FAILED" in ln:
+            sanity_ok = False
+        elif s.startswith("Sanity check:"):
+            sanity_summary = s
+        elif s.startswith("[ERRORS:"):
+            m = re.search(r"\[ERRORS:\s*(\d+)\]", s)
+            if m:
+                error_count = int(m.group(1))
+    return {
+        "count_line": count_line, "count_ok": count_ok,
+        "sanity_ok": sanity_ok, "sanity_summary": sanity_summary,
+        "error_count": error_count,
+    }
+
+
 def newmusic_path(filename: str) -> Path:
     """Absolute path of a scanned file in the NewMusic inbox (read-only use:
     album-art extraction). filename may already be relative with subfolders."""

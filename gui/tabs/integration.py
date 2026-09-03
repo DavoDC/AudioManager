@@ -55,6 +55,7 @@ class IntegrationState:
         self.exec_ok: bool | None = None    # None: no run finished yet; True/False: last run's outcome
         self.simulated = False              # True: sample data, no real exe/file touched
         self.projected_libchecker: dict | None = None  # dry run's own safety verdict
+        self.confidence_report: dict | None = None  # real run's post-run integrity check
         self.refresh = lambda: None
 
     @property
@@ -285,6 +286,32 @@ def projected_libchecker_strip() -> None:
                 f'this run would leave the library dirty. See Advanced / raw output for detail.</div>')
 
 
+def confidence_report_strip() -> None:
+    """The exe's post-run CONFIDENCE REPORT (count check + destination sanity
+    check re-reading every moved file with TagLib) is the single strongest
+    guarantee a claimed-successful run actually succeeded - it used to be
+    reachable only via "Advanced / raw output (debug)", which undersold it."""
+    v = S.confidence_report
+    if v is None:
+        return
+    if not v["count_ok"] or not v["sanity_ok"] or v["error_count"]:
+        parts = []
+        if not v["count_ok"]:
+            parts.append("file count mismatch")
+        if not v["sanity_ok"]:
+            parts.append("a moved file failed the sanity check")
+        if v["error_count"]:
+            parts.append(f'{v["error_count"]} error(s)')
+        ui.html(f'<div class="libchecker-strip dirty">&#9888; Confidence check failed - '
+                f'{_esc(", ".join(parts))}. See Advanced / raw output for detail.</div>')
+    elif v["sanity_summary"]:
+        ui.html(f'<div class="libchecker-strip clean">&#10003; Confidence check - '
+                f'{_esc(v["sanity_summary"])}</div>')
+    elif v["count_line"]:
+        ui.html(f'<div class="libchecker-strip clean">&#10003; Confidence check - '
+                f'{_esc(v["count_line"])}</div>')
+
+
 def _set_filter(k: str) -> None:
     S.filter = k
     S.refresh()
@@ -502,6 +529,7 @@ def _finish_execute(result: RunResult) -> None:
     interpreted identically so a simulated run exercises the real UI logic."""
     S.exec_done = True
     S.exec_ok = result.ok
+    S.confidence_report = routing.parse_confidence_report(result.lines)
     show_modal = False
     if result.ok:
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
@@ -582,6 +610,12 @@ async def run_execute_simulated() -> None:
         lines.append("INTEGRATION FAILED")
         result = RunResult(command=["integrate", "--simulate"], returncode=1, lines=lines)
     else:
+        moved = sum(1 for e in targets if e.get("status") != "error")
+        lines += [
+            "CONFIDENCE REPORT",
+            f"  Files in NewMusic: {len(targets)}  |  Moved: {moved}  |  Skipped: 0",
+            f"  Sanity check: all {moved} moved file(s) exist and are readable.",
+        ]
         result = RunResult(command=["integrate", "--simulate"], returncode=0, lines=lines)
     _finish_execute(result)
 
@@ -677,6 +711,7 @@ def stage_execute() -> None:
 
         if S.exec_done:
             ui.html(f'<div class="note" style="margin-top:12px;">{_esc(S.exec_summary)}</div>')
+            confidence_report_strip()
 
             def reset():
                 S.stage = 1
