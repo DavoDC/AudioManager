@@ -186,11 +186,12 @@ HEAD_HTML = """
   .progress-track{height:8px;background:#12141c;border:1px solid var(--panel-border);border-radius:var(--radius-pill);overflow:hidden;width:100%;}
   .progress-track .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s;}
   .progress-row{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:var(--radius-control);font-size:12px;width:100%;}
-  .progress-row .st{font-size:10px;text-transform:uppercase;letter-spacing:.04em;width:64px;flex-shrink:0;}
+  .progress-row .st{font-size:10px;text-transform:uppercase;letter-spacing:.04em;width:84px;flex-shrink:0;}
   .st-done{color:var(--accent2);}
   .st-moving{color:var(--accent3);}
   .st-queued{color:var(--text-dim);}
   .st-failed{color:var(--accent4);}
+  .st-notrun{color:var(--text-dim);}
   .pr-name{color:var(--text);word-break:break-all;}
   /* rule cards / services */
   .rule-card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:14px 16px;margin-bottom:12px;width:100%;}

@@ -10,7 +10,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui import config
 from gui.runner import RunResult
-from gui.tabs.integration import IntegrationState, _esc, _open_run_log, _update_exec_status, _write_manifest, run_execute
+from gui.tabs.integration import (
+    IntegrationState, _esc, _failed_filename_from_output, _open_run_log,
+    _update_exec_status, _write_manifest, run_execute,
+)
 
 
 def _entry(filename, **overrides):
@@ -112,6 +115,75 @@ def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeyp
     manifest_path = tmp_path / "accepted-manifest.json"
     written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert [e["filename"] for e in written] == ["keep.mp3"]
+
+
+# -------------------------------------------------- _failed_filename_from_output
+
+
+def test_failed_filename_from_output_extracts_name_after_prefix():
+    lines = ["[AUTO] Artist - Title", "Error processing file: Song.mp3", "INTEGRATION FAILED"]
+    assert _failed_filename_from_output(lines) == "Song.mp3"
+
+
+def test_failed_filename_from_output_returns_none_when_absent():
+    assert _failed_filename_from_output(["[AUTO] Artist - Title", "INTEGRATION FAILED"]) is None
+
+
+def test_run_execute_on_exe_failure_marks_named_file_failed_others_notrun(tmp_path, monkeypatch):
+    """The exe processes targets one at a time and halts on its first error -
+    only the file it names in 'Error processing file: <name>' was actually
+    attempted; everything still queued/moving after that is unattempted, not
+    failed, and must be labelled accordingly rather than lumped in as failed."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3"), _entry("b.mp3"), _entry("c.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=1,
+                          lines=["[AUTO] Artist - A", "Error processing file: b.mp3", "INTEGRATION FAILED"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert state.exec_status["a.mp3"] == "notrun"
+    assert state.exec_status["b.mp3"] == "failed"
+    assert state.exec_status["c.mp3"] == "notrun"
+    assert "b.mp3" in state.exec_summary
+    assert "2 file(s) were not attempted" in state.exec_summary
+
+
+def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=None, cancelled=True, lines=[])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert state.exec_status["a.mp3"] == "notrun"
 
 
 # --------------------------------------------------------------- _open_run_log
