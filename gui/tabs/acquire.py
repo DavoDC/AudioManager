@@ -341,6 +341,10 @@ def build() -> None:
             if not total:
                 ui.label("Fetch a playlist to see progress").classes("note").style("margin:0;")
                 return
+            done_total = downloaded + missing
+            pct = round(downloaded / done_total * 100) if done_total else 0
+            with ui.row().style("justify-content:flex-end;margin-bottom:4px;"):
+                ui.label(f"{pct}%").classes("note").style("margin:0;color:var(--text-dim);")
             with ui.element("div").style(
                 "height:26px;border-radius:var(--radius-pill);overflow:hidden;"
                 "display:flex;background:#3a3f4d;width:100%;"
@@ -372,7 +376,7 @@ def build() -> None:
             ui.html("<span>Open Playlist Tracks</span>")
         with ui.row().style("gap:8px;align-items:center;flex-wrap:wrap;"):
             playlist_input = ui.input("Playlist URL or ID", value=_load_last_playlist_id()) \
-                .props("dense dark outlined").style("width:360px;")
+                .props("dense dark outlined").style("width:520px;")
 
             def _apply_history_pick(playlist_id: str):
                 playlist_input.value = playlist_id
@@ -382,9 +386,12 @@ def build() -> None:
                 with ui.menu() as history_menu:
                     @ui.refreshable
                     def history_items():
-                        history = _load_history()
+                        current_id = _load_last_playlist_id()
+                        history = [h for h in _load_history() if h.get("id") != current_id]
                         if not history:
                             ui.menu_item("No playlists fetched yet").props("disable")
+                            return
+                        ui.menu_item("OTHER PLAYLISTS").props("disable").classes("text-caption")
                         for h in history:
                             label = h.get("name") or "(unnamed)"
                             ui.menu_item(f"{label} - {h['id']}", on_click=lambda pid=h["id"]: _apply_history_pick(pid))
@@ -446,10 +453,11 @@ def build() -> None:
                         with ui.element("td").style("text-align:center;"):
                             ui.checkbox(value=_state["downloaded"].get(row_key, False)).props("disable")
 
-                if _state["extra"]:
+                if _state["extra"] and _state["playlist_loaded"]:
                     with ui.element("tr").classes("batch-header"):
                         with ui.element("td").props("colspan=7"):
                             ui.label(_extra_batch_header(len(_state["extra"]), _state["playlist_loaded"]))
+                if _state["extra"]:
                     for artist, title, url, path in sorted(_state["extra"], key=lambda r: r[0].lower()):
                         if _state["hide_downloaded"]:
                             continue

@@ -4,6 +4,23 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Fix batch: Acquire tab live-review polish (input width, redundant header, history dropdown, percentage)
+
+David's live review of the Acquire tab right after the incident-batch fixes above surfaced four small
+polish items, all in `gui/tabs/acquire.py`, fixed in one commit:
+- Playlist URL/ID input widened from `360px` to `520px` so a full Spotify playlist URL no longer
+  truncates mid-string.
+- The browse-mode "NEWMUSIC FOLDER (N)" section-header row above the file list was dropped when no
+  playlist is loaded, since the top progress bar already shows the same count via
+  `_extra_segment_label()`'s browse wording. Diff mode's "IN NEWMUSIC, NOT IN THIS PLAYLIST (N)"
+  header is untouched - it still labels a real second section there.
+- The playlist history dropdown no longer lists the currently-loaded playlist as a re-selectable
+  option (filtered out by id against `_load_last_playlist_id()`), and gained an "OTHER PLAYLISTS"
+  header above the remaining entries, shown only when at least one alternative exists.
+- The downloaded/missing progress bar gained a "N%" figure in the top-right corner, computed as
+  downloaded over downloaded-plus-missing (guarded against a zero-total division separately from the
+  bar's existing empty-state early return).
+
 ## 2026-09-04 - Fix batch: Acquire tab incident (Spotify fetch RuntimeError, hide_downloaded, blank extra-row tags, misleading framing, test blind spot)
 
 A screenshot regression review on 2026-09-04 found the Acquire tab still broken: every Spotify fetch
