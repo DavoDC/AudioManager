@@ -4,6 +4,13 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Acquire tab: Simulate (sample data) mode
+
+Added a "Simulate (sample data)" button to the Acquire tab, mirroring the Integration tab's existing
+Simulate mode, so the tab can be exercised end to end (downloaded, missing and extra rows all present)
+without a real Spotify account or a real NewMusic folder on disk - a testing/exploration harness, not a
+user-facing feature. See "Acquire tab design" in `docs/References/GUI-Architecture.md` for the detail.
+
 ## 2026-09-04 - Fix batch: Acquire tab live-review polish (input width, redundant header, history dropdown, percentage)
 
 David's live review of the Acquire tab right after the incident-batch fixes above surfaced four small

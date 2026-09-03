@@ -19,6 +19,12 @@ refreshed alongside track_table() on fetch, clear, and the poll timer. See
 "Acquire tab design" in docs/References/GUI-Architecture.md and docs/DESIGN.md
 for the GUI's visual-design rules.
 Sync Liked Songs is built but hidden (Spotify 403 - see _build_sync_liked_card).
+"Simulate (sample data)" next to Fetch Tracks loads synthetic tracks/extras
+(see _sample_tracks/_sample_extra/simulate()) with no Spotify client call and
+no NEWMUSIC_DIR read, so the tab can be exercised end to end - downloaded,
+missing and extra rows all present - without a real playlist or NewMusic
+folder; a "simulate-banner" (mirrors integration.py's) marks the state as
+synthetic until a real Fetch or Clear resets it.
 Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
 merged into table 2026-09-01, NewMusic-surfacing/history/clear 2026-09-02,
 hide-downloaded toggle 2026-09-02) - polish items are tracked in IDEAS.md,
@@ -39,7 +45,7 @@ from gui import config
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
-          "hide_downloaded": False, "playlist_loaded": False}
+          "hide_downloaded": False, "playlist_loaded": False, "simulated": False}
 # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool};
 # extra: [(artist, title, url, path), ...] - files in NEWMUSIC_DIR matching no loaded track;
 # path is the file's own Path, read by _read_mp3_tags() for Album/Year/Length at render time
@@ -49,8 +55,19 @@ _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_r
 # "not accounted for by the loaded playlist" (diff framing) from "browsing an empty
 # NewMusic folder with nothing loaded yet" (browse framing) - see _extra_segment_label
 # and _extra_batch_header, which brand only the label text, never the underlying count.
+# simulated: True once simulate() has loaded synthetic sample data instead of a real
+# fetch(); reset False by clear() and by a real fetch(), mirroring integration.py's
+# IntegrationState.simulated. Drives the "simulate-banner" in build().
 
 _SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
+
+_refresh_hooks = {"track_table": lambda: None, "progress_bar": lambda: None,
+                   "history_items": lambda: None, "simulate_banner": lambda: None}
+# Wired to the real @ui.refreshable closures by build() once they exist. simulate()
+# is a module-level function (so it's directly unit-testable, like _do_fetch_tracks)
+# but still needs to trigger a UI refresh after setting _state - these default no-ops
+# let it run standalone in a test with no live NiceGUI page, same trick as
+# IntegrationState.refresh's default no-op in integration.py.
 
 
 def _length_to_seconds(length: str) -> int:
@@ -155,6 +172,73 @@ def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, 
         )
         for t in tracks
     ]
+
+
+def _sample_tracks() -> list[tuple[str, str, str, str, str, str]]:
+    """Synthetic sample data for Simulate mode - matches the (artist, title,
+    album, year, length, url) shape _do_fetch_tracks() returns, so simulate()
+    can drop this straight into _state["tracks"]. Mirrors integration.py's
+    _sample_entries() precedent."""
+    from spotify_tools.open_playlist import _build_deemix_url
+    rows = [
+        ("Bring Me The Horizon", "Doomed", "Post Human: Survival Horror", "2020", "3:12"),
+        ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23"),
+        ("Kendrick Lamar", "HUMBLE.", "DAMN.", "2017", "2:57"),
+        ("Polo G", "Gang With Me", "The Goat", "2020", "3:04"),
+        ("Fred again..", "Delilah (pull me out of this)", "Actual Life 3", "2022", "3:33"),
+        ("Jack Harlow", "Lonesome", "Jackman.", "2023", "2:15"),
+    ]
+    return [
+        (artist, title, album, year, length, _build_deemix_url(artist, title))
+        for artist, title, album, year, length in rows
+    ]
+
+
+def _sample_extra() -> list[tuple[str, str, str, Path]]:
+    """Synthetic sample data for Simulate mode - matches the (artist, title,
+    url, path) shape _state["extra"] holds (see _run_check_against_downloads).
+    Paths are fabricated and never need to exist on disk: _read_mp3_tags()
+    already degrades to blanks for a missing/unreadable file, so this also
+    exercises that exact fallback at render time. First row deliberately
+    shares artist/title with a sample track simulate() marks downloaded, to
+    exercise the "downloaded" row landing next to an "extra" row for the same
+    song; the rest match no sample track, i.e. genuinely extra."""
+    from spotify_tools.open_playlist import _build_deemix_url
+    rows = [
+        ("Bring Me The Horizon", "Doomed"),
+        ("Tame Impala", "The Less I Know The Better"),
+        ("Metro Boomin", "Space Cadet"),
+    ]
+    return [
+        (artist, title, _build_deemix_url(artist, title), Path(f"NewMusic/{artist} - {title}.mp3"))
+        for artist, title in rows
+    ]
+
+
+def simulate() -> None:
+    """Simulate mode: loads synthetic sample tracks/extras entirely in
+    memory - no _spotify_client() call, no NEWMUSIC_DIR read - so the
+    diff-mode table, progress bar and every row state (downloaded, missing,
+    extra) can be exercised without a real Spotify account or a real
+    NewMusic folder. Mirrors integration.py's run_simulate() precedent.
+    Browse mode (no playlist loaded) already has a working empty/default
+    state and doesn't need synthetic data, so this always lands in diff
+    mode (playlist_loaded=True), the more complex/common path."""
+    tracks = _sample_tracks()
+    extra = _sample_extra()
+    downloaded_labels = {"Bring Me The Horizon - Doomed", "Fred again.. - Delilah (pull me out of this)"}
+    _state["tracks"] = tracks
+    _state["downloaded"] = {
+        f"{i}:{artist}:{title}": f"{artist} - {title}" in downloaded_labels
+        for i, (artist, title, *_rest) in enumerate(tracks)
+    }
+    _state["extra"] = extra
+    _state["playlist_loaded"] = True
+    _state["simulated"] = True
+    _refresh_hooks["track_table"]()
+    _refresh_hooks["progress_bar"]()
+    _refresh_hooks["history_items"]()
+    _refresh_hooks["simulate_banner"]()
 
 
 def _read_mp3_tags(path: Path) -> tuple[str, str, str]:
@@ -319,6 +403,15 @@ def build() -> None:
         ui.html('<div class="meta">Stage 2 - Liked Songs &rarr; inbox playlist &rarr; Deemix &rarr; NewMusic</div>')
 
     @ui.refreshable
+    def simulate_banner():
+        if _state["simulated"]:
+            ui.html('<div class="simulate-banner">SIMULATED - sample data, no real playlist fetched, '
+                    "no NewMusic folder scanned.</div>")
+
+    simulate_banner()
+    _refresh_hooks["simulate_banner"] = simulate_banner.refresh
+
+    @ui.refreshable
     def progress_bar():
         """At-a-glance segmented bar: blue = playlist tracks already in
         NewMusic (Downloaded), grey = playlist tracks still missing, yellow =
@@ -369,6 +462,7 @@ def build() -> None:
                         seg.props(f'title="{label}"')
 
     progress_bar()
+    _refresh_hooks["progress_bar"] = progress_bar.refresh
 
     # Card 2 - fetch + open tracks (Card 1, Sync Liked Songs, is hidden - see _build_sync_liked_card)
     with ui.element("div").classes("panel w-full").style("margin-bottom:16px;"):
@@ -496,10 +590,12 @@ def build() -> None:
             try:
                 _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
                 _state["playlist_loaded"] = True
+                _state["simulated"] = False  # a real fetch always supersedes a prior Simulate run
                 await asyncio.to_thread(_run_check_against_downloads)
                 track_table.refresh()
                 progress_bar.refresh()
                 history_items.refresh()
+                simulate_banner.refresh()
                 ui.notify(f"Fetched {len(_state['tracks'])} tracks", type="positive")
             except Exception as e:
                 ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
@@ -510,11 +606,13 @@ def build() -> None:
             _state["sort_col"] = None
             _state["sort_reverse"] = False
             _state["playlist_loaded"] = False
+            _state["simulated"] = False
             playlist_input.value = ""
             _run_check_against_downloads()
             track_table.refresh()
             progress_bar.refresh()
             history_items.refresh()
+            simulate_banner.refresh()
 
         def _toggle_hide_downloaded(e):
             _state["hide_downloaded"] = e.value
@@ -522,6 +620,8 @@ def build() -> None:
 
         with ui.row().style("gap:8px;margin:8px 0;align-items:center;"):
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
+            ui.button("Simulate (sample data)", icon="science", on_click=simulate) \
+                .props("dense outline size=sm color=grey")
             ui.button("Clear", icon="clear", on_click=clear).props("dense outline size=sm color=grey")
             ui.checkbox("Hide downloaded", value=_state["hide_downloaded"], on_change=_toggle_hide_downloaded) \
                 .props("dense").classes("note").style("margin:0;padding:0;")
@@ -529,6 +629,8 @@ def build() -> None:
         # rows) surface immediately, even before any playlist has been fetched.
         _run_check_against_downloads()
         track_table()
+        _refresh_hooks["track_table"] = track_table.refresh
+        _refresh_hooks["history_items"] = history_items.refresh
 
         _poll = {"busy": False}
 
