@@ -93,6 +93,7 @@ HEAD_HTML = """
   .tab-link:hover{color:var(--text);}
   .tab-link.active{color:var(--text);background:#181b24;border-left-color:var(--accent);}
   .tab-link .badge{float:right;font-size:9px;color:var(--accent3);border:1px solid var(--accent3);border-radius:3px;padding:1px 4px;}
+  .nav-group-header{margin:14px 20px 4px;font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;}
   .am-main{flex:1;padding:24px 28px;overflow-y:auto;height:100vh;min-width:0;}
   header.page{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;flex-wrap:wrap;gap:10px;width:100%;}
   header.page h1{font-size:20px;margin:0;font-weight:600;color:var(--text);}

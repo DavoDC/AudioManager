@@ -1,8 +1,10 @@
 """AudioManager GUI - NiceGUI app entry point.
 
-Six tabs (Statistics, Acquire, Integration, Tag Fix, Mirror,
-Library Browser, Services) behind a left nav, per mockup.html. Tabs are built lazily on
-first visit and then shown/hidden, so startup stays instant.
+Seven tabs behind a left nav, grouped into two sections by mutate-vs-observe:
+"Library Intake" (Acquire, Integration, Tag Fix) and "Library Insight"
+(Statistics, Library, Mirror, Services). Tabs are built lazily on first visit
+and then shown/hidden, so startup stays instant. See GUI-Architecture.md's
+"Design Vision" section for the grouping rationale.
 
 Run:  python -m gui.main   (or scripts/launch-gui-dev.bat for the windowless way)
 """
@@ -19,13 +21,22 @@ from gui import config, theme  # noqa: E402
 from gui.state import state  # noqa: E402
 
 TABS = [
-    ("stats", "Statistics", None),
     ("acquire", "Acquire", None),
     ("integration", "Integration", None),
     ("tagfix", "Tag Fix", None),
+    ("stats", "Statistics", None),
+    ("library", "Library", None),
     ("mirror", "Mirror", None),
-    ("library", "Library Browser", None),
     ("services", "Services", None),
+]
+
+# Sidebar section headers, in render order. Grouping is purely visual (mutate
+# vs. observe, per GUI-Architecture.md "Design Vision") - tab `key` values,
+# deep links (?tab=<key>), and the tab-switching JS are all unaffected by
+# which group a key sits in.
+NAV_GROUPS = [
+    ("Library Intake", ["acquire", "integration", "tagfix"]),
+    ("Library Insight", ["stats", "library", "mirror", "services"]),
 ]
 
 # Serve cached album-art thumbnails (extraction writes only into gui/.cache)
@@ -72,14 +83,18 @@ def index(tab: str = "stats"):
     with ui.row().classes("w-full no-wrap").style("gap:0;align-items:stretch;"):
         with ui.column().classes("am-nav").style("gap:0;"):
             ui.html('<div class="am-brand"><span>Audio</span>Manager</div>')
-            for key, label, badge in TABS:
-                badge_html = f' <span class="badge">{badge}</span>' if badge else ""
-                active = " active" if key == initial_tab else ""
-                btn = ui.html(
-                    f'<button class="tab-link{active}" id="nav-{key}">{label}{badge_html}</button>'
-                )
-                nav_buttons[key] = btn
-                btn.on("click", lambda _, k=key: switch(k))
+            tabs_by_key = {key: (label, badge) for key, label, badge in TABS}
+            for group_label, keys in NAV_GROUPS:
+                ui.html(f'<div class="nav-group-header">{group_label}</div>')
+                for key in keys:
+                    label, badge = tabs_by_key[key]
+                    badge_html = f' <span class="badge">{badge}</span>' if badge else ""
+                    active = " active" if key == initial_tab else ""
+                    btn = ui.html(
+                        f'<button class="tab-link{active}" id="nav-{key}">{label}{badge_html}</button>'
+                    )
+                    nav_buttons[key] = btn
+                    btn.on("click", lambda _, k=key: switch(k))
             if theme.MOOD_NAME != "Neutral":
                 ui.html(
                     '<div style="margin:18px 20px 0;font-size:10px;color:var(--text-dim);'

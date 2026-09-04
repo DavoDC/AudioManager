@@ -19,7 +19,7 @@ def build() -> None:
             '<div class="note" style="margin:0;">No OAuth needed - '
             '<span style="font-family:var(--font-mono)">user.getRecentTracks</span> and related '
             "read endpoints work with just a free API key. Lowest-effort real integration: recent "
-            "scrobbles overlaid on the Library Browser, or a &quot;never scrobbled&quot; "
+            "scrobbles overlaid on the Library tab, or a &quot;never scrobbled&quot; "
             "cross-reference panel.</div>"
         )
     with ui.element("div").classes("panel w-full").style("margin-bottom:14px;opacity:.75;"):

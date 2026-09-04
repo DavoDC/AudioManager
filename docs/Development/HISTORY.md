@@ -4,6 +4,29 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Sidebar nav grouped into Library Intake/Insight, "Library Browser" tab renamed to "Library"
+
+Implemented the two backlog items from "Sidebar nav grouping + tab naming review, 2026-09-04": the flat
+7-tab left nav (`gui/main.py`) is now split into two labeled sections matching the GUI's existing
+mutate-vs-observe write-safety boundary - **Library Intake** (Acquire, Integration, Tag Fix) and
+**Library Insight** (Statistics, Library, Mirror, Services). `TABS` was reordered to the new grouped order
+and a new `NAV_GROUPS` list (`[(section_label, [tab_key, ...]), ...]`) drives rendering: the nav-building
+loop now emits a `.nav-group-header` (`gui/theme.py`) before each group's buttons instead of one flat
+`for key, label, badge in TABS` loop. Tab `key` values, `id="nav-{key}"`, the `tab-link`/`active` class
+toggle, and the `?tab=` deep-link/`history.replaceState` JS are all untouched - grouping is purely a
+render-order/visual change, verified live against the running dev server (deep links to `stats`,
+`acquire`, `integration`, `tagfix`, `library`, `mirror` all land on the correct active tab with both
+group headers rendered). Verb-only tab naming (Statistics -> Analyse, etc.) and nesting Tag Fix under
+Integration were both explicitly considered and rejected per the backlog item - see the "Design Vision"
+section of `docs/References/GUI-Architecture.md` for the rationale now recorded there.
+
+Second, smaller item: "Library Browser" renamed to "Library" everywhere it's user-visible - the nav
+label, the tab's own `<h1>` (`gui/tabs/library.py`), `gui/README.md`'s Tabs table and architecture
+diagram, `docs/References/GUI-Architecture.md`'s CLI-parity table and build-status bullet, and a stray
+mention in the Services tab's Last.fm stub text (`gui/tabs/services.py`). Tab `key` (`"library"`) and all
+Python module/function names are unchanged. `python -m pytest gui/tests -q` stayed green throughout (120
+passed).
+
 ## 2026-09-04 - Fix: one bad file no longer aborts the whole Integration batch
 
 David's decision after the Simulate-mode review below flagged the design question: "errored items

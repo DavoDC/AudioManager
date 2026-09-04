@@ -12,7 +12,7 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 | `audioManager tag-fix` (define + apply correction rules) | TagFix panel - define rules, apply to library or NewMusic batches | Rules-based bulk operation, NOT individual track editor. No mp3tag-style metadata editor. |
 | `audioManager stats` (library analysis) | Statistics Dashboard tab | Charts + distribution analysis |
 | `audioManager sync` (read library state) | Mirror tab (shows last sync state) | Display AudioMirror status without requiring CLI |
-| `audioManager search` / filtering | Library Browser with search + filters | Full-text search, filter by genre/decade/artist |
+| `audioManager search` / filtering | Library tab with search + filters | Full-text search, filter by genre/decade/artist |
 | Batch operations (integrate or fix-tag N files at once) | Integration tab + TagFix panel with batch apply | Apply decisions/rules to multiple tracks in sequence |
 | Automation / cron jobs | **CLI remains** - not replicated in GUI | Users who need headless automation use CLI directly |
 
@@ -26,9 +26,13 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 
 **Startup behaviour:** On launch, read the existing JSON contract instantly (no subprocess call, no writes) and populate all stats panels with "last run X ago" plus a Re-run button - see Architecture Decisions below for why auto-run-on-launch was rejected.
 
-**Tab order as built:** Statistics -> Integration -> TagFix -> Library Browser -> Mirror -> Services (Spotify/Last.fm/cross-synthesis, far future).
+**Sidebar grouping (2026-09-04, implemented):** the flat tab list is grouped into two labeled sections in the left nav, matching the mutate-vs-observe split this doc's write-safety section already documents structurally - Integration/TagFix/Mirror-commit are the GUI's only write paths, everything else is read-only:
+- **"Library Intake"** - Acquire, Integration, Tag Fix (workflow order: acquire new files, integrate them, fix their tags).
+- **"Library Insight"** - Statistics, Library, Mirror, Services (Services fits Insight since its whole design is a cross-source overlay *view*, not a mutation).
 
-**Tab order, next addition:** Acquire slots in right after Statistics - see "Acquire tab design" below - because Stage 2 (Acquiring) is the first action David actually takes each session, before Library Browser or Integration are relevant.
+Verb-only tab naming (Statistics -> "Analyse", Library -> "Browser", etc.) was considered and rejected: half the tabs are already nouns (Statistics, Mirror, Services) by deliberate design, matching the Sonarr/Radarr noun-tab precedent below - forcing verbs onto the rest breaks that precedent for no legibility gain. Tag Fix stays a peer tab inside Intake rather than nested under Integration - its real scope ("apply to library or NewMusic batches", CLI Feature Parity table above) is wider than Integration's NewMusic-only batches, so nesting it would hide the library-wide use case behind a workflow that doesn't cover it. Grouping (same section, same sidebar) achieves "related, keep adjacent" without that loss. Tab `key` values and `?tab=<key>` deep links are unchanged by grouping - see `gui/main.py`'s `NAV_GROUPS`.
+
+**Tab order as built:** Acquire -> Integration -> Tag Fix -> Statistics -> Library -> Mirror -> Services (Spotify/Last.fm/cross-synthesis, far future) - grouped per the sidebar split above.
 
 ---
 
@@ -39,7 +43,7 @@ The reuse worry behind extracting a shared core library (Python re-implementing 
 
 **Stack: NiceGUI** (Python-native, FastAPI + Vue/Quasar under the hood, ECharts via `ui.echart`). Pure-Python event handlers wire subprocess calls and file reads directly; no JS build step; every chart type the spec needs (donut/pie/treemap/bar/radar/gauge). Code lives in top-level `gui/`, fully separate from the C# solution.
 
-**Real file sizes:** `summary.totalLibraryBytes` / `avgFileBytes` come from a single disk walk inside the exe and arrive in the stats JSON - no bitrate-based estimation in Python. Per-track exact size still has no cheap source, so the Library Browser deliberately has no Size column.
+**Real file sizes:** `summary.totalLibraryBytes` / `avgFileBytes` come from a single disk walk inside the exe and arrive in the stats JSON - no bitrate-based estimation in Python. Per-track exact size still has no cheap source, so the Library tab deliberately has no Size column.
 
 **Deferred, unchanged:** REST API layer (add later only if an external consumer appears).
 
@@ -55,7 +59,7 @@ All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui-dev.bat`
 
 - **Statistics - FULL.** Stat tiles with vs-last-batch deltas, genre donut/pie/treemap swap, decade bar/donut, year top-N/show-all, genre radar, top artists excl/all toggle, batch-grouped recent additions, per-batch bar chart (AudioMirror git history is the canonical batch source), age buckets + callout, cover-resolution histogram, tag-completeness and hi-res-cover rings, global date window, freshness controls (Re-run analysis / Force full regen with confirm; force-regen passes `--no-auto-commit` and routes mirror changes to the Mirror tab).
 - **Integration - FULL (selective execution).** Staged scan -> review queue (real album art, destination, reason, tag-change chips, badges, per-track accept/decline) -> confirm -> structured per-track progress. Declined tracks are excluded via `integrate --manifest <accepted.json> --no-input` (added 2026-07-03): the GUI writes the accepted set to `gui/.cache/accepted-manifest.json`, the exe filters before scan-ahead/duplicate review, and manifests match by raw dry-run filename OR the canonical TagFixer rename so they survive renames between dry and real runs.
-- **Library Browser - MVP.** `tracks.json` rows, search + genre/decade chips, column picker, table/grid with real mutagen-extracted covers (page-lazy, cached), server-side pagination.
+- **Library - MVP.** `tracks.json` rows, search + genre/decade chips, column picker, table/grid with real mutagen-extracted covers (page-lazy, cached), server-side pagination.
 - **Tag Fix - skeleton.** Cards document the exe's real fixed transforms; Run Fixed Rules = `tagfix --dry-run`. Open gap: configurable rules need a C# change (tracked in IDEAS.md).
 - **Mirror - functional.** Status/dirty listing + one-click Commit AudioMirror (confirm dialog, editable message, local commit only - added 2026-07-03). The GUI's only AudioMirror write; everything else stays read-only.
 - **Services - placeholder.** Two stub cards, deliberately not built - see Services design below.
@@ -140,7 +144,7 @@ split; setting `host` alone covers both.
 ## Services tab design (far future)
 
 - **Spotify tab** - integrate SpotifyTools: playlist generator from the offline library, cross-reference offline tracks vs Spotify availability, recently played on Spotify.
-- **Last.fm tab** - scrobble history and listening stats: top tracks/artists (weekly, monthly, all-time), play counts overlaid on Library Browser, listening trends over time.
+- **Last.fm tab** - scrobble history and listening stats: top tracks/artists (weekly, monthly, all-time), play counts overlaid on the Library tab, listening trends over time.
 - **Cross-synthesis view** - overlay all data sources: what's owned offline but not on Spotify, tracks with zero Last.fm scrobbles (never listened), a unified ownership + listening picture.
 
 Backlog entry: `IDEAS.md` `[GUI] Services tab data sources`.
