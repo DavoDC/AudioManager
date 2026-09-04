@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Review-card title color weight
+
+Closed "[GUI] Review-card title has no more visual weight than the artist line under it" from IDEAS.md. The review card's song title (`.rc-title`) was using the same dim text color as the secondary artist line beneath it, giving no visual hierarchy to the primary identifier. Changed `.rc-title` from `color:var(--text-dim)` to `color:var(--text)` in `gui/theme.py` to match the already-bright destination route line, establishing the title as the card's lead line.
+
+---
+
 ## 2026-09-05 - Review-card layout: width cap, visual hierarchy, declined-card treatment, keyboard path, destination sort
 
 Closed the mechanical (`[SONNET]`) half of the "[GUI] Review-card layout" IDEAS.md item; the accept/decline interaction redesign is split out as a new `[OPUS]` item since it is a genuine design-judgment call, not a mechanical fix.
