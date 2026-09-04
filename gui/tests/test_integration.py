@@ -433,10 +433,12 @@ def test_run_execute_simulated_never_calls_real_runner(monkeypatch):
     assert state.exec_status["b.mp3"] == "done"
 
 
-def test_run_execute_simulated_reproduces_partial_failure_labelling(monkeypatch):
-    """One sample entry has status 'error' - the simulated run must halt there
-    (like the real exe) and label the named file failed, the rest not run,
-    exercising the exact same path real_execute's failure branch does."""
+def test_run_execute_simulated_never_includes_the_error_sample_and_never_fails(monkeypatch):
+    """One sample entry has status 'error' - IntegrationState.accepted excludes
+    error-status entries unconditionally (2026-09-04: errored items must never
+    be accepted, so a single unresolved file can no longer abort the rest of
+    the batch), so run_execute_simulated's targets never include it and the
+    simulated run always succeeds with every accepted entry marked done."""
     import gui.tabs.integration as integration_module
     monkeypatch.setattr(integration_module, "show_error_modal", lambda *a, **k: None)
 
@@ -446,18 +448,19 @@ def test_run_execute_simulated_reproduces_partial_failure_labelling(monkeypatch)
     _with_state(state, lambda: asyncio.run(run_execute_simulated()))
 
     samples = _sample_entries()
-    failed_entry = next(e for e in samples if e["status"] == "error")
-    error_idx = samples.index(failed_entry)
-    assert state.exec_status[failed_entry["filename"]] == "failed"
-    assert any(v == "notrun" for v in state.exec_status.values())
-    assert "not attempted" in state.exec_summary
+    error_entry = next(e for e in samples if e["status"] == "error")
+    assert error_entry["filename"] not in state.exec_status
+    assert state.exec_ok is True
+    assert not any(v == "notrun" for v in state.exec_status.values())
+    assert "not attempted" not in state.exec_summary
 
-    # Regression: entries processed BEFORE the failure got a real `[AUTO]`
-    # success line and must show "done", never "notrun" - this is the bug
-    # the 2026-09-03 Opus review found (_update_exec_status never matched
-    # `[AUTO]` lines, so successful files were mislabelled not-run).
-    for e in samples[:error_idx]:
-        assert state.exec_status[e["filename"]] == "done"
+    # Regression: every accepted entry got a real `[AUTO]` success line and
+    # must show "done" - this is the bug the 2026-09-03 Opus review found
+    # (_update_exec_status never matched `[AUTO]` lines, so successful files
+    # were mislabelled not-run).
+    for e in samples:
+        if e["status"] != "error":
+            assert state.exec_status[e["filename"]] == "done"
 
 
 def _update_exec_status_on(state, line):

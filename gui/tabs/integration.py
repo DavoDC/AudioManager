@@ -17,11 +17,18 @@ Simulate mode: "Simulate (sample data)" on the scan stage skips the real exe
 entirely and loads synthetic entries covering every review-card state, then
 "Integrate" on the confirm stage runs a synthetic execute (run_execute_simulated)
 that feeds the exe's real per-line output formats through the same status/
-summary logic as a real run (_finish_execute), including one synthetic
-mid-batch failure - so the full stage 1-4 flow, including the failure-labelling
-path, can be exercised and screenshotted without ever invoking AudioManager.exe
-or touching a real NewMusic file. `IntegrationState.simulated` gates this and
-is surfaced in the UI so a simulated run can never be mistaken for a real one.
+summary logic as a real run (_finish_execute) - so the full stage 1-4 flow can
+be exercised and screenshotted without ever invoking AudioManager.exe or
+touching a real NewMusic file. `IntegrationState.simulated` gates this and is
+surfaced in the UI so a simulated run can never be mistaken for a real one.
+
+One sample entry is deliberately given status "error" (unresolved: missing
+required tag) to exercise the review card's error-badge rendering - but per
+IntegrationState.accepted, an error-status entry can never be accepted, so it
+never reaches run_execute_simulated's targets and Simulate mode can never show
+a failed integration run. Real mid-batch failure output (`INTEGRATION FAILED`,
+"Error processing file: ...") is only ever seen on a real run, parsed by
+_finish_execute/_failed_filename_from_output below.
 """
 from __future__ import annotations
 
@@ -60,7 +67,8 @@ class IntegrationState:
 
     @property
     def accepted(self) -> list[dict]:
-        return [e for e in self.entries if self.decisions.get(e["filename"], True)]
+        return [e for e in self.entries
+                if e.get("status", "").lower() != "error" and self.decisions.get(e["filename"], True)]
 
     @property
     def declined(self) -> list[dict]:
@@ -320,14 +328,18 @@ def _set_filter(k: str) -> None:
 def _bulk(accept: bool) -> None:
     """Applies only to the active filter's entries - S.entries would silently
     accept/decline files the user can't currently see, a mis-click risk on a
-    filtered view."""
+    filtered view. Error-status entries are never accepted, even by Accept All -
+    they have no valid destination to send to the exe."""
     for e in S.filtered():
+        if accept and e.get("status", "").lower() == "error":
+            continue
         S.decisions[e["filename"]] = accept
     S.refresh()
 
 
 def review_card(e: dict) -> None:
-    accepted = S.decisions.get(e["filename"], True)
+    is_error = e.get("status", "").lower() == "error"
+    accepted = False if is_error else S.decisions.get(e["filename"], True)
     card_cls = "review-card" + ("" if accepted else " declined")
     with ui.element("div").classes(card_cls).style("margin-bottom:10px;"):
         # album art from the NewMusic file itself (read-only extraction) -
@@ -368,13 +380,24 @@ def review_card(e: dict) -> None:
             ui.html(f'<div class="rc-badges">{"".join(badges)}</div>')
 
         with ui.element("div").classes("rc-decision"):
-            acc = ui.html(f'<button class="accept{" on" if accepted else ""}">&#10003; Accept</button>')
-            dec = ui.html(f'<button class="decline{"" if accepted else " on"}">&#10005; Decline</button>')
-            acc.on("click", lambda _, f=e["filename"]: _decide(f, True))
-            dec.on("click", lambda _, f=e["filename"]: _decide(f, False))
+            if is_error:
+                ui.html('<button class="accept" disabled title="Cannot accept: unresolved error">'
+                        '&#10003; Accept</button>')
+                ui.html('<button class="decline on" disabled>&#10005; Declined (error)</button>')
+            else:
+                acc = ui.html(f'<button class="accept{" on" if accepted else ""}">&#10003; Accept</button>')
+                dec = ui.html(f'<button class="decline{"" if accepted else " on"}">&#10005; Decline</button>')
+                acc.on("click", lambda _, f=e["filename"]: _decide(f, True))
+                dec.on("click", lambda _, f=e["filename"]: _decide(f, False))
 
 
 def _decide(filename: str, accept: bool) -> None:
+    """Error-status entries can never be accepted, even via a stray call - the
+    accepted property already filters them out, but the entries list is the
+    single source of truth so this guard can't drift out of sync with it."""
+    entry = next((en for en in S.entries if en["filename"] == filename), None)
+    if accept and entry and entry.get("status", "").lower() == "error":
+        return
     S.decisions[filename] = accept
     S.refresh()
 
@@ -579,7 +602,9 @@ async def run_execute_simulated() -> None:
     through the same on_line/_update_exec_status path a real run uses (so
     known bugs like _update_exec_status not matching '[AUTO]' lines are
     faithfully reproduced), then finishes through the same _finish_execute()
-    a real run uses."""
+    a real run uses. Error-status entries are never in S.accepted (see
+    IntegrationState.accepted), so this never sees one - there is nothing
+    left in Simulate mode that can fail mid-batch."""
     if runner.busy:
         ui.notify("Another operation is already running", type="warning")
         return
@@ -594,34 +619,21 @@ async def run_execute_simulated() -> None:
     S.refresh()
 
     lines: list[str] = []
-    failed = False
     for e in targets:
         await asyncio.sleep(SIMULATE_STEP_DELAY)
-        if e.get("status") == "error":
-            line = f"Error processing file: {e['filename']}"
-            lines.append(line)
-            _update_exec_status(line)
-            S.exec_lines.append(line)
-            failed = True
-            S.refresh()
-            break
         line = f"[AUTO] {e['artist']} - {e['title']}"
         lines.append(line)
         _update_exec_status(line)
         S.exec_lines.append(line)
         S.refresh()
 
-    if failed:
-        lines.append("INTEGRATION FAILED")
-        result = RunResult(command=["integrate", "--simulate"], returncode=1, lines=lines)
-    else:
-        moved = sum(1 for e in targets if e.get("status") != "error")
-        lines += [
-            "CONFIDENCE REPORT",
-            f"  Files in NewMusic: {len(targets)}  |  Moved: {moved}  |  Skipped: 0",
-            f"  Sanity check: all {moved} moved file(s) exist and are readable.",
-        ]
-        result = RunResult(command=["integrate", "--simulate"], returncode=0, lines=lines)
+    moved = len(targets)
+    lines += [
+        "CONFIDENCE REPORT",
+        f"  Files in NewMusic: {len(targets)}  |  Moved: {moved}  |  Skipped: 0",
+        f"  Sanity check: all {moved} moved file(s) exist and are readable.",
+    ]
+    result = RunResult(command=["integrate", "--simulate"], returncode=0, lines=lines)
     _finish_execute(result)
 
 
