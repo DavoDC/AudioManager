@@ -41,7 +41,7 @@ namespace AudioManager
 
 
         /// <summary>Per-file integration result for the log and JSON output.</summary>
-        private class LogEntry
+        internal class LogEntry
         {
             public string Filename;
             public string Title;
@@ -57,7 +57,7 @@ namespace AudioManager
         }
 
         /// <summary>Data about a duplicate found during pre-scan.</summary>
-        private class DupData
+        internal class DupData
         {
             public string DuplicatePath;
             public string LibraryFilePath;
@@ -75,7 +75,7 @@ namespace AudioManager
         }
 
         /// <summary>A file pre-scanned from NewMusic with its cleaned tags and duplicate data.</summary>
-        private class ScannedFile
+        internal class ScannedFile
         {
             public string SourcePath;
             public Track Track;
@@ -181,7 +181,7 @@ namespace AudioManager
                 //     above; real-mode L files and K files fall through to routing here.
                 // In dry-run: collect outputs and print sorted by destination path after the loop.
                 var routingStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var dryRunRoutingOutputs = RouteAllFiles(scannedFiles, newArtistFolders, logEntries, noInput, ref movedCount, ref skippedCount);
+                var dryRunRoutingOutputs = RouteAllFiles(scannedFiles, newArtistFolders, logEntries, ref movedCount, ref skippedCount);
                 routingStopwatch.Stop();
 
                 // Print dry-run routing outputs sorted by destination path
@@ -351,8 +351,8 @@ namespace AudioManager
         /// In dry-run mode, routing output blocks are collected and returned for the caller to print
         /// sorted by destination path; otherwise returns null.
         /// </summary>
-        private List<(string destPath, string block)> RouteAllFiles(List<ScannedFile> scannedFiles,
-            HashSet<string> newArtistFolders, List<LogEntry> logEntries, bool noInput, ref int movedCount, ref int skippedCount)
+        internal List<(string destPath, string block)> RouteAllFiles(List<ScannedFile> scannedFiles,
+            HashSet<string> newArtistFolders, List<LogEntry> logEntries, ref int movedCount, ref int skippedCount)
         {
             var dryRunRoutingOutputs = dryRun ? new List<(string destPath, string block)>() : null;
             foreach (var sf in scannedFiles)
@@ -363,19 +363,15 @@ namespace AudioManager
                 {
                     Console.WriteLine();
                     Console.WriteLine("===========================================================================");
-                    Console.WriteLine("INTEGRATION FAILED");
+                    Console.WriteLine($"[ERROR] Skipping unreadable file: {Path.GetFileName(sf.SourcePath)}");
                     Console.WriteLine("===========================================================================");
-                    Console.WriteLine();
-                    Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
                     Console.WriteLine($"Full path: {sf.SourcePath}");
-                    Console.WriteLine();
                     Console.WriteLine($"Error details: {sf.ReadError}");
-                    if (sf.ReadException != null && !string.IsNullOrEmpty(sf.ReadException.StackTrace))
-                        Console.WriteLine($"\nStack trace:\n{sf.ReadException.StackTrace}");
-                    Console.WriteLine("\n===========================================================================");
-                    Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
-                    if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
-                    throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {sf.ReadError}", sf.ReadException);
+                    Console.WriteLine("The rest of the batch will continue.\n");
+                    entry.Status = "error";
+                    entry.Detail = $"unreadable: {sf.ReadError}";
+                    logEntries.Add(entry); skippedCount++;
+                    continue;
                 }
 
                 // Skip files fully resolved during duplicate execution (3a)
@@ -474,19 +470,14 @@ namespace AudioManager
                 {
                     Console.WriteLine();
                     Console.WriteLine("===========================================================================");
-                    Console.WriteLine("INTEGRATION FAILED");
+                    Console.WriteLine($"[ERROR] Skipping file that failed to route: {Path.GetFileName(sf.SourcePath)}");
                     Console.WriteLine("===========================================================================");
-                    Console.WriteLine();
-                    Console.WriteLine($"Error processing file: {Path.GetFileName(sf.SourcePath)}");
                     Console.WriteLine($"Full path: {sf.SourcePath}");
-                    Console.WriteLine();
                     Console.WriteLine($"Error details: {ex.Message}");
-                    if (!string.IsNullOrEmpty(ex.StackTrace))
-                        Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
-                    Console.WriteLine("\n===========================================================================");
-                    Console.WriteLine("\nIntegration halted. Please fix the error above and retry.");
-                    if (!noInput) { Console.WriteLine("Press any key to exit..."); Console.ReadKey(); }
-                    throw new InvalidOperationException($"Integration error on file '{Path.GetFileName(sf.SourcePath)}': {ex.Message}", ex);
+                    Console.WriteLine("The rest of the batch will continue.\n");
+                    entry.Status = "error";
+                    entry.Detail = $"routing failed: {ex.Message}";
+                    logEntries.Add(entry); skippedCount++;
                 }
             }
             return dryRunRoutingOutputs;
