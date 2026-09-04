@@ -86,5 +86,51 @@ namespace AudioManager
                 @"[{""filename"": ""A - B.mp3"", ""accepted"": true, ""order"": 3}]", out string error);
             Assert.True(error == null && m.Entries.Count == 1, "non-string values skipped without error");
         }
+
+        // ---------------------------------------------- dupResolution (GUI review-stage override)
+
+        private const string DupJson = @"[
+          {""filename"": ""Kendrick Lamar - HUMBLE.mp3"", ""artist"": ""Kendrick Lamar"", ""title"": ""HUMBLE."",
+           ""dupResolution"": ""L""}
+        ]";
+
+        public static void Parse_ReadsDupResolutionField()
+        {
+            var m = IntegrationManifest.Parse(DupJson, out string error);
+            Assert.True(error == null, $"no parse error, got: {error}");
+            Assert.Equal("L", m.Entries[0].DupResolution);
+        }
+
+        public static void GetDupResolution_MatchesByExactFilename()
+        {
+            var m = IntegrationManifest.Parse(DupJson, out _);
+            char r = m.GetDupResolution("Kendrick Lamar - HUMBLE.mp3", "Kendrick Lamar", "HUMBLE.");
+            Assert.Equal("L", r.ToString());
+        }
+
+        public static void GetDupResolution_FallsBackToCanonicalArtistTitleAfterRename()
+        {
+            // Real run: TagFixer already renamed the file before the integrator listed NewMusic,
+            // so the on-disk filename no longer matches the dry-run scan's filename - same
+            // survival requirement as Matches_ByCanonicalRenameAfterTagFixer above.
+            var m = IntegrationManifest.Parse(DupJson, out _);
+            char r = m.GetDupResolution("some-other-on-disk-name.mp3", "Kendrick Lamar", "HUMBLE.");
+            Assert.Equal("L", r.ToString());
+        }
+
+        public static void GetDupResolution_ReturnsNulCharWhenUnresolved()
+        {
+            var m = IntegrationManifest.Parse(SampleJson, out _); // entries with no dupResolution field
+            char r = m.GetDupResolution("21 Savage - see the real (Explicit).mp3", "21 Savage", "see the real");
+            Assert.Equal("\0", r.ToString());
+        }
+
+        public static void GetDupResolution_IgnoresGarbageValue()
+        {
+            var m = IntegrationManifest.Parse(
+                @"[{""filename"": ""A - B.mp3"", ""artist"": ""A"", ""title"": ""B"", ""dupResolution"": ""Z""}]",
+                out _);
+            Assert.Equal("\0", m.GetDupResolution("A - B.mp3", "A", "B").ToString());
+        }
     }
 }
