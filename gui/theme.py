@@ -180,6 +180,13 @@ HEAD_HTML = """
   .rc-badge.dupe{color:var(--accent3);background:rgba(242,184,75,.13);}
   .rc-badge.clean{color:var(--accent2);background:rgba(127,209,174,.12);}
   .rc-badge.err{color:var(--accent4);background:rgba(226,109,109,.13);}
+  .rc-badge.libdupe{color:var(--accent5);background:rgba(185,138,240,.13);}
+  .rc-dup{margin-top:8px;padding:8px 10px;border:1px solid var(--panel-border);border-radius:var(--radius-control);background:rgba(185,138,240,.06);}
+  .rc-dup-info{font-size:11px;color:var(--text-dim);line-height:1.5;}
+  .rc-dup-info b{color:var(--accent5);}
+  .rc-dup-resolve{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .rc-dup-resolve button{font-size:10px;padding:4px 9px;border-radius:var(--radius-control);cursor:pointer;font-family:inherit;border:1px solid var(--panel-border);background:#12141c;color:var(--text-dim);}
+  .rc-dup-resolve button.on{background:rgba(185,138,240,.15);border-color:var(--accent5);color:var(--accent5);}
   .rc-decision{display:flex;flex-direction:column;gap:6px;min-width:104px;}
   .rc-decision button{font-size:11px;padding:6px 10px;border-radius:var(--radius-control);cursor:pointer;font-family:inherit;border:1px solid var(--panel-border);background:#12141c;color:var(--text-dim);}
   .rc-decision button.accept.on{background:rgba(127,209,174,.15);border-color:var(--accent2);color:var(--accent2);}

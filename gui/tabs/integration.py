@@ -52,7 +52,8 @@ class IntegrationState:
         self.stage = 1                      # 1 scan, 2 review, 3/4 execute
         self.entries: list[dict] = []
         self.decisions: dict[str, bool] = {}   # filename -> accepted
-        self.filter = "all"                 # all | conflicts | newfolders
+        self.dup_resolutions: dict[str, str] = {}  # filename -> "D"/"L"/"K" (explicit override only)
+        self.filter = "all"                 # all | conflicts | newfolders | libdupes
         self.scan_lines: list[str] = []
         self.exec_lines: list[str] = []
         self.exec_status: dict[str, str] = {}  # filename -> queued/moving/done/failed/notrun
@@ -80,7 +81,23 @@ class IntegrationState:
                     if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route")]
         if self.filter == "newfolders":
             return [e for e in self.entries if e["isNewFolder"]]
+        if self.filter == "libdupes":
+            return [e for e in self.entries if e["libraryDuplicate"]]
         return self.entries
+
+    def dup_resolution(self, e: dict) -> str:
+        """The resolved D/L/K decision for a library-duplicate entry: an
+        explicit review-stage override if one was made, else the exe's own
+        recommendation. This is deliberately the SAME lookup used both for
+        "left untouched" here and for the exe-side fallback in
+        MusicIntegrator.GetDupResolution (a manifest with no dupResolution,
+        or one the exe can't recognise, falls back to auto-accept-
+        recommendation) - one default, not two that could drift apart."""
+        override = self.dup_resolutions.get(e["filename"])
+        if override in ("D", "L", "K"):
+            return override
+        key = e.get("dupRecommendationKey") or "K"
+        return key if key in ("D", "L", "K") else "K"
 
 
 S = IntegrationState()
@@ -150,6 +167,9 @@ def _sample_entry(filename: str, artist: str, title: str, album: str, **override
         "filename": filename, "artist": artist, "title": title, "album": album,
         "destination": "", "reason": "", "isNewFolder": False,
         "status": "ok", "inBatchDuplicate": False, "tagChanges": [],
+        "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
+        "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
+        "dupRecommendation": "", "dupReason": "",
     }
     e.update(overrides)
     return e
@@ -157,8 +177,16 @@ def _sample_entry(filename: str, artist: str, title: str, album: str, **override
 
 def _sample_entries() -> list[dict]:
     """Synthetic sample data for Simulate mode - one entry per review-card
-    state (clean route, new folder, in-batch duplicate, tag changes, error/
-    unresolved) so a single click exercises every badge and filter."""
+    state (clean route, new folder, in-batch duplicate, library duplicate,
+    tag changes, error/unresolved) so a single click exercises every badge
+    and filter.
+
+    In-batch duplicate and library duplicate are deliberately kept on two
+    separate entries here (docs/Development/IDEAS.md "Duplicate-resolution
+    UI") - they are unrelated concepts (same artist+title twice in this scan
+    batch vs. already present somewhere in the library) and mixing them onto
+    one sample would make the two badges/filters look coupled when they
+    aren't."""
     return [
         _sample_entry("Bring Me The Horizon - Doomed.mp3", "Bring Me The Horizon", "Doomed",
                        "Post Human: Survival Horror",
@@ -166,9 +194,18 @@ def _sample_entries() -> list[dict]:
         _sample_entry("Polo G;Lil Wayne - Gang With Me.mp3", "Polo G;Lil Wayne", "Gang With Me", "The Goat",
                        destination="Artists/Polo G/Singles", isNewFolder=True,
                        reason="New artist - scan-ahead below 3-song threshold"),
-        _sample_entry("Kendrick Lamar - HUMBLE.mp3", "Kendrick Lamar", "HUMBLE.", "DAMN.",
-                       destination="Artists/Kendrick Lamar/DAMN.", inBatchDuplicate=True,
-                       reason="Duplicate of existing library track (kept, decision: L)"),
+        _sample_entry("Ariana Grande - Positions (Remix).mp3", "Ariana Grande", "Positions (Remix)",
+                       "Positions", destination="Artists/Ariana Grande/Positions", inBatchDuplicate=True,
+                       reason="Same artist/title appears twice in this NewMusic batch"),
+        _sample_entry("Kendrick Lamar - HUMBLE.mp3", "Kendrick Lamar", "HUMBLE.", "DAMN. (Deluxe)",
+                       destination="Artists/Kendrick Lamar/DAMN.", libraryDuplicate=True,
+                       reason="Already exists in the library",
+                       dupLibraryPath="Artists\\Kendrick Lamar\\DAMN.\\Kendrick Lamar - HUMBLE.mp3",
+                       dupLibraryTrack="HUMBLE.", dupLibraryAlbum="DAMN.",
+                       dupNewAlbum="DAMN. (Deluxe)", dupRecommendationKey="L",
+                       dupRecommendation="Delete library copy",
+                       dupReason="New file album 'DAMN. (Deluxe)' is a deluxe/expanded version of "
+                                 "library album 'DAMN.' - deluxe preferred"),
         _sample_entry("Dua Lipa - Levitating.mp3", "Dua Lipa", "Levitating", "Future Nostalgia",
                        destination="Artists/Dua Lipa/Future Nostalgia",
                        tagChanges=["Title: 'levitating' -> 'Levitating'", "Album: added"]),
@@ -251,6 +288,7 @@ def stage_review() -> None:
     n_new = sum(1 for e in S.entries if e["isNewFolder"])
     n_dupe = sum(1 for e in S.entries
                  if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route"))
+    n_libdupe = sum(1 for e in S.entries if e["libraryDuplicate"])
 
     projected_libchecker_strip()
 
@@ -258,7 +296,8 @@ def stage_review() -> None:
         with ui.row().style("gap:8px;flex-wrap:wrap;"):
             for key, label in [("all", f"All ({len(S.entries)})"),
                                ("newfolders", f"New folders ({n_new})"),
-                               ("conflicts", f"Duplicates / conflicts ({n_dupe})")]:
+                               ("conflicts", f"Duplicates / conflicts ({n_dupe})"),
+                               ("libdupes", f"Library duplicates ({n_libdupe})")]:
                 cls = "chip active" if S.filter == key else "chip"
                 chip = ui.html(f'<div class="{cls}">{label}</div>')
                 chip.on("click", lambda _, k=key: _set_filter(k))
@@ -372,12 +411,16 @@ def review_card(e: dict) -> None:
                 badges.append('<span class="rc-badge newfolder">New folder</span>')
             if e["inBatchDuplicate"]:
                 badges.append('<span class="rc-badge dupe">In-batch duplicate</span>')
+            if e["libraryDuplicate"]:
+                badges.append('<span class="rc-badge libdupe">Library duplicate</span>')
             st = e["status"].lower()
             if st and st not in ("ok", "clean", "route", "moved"):
                 badges.append(f'<span class="rc-badge err">{_esc(e["status"])}</span>')
             if not badges:
                 badges.append('<span class="rc-badge clean">Clean route</span>')
             ui.html(f'<div class="rc-badges">{"".join(badges)}</div>')
+            if e["libraryDuplicate"]:
+                dup_resolution_control(e)
 
         with ui.element("div").classes("rc-decision"):
             if is_error:
@@ -389,6 +432,41 @@ def review_card(e: dict) -> None:
                 dec = ui.html(f'<button class="decline{"" if accepted else " on"}">&#10005; Decline</button>')
                 acc.on("click", lambda _, f=e["filename"]: _decide(f, True))
                 dec.on("click", lambda _, f=e["filename"]: _decide(f, False))
+
+
+DUP_OPTIONS = [("D", "Delete new file"), ("L", "Delete library copy"), ("K", "Keep both")]
+
+
+def dup_resolution_control(e: dict) -> None:
+    """Per-duplicate resolution control shown on a library-duplicate review
+    card - full CLI parity with MusicIntegrator.cs's "Duplicate Found" menu:
+    the library copy's mirror path/track/album, the new file's album, the
+    exe's own recommendation and reason, plus a D/L/K choice defaulting to
+    that recommendation (IntegrationState.dup_resolution). Resolved here at
+    review time, not as a live prompt during Execute - the exe always runs
+    --no-input; this control's choice reaches it via the manifest's
+    dupResolution field (see _write_manifest)."""
+    current = S.dup_resolution(e)
+    with ui.element("div").classes("rc-dup"):
+        info = (
+            f'<div class="rc-dup-info"><b>Library duplicate</b><br>'
+            f'Library copy: {_esc(e["dupLibraryPath"] or "(unknown)")} '
+            f'&middot; {_esc(e["dupLibraryTrack"])} &middot; {_esc(e["dupLibraryAlbum"])}<br>'
+            f'New file album: {_esc(e["dupNewAlbum"])}<br>'
+            f'Recommendation: <b>{_esc(e["dupRecommendation"] or "Keep both")}</b>'
+            + (f' - {_esc(e["dupReason"])}' if e["dupReason"] else "")
+            + "</div>"
+        )
+        ui.html(info)
+        with ui.element("div").classes("rc-dup-resolve"):
+            for key, label in DUP_OPTIONS:
+                btn = ui.html(f'<button class="dupopt{" on" if current == key else ""}">{_esc(label)}</button>')
+                btn.on("click", lambda _, f=e["filename"], k=key: _set_dup_resolution(f, k))
+
+
+def _set_dup_resolution(filename: str, key: str) -> None:
+    S.dup_resolutions[filename] = key
+    S.refresh()
 
 
 def _decide(filename: str, accept: bool) -> None:
@@ -477,12 +555,27 @@ def _write_manifest(targets: list[dict]) -> list[str]:
     `integrate --no-input` would re-scan NEWMUSIC_DIR from scratch, picking up
     anything that arrived after the dry run with no review at all.
 
+    A library-duplicate entry additionally carries a "dupResolution" key -
+    S.dup_resolution(e), which defaults to the exe's own recommendation when
+    the review card was left untouched (same lookup the unresolved-default
+    fallback uses, see IntegrationState.dup_resolution) - so
+    MusicIntegrator.GetDupResolution on the exe side can honour the review-
+    stage choice on a real (noInput) run. Every other entry's manifest shape
+    is unchanged: this never affects which files are written (still exactly
+    `targets`, i.e. the accepted set the caller passed in) or removes/adds an
+    entry - it only ever adds one extra key to a duplicate's own object.
+
     Raises OSError on write failure - the caller decides how to surface it."""
     manifest_path = config.CACHE_DIR / "accepted-manifest.json"
     config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    entries = []
+    for e in targets:
+        entry = {"filename": e["filename"], "artist": e["artist"], "title": e["title"]}
+        if e.get("libraryDuplicate"):
+            entry["dupResolution"] = S.dup_resolution(e)
+        entries.append(entry)
     with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump([{"filename": e["filename"], "artist": e["artist"],
-                    "title": e["title"]} for e in targets], f, indent=2)
+        json.dump(entries, f, indent=2)
     return ["integrate", "--manifest", str(manifest_path)]
 
 

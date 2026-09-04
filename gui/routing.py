@@ -1,9 +1,18 @@
 """Parser for the exe's dry-run routing JSON (logs/routing-<timestamp>.json).
 
-Contract (MusicIntegrator.WriteJsonOutput): array of
+Contract (MusicIntegrator.BuildJson): array of
 {filename, artist, title, album, destination, reason, isNewFolder, status,
- inBatchDuplicate, tagChanges[]}. Defensive: malformed entries are dropped,
-missing fields default to safe values.
+ inBatchDuplicate, libraryDuplicate, dupLibraryPath, dupLibraryTrack,
+ dupLibraryAlbum, dupNewAlbum, dupRecommendationKey, dupRecommendation,
+ dupReason, tagChanges[]}. Defensive: malformed entries are dropped, missing
+fields default to safe values.
+
+inBatchDuplicate and libraryDuplicate are two distinct concepts (see
+docs/Development/IDEAS.md "Duplicate-resolution UI"): inBatchDuplicate means
+"same artist+title appears twice within this NewMusic batch" (unchanged,
+MarkInBatchDuplicates); libraryDuplicate means "this file already exists
+somewhere in the library" and carries the dup* fields describing the
+exe's D/L/K recommendation for review-stage resolution.
 """
 from __future__ import annotations
 
@@ -33,6 +42,14 @@ def parse_routing_file(path: Path) -> list[dict]:
             "isNewFolder": bool(e.get("isNewFolder")),
             "status": e.get("status") or "",
             "inBatchDuplicate": bool(e.get("inBatchDuplicate")),
+            "libraryDuplicate": bool(e.get("libraryDuplicate")),
+            "dupLibraryPath": e.get("dupLibraryPath") or "",
+            "dupLibraryTrack": e.get("dupLibraryTrack") or "",
+            "dupLibraryAlbum": e.get("dupLibraryAlbum") or "",
+            "dupNewAlbum": e.get("dupNewAlbum") or "",
+            "dupRecommendationKey": e.get("dupRecommendationKey") or "",
+            "dupRecommendation": e.get("dupRecommendation") or "",
+            "dupReason": e.get("dupReason") or "",
             "tagChanges": [t for t in e.get("tagChanges") or [] if isinstance(t, str)],
         })
     return entries

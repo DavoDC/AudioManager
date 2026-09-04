@@ -24,12 +24,20 @@ def test_parse_routing_file_full_entry_round_trips_all_fields(tmp_path):
         "filename": "Song.mp3", "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "clean", "isNewFolder": True,
         "status": "ok", "inBatchDuplicate": True, "tagChanges": ["title", "artist"],
+        "libraryDuplicate": True, "dupLibraryPath": "Artists/Artist/Album/Song.mp3",
+        "dupLibraryTrack": "Title", "dupLibraryAlbum": "Album", "dupNewAlbum": "Album (Deluxe)",
+        "dupRecommendationKey": "L", "dupRecommendation": "Delete library copy",
+        "dupReason": "deluxe preferred",
     }])
     entries = routing.parse_routing_file(path)
     assert entries == [{
         "filename": "Song.mp3", "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "clean", "isNewFolder": True,
         "status": "ok", "inBatchDuplicate": True, "tagChanges": ["title", "artist"],
+        "libraryDuplicate": True, "dupLibraryPath": "Artists/Artist/Album/Song.mp3",
+        "dupLibraryTrack": "Title", "dupLibraryAlbum": "Album", "dupNewAlbum": "Album (Deluxe)",
+        "dupRecommendationKey": "L", "dupRecommendation": "Delete library copy",
+        "dupReason": "deluxe preferred",
     }]
 
 
@@ -41,6 +49,9 @@ def test_parse_routing_file_missing_fields_default_to_safe_values(tmp_path):
         "filename": "Song.mp3", "artist": "", "title": "", "album": "",
         "destination": "", "reason": "", "isNewFolder": False,
         "status": "", "inBatchDuplicate": False, "tagChanges": [],
+        "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
+        "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
+        "dupRecommendation": "", "dupReason": "",
     }]
 
 
