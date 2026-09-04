@@ -4,6 +4,41 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Fix: one bad file no longer aborts the whole Integration batch
+
+David's decision after the Simulate-mode review below flagged the design question: "errored items
+should never be accepted, but one bad file should not break the entire batch." Two-part fix, GUI then C#:
+
+**GUI side (`gui/tabs/integration.py`, `gui/tests/test_integration.py`):** `IntegrationState.accepted`
+now unconditionally excludes `status=="error"` review entries regardless of the `decisions` dict. The
+review card disables Accept and shows "Declined (error)" for them, `_bulk()`'s Accept All skips them, and
+`_decide()` refuses to flip one to accepted even if called directly. Since an error entry can now never
+reach `S.accepted`, it can never be written into the manifest or into Simulate mode's execute loop -
+`run_execute_simulated`'s now-unreachable mid-batch-abort branch was removed. Live-verified: Simulate mode
+went from "6 accepted, 0 declined" to "5 accepted, 0 declined", and Integrate All completed all 5 real
+tracks with no abort (the track previously stranded `NOT RUN` behind the bad file now completes as
+`DONE`). Full GUI suite green.
+
+**C# side (`project/AudioManager/Code/Doer/MusicIntegrator.cs`):** the GUI fix only stops a *known-bad*
+review-stage entry from reaching execution. The real engine's `RouteAllFiles()` had a separate, deeper
+gap: an *accepted* file that fails unexpectedly at move time (unreadable file, or any other exception
+during the file-system move) printed "INTEGRATION FAILED" and `throw`n, halting every remaining file in
+the batch - confirmed via `Program.cs`'s constructor call site having no catch around it, so the exception
+crashed the whole `integrate` run. Both throw sites (`!sf.IsReadable`, and the general `catch (Exception
+ex)` around the move) now do what the file's sibling "missing required tag" branch already did: mark the
+entry `Status = "error"` with a detail message, increment `skippedCount`, and `continue` - the rest of the
+batch keeps going. No prior test coverage existed for this path (`ManifestRunner.cs` only tests routing
+*decisions*, never real file-move/exception behavior), so `ScannedFile`, `LogEntry`, `DupData`, and
+`RouteAllFiles` itself were changed from `private` to `internal` (the same seam already used for
+`GetDestDir` in `RoutingTests.cs`) and a new `MusicIntegratorRouteAllFilesTests.cs` added: an unreadable
+file no longer throws and the good file around it still routes; a real `Directory.CreateDirectory`
+exception (forced by pre-creating a file at the destination directory's path) is caught and skipped, not
+thrown; and the exact reported bug shape - a good file positioned *after* a bad one - reaches `moved`
+rather than being stranded. All three pass; full C# suite green. No refactor of the
+Constants-tied real-path coupling - deliberately out of scope, David's "keep testing safe against real
+library" constraint met by using the pre-existing test-only `MusicIntegrator(testLibraryPath)` constructor
+and temp directories throughout, never `Constants.AudioFolderPath`.
+
 ## 2026-09-04 - Fix: Acquire tab's 2s poll timer clobbered Simulate mode's sample data
 
 `_poll_downloads()`'s `ui.timer(2.0, ...)` re-ran `_run_check_against_downloads()` unconditionally every 2
