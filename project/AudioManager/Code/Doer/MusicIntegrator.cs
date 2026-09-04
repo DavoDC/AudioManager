@@ -30,6 +30,10 @@ namespace AudioManager
         // Album names with 3+ distinct primary artists in the batch - routed to Compilations/ when no artist folder
         private HashSet<string> _compilationAlbums;
         private string _libraryPath;
+        // Selective-integration manifest, if any - consulted in PresentDuplicateAndDecide's
+        // noInput branch so a GUI review-stage duplicate resolution overrides the exe's own
+        // recommendation on a real run. Never used to weaken the accept/decline partition.
+        private IntegrationManifest _manifest;
         // Raw tag data cached from RunScanAhead so PreScanFiles avoids a second TagLib read per file
         private Dictionary<string, (string artists, string title, string album, string genres, uint year)> _batchTagCache;
         // Library-side album song count cache: "artist\0album" -> count. Avoids O(N) Directory.GetFiles
@@ -54,6 +58,17 @@ namespace AudioManager
             public string Reason;
             public bool IsNewFolder;
             public bool InBatchDuplicate;
+            // Library-duplicate block (distinct from InBatchDuplicate - see class remarks below).
+            // Populated once in PreScanFiles when a library duplicate is found; independent of
+            // which D/L/K decision is later made, so it survives into the JSON for every outcome.
+            public bool LibraryDuplicate;
+            public string DupLibraryPath;   // RelMirrorPath - "In AudioMirror" (see CLAUDE.md Display Conventions)
+            public string DupLibraryTrack;
+            public string DupLibraryAlbum;
+            public string DupNewAlbum;
+            public string DupRecommendationKey; // "D", "L", or "K"
+            public string DupRecommendation;    // "Delete library copy" / "Delete new file" / "Keep both"
+            public string DupReason;
         }
 
         /// <summary>Data about a duplicate found during pre-scan.</summary>
@@ -101,6 +116,7 @@ namespace AudioManager
             this.dryRun = dryRun;
             this.noInput = noInput;
             this.jsonOutput = jsonOutput;
+            this._manifest = manifest;
             _libraryPath = Constants.AudioFolderPath;
             string modeLabel = dryRun ? " [DRY RUN - no files will be moved]" : "";
             Console.WriteLine($"\nIntegrating new music...{modeLabel}");
@@ -216,6 +232,16 @@ namespace AudioManager
             _scanAheadSourcesCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _scanAheadBatchAlbumCounts = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
             _compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Test-only constructor for exercising PresentDuplicateAndDecide's noInput/manifest-override
+        /// path without running the real pipeline (no NewMusic/library filesystem access).
+        /// </summary>
+        internal MusicIntegrator(string testLibraryPath, bool noInput, IntegrationManifest manifest) : this(testLibraryPath)
+        {
+            this.noInput = noInput;
+            this._manifest = manifest;
         }
 
         /// <summary>
@@ -836,6 +862,48 @@ namespace AudioManager
         /// Schema: array of objects with filename, artist, title, album, destination, reason,
         /// isNewFolder, status, inBatchDuplicate, tagChanges[].
         /// </summary>
+        /// <summary>
+        /// Builds the routing JSON contract text (pure, no I/O) - see gui/routing.py's docstring for
+        /// the consumer-side contract. Internal + static so tests can assert on its output directly,
+        /// same pattern as TracksJson.Build.
+        /// </summary>
+        internal static string BuildJson(List<LogEntry> entries)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("[");
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var e = entries[i];
+                sb.AppendLine("  {");
+                sb.AppendLine($"    \"filename\": {JStr(e.Filename)},");
+                sb.AppendLine($"    \"artist\": {JStr(e.Artists)},");
+                sb.AppendLine($"    \"title\": {JStr(e.Title)},");
+                sb.AppendLine($"    \"album\": {JStr(e.Album)},");
+                sb.AppendLine($"    \"destination\": {JStr(e.Destination)},");
+                sb.AppendLine($"    \"reason\": {JStr(e.Reason)},");
+                sb.AppendLine($"    \"isNewFolder\": {(e.IsNewFolder ? "true" : "false")},");
+                sb.AppendLine($"    \"status\": {JStr(e.Status)},");
+                sb.AppendLine($"    \"inBatchDuplicate\": {(e.InBatchDuplicate ? "true" : "false")},");
+                // Library-duplicate block - distinct from inBatchDuplicate above, whose field name
+                // and meaning are unchanged. See docs/Development/IDEAS.md "Duplicate-resolution UI".
+                sb.AppendLine($"    \"libraryDuplicate\": {(e.LibraryDuplicate ? "true" : "false")},");
+                sb.AppendLine($"    \"dupLibraryPath\": {JStr(e.DupLibraryPath)},");
+                sb.AppendLine($"    \"dupLibraryTrack\": {JStr(e.DupLibraryTrack)},");
+                sb.AppendLine($"    \"dupLibraryAlbum\": {JStr(e.DupLibraryAlbum)},");
+                sb.AppendLine($"    \"dupNewAlbum\": {JStr(e.DupNewAlbum)},");
+                sb.AppendLine($"    \"dupRecommendationKey\": {JStr(e.DupRecommendationKey)},");
+                sb.AppendLine($"    \"dupRecommendation\": {JStr(e.DupRecommendation)},");
+                sb.AppendLine($"    \"dupReason\": {JStr(e.DupReason)},");
+                sb.Append($"    \"tagChanges\": [");
+                if (e.TagChanges?.Count > 0)
+                    sb.Append(string.Join(", ", e.TagChanges.Select(t => JStr(t))));
+                sb.AppendLine("]");
+                sb.AppendLine(i < entries.Count - 1 ? "  }," : "  }");
+            }
+            sb.AppendLine("]");
+            return sb.ToString();
+        }
+
         private void WriteJsonOutput(List<LogEntry> entries)
         {
             try
@@ -845,30 +913,7 @@ namespace AudioManager
                     Directory.CreateDirectory(Constants.LogsPath);
                 string jsonPath = Path.Combine(Constants.LogsPath, $"routing-{timestamp}.json");
 
-                var sb = new StringBuilder();
-                sb.AppendLine("[");
-                for (int i = 0; i < entries.Count; i++)
-                {
-                    var e = entries[i];
-                    sb.AppendLine("  {");
-                    sb.AppendLine($"    \"filename\": {JStr(e.Filename)},");
-                    sb.AppendLine($"    \"artist\": {JStr(e.Artists)},");
-                    sb.AppendLine($"    \"title\": {JStr(e.Title)},");
-                    sb.AppendLine($"    \"album\": {JStr(e.Album)},");
-                    sb.AppendLine($"    \"destination\": {JStr(e.Destination)},");
-                    sb.AppendLine($"    \"reason\": {JStr(e.Reason)},");
-                    sb.AppendLine($"    \"isNewFolder\": {(e.IsNewFolder ? "true" : "false")},");
-                    sb.AppendLine($"    \"status\": {JStr(e.Status)},");
-                    sb.AppendLine($"    \"inBatchDuplicate\": {(e.InBatchDuplicate ? "true" : "false")},");
-                    sb.Append($"    \"tagChanges\": [");
-                    if (e.TagChanges?.Count > 0)
-                        sb.Append(string.Join(", ", e.TagChanges.Select(t => JStr(t))));
-                    sb.AppendLine("]");
-                    sb.AppendLine(i < entries.Count - 1 ? "  }," : "  }");
-                }
-                sb.AppendLine("]");
-
-                File.WriteAllText(jsonPath, sb.ToString(), System.Text.Encoding.UTF8);
+                File.WriteAllText(jsonPath, BuildJson(entries), System.Text.Encoding.UTF8);
                 Console.WriteLine($"\n  JSON: {jsonPath}");
             }
             catch (Exception ex)
@@ -1368,7 +1413,20 @@ namespace AudioManager
 
                     string duplicatePath = FindDuplicateInMirror(track, mirrorIndex);
                     if (!string.IsNullOrEmpty(duplicatePath))
+                    {
                         sf.Duplicate = BuildDupData(sourcePath, track, duplicatePath);
+                        // Populated once here regardless of which D/L/K decision is made later,
+                        // so the JSON always carries the library-duplicate block for GUI review.
+                        entry.LibraryDuplicate = true;
+                        entry.DupLibraryPath = sf.Duplicate.RelMirrorPath;
+                        entry.DupLibraryTrack = sf.Duplicate.MirrorTrack;
+                        entry.DupLibraryAlbum = sf.Duplicate.MirrorAlbum;
+                        entry.DupNewAlbum = track.Album;
+                        entry.DupRecommendationKey = sf.Duplicate.RecommendedKey == '\0'
+                            ? "K" : sf.Duplicate.RecommendedKey.ToString();
+                        entry.DupRecommendation = DupRecommendationText(sf.Duplicate.RecommendedKey);
+                        entry.DupReason = sf.Duplicate.DupReason;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1467,11 +1525,24 @@ namespace AudioManager
             };
         }
 
+        /// <summary>Maps a recommendation key to the exact phrase the GUI/CLI display (see
+        /// docs/Development/IDEAS.md "Duplicate-resolution UI" terminology decision).</summary>
+        private static string DupRecommendationText(char key)
+        {
+            switch (key)
+            {
+                case 'L': return "Delete library copy";
+                case 'D': return "Delete new file";
+                default: return "Keep both";
+            }
+        }
+
         /// <summary>
         /// Presents one duplicate to the user and collects their D/L/K/Q decision.
         /// Sets sf.Duplicate.Decision. Returns false if user pressed Q, true otherwise.
+        /// Internal (not private) so tests can exercise the noInput/manifest-override path directly.
         /// </summary>
-        private bool PresentDuplicateAndDecide(ScannedFile sf)
+        internal bool PresentDuplicateAndDecide(ScannedFile sf)
         {
             var dup = sf.Duplicate;
             Track track = sf.Track;
@@ -1506,6 +1577,22 @@ namespace AudioManager
 
             if (noInput)
             {
+                // GUI review-stage resolution wins over the exe's own recommendation on a real
+                // run, carried through the same --manifest mechanism as accept/decline (see
+                // docs/Development/IDEAS.md "Duplicate-resolution UI"). A duplicate left
+                // untouched in Review has no manifest entry for it, so this falls through to
+                // the exact same auto-accept-recommendation behavior as before - unresolved
+                // batches stay safe by construction, not by a second code path.
+                char manifestDecision = _manifest?.GetDupResolution(
+                    Path.GetFileName(sf.SourcePath), track.Artists, track.Title) ?? '\0';
+                if (manifestDecision != '\0')
+                {
+                    dup.Decision = manifestDecision;
+                    Console.WriteLine($"  [MANIFEST] {manifestDecision} (user-resolved in GUI review)");
+                    Console.WriteLine();
+                    return true;
+                }
+
                 char autoDecision = dup.RecommendedKey != '\0' ? dup.RecommendedKey : 'K';
                 dup.Decision = autoDecision;
                 string autoReason = dup.RecommendedKey != '\0'

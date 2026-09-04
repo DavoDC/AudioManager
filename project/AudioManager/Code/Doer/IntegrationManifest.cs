@@ -26,6 +26,11 @@ namespace AudioManager
             public string Filename;
             public string Artist;
             public string Title;
+            // GUI review-stage duplicate resolution ("D"/"L"/"K"), if the user changed it away
+            // from the exe's own recommendation. Null/absent means "unresolved" - the exe falls
+            // back to its recommendation exactly as it always has. See "Duplicate-resolution UI"
+            // in docs/Development/IDEAS.md.
+            public string DupResolution;
         }
 
         internal List<Entry> Entries = new List<Entry>();
@@ -99,6 +104,7 @@ namespace AudioManager
                 fields.TryGetValue("filename", out entry.Filename);
                 fields.TryGetValue("artist", out entry.Artist);
                 fields.TryGetValue("title", out entry.Title);
+                fields.TryGetValue("dupResolution", out entry.DupResolution);
                 if (string.IsNullOrWhiteSpace(entry.Filename) &&
                     (string.IsNullOrWhiteSpace(entry.Artist) || string.IsNullOrWhiteSpace(entry.Title)))
                 {
@@ -125,6 +131,33 @@ namespace AudioManager
         /// <summary>Entries that never matched any scanned file (stale scan warning).</summary>
         internal List<Entry> UnmatchedEntries() =>
             Entries.Where(e => !matchedEntries.Contains(e)).ToList();
+
+        /// <summary>
+        /// Looks up a GUI-resolved duplicate decision ('D'/'L'/'K') for a scanned file, tried by
+        /// exact filename first (same candidate set Matches() uses), then falling back to the
+        /// canonical TagFixer-rename form built from artist+title (so it survives a real-run
+        /// rename same as filename matching already does). Returns '\0' when unresolved or when
+        /// the value isn't one of D/L/K - callers must treat that as "no override", never as an
+        /// implicit decision.
+        /// </summary>
+        internal char GetDupResolution(string filename, string artist, string title)
+        {
+            Entry entry = null;
+            if (!string.IsNullOrEmpty(filename))
+                candidateToEntry.TryGetValue(filename, out entry);
+
+            if (entry == null && !string.IsNullOrEmpty(artist) && !string.IsNullOrEmpty(title))
+            {
+                string sanArtist = Reflector.SanitiseFilename(artist);
+                string sanTitle = Reflector.SanitiseFilename(title);
+                if (!string.IsNullOrEmpty(sanArtist) && !string.IsNullOrEmpty(sanTitle))
+                    candidateToEntry.TryGetValue($"{sanArtist} - {sanTitle}.mp3", out entry);
+            }
+
+            if (entry == null || string.IsNullOrEmpty(entry.DupResolution)) return '\0';
+            char c = char.ToUpperInvariant(entry.DupResolution[0]);
+            return (c == 'D' || c == 'L' || c == 'K') ? c : '\0';
+        }
 
         private void BuildCandidates()
         {

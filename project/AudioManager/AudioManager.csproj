@@ -73,6 +73,7 @@
     <Compile Include="Code\Tests\RoutingFixtures.cs" />
     <Compile Include="Code\Tests\RoutingTests.cs" />
     <Compile Include="Code\Tests\MusicIntegratorRouteAllFilesTests.cs" />
+    <Compile Include="Code\Tests\MusicIntegratorDuplicateJsonTests.cs" />
     <Compile Include="Code\Tests\ManifestRunner.cs" />
     <Compile Include="Code\Tests\ParseCacheTests.cs" />
     <Compile Include="Code\Tests\LibCheckerTests.cs" />
