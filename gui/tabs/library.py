@@ -41,7 +41,7 @@ def _genre_color(genre: str) -> str:
 
 def build() -> None:
     with ui.element("header").classes("page"):
-        ui.html("<h1>Library Browser</h1>")
+        ui.html("<h1>Library</h1>")
         ui.html('<div class="meta">All rows from tracks.json - the GUI parses no XML</div>')
 
     if state.tracks is None:

@@ -35,7 +35,7 @@ the old process running. See CLAUDE.md "Dev mode: hot-reload".
 AudioManager.exe analysis --json-output     (triggered from the Statistics header)
         |
         +--> logs/analysis-stats.json   -> Statistics tab   (aggregate stats)
-        +--> logs/tracks.json           -> Library Browser  (per-track array)
+        +--> logs/tracks.json           -> Library tab      (per-track array)
 
 AudioManager.exe integrate --dry-run --json-output   (Integration tab Scan)
         |
@@ -60,7 +60,7 @@ own modes, behind its own safety gates. The GUI's only writes are its cache
 |---|---|---|
 | Statistics | Full | All panels + chart-type swaps + date window + analysis freshness controls |
 | Integration | Full (accept-all) | Staged scan/review/confirm/execute; declines block execution (see gaps) |
-| Library Browser | MVP | Table/grid, real album art, search, filter chips, column picker, pagination |
+| Library | MVP | Table/grid, real album art, search, filter chips, column picker, pagination |
 | Tag Fix | Skeleton | Documents the exe's fixed transforms; Run = `tagfix --dry-run` |
 | Mirror | Functional | Status + one-click Commit AudioMirror (confirm dialog, local commit only) |
 | Services | Placeholder | Last.fm / Spotify stretch stubs (far future) |
@@ -99,4 +99,4 @@ test asserts every field the GUI reads exists in the real `logs/*.json`
 5. Force a failure (e.g. scan with a dirty AudioMirror) - the error modal shows the parsed
    `- ERROR:` cause; **Copy** puts command + output on the clipboard; **Retry** re-runs it.
 6. While any run is active, trigger buttons elsewhere are disabled (one exe call at a time).
-7. Library Browser grid page 1 renders real covers; paging extracts only the new page.
+7. Library grid page 1 renders real covers; paging extracts only the new page.
