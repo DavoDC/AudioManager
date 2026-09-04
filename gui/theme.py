@@ -215,6 +215,12 @@ HEAD_HTML = """
      drop to plain grey .note text there. */
   .note.simulated{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);
     font-weight:600;padding:8px 12px;border-radius:var(--radius-control);}
+  /* Confirm-dialog real-run note: this is the one dialog that actually moves
+     files, so it must read at least as loud as .note.simulated - here using
+     the danger red (--accent4, same family as .libchecker-strip.dirty) since
+     a real run is the higher-stakes of the two, never the plain dim .note. */
+  .note.real{background:rgba(226,109,109,.13);border:1px solid var(--accent4);color:var(--accent4);
+    font-weight:600;padding:8px 12px;border-radius:var(--radius-control);}
   /* Batch scan-ahead context shown beside the confirm bar */
   .batch-summary{font-size:12px;padding:9px 12px;border-radius:var(--radius-control);
     margin-bottom:12px;width:100%;background:rgba(91,140,255,.07);

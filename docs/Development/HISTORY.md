@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Real-integration confirm dialog styled at least as loud as the simulated one
+
+Closed "[GUI] Real-integration confirm dialog is styled LESS urgently than the harmless simulated one" from IDEAS.md. `integration.py`'s `_confirm_execute()` gave the simulated-run note `.note.simulated` (loud amber box) but the real-run note - the one dialog that actually moves files out of NewMusic into the library - just plain dim `.note` text, the same weight as routine helper copy elsewhere in the app.
+
+Added `_confirm_note_class(simulated: bool) -> str`, a pure function returning `"note simulated"` or `"note real"`, and wired both branches of `_confirm_execute()` through it instead of hardcoded class strings. Added `.note.real` to `gui/theme.py` using `--accent4` (the danger red already used for `.libchecker-strip.dirty`), so the real-run note now reads at least as loud as the simulated one - louder, given it is the higher-stakes of the two. Confirmed via `git diff` that the escalation boundary (accept/decline logic, manifest writing in `run_execute`) is untouched; only the note's CSS class changed. Two new tests (`test_confirm_note_class_real_run_gets_warning_weight_not_plain_note`, `test_confirm_note_class_simulated_still_gets_its_own_loud_class`) cover the function directly. Full suite green (280 C# tests, 202 GUI tests).
+
+---
+
 ## 2026-09-05 - Review-card title color weight
 
 Closed "[GUI] Review-card title has no more visual weight than the artist line under it" from IDEAS.md. The review card's song title (`.rc-title`) was using the same dim text color as the secondary artist line beneath it, giving no visual hierarchy to the primary identifier. Changed `.rc-title` from `color:var(--text-dim)` to `color:var(--text)` in `gui/theme.py` to match the already-bright destination route line, establishing the title as the card's lead line.

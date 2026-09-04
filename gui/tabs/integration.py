@@ -685,6 +685,15 @@ def confirm_bar() -> None:
                 ui.button(label, on_click=_confirm_execute).props("unelevated color=primary")
 
 
+def _confirm_note_class(simulated: bool) -> str:
+    """CSS class for the confirm-dialog's risk note. Both branches must carry
+    the loud warning treatment - the real-run note is the single highest-stakes
+    confirmation in the GUI (it moves real files) and must never fall back to
+    plain dim `.note` text just because the simulated branch got the loud
+    styling first. See docs/Development/HISTORY.md for the styling-parity fix."""
+    return "note simulated" if simulated else "note real"
+
+
 def _confirm_execute() -> None:
     with ui.dialog() as dlg, ui.card().style(
             "background:var(--panel);color:var(--text);padding:20px;max-width:480px;gap:12px;"):
@@ -694,7 +703,7 @@ def _confirm_execute() -> None:
             ui.label(
                 "SIMULATED - no real exe call, no NewMusic file is read or moved. This just replays "
                 "sample output through the same status/summary logic a real run would use."
-            ).classes("note simulated").style("margin:0;")
+            ).classes(_confirm_note_class(True)).style("margin:0;")
         else:
             declined_note = (f" The {len(S.declined)} declined track(s) are excluded via manifest and stay "
                              "in NewMusic." if S.declined else "")
@@ -702,7 +711,7 @@ def _confirm_execute() -> None:
                 f"This MOVES {len(S.accepted)} file(s) from NewMusic into the library - the same "
                 "operation as the CLI's y/N confirm, protected by the exe's own pre-integration "
                 f"safety gate (stale mirror / dirty LibChecker blocks the run).{declined_note}"
-            ).classes("note").style("margin:0;")
+            ).classes(_confirm_note_class(False)).style("margin:0;")
         with ui.row().classes("w-full justify-end").style("gap:10px;"):
             ui.button("Cancel", on_click=dlg.close).props("flat color=grey")
 
