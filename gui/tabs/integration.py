@@ -54,6 +54,8 @@ class IntegrationState:
         self.decisions: dict[str, bool] = {}   # filename -> accepted
         self.dup_resolutions: dict[str, str] = {}  # filename -> "D"/"L"/"K" (explicit override only)
         self.filter = "all"                 # all | conflicts | newfolders | libdupes
+        self.cursor = 0                     # index into filtered() for keyboard nav (A/D/J/K)
+        self.keyboard_nav_used = False      # only show the cursor highlight once keyboard nav is used
         self.scan_lines: list[str] = []
         self.exec_lines: list[str] = []
         self.exec_status: dict[str, str] = {}  # filename -> queued/moving/done/failed/notrun
@@ -62,6 +64,7 @@ class IntegrationState:
         self.exec_summary = ""
         self.exec_ok: bool | None = None    # None: no run finished yet; True/False: last run's outcome
         self.simulated = False              # True: sample data, no real exe/file touched
+        self.summary: dict = routing.empty_summary()  # batch scan-ahead context (routes, Misc migrations, compilations)
         self.projected_libchecker: dict | None = None  # dry run's own safety verdict
         self.confidence_report: dict | None = None  # real run's post-run integrity check
         self.refresh = lambda: None
@@ -77,13 +80,17 @@ class IntegrationState:
 
     def filtered(self) -> list[dict]:
         if self.filter == "conflicts":
-            return [e for e in self.entries
-                    if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route")]
-        if self.filter == "newfolders":
-            return [e for e in self.entries if e["isNewFolder"]]
-        if self.filter == "libdupes":
-            return [e for e in self.entries if e["libraryDuplicate"]]
-        return self.entries
+            entries = [e for e in self.entries
+                       if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route")]
+        elif self.filter == "newfolders":
+            entries = [e for e in self.entries if e["isNewFolder"]]
+        elif self.filter == "libdupes":
+            entries = [e for e in self.entries if e["libraryDuplicate"]]
+        elif self.filter == "compilations":
+            entries = [e for e in self.entries if e.get("compilationAlbum")]
+        else:
+            entries = self.entries
+        return sort_by_destination(entries)
 
     def dup_resolution(self, e: dict) -> str:
         """The resolved D/L/K decision for a library-duplicate entry: an
@@ -98,6 +105,32 @@ class IntegrationState:
             return override
         key = e.get("dupRecommendationKey") or "K"
         return key if key in ("D", "L", "K") else "K"
+
+
+def sort_by_destination(entries: list[dict]) -> list[dict]:
+    """Groups same-album files adjacent by sorting on destination path -
+    client-side mirror of the CLI's own sort (`MusicIntegrator.cs` ~188-192).
+    The exe's routing JSON is raw scan order; nothing on the C# side needs to
+    change for the GUI to present the same grouping. Filename is the tie-break
+    so entries sharing one destination keep a stable, readable sub-order."""
+    return sorted(entries, key=lambda e: (e.get("destination") or "", e.get("filename") or ""))
+
+
+def _review_key_action(key_name: str) -> str | None:
+    """Maps a raw keyboard key name to a review-stage action - pure and
+    case-insensitive so it's unit-testable without a real NiceGUI KeyboardKey.
+    'a'/'d' accept/decline the card under the cursor; 'j'/ArrowDown and
+    'k'/ArrowUp move the cursor. Anything else is not a review shortcut."""
+    name = (key_name or "").lower()
+    if name == "a":
+        return "accept"
+    if name == "d":
+        return "decline"
+    if name in ("j", "arrowdown"):
+        return "next"
+    if name in ("k", "arrowup"):
+        return "prev"
+    return None
 
 
 S = IntegrationState()
@@ -127,11 +160,17 @@ def build() -> None:
 
 
 def stepper() -> None:
-    steps = [("Scan NewMusic", 1), ("Review routing", 2), ("Confirm", 3), ("Integrate", 4)]
+    """Three steps, because there are three screens. Confirm is a modal over the
+    review stage, never a screen of its own, so it was a step that could never
+    render as active - the stepper jumped from 2-active straight to 2+3-done.
+    S.stage 3 and 4 are both the execute screen, so they collapse onto step 3."""
+    steps = [("Scan NewMusic", 1), ("Review routing", 2), ("Integrate", 3)]
+    current = min(S.stage, 3)
     html = ['<div class="stepper">']
     for label, n in steps:
-        cls = "done" if S.stage > n else ("active" if S.stage == n else "")
-        mark = "&#10003;" if S.stage > n else str(n)
+        done = current > n or (current == n == 3 and S.exec_done)
+        cls = "done" if done else ("active" if current == n else "")
+        mark = "&#10003;" if done else str(n)
         html.append(f'<div class="step {cls}"><span class="n">{mark}</span> {label}</div>')
     html.append("</div>")
     ui.html("".join(html)).classes("w-full")
@@ -166,7 +205,7 @@ def _sample_entry(filename: str, artist: str, title: str, album: str, **override
     e = {
         "filename": filename, "artist": artist, "title": title, "album": album,
         "destination": "", "reason": "", "isNewFolder": False,
-        "status": "ok", "inBatchDuplicate": False, "tagChanges": [],
+        "status": "ok", "inBatchDuplicate": False, "compilationAlbum": False, "tagChanges": [],
         "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
         "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
         "dupRecommendation": "", "dupReason": "",
@@ -213,6 +252,15 @@ def _sample_entries() -> list[dict]:
                        destination="", status="error", reason="Missing required tag: artist"),
         _sample_entry("Fred again.. - Delilah.mp3", "Fred again..", "Delilah (pull me out of this)",
                        "Actual Life 3", destination="Artists/Fred again../Actual Life 3"),
+        # Compilation album: 3+ distinct primary artists share this album in-batch, so it
+        # routes to Compilations/ rather than an artist folder. Exercises the compilation
+        # badge and filter, and the summary's compilationAlbums line.
+        _sample_entry("Various - Song For Denise.mp3", "Piano Fantasia", "Song For Denise",
+                       "Now That's What I Call Music 42",
+                       destination="Compilations/Now That's What I Call Music 42",
+                       compilationAlbum=True,
+                       reason="Compilation album (3+ distinct artists in batch); no artist "
+                              "folder -> Compilations/Now That's What I Call Music 42/"),
     ]
 
 
@@ -226,8 +274,17 @@ def run_simulate() -> None:
     S.exec_status = {}
     S.exec_done = False
     S.exec_ok = None
+    S.cursor = 0
+    S.keyboard_nav_used = False
     S.scan_lines = ["[SIMULATE] Sample data only - nothing in NewMusic was scanned or touched."]
     S.simulated = True
+    # Batch scan-ahead context the real exe emits in the routing JSON's summary block.
+    S.summary = {
+        "routes": {"Artists": 6, "Compilations": 1},
+        "miscAutoMigrations": [{"artist": "Polo G", "count": 2}],
+        "miscAutoMigrationTotal": 2,
+        "compilationAlbums": ["Now That's What I Call Music 42"],
+    }
     S.projected_libchecker = {
         "summary": "Projected library: 412 current, -0 removals, +6 additions = 418 projected",
         "clean": True, "skipped": False, "total_hits": 0,
@@ -256,16 +313,20 @@ async def run_scan() -> None:
         return
     path = routing.routing_path_from_output(result.lines)
     entries = []
+    summary = routing.empty_summary()
     if path:
         try:
-            entries = routing.parse_routing_file(path)
+            entries, summary = routing.parse_routing_document(path)
         except (OSError, ValueError) as e:
             ui.notify(f"Could not parse routing JSON: {e}", type="negative")
     S.entries = entries
+    S.summary = summary
     S.decisions = {e["filename"]: True for e in entries}
     S.exec_status = {}
     S.exec_done = False
     S.exec_ok = None
+    S.cursor = 0
+    S.keyboard_nav_used = False
     S.projected_libchecker = routing.parse_projected_libchecker(result.lines)
     S.stage = 2
     S.refresh()
@@ -289,17 +350,24 @@ def stage_review() -> None:
     n_dupe = sum(1 for e in S.entries
                  if e["inBatchDuplicate"] or e["status"].lower() not in ("", "ok", "clean", "moved", "route"))
     n_libdupe = sum(1 for e in S.entries if e["libraryDuplicate"])
+    n_comp = sum(1 for e in S.entries if e.get("compilationAlbum"))
 
     projected_libchecker_strip()
 
     with ui.row().classes("w-full items-center justify-between").style("margin-bottom:12px;flex-wrap:wrap;gap:10px;"):
         with ui.row().style("gap:8px;flex-wrap:wrap;"):
-            for key, label in [("all", f"All ({len(S.entries)})"),
-                               ("newfolders", f"New folders ({n_new})"),
-                               ("conflicts", f"Duplicates / conflicts ({n_dupe})"),
-                               ("libdupes", f"Library duplicates ({n_libdupe})")]:
+            chips = [("all", f"All ({len(S.entries)})"),
+                     ("newfolders", f"New folders ({n_new})"),
+                     ("conflicts", f"Duplicates / conflicts ({n_dupe})"),
+                     ("libdupes", f"Library duplicates ({n_libdupe})")]
+            # Only offered when the batch actually has one - an always-present
+            # "Compilations (0)" chip is the same anti-signal as a badge that
+            # means "nothing here".
+            if n_comp:
+                chips.append(("compilations", f"Compilation albums ({n_comp})"))
+            for key, label in chips:
                 cls = "chip active" if S.filter == key else "chip"
-                chip = ui.html(f'<div class="{cls}">{label}</div>')
+                chip = ui.html(f'<button type="button" class="{cls}">{label}</button>')
                 chip.on("click", lambda _, k=key: _set_filter(k))
         with ui.row().style("gap:8px;"):
             ui.button("Accept all", on_click=lambda: _bulk(True)).props("outline dense color=positive size=sm")
@@ -307,9 +375,14 @@ def stage_review() -> None:
             ui.button("Re-scan", on_click=lambda: asyncio.create_task(run_scan())) \
                 .props("outline dense color=grey size=sm")
 
-    for e in S.filtered():
-        review_card(e)
+    entries_view = S.filtered()
+    if entries_view:
+        S.cursor = max(0, min(S.cursor, len(entries_view) - 1))
+    ui.keyboard(on_key=_on_review_key)
+    for idx, e in enumerate(entries_view):
+        review_card(e, idx)
 
+    batch_summary_strip()
     confirm_bar()
 
 
@@ -361,7 +434,39 @@ def confidence_report_strip() -> None:
 
 def _set_filter(k: str) -> None:
     S.filter = k
+    S.cursor = 0
     S.refresh()
+
+
+def _on_review_key(e) -> None:
+    """Global keyboard handler, mounted only while stage_review() is on
+    screen (stage 2) - never active during scan/confirm/execute. A = accept,
+    D = decline the card under the cursor; J/ArrowDown, K/ArrowUp move the
+    cursor. Scoped deliberately to accept/decline/navigate only - the
+    duplicate-resolution radio control stays mouse-only (see IDEAS.md
+    '[OPUS] accept/decline interaction redesign' for anything beyond this)."""
+    if not e.action.keydown or e.action.repeat:
+        return
+    if S.stage != 2 or not S.entries:
+        return
+    action = _review_key_action(e.key.name)
+    if action is None:
+        return
+    entries = S.filtered()
+    if not entries:
+        return
+    S.cursor = max(0, min(S.cursor, len(entries) - 1))
+    S.keyboard_nav_used = True
+    if action == "next":
+        S.cursor = min(S.cursor + 1, len(entries) - 1)
+        S.refresh()
+    elif action == "prev":
+        S.cursor = max(S.cursor - 1, 0)
+        S.refresh()
+    elif action == "accept":
+        _decide(entries[S.cursor]["filename"], True)
+    elif action == "decline":
+        _decide(entries[S.cursor]["filename"], False)
 
 
 def _bulk(accept: bool) -> None:
@@ -376,10 +481,14 @@ def _bulk(accept: bool) -> None:
     S.refresh()
 
 
-def review_card(e: dict) -> None:
+def review_card(e: dict, idx: int = 0) -> None:
     is_error = e.get("status", "").lower() == "error"
     accepted = False if is_error else S.decisions.get(e["filename"], True)
-    card_cls = "review-card" + ("" if accepted else " declined")
+    card_cls = "review-card"
+    if not accepted:
+        card_cls += " declined"
+    if S.keyboard_nav_used and idx == S.cursor:
+        card_cls += " current"
     with ui.element("div").classes(card_cls).style("margin-bottom:10px;"):
         # album art from the NewMusic file itself (read-only extraction) -
         # Simulate mode's sample filenames don't exist in NewMusic, and the
@@ -413,14 +522,24 @@ def review_card(e: dict) -> None:
                 badges.append('<span class="rc-badge dupe">In-batch duplicate</span>')
             if e["libraryDuplicate"]:
                 badges.append('<span class="rc-badge libdupe">Library duplicate</span>')
+            if e.get("compilationAlbum"):
+                # Scan-ahead found 3+ distinct primary artists on this album in-batch.
+                # Shown regardless of final route: an album can be a batch compilation
+                # and still land under Artists/ when the primary artist has a folder.
+                badges.append('<span class="rc-badge compilation">Compilation album</span>')
             st = e["status"].lower()
             if st and st not in ("ok", "clean", "route", "moved"):
                 badges.append(f'<span class="rc-badge err">{_esc(e["status"])}</span>')
-            if not badges:
-                badges.append('<span class="rc-badge clean">Clean route</span>')
-            ui.html(f'<div class="rc-badges">{"".join(badges)}</div>')
+            # Deliberately no "Clean route" badge for the no-exceptions case -
+            # an absent badge row IS the clean signal (IDEAS.md: a badge on
+            # every uneventful card trains the eye to skip the row where the
+            # real exceptions - duplicates, new folders, errors - live).
+            if badges:
+                ui.html(f'<div class="rc-badges">{"".join(badges)}</div>')
             if e["libraryDuplicate"]:
                 dup_resolution_control(e)
+            if not accepted:
+                ui.html('<div class="rc-declined-tag">Stays in NewMusic</div>')
 
         with ui.element("div").classes("rc-decision"):
             if is_error:
@@ -483,6 +602,59 @@ def _decide(filename: str, accept: bool) -> None:
 # -------------------------------------------------------- stage 3 confirm
 
 
+def batch_summary_html(summary: dict) -> str:
+    """The batch scan-ahead strip's inner HTML, or "" when there is nothing to
+    say. Pure and separated from rendering so the wording and the "stay silent
+    when empty" rule are testable without a NiceGUI client.
+
+    Three things the exe already computes and the GUI used to drop on the floor
+    (docs/Development/IDEAS.md "Scan-ahead batch context is invisible"):
+
+    - Route distribution, a different axis from the confirm bar's
+      artists/new-folders/duplicates counts - it says where the batch LANDS.
+    - Misc auto-migration, the only notice anywhere that a run will move files
+      ALREADY in the library (existing Misc songs of an artist crossing the
+      3-song threshold), not just the incoming ones. Highest-stakes line here.
+    - Compilation albums detected in-batch, otherwise visible only by reading a
+      destination path carefully.
+    """
+    routes = summary.get("routes") or {}
+    migrations = summary.get("miscAutoMigrations") or []
+    comps = summary.get("compilationAlbums") or []
+    if not routes and not migrations and not comps:
+        return ""
+
+    parts = []
+    if routes:
+        ordered = sorted(routes.items(), key=lambda kv: (-kv[1], kv[0].lower()))
+        cells = f'<span class="bs-sep">|</span>'.join(
+            f'{_esc(name)}<span class="bs-route">: {count}</span>' for name, count in ordered)
+        parts.append(f'<span class="bs-routes">Routes</span> &nbsp;{cells}')
+
+    if migrations:
+        total = summary.get("miscAutoMigrationTotal") or sum(m["count"] for m in migrations)
+        who = ", ".join(f'{_esc(m["artist"])} ({m["count"]})' for m in migrations[:6])
+        if len(migrations) > 6:
+            who += f", +{len(migrations) - 6} more"
+        parts.append(
+            f'<span class="bs-migrate">Misc auto-migration: {total} existing library song(s) '
+            f"will be moved out of Miscellaneous Songs into new artist folders - {who}</span>")
+
+    if comps:
+        named = ", ".join(f"'{_esc(a)}'" for a in comps[:4])
+        if len(comps) > 4:
+            named += f", +{len(comps) - 4} more"
+        parts.append(f'<span class="bs-comp">Compilation album(s) detected: {named}</span>')
+
+    return "".join(parts)
+
+
+def batch_summary_strip() -> None:
+    inner = batch_summary_html(S.summary)
+    if inner:
+        ui.html(f'<div class="batch-summary">{inner}</div>').classes("w-full")
+
+
 def confirm_bar() -> None:
     accepted, declined = S.accepted, S.declined
     n_new = sum(1 for e in accepted if e["isNewFolder"])
@@ -522,7 +694,7 @@ def _confirm_execute() -> None:
             ui.label(
                 "SIMULATED - no real exe call, no NewMusic file is read or moved. This just replays "
                 "sample output through the same status/summary logic a real run would use."
-            ).classes("note").style("margin:0;")
+            ).classes("note simulated").style("margin:0;")
         else:
             declined_note = (f" The {len(S.declined)} declined track(s) are excluded via manifest and stay "
                              "in NewMusic." if S.declined else "")
