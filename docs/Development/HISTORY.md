@@ -4,6 +4,24 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Review-card layout: width cap, visual hierarchy, declined-card treatment, keyboard path, destination sort
+
+Closed the mechanical (`[SONNET]`) half of the "[GUI] Review-card layout" IDEAS.md item; the accept/decline interaction redesign is split out as a new `[OPUS]` item since it is a genuine design-judgment call, not a mechanical fix.
+
+**Width and dead space.** `.review-card` capped at `max-width:820px` with the grid's decision column adjacent to the route line, eliminating the ~600-700px gap that used to separate the route/reason text from the Accept/Decline buttons pinned by the old `auto` column on a full-bleed card.
+
+**Visual hierarchy corrected.** `.rc-route` (the destination - the actual point of the card) goes from 11px dim monospace to 14px bold `var(--text)`; `.rc-title`/`.rc-artist` are demoted to `var(--text-dim)`; badges go from 9px to 11px. The "Clean route" badge shown on every uneventful card is removed outright - absence of a badge row is now the clean signal, rather than a badge that trains the eye to skip the row where real exceptions (duplicates, new folders, errors) live.
+
+**Declined cards get a distinct treatment**, not a uniform `opacity:.55` fade that read as "disabled" (including the Decline button's own pressed state read as greyed-out): a red `border-left`, strikethrough on the route/destination text, and an explicit "Stays in NewMusic" tag.
+
+**Keyboard path added, scoped to review-only.** Filter chips are real `<button>`s with `:focus-visible` instead of unfocusable `<div>`s. A/D accept or decline the entry under a cursor; J/ArrowDown and K/ArrowUp move it, with a `.current` outline shown only once keyboard nav has actually been used (`S.keyboard_nav_used`), so a mouse-only reviewer never sees a surprise highlight. `_review_key_action()` is a pure key-name-to-action mapping, unit-tested directly; `_on_review_key()` self-guards on `S.stage == 2` so a stray handler can never fire outside the review screen, and ignores keyup/repeat events. The keyboard layer intentionally stops at accept/decline/navigate - the duplicate-resolution radio control stays mouse-only, confirmed still clickable and correctly positioned inside the new layout.
+
+**Destination sort/grouping.** `sort_by_destination()` mirrors the CLI's own destination-path sort (`MusicIntegrator.cs` ~188-192, no C# change needed) so same-album files land adjacent instead of raw scan order; applied inside `IntegrationState.filtered()` so every filter view groups consistently. Filename is the tie-break.
+
+Verified live in Simulate mode via the browser: card width/hierarchy/badge/declined-card rendering confirmed by screenshot; keyboard shortcuts confirmed with real key events (dispatched keydown, not just read from source) - J/K move the cursor and its highlight, A/D toggle accept/decline on the entry under the cursor and reflect immediately in the DOM (`declined current` class, strikethrough, tag); the library-duplicate resolution control's click-through (switching from "Delete library copy" to "Delete new file") still works inside the capped-width card. Display-only throughout: the escalation boundary (`IntegrationState.accepted`/`declined`, the manifest-writing block in `run_execute`, exe `args` construction) is untouched - confirmed via `git diff`. 44 new/updated GUI tests for `sort_by_destination`, `_review_key_action`, and `_on_review_key`'s stage-guard/cursor/keyup-repeat/error-guard behaviour; full suite green (280 C# tests, 200+ GUI tests after this and the concurrently-landed scan-ahead-context change).
+
+---
+
 ## 2026-09-05 - Scan-ahead batch context reaches the GUI: route distribution, Misc auto-migration notice, compilation albums
 
 Closed three `docs/Development/IDEAS.md` items. The exe had been computing batch-level scan-ahead context and printing it only to the CLI; the GUI showed none of it, so a reviewer working in the GUI made accept/decline decisions without the information the CLI user has.
