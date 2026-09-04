@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gui import config
 from gui.runner import RunResult
 from gui.tabs.integration import (
-    IntegrationState, _bulk, _esc, _failed_filename_from_output, _on_review_key,
-    _open_run_log, _review_key_action, _sample_entries, _update_exec_status,
-    _write_manifest, batch_summary_html, run_execute, run_execute_simulated,
-    run_simulate, sort_by_destination,
+    IntegrationState, _bulk, _confirm_note_class, _esc, _failed_filename_from_output,
+    _on_review_key, _open_run_log, _review_key_action, _sample_entries,
+    _update_exec_status, _write_manifest, batch_summary_html, run_execute,
+    run_execute_simulated, run_simulate, sort_by_destination,
 )
 
 
@@ -386,6 +386,21 @@ def test_open_run_log_creates_timestamped_file_under_run_logs_dir(tmp_path, monk
     finally:
         if f:
             f.close()
+
+
+# ---------------------------------------------------------- _confirm_note_class
+
+
+def test_confirm_note_class_real_run_gets_warning_weight_not_plain_note():
+    """The real-run confirm note must never fall back to plain dim `.note` -
+    it is the single highest-stakes confirmation in the GUI, so it needs at
+    least the same loud/highlighted treatment as the simulated note."""
+    assert _confirm_note_class(False) == "note real"
+    assert _confirm_note_class(False) != "note"
+
+
+def test_confirm_note_class_simulated_still_gets_its_own_loud_class():
+    assert _confirm_note_class(True) == "note simulated"
 
 
 # --------------------------------------------------------------------- _esc
