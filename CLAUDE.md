@@ -47,7 +47,7 @@ Completes in ~2-3 seconds without blocking. Success output example: "Build succe
 
 Runs build + unit tests + routing manifest tests. All must pass before any C# commit. All bats support `--no-pause` (always pass it from Claude). If a test fails: fix the code, not the test (unless the test is wrong - state why).
 
-Legacy csproj format, csproj file registration, and the `Any CPU`-only platform constraint: see "Build troubleshooting" in `docs/References/DevContext.md`.
+Legacy csproj format, csproj file registration, the `Any CPU`-only platform constraint, and which MSBuild to invoke directly: see "Build troubleshooting" in `docs/References/DevContext.md`.
 
 ### Claude: GUI dev hot-reload - use the trigger, don't kill the process
 
