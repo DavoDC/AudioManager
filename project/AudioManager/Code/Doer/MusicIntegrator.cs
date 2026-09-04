@@ -58,6 +58,12 @@ namespace AudioManager
             public string Reason;
             public bool IsNewFolder;
             public bool InBatchDuplicate;
+            // True when this file's album was detected as a compilation album by RunScanAhead
+            // (3+ distinct primary artists on the same album within this batch). Independent of
+            // where the file finally routes: an album can be a batch compilation and still land
+            // under Artists/ when the primary artist already has a folder, so this flag records
+            // the detection itself rather than the routing outcome.
+            public bool CompilationAlbum;
             // Library-duplicate block (distinct from InBatchDuplicate - see class remarks below).
             // Populated once in PreScanFiles when a library duplicate is found; independent of
             // which D/L/K decision is later made, so it survives into the JSON for every outcome.
@@ -69,6 +75,21 @@ namespace AudioManager
             public string DupRecommendationKey; // "D", "L", or "K"
             public string DupRecommendation;    // "Delete library copy" / "Delete new file" / "Keep both"
             public string DupReason;
+        }
+
+        /// <summary>
+        /// Batch-level scan-ahead context that is not derivable from any single LogEntry.
+        /// Carried into BuildJson so the GUI can show the same batch picture the CLI prints:
+        /// which artists get existing Misc songs auto-migrated (files ALREADY in the library
+        /// that this run will move), and which albums were detected as batch compilations.
+        /// Route distribution is NOT held here - BuildJson derives it from the entries.
+        /// </summary>
+        internal class BatchSummary
+        {
+            /// <summary>primary artist -> number of existing Misc songs that will be auto-migrated.</summary>
+            public Dictionary<string, int> MiscAutoMigrations = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            /// <summary>Album names with 3+ distinct primary artists in this batch.</summary>
+            public List<string> CompilationAlbums = new List<string>();
         }
 
         /// <summary>Data about a duplicate found during pre-scan.</summary>
@@ -427,6 +448,9 @@ namespace AudioManager
                     entry.Reason = reason;
                     entry.IsNewFolder = isNewFolder;
                     entry.InBatchDuplicate = sf.InBatchDuplicate;
+                    entry.CompilationAlbum = _compilationAlbums != null
+                        && !string.IsNullOrEmpty(track.Album)
+                        && _compilationAlbums.Contains(track.Album);
 
                     string destPath = Path.Combine(destDir, destFilename);
 
@@ -859,18 +883,22 @@ namespace AudioManager
 
         /// <summary>
         /// Writes dry-run routing decisions as structured JSON to logs/routing-{timestamp}.json.
-        /// Schema: array of objects with filename, artist, title, album, destination, reason,
-        /// isNewFolder, status, inBatchDuplicate, tagChanges[].
+        /// Schema: {"summary": {routes, miscAutoMigrations, miscAutoMigrationTotal,
+        /// compilationAlbums}, "files": [ {filename, artist, title, album, destination, reason,
+        /// isNewFolder, status, inBatchDuplicate, compilationAlbum, libraryDuplicate + dup*
+        /// fields, tagChanges[]} ]}.
         /// </summary>
         /// <summary>
         /// Builds the routing JSON contract text (pure, no I/O) - see gui/routing.py's docstring for
         /// the consumer-side contract. Internal + static so tests can assert on its output directly,
         /// same pattern as TracksJson.Build.
         /// </summary>
-        internal static string BuildJson(List<LogEntry> entries)
+        internal static string BuildJson(List<LogEntry> entries, BatchSummary summary = null)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("[");
+            sb.AppendLine("{");
+            AppendSummaryBlock(sb, entries, summary);
+            sb.AppendLine("  \"files\": [");
             for (int i = 0; i < entries.Count; i++)
             {
                 var e = entries[i];
@@ -884,6 +912,7 @@ namespace AudioManager
                 sb.AppendLine($"    \"isNewFolder\": {(e.IsNewFolder ? "true" : "false")},");
                 sb.AppendLine($"    \"status\": {JStr(e.Status)},");
                 sb.AppendLine($"    \"inBatchDuplicate\": {(e.InBatchDuplicate ? "true" : "false")},");
+                sb.AppendLine($"    \"compilationAlbum\": {(e.CompilationAlbum ? "true" : "false")},");
                 // Library-duplicate block - distinct from inBatchDuplicate above, whose field name
                 // and meaning are unchanged. See docs/Development/IDEAS.md "Duplicate-resolution UI".
                 sb.AppendLine($"    \"libraryDuplicate\": {(e.LibraryDuplicate ? "true" : "false")},");
@@ -900,8 +929,46 @@ namespace AudioManager
                 sb.AppendLine("]");
                 sb.AppendLine(i < entries.Count - 1 ? "  }," : "  }");
             }
-            sb.AppendLine("]");
+            sb.AppendLine("  ]");
+            sb.AppendLine("}");
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Appends the batch-level "summary" block: route distribution (derived from the entries'
+        /// own destinations, so it can never disagree with the per-file rows the GUI renders),
+        /// the Misc auto-migration counts, and the detected compilation albums. A null summary
+        /// still emits the block with empty collections so the contract shape is constant.
+        /// </summary>
+        private static void AppendSummaryBlock(StringBuilder sb, List<LogEntry> entries, BatchSummary summary)
+        {
+            var routeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var e in entries)
+            {
+                if (string.IsNullOrEmpty(e.Destination)) continue;
+                string cat = GetRouteCategory(e.Destination);
+                routeCounts[cat] = routeCounts.ContainsKey(cat) ? routeCounts[cat] + 1 : 1;
+            }
+            var ordered = routeCounts.OrderByDescending(kv => kv.Value)
+                                     .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                                     .ToList();
+
+            var migrations = summary?.MiscAutoMigrations ?? new Dictionary<string, int>();
+            var orderedMigrations = migrations.Where(kv => kv.Value > 0)
+                                              .OrderByDescending(kv => kv.Value)
+                                              .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                                              .ToList();
+            int migrationTotal = orderedMigrations.Sum(kv => kv.Value);
+
+            var comps = (summary?.CompilationAlbums ?? new List<string>())
+                        .OrderBy(a => a, StringComparer.OrdinalIgnoreCase).ToList();
+
+            sb.AppendLine("  \"summary\": {");
+            sb.AppendLine($"    \"routes\": {{{string.Join(", ", ordered.Select(kv => $"{JStr(kv.Key)}: {kv.Value}"))}}},");
+            sb.AppendLine($"    \"miscAutoMigrations\": [{string.Join(", ", orderedMigrations.Select(kv => $"{{\"artist\": {JStr(kv.Key)}, \"count\": {kv.Value}}}"))}],");
+            sb.AppendLine($"    \"miscAutoMigrationTotal\": {migrationTotal},");
+            sb.AppendLine($"    \"compilationAlbums\": [{string.Join(", ", comps.Select(a => JStr(a)))}]");
+            sb.AppendLine("  },");
         }
 
         private void WriteJsonOutput(List<LogEntry> entries)
@@ -913,7 +980,13 @@ namespace AudioManager
                     Directory.CreateDirectory(Constants.LogsPath);
                 string jsonPath = Path.Combine(Constants.LogsPath, $"routing-{timestamp}.json");
 
-                File.WriteAllText(jsonPath, BuildJson(entries), System.Text.Encoding.UTF8);
+                var summary = new BatchSummary();
+                foreach (var kvp in _miscMigrationCandidates)
+                    summary.MiscAutoMigrations[kvp.Key] = kvp.Value?.Count ?? 0;
+                if (_compilationAlbums != null)
+                    summary.CompilationAlbums.AddRange(_compilationAlbums);
+
+                File.WriteAllText(jsonPath, BuildJson(entries, summary), System.Text.Encoding.UTF8);
                 Console.WriteLine($"\n  JSON: {jsonPath}");
             }
             catch (Exception ex)

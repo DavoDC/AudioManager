@@ -23,7 +23,8 @@ def test_parse_routing_file_full_entry_round_trips_all_fields(tmp_path):
     _write_json(path, [{
         "filename": "Song.mp3", "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "clean", "isNewFolder": True,
-        "status": "ok", "inBatchDuplicate": True, "tagChanges": ["title", "artist"],
+        "status": "ok", "inBatchDuplicate": True, "compilationAlbum": True,
+        "tagChanges": ["title", "artist"],
         "libraryDuplicate": True, "dupLibraryPath": "Artists/Artist/Album/Song.mp3",
         "dupLibraryTrack": "Title", "dupLibraryAlbum": "Album", "dupNewAlbum": "Album (Deluxe)",
         "dupRecommendationKey": "L", "dupRecommendation": "Delete library copy",
@@ -33,7 +34,8 @@ def test_parse_routing_file_full_entry_round_trips_all_fields(tmp_path):
     assert entries == [{
         "filename": "Song.mp3", "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "clean", "isNewFolder": True,
-        "status": "ok", "inBatchDuplicate": True, "tagChanges": ["title", "artist"],
+        "status": "ok", "inBatchDuplicate": True, "compilationAlbum": True,
+        "tagChanges": ["title", "artist"],
         "libraryDuplicate": True, "dupLibraryPath": "Artists/Artist/Album/Song.mp3",
         "dupLibraryTrack": "Title", "dupLibraryAlbum": "Album", "dupNewAlbum": "Album (Deluxe)",
         "dupRecommendationKey": "L", "dupRecommendation": "Delete library copy",
@@ -48,7 +50,8 @@ def test_parse_routing_file_missing_fields_default_to_safe_values(tmp_path):
     assert entries == [{
         "filename": "Song.mp3", "artist": "", "title": "", "album": "",
         "destination": "", "reason": "", "isNewFolder": False,
-        "status": "", "inBatchDuplicate": False, "tagChanges": [],
+        "status": "", "inBatchDuplicate": False, "compilationAlbum": False,
+        "tagChanges": [],
         "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
         "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
         "dupRecommendation": "", "dupReason": "",
@@ -91,6 +94,118 @@ def test_parse_routing_file_handles_utf8_bom(tmp_path):
     path.write_bytes(b"\xef\xbb\xbf" + json.dumps([{"filename": "Song.mp3"}]).encode("utf-8"))
     entries = routing.parse_routing_file(path)
     assert [e["filename"] for e in entries] == ["Song.mp3"]
+
+
+# ------------------------------------------------ batch summary (both shapes)
+
+
+def _doc(files=None, summary=None):
+    d = {"files": files if files is not None else []}
+    if summary is not None:
+        d["summary"] = summary
+    return d
+
+
+def test_parse_routing_file_reads_files_from_the_summary_shape(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([{"filename": "Song.mp3"}], {"routes": {"Artists": 1}}))
+    assert [e["filename"] for e in routing.parse_routing_file(path)] == ["Song.mp3"]
+
+
+def test_parse_routing_file_still_reads_a_bare_array_from_an_older_exe(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, [{"filename": "Old.mp3"}])
+    assert [e["filename"] for e in routing.parse_routing_file(path)] == ["Old.mp3"]
+
+
+def test_parse_batch_summary_reads_all_four_fields(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([], {
+        "routes": {"Artists": 12, "Compilations": 2},
+        "miscAutoMigrations": [{"artist": "Hopsin", "count": 3}],
+        "miscAutoMigrationTotal": 3,
+        "compilationAlbums": ["Now 42"],
+    }))
+    s = routing.parse_batch_summary(path)
+    assert s["routes"] == {"Artists": 12, "Compilations": 2}
+    assert s["miscAutoMigrations"] == [{"artist": "Hopsin", "count": 3}]
+    assert s["miscAutoMigrationTotal"] == 3
+    assert s["compilationAlbums"] == ["Now 42"]
+
+
+def test_parse_batch_summary_bare_array_yields_the_empty_summary(tmp_path):
+    """An older exe's routing JSON has no batch context - the GUI must get the
+    full key set with everything empty, never a KeyError."""
+    path = tmp_path / "routing.json"
+    _write_json(path, [{"filename": "Old.mp3"}])
+    assert routing.parse_batch_summary(path) == routing.EMPTY_SUMMARY
+
+
+def test_parse_batch_summary_missing_or_malformed_summary_is_empty(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([{"filename": "A.mp3"}], "not a dict"))
+    assert routing.parse_batch_summary(path) == routing.EMPTY_SUMMARY
+
+
+def test_parse_batch_summary_drops_malformed_rows_and_nonpositive_counts(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([], {
+        "routes": {"Artists": 3, "Ghost": 0, "Bad": "many", "": 1},
+        "miscAutoMigrations": [
+            {"artist": "Good", "count": 2},
+            {"artist": "Zero", "count": 0},
+            {"artist": "", "count": 4},
+            {"count": 9},
+            "junk",
+        ],
+        "compilationAlbums": ["Real", "", None, 7],
+    }))
+    s = routing.parse_batch_summary(path)
+    assert s["routes"] == {"Artists": 3}
+    assert s["miscAutoMigrations"] == [{"artist": "Good", "count": 2}]
+    assert s["compilationAlbums"] == ["Real"]
+
+
+def test_parse_batch_summary_recomputes_a_malformed_total_from_the_rows(tmp_path):
+    """The total is a convenience, the rows are the truth - a total that
+    disagrees with the rows must never be the number the GUI shows."""
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([], {
+        "miscAutoMigrations": [{"artist": "A", "count": 2}, {"artist": "B", "count": 3}],
+        "miscAutoMigrationTotal": "lots",
+    }))
+    assert routing.parse_batch_summary(path)["miscAutoMigrationTotal"] == 5
+
+
+def test_parse_batch_summary_booleans_are_not_accepted_as_counts(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([], {
+        "routes": {"Artists": True},
+        "miscAutoMigrations": [{"artist": "A", "count": True}],
+    }))
+    s = routing.parse_batch_summary(path)
+    assert s["routes"] == {}
+    assert s["miscAutoMigrations"] == []
+
+
+def test_parse_routing_document_returns_entries_and_summary_in_one_read(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, _doc([{"filename": "Song.mp3", "compilationAlbum": True}],
+                           {"routes": {"Compilations": 1}}))
+    entries, summary = routing.parse_routing_document(path)
+    assert [e["filename"] for e in entries] == ["Song.mp3"]
+    assert entries[0]["compilationAlbum"] is True
+    assert summary["routes"] == {"Compilations": 1}
+
+
+def test_empty_summary_constant_is_not_shared_between_callers(tmp_path):
+    """EMPTY_SUMMARY is a module-level dict - a caller mutating what it got
+    back must not poison the next parse."""
+    path = tmp_path / "routing.json"
+    _write_json(path, [{"filename": "A.mp3"}])
+    first = routing.parse_batch_summary(path)
+    first["routes"]["Injected"] = 99
+    assert routing.parse_batch_summary(path)["routes"] == {}
 
 
 # --------------------------------------------------- routing_path_from_output
