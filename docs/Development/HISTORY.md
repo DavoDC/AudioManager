@@ -4,6 +4,22 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Scan-ahead batch context reaches the GUI: route distribution, Misc auto-migration notice, compilation albums
+
+Closed three `docs/Development/IDEAS.md` items. The exe had been computing batch-level scan-ahead context and printing it only to the CLI; the GUI showed none of it, so a reviewer working in the GUI made accept/decline decisions without the information the CLI user has.
+
+**The JSON contract now carries a batch summary.** `MusicIntegrator.BuildJson` used to emit a bare top-level array of file rows. Its root is now an object, `{"summary": {...}, "files": [...]}`. The summary holds `routes` (destination category to count), `miscAutoMigrations` (per-artist counts) with a `miscAutoMigrationTotal`, and `compilationAlbums`. Each file row gained a `compilationAlbum` boolean. The route counts are derived inside `AppendSummaryBlock` from the entries' own `Destination` values rather than passed in from the pre-routing pass, so the summary and the rows the GUI renders can never disagree; entries with no destination are skipped rather than bucketed as "Unknown". `gui/routing.py` reads both shapes, so a routing JSON written by an older exe build still opens - it simply carries no summary. The full summary key set is always emitted, so no caller has to branch on key presence, only on emptiness. Ten new C# tests (`Code/Tests/MusicIntegratorBatchSummaryTests.cs`) and eleven new Python parser tests cover both root shapes, per-artist counts, zero-count filtering, JSON escaping, and rejection of malformed input.
+
+**`compilationAlbum` records the detection, not the routing outcome.** An album can be a batch compilation (3+ distinct primary artists in this batch) and still land under `Artists/` when the primary artist already has a folder, so the flag is set from membership in `_compilationAlbums` rather than from where the file ends up. The GUI badge is shown on those cards regardless of final route.
+
+**Three surfaces in the review stage.** A `batch-summary` strip above the confirm bar shows the route distribution (highest count first), and, when non-empty, a yellow Misc auto-migration line and a green compilation-albums line. The migration wording says "existing library song(s) will be moved out of Miscellaneous Songs" because that is the point of the notice: it announces the run moving files that are already in the library, not incoming ones. A "Compilation album" badge appears on affected cards, with a "Compilation albums (N)" filter chip added only when the count is non-zero - an always-present zero chip would be the same anti-signal as a badge meaning "nothing here". `batch_summary_html()` is a pure function so all of it is testable without a live page.
+
+**Two smaller fixes bundled.** The confirm dialog's SIMULATED note now carries the same loud yellow as the page-level `.simulate-banner` instead of plain grey 11px `.note` text - the confirm is the one moment where confusing a simulated run with a real one matters most. And the stepper is three steps, not four: Confirm is a modal over the review stage, never a screen, so step 3 could never render as active and the stepper jumped from 2-active straight to 2+3-done. Stages 3 and 4 are both the execute screen, so they collapse onto step 3.
+
+Display-only throughout: the escalation boundary (`IntegrationState.accepted`/`declined`, the manifest-writing block in `run_execute`, exe `args` construction) is untouched. Verified in Simulate mode with the browser. Suite green: 280 C# tests, 200 GUI tests.
+
+---
+
 ## 2026-09-05 - Acquire tab: state persists across page reload, progress-bar maths and sort/history logic under test
 
 Closed three related `docs/Development/IDEAS.md` items in one pass, all inside `gui/tabs/acquire.py` and
