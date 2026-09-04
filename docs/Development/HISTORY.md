@@ -4,6 +4,62 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-04 - Duplicate-resolution UI: the GUI can now express D/L/K for a library duplicate
+
+Implemented the full item David unblocked from `[OPUS]` to `[SONNET]` on 2026-09-03: the GUI previously
+had no way to see or change the exe's own D/L/K recommendation for a file that already exists in the
+library - it silently auto-took the recommendation on every real run. Shipped in three layers, C# first
+and fully tested before touching the GUI, per the original spec's ordering.
+
+**C# side (`MusicIntegrator.cs`, `IntegrationManifest.cs`):** `LogEntry` gained a `LibraryDuplicate` block
+(`DupLibraryPath`/`DupLibraryTrack`/`DupLibraryAlbum`/`DupNewAlbum`/`DupRecommendationKey`/
+`DupRecommendation`/`DupReason`), populated in `PreScanFiles` from the existing `DupData` the duplicate
+scan already computes - no new scanning logic, just surfacing data that already existed. `WriteJsonOutput`
+was refactored to extract a pure, testable `BuildJson(List<LogEntry>)` (mirroring the existing
+`TracksJson.Build`/`StatsJson.Build` pattern) so the new fields' JSON shape has direct unit coverage
+without touching `Constants.LogsPath`. `IntegrationManifest` gained a `dupResolution` field per entry and
+`GetDupResolution(filename, artist, title)`, using the same two-tier exact-filename-then-canonical-
+rename-fallback lookup `Matches()` already uses, so a manifest resolution survives a TagFixer rename
+between the dry run and the real run exactly like an accept/decline decision does.
+`PresentDuplicateAndDecide`'s `noInput` branch now checks the manifest for an override before falling
+back to auto-accept-recommendation - the pre-existing "no manifest -> take the recommendation" behavior
+is completely unchanged when no override exists. New coverage:
+`Code/Tests/MusicIntegratorDuplicateJsonTests.cs` (7 tests) plus 5 new tests in
+`IntegrationManifestTests.cs`.
+
+**Manifest/exe-invocation extension:** no new CLI flag - the existing `integrate --manifest <path>`
+mechanism was extended in place, per the task's explicit instruction to reuse rather than invent a
+mechanism. A manifest entry for a library-duplicate file now carries an optional `dupResolution` key
+("D"/"L"/"K"); everything else about a real run (how `--manifest` is invoked, how declined files are
+excluded) is untouched.
+
+**GUI side (`gui/routing.py`, `gui/tabs/integration.py`, `gui/theme.py`):** `parse_routing_file` extracts
+the new fields into every entry dict. `IntegrationState` gained `dup_resolutions` (filename -> explicit
+D/L/K override) and a `dup_resolution(e)` method that returns the override if one was made, else the
+exe's own `dupRecommendationKey` - the same lookup used both for "left untouched in the UI" and for what
+the guarded `_write_manifest()` writes, so there is exactly one default, not two that could drift apart.
+The review card shows a new "Library duplicate" badge (distinct from the existing, unchanged "In-batch
+duplicate" badge - two unrelated concepts per the spec) and, only for a library-duplicate entry, a
+CLI-parity info block (library copy's path/track/album, the new file's album, the exe's recommendation
+and reason) plus a three-button D/L/K resolution control defaulting to the recommendation. The review
+stage's filter chips gained a fourth option, "Library duplicates", alongside the existing All/New
+folders/Duplicates-conflicts. Simulate mode's sample data now includes a dedicated library-duplicate
+entry (Kendrick Lamar - HUMBLE., a deluxe-album L-recommendation case matching the C# test fixture) kept
+separate from the existing in-batch-duplicate sample so the two badges/filters can be exercised and
+verified independently.
+
+**Guarded boundary (`_write_manifest`, reviewed with extra care per task instructions):** the function
+still writes exactly the `targets` list passed in (still `S.accepted` at the call site, unchanged) - the
+only change is that a library-duplicate entry's own object gains one extra `dupResolution` key sourced
+from `S.dup_resolution(e)`. Verified explicitly: `IntegrationState.declined` files are still excluded by
+construction (never passed as `targets`), `decisions.get(fn, True)` is still a strict accepted/declined
+partition with no undecided third state, and a non-duplicate entry's manifest shape is byte-for-byte
+unchanged (no `dupResolution` key added). Two new tests
+(`test_write_manifest_includes_dup_resolution_for_library_duplicates_only`,
+`test_write_manifest_uses_explicit_dup_resolution_override`) lock this in.
+
+Full `scripts\dev\verify.bat --no-pause` run: 270 C# tests + 131 GUI tests, all passing.
+
 ## 2026-09-04 - Sidebar nav grouped into Library Intake/Insight, "Library Browser" tab renamed to "Library"
 
 Implemented the two backlog items from "Sidebar nav grouping + tab naming review, 2026-09-04": the flat

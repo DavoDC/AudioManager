@@ -22,6 +22,9 @@ def _entry(filename, **overrides):
         "filename": filename, "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "", "isNewFolder": False,
         "status": "ok", "inBatchDuplicate": False, "tagChanges": [],
+        "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
+        "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
+        "dupRecommendation": "", "dupReason": "",
     }
     e.update(overrides)
     return e
@@ -71,6 +74,46 @@ def test_filtered_conflicts_includes_dupes_and_non_clean_status():
     assert names == {"dupe.mp3", "err.mp3"}
 
 
+def test_filtered_libdupes_is_distinct_from_inbatch_duplicate():
+    """"In-batch duplicate" (same artist+title twice in this scan) and
+    "Library duplicate" (already exists in the library) are two unrelated
+    concepts - the libdupes filter must key off libraryDuplicate only, never
+    inBatchDuplicate."""
+    s = IntegrationState()
+    s.entries = [
+        _entry("inbatch.mp3", inBatchDuplicate=True, libraryDuplicate=False),
+        _entry("libdupe.mp3", inBatchDuplicate=False, libraryDuplicate=True),
+        _entry("clean.mp3"),
+    ]
+    s.filter = "libdupes"
+    assert [e["filename"] for e in s.filtered()] == ["libdupe.mp3"]
+
+
+# ------------------------------------------------------------ dup_resolution
+
+
+def test_dup_resolution_defaults_to_exe_recommendation_when_untouched():
+    """Leaving a library-duplicate entry untouched must resolve to the exe's
+    own recommendation - the same value a real (unsupervised) run would take,
+    per IDEAS.md's 'unresolved default = auto-take-recommendation' rule."""
+    s = IntegrationState()
+    e = _entry("a.mp3", libraryDuplicate=True, dupRecommendationKey="L")
+    assert s.dup_resolution(e) == "L"
+
+
+def test_dup_resolution_falls_back_to_keep_both_when_no_recommendation():
+    s = IntegrationState()
+    e = _entry("a.mp3", libraryDuplicate=True, dupRecommendationKey="")
+    assert s.dup_resolution(e) == "K"
+
+
+def test_dup_resolution_explicit_override_beats_recommendation():
+    s = IntegrationState()
+    e = _entry("a.mp3", libraryDuplicate=True, dupRecommendationKey="L")
+    s.dup_resolutions["a.mp3"] = "D"
+    assert s.dup_resolution(e) == "D"
+
+
 def test_bulk_accept_only_touches_active_filter_not_all_entries():
     """_bulk must respect S.filtered() - looping S.entries unconditionally
     would silently accept/decline files hidden by the active filter."""
@@ -111,6 +154,35 @@ def test_write_manifest_passes_manifest_flag_with_zero_declines(tmp_path, monkey
     assert manifest_path.exists()
     written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert [e["filename"] for e in written] == ["a.mp3", "b.mp3"]
+
+
+def test_write_manifest_includes_dup_resolution_for_library_duplicates_only(tmp_path, monkeypatch):
+    """The guarded manifest write must carry the resolved D/L/K decision for a
+    library-duplicate entry (defaulting to the recommendation via
+    IntegrationState.dup_resolution - same code path as the unresolved
+    fallback), and must NOT add a dupResolution key for a non-duplicate entry -
+    the schema for ordinary entries stays exactly as before."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    s = IntegrationState()
+    dup_entry = _entry("dupe.mp3", libraryDuplicate=True, dupRecommendationKey="L")
+    plain_entry = _entry("plain.mp3")
+    _with_state(s, lambda: _write_manifest([dup_entry, plain_entry]))
+
+    written = json.loads((tmp_path / "accepted-manifest.json").read_text(encoding="utf-8"))
+    by_name = {e["filename"]: e for e in written}
+    assert by_name["dupe.mp3"]["dupResolution"] == "L"
+    assert "dupResolution" not in by_name["plain.mp3"]
+
+
+def test_write_manifest_uses_explicit_dup_resolution_override(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    s = IntegrationState()
+    s.dup_resolutions["dupe.mp3"] = "D"
+    dup_entry = _entry("dupe.mp3", libraryDuplicate=True, dupRecommendationKey="L")
+    _with_state(s, lambda: _write_manifest([dup_entry]))
+
+    written = json.loads((tmp_path / "accepted-manifest.json").read_text(encoding="utf-8"))
+    assert written[0]["dupResolution"] == "D"
 
 
 def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeypatch):
@@ -371,10 +443,28 @@ def test_sample_entries_cover_every_review_card_state():
     entries = _sample_entries()
     assert any(e["isNewFolder"] for e in entries)
     assert any(e["inBatchDuplicate"] for e in entries)
+    assert any(e["libraryDuplicate"] for e in entries)
     assert any(e["tagChanges"] for e in entries)
     assert any(e["status"] == "error" for e in entries)
     assert any(not e["isNewFolder"] and not e["inBatchDuplicate"]
-               and not e["tagChanges"] and e["status"] == "ok" for e in entries)
+               and not e["libraryDuplicate"] and not e["tagChanges"]
+               and e["status"] == "ok" for e in entries)
+
+
+def test_sample_entries_library_duplicate_carries_full_cli_parity_info():
+    """The library-duplicate sample must carry every field the review card's
+    resolution control needs to show full CLI parity (library copy's path/
+    track/album, the new file's album, recommendation, and reason) - not just
+    the boolean flag."""
+    entries = _sample_entries()
+    e = next(e for e in entries if e["libraryDuplicate"])
+    assert e["dupLibraryPath"]
+    assert e["dupLibraryTrack"]
+    assert e["dupLibraryAlbum"]
+    assert e["dupNewAlbum"]
+    assert e["dupRecommendationKey"] in ("D", "L", "K")
+    assert e["dupRecommendation"]
+    assert e["dupReason"]
 
 
 def test_run_simulate_loads_sample_data_without_touching_runner(monkeypatch):
