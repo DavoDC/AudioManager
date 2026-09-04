@@ -11,7 +11,11 @@ that match no track in the loaded playlist (or every file, with no playlist
 loaded) as yellow-highlighted rows appended below the fetched tracks, on the
 same poll. Last-5 fetched playlists (id + name) persist to
 config.ACQUIRE_STATE_JSON and are reachable via the history button next to
-the playlist field. A "Hide downloaded" checkbox next to Fetch/Clear filters
+the playlist field. That same file also caches the fetched tracks and their
+Downloaded ticks per playlist id (_save_tracks_cache/_load_tracks_cache), so
+a browser reload or a tab rebuild restores the table via
+restore_cached_tracks() instead of starting empty; Clear forgets that cache
+(_forget_cached_playlist) but keeps the history. A "Hide downloaded" checkbox next to Fetch/Clear filters
 already-ticked rows out of the fetched-tracks view only (extra rows are
 untouched). A segmented progress bar above the panel (progress_bar()) gives
 an at-a-glance blue/grey/yellow read of downloaded/missing/extra counts,
@@ -126,6 +130,62 @@ def _save_last_playlist(playlist_id: str, name: str) -> None:
     state["history"] = history[:_HISTORY_MAX]
     config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
     config.ACQUIRE_STATE_JSON.write_text(json.dumps(state), encoding="utf-8")
+
+
+def _write_state_json(state: dict) -> None:
+    config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    config.ACQUIRE_STATE_JSON.write_text(json.dumps(state), encoding="utf-8")
+
+
+def _save_tracks_cache(playlist_id: str, tracks: list, downloaded: dict) -> None:
+    """Persists the fetched tracks and their Downloaded ticks to
+    config.ACQUIRE_STATE_JSON under {"cache": {playlist_id: {...}}}, so a
+    browser reload or a tab rebuild restores the table instead of starting
+    empty (see restore_cached_tracks). One mechanism serves both the "state
+    persistence across page reload" and "cache fetched tracks to disk" gaps.
+
+    Cache entries are pruned to the playlists still in history, so the file
+    can never grow without bound as playlists come and go. Tracks are stored
+    as JSON lists and come back as tuples (see _load_tracks_cache)."""
+    if not playlist_id:
+        return
+    state = _load_state_json()
+    cache = state.get("cache", {})
+    if not isinstance(cache, dict):
+        cache = {}
+    cache[playlist_id] = {"tracks": [list(t) for t in tracks], "downloaded": dict(downloaded)}
+    keep = {h.get("id") for h in state.get("history", [])} | {playlist_id}
+    state["cache"] = {pid: entry for pid, entry in cache.items() if pid in keep}
+    _write_state_json(state)
+
+
+def _load_tracks_cache(playlist_id: str) -> tuple[list[tuple], dict]:
+    """Inverse of _save_tracks_cache. Returns ([], {}) for an unknown playlist
+    id, an absent/corrupt state file, or a malformed entry - a bad cache must
+    degrade to "nothing restored", never break the tab build."""
+    if not playlist_id:
+        return [], {}
+    entry = (_load_state_json().get("cache") or {}).get(playlist_id)
+    if not isinstance(entry, dict):
+        return [], {}
+    tracks = [tuple(t) for t in entry.get("tracks", []) if isinstance(t, (list, tuple))]
+    downloaded = entry.get("downloaded", {})
+    return tracks, downloaded if isinstance(downloaded, dict) else {}
+
+
+def _forget_cached_playlist() -> None:
+    """Drops the current playlist id and its cached tracks - what Clear needs
+    so a rebuilt tab genuinely starts blank instead of restoring what was just
+    cleared. History is deliberately left intact: Clear resets the view, it
+    does not erase where you have been."""
+    state = _load_state_json()
+    playlist_id = state.get("playlist_id", "")
+    state["playlist_id"] = ""
+    cache = state.get("cache")
+    if isinstance(cache, dict):
+        cache.pop(playlist_id, None)
+        state["cache"] = cache
+    _write_state_json(state)
 
 
 def _spotify_client():
@@ -347,6 +407,63 @@ def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path)
     return extra
 
 
+def _run_check_against_downloads() -> None:
+    """Recomputes _state["downloaded"] and _state["extra"] from a read-only
+    scan of config.NEWMUSIC_DIR, then persists the result for the loaded
+    playlist. Module level (not a build() closure) so it is directly
+    unit-testable and so clear()/restore both reuse the one implementation."""
+    from spotify_tools.open_playlist import _build_deemix_url
+    current_tracks = [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]]
+    found, _missing = match_downloads(current_tracks, config.NEWMUSIC_DIR)
+    found_set = set(found)
+    _state["downloaded"] = {
+        f"{i}:{artist}:{title}": f"{artist} - {title}" in found_set
+        for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"])
+    }
+    _state["extra"] = [
+        (artist, title, _build_deemix_url(artist, title), path)
+        for artist, title, path in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
+    ]
+    if _state["playlist_loaded"] and not _state["simulated"]:
+        _save_tracks_cache(_load_last_playlist_id(), _state["tracks"], _state["downloaded"])
+
+
+def restore_cached_tracks() -> bool:
+    """Reloads the last playlist's tracks/ticks from disk into _state on tab
+    build, so a browser reload or a tab rebuild no longer starts empty.
+    Returns True when something was restored. Never overwrites live state:
+    a session that already has tracks (or is in Simulate mode) is left alone."""
+    if _state["tracks"] or _state["simulated"]:
+        return False
+    tracks, downloaded = _load_tracks_cache(_load_last_playlist_id())
+    if not tracks:
+        return False
+    _state["tracks"] = tracks
+    _state["downloaded"] = downloaded
+    _state["playlist_loaded"] = True
+    return True
+
+
+def clear_tab_state() -> None:
+    """Clear button's whole effect apart from blanking the input box: resets
+    every piece of _state to a blank slate (sort order included), forgets the
+    cached playlist so a rebuild does not restore it, rescans NewMusic so the
+    extra-files section survives the clear, and refreshes all four panels -
+    history included, matching what fetch() does."""
+    _state["tracks"] = []
+    _state["downloaded"] = {}
+    _state["sort_col"] = None
+    _state["sort_reverse"] = False
+    _state["playlist_loaded"] = False
+    _state["simulated"] = False
+    _forget_cached_playlist()
+    _run_check_against_downloads()
+    _refresh_hooks["track_table"]()
+    _refresh_hooks["progress_bar"]()
+    _refresh_hooks["history_items"]()
+    _refresh_hooks["simulate_banner"]()
+
+
 def _poll_should_skip() -> bool:
     """Guard for _poll_downloads()'s early return: while _state["simulated"]
     is True, the 2s poll must not touch _state at all, or simulate()'s
@@ -357,6 +474,38 @@ def _poll_should_skip() -> bool:
     is a closure nested in build() and needs a live NiceGUI page - so the
     guard condition is directly unit-testable."""
     return _state["simulated"]
+
+
+_LABEL_MIN_PCT = 12.0
+# A segment narrower than this can't show its label legibly (text squeezes or
+# wraps into a sliver), so progress_bar() renders the label as a native title
+# tooltip instead - see _segment_shows_label.
+
+
+def progress_metrics(downloaded: int, missing: int, extra: int) -> dict:
+    """Pure segment arithmetic behind progress_bar() - extracted so the
+    percentage maths is unit-testable rather than only eyeballable in the UI.
+
+    total: all three counts, the denominator for segment widths.
+    pct_complete: the headline "N%" above the bar - downloaded as a share of
+    the PLAYLIST only (downloaded + missing); extra files are in NewMusic but
+    are not part of the loaded playlist, so counting them would let unrelated
+    files inflate (or deflate) playlist completion.
+    widths: [downloaded, missing, extra] as percentages of total, summing to
+    100 when total > 0 and all zero when nothing has been fetched or scanned."""
+    total = downloaded + missing + extra
+    playlist_total = downloaded + missing
+    return {
+        "total": total,
+        "pct_complete": round(downloaded / playlist_total * 100) if playlist_total else 0,
+        "widths": [count / total * 100 if total else 0.0 for count in (downloaded, missing, extra)],
+    }
+
+
+def _segment_shows_label(width_pct: float) -> bool:
+    """True when a segment is wide enough to render its label inline; False
+    means progress_bar() falls back to a title tooltip. See _LABEL_MIN_PCT."""
+    return width_pct >= _LABEL_MIN_PCT
 
 
 def _extra_segment_label(count: int, playlist_loaded: bool) -> str:
@@ -433,7 +582,8 @@ def build() -> None:
         downloaded = sum(1 for v in _state["downloaded"].values() if v)
         missing = len(_state["tracks"]) - downloaded
         extra = len(_state["extra"])
-        total = downloaded + missing + extra
+        metrics = progress_metrics(downloaded, missing, extra)
+        total = metrics["total"]
         segments = [
             (downloaded, "var(--accent)", "#0c0e13", f"{downloaded} downloaded"),
             (missing, "#3a3f4d", "var(--text-dim)", f"{missing} missing"),
@@ -446,18 +596,15 @@ def build() -> None:
             if not total:
                 ui.label("Fetch a playlist to see progress").classes("note").style("margin:0;")
                 return
-            done_total = downloaded + missing
-            pct = round(downloaded / done_total * 100) if done_total else 0
             with ui.row().style("justify-content:flex-end;margin-bottom:4px;"):
-                ui.label(f"{pct}%").classes("note").style("margin:0;color:var(--text-dim);")
+                ui.label(f"{metrics['pct_complete']}%").classes("note").style("margin:0;color:var(--text-dim);")
             with ui.element("div").style(
                 "height:26px;border-radius:var(--radius-pill);overflow:hidden;"
                 "display:flex;background:#3a3f4d;width:100%;"
             ):
-                for count, bg, fg, label in segments:
+                for (count, bg, fg, label), pct in zip(segments, metrics["widths"]):
                     if not count:
                         continue
-                    pct = count / total * 100
                     # Labels only fit legibly once a segment is wide enough - a
                     # narrower slice (e.g. a handful of extras next to 60+
                     # downloaded) shows the count as a native title tooltip
@@ -467,7 +614,7 @@ def build() -> None:
                         "align-items:center;justify-content:center;overflow:hidden;"
                         f"font-size:11px;font-weight:600;color:{fg};white-space:nowrap;"
                     )
-                    if pct >= 12:
+                    if _segment_shows_label(pct):
                         with seg:
                             ui.label(label)
                     else:
@@ -584,20 +731,6 @@ def build() -> None:
                             with ui.element("td").style("text-align:center;"):
                                 ui.checkbox(value=True).props("disable")
 
-        def _run_check_against_downloads():
-            from spotify_tools.open_playlist import _build_deemix_url
-            current_tracks = [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]]
-            found, _missing = match_downloads(current_tracks, config.NEWMUSIC_DIR)
-            found_set = set(found)
-            _state["downloaded"] = {
-                f"{i}:{artist}:{title}": f"{artist} - {title}" in found_set
-                for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"])
-            }
-            _state["extra"] = [
-                (artist, title, _build_deemix_url(artist, title), path)
-                for artist, title, path in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
-            ]
-
         async def fetch():
             try:
                 _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
@@ -613,18 +746,8 @@ def build() -> None:
                 ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
 
         def clear():
-            _state["tracks"] = []
-            _state["downloaded"] = {}
-            _state["sort_col"] = None
-            _state["sort_reverse"] = False
-            _state["playlist_loaded"] = False
-            _state["simulated"] = False
             playlist_input.value = ""
-            _run_check_against_downloads()
-            track_table.refresh()
-            progress_bar.refresh()
-            history_items.refresh()
-            simulate_banner.refresh()
+            clear_tab_state()
 
         def _toggle_hide_downloaded(e):
             _state["hide_downloaded"] = e.value
@@ -637,8 +760,12 @@ def build() -> None:
             ui.button("Clear", icon="clear", on_click=clear).props("dense outline size=sm color=grey")
             ui.checkbox("Hide downloaded", value=_state["hide_downloaded"], on_change=_toggle_hide_downloaded) \
                 .props("dense").classes("note").style("margin:0;padding:0;")
-        # Runs once synchronously on tab build so NewMusic-only files ("extra"
-        # rows) surface immediately, even before any playlist has been fetched.
+        # Restore the last playlist's tracks/ticks from disk (see
+        # restore_cached_tracks) so a browser reload or a tab rebuild comes
+        # back to the table you left, then run the NewMusic scan once
+        # synchronously so extra rows and Downloaded ticks are current
+        # immediately, even before any playlist has been fetched.
+        restore_cached_tracks()
         _run_check_against_downloads()
         track_table()
         _refresh_hooks["track_table"] = track_table.refresh
