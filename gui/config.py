@@ -4,6 +4,7 @@ The GUI consumes the two C#-emitted JSON contracts (analysis-stats.json,
 tracks.json) and triggers the exe via subprocess. It never parses AudioMirror
 XML and never writes to the library, NewMusic, or AudioMirror.
 """
+import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -15,7 +16,13 @@ STATS_JSON = LOGS_DIR / "analysis-stats.json"
 TRACKS_JSON = LOGS_DIR / "tracks.json"
 
 AUDIOMIRROR_REPO = REPO_ROOT.parent / "AudioMirror"
-SPOTIFYGEN_ROOT = REPO_ROOT.parent / "SpotifyTools"
+
+# SPOTIFY_TOOLS_ROOT env var wins over the sibling-folder assumption - same
+# env var name SpotifyTools's own src/spotify_tools/paths.py checks, so one
+# variable controls both sides of the sys.path.insert boundary (see Task 2,
+# SpotifyTools docs/IDEAS.md, closed 2026-09-04). Without it, this assumes
+# SpotifyTools checked out as a sibling of this repo under GitHubRepos/.
+SPOTIFYGEN_ROOT = Path(os.environ.get("SPOTIFY_TOOLS_ROOT", str(REPO_ROOT.parent / "SpotifyTools")))
 
 # NewMusic staging inbox (matches Constants.cs). The GUI only READS files
 # here (album-art extraction for the review queue) - it never moves,

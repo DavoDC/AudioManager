@@ -7,7 +7,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2].parent / "SpotifyTools" / "src"))
 
 from gui import config
+import gui.tabs.acquire as acquire_module
 from gui.tabs.acquire import (
+    _do_sync_liked,
     _extra_batch_header,
     _extra_segment_label,
     _length_to_seconds,
@@ -27,6 +29,7 @@ from gui.tabs.acquire import (
 
 import spotify_tools.config as spotify_config
 import spotify_tools.spotify_client as spotify_client_module
+from spotify_tools.spotify_simulator import SimulatedSpotifyClient
 
 
 def test_matches_downloaded_file(tmp_path):
@@ -349,3 +352,66 @@ def test_spotify_client_constructs_real_client_when_config_present(monkeypatch):
     assert isinstance(client, FakeRealSpotifyClient)
     assert client.cfg == fake_cfg
     assert calls == [fake_cfg]
+
+
+# ------------------------------------------------ genuine boundary-crossing coverage
+#
+# The test above (test_spotify_client_constructs_real_client_when_config_present)
+# substitutes an inline FakeRealSpotifyClient for the real class, so the actual
+# spotify_tools.spotify_client.RealSpotifyClient is never constructed - the
+# sibling-repo import is exercised, but nothing on the far side of it runs for
+# real. These two tests close that gap: neither mocks anything inside
+# spotify_tools. The first constructs the real production class; the second
+# runs AudioManager's real orchestration function against a real (unmocked)
+# SpotifyTools SpotifyInterface implementation end-to-end.
+
+
+def test_spotify_client_constructs_a_real_unmocked_real_spotify_client(monkeypatch):
+    """RealSpotifyClient itself, not a fake standing in for it, is constructed.
+
+    RealSpotifyClient.__init__ builds a spotipy.oauth2.SpotifyOAuth and a
+    spotipy.Spotify - both are network-lazy (no HTTP call happens until a
+    method like .current_user() is invoked), so this is real, unmocked
+    cross-repo construction with a throwaway config and zero network access.
+    """
+    fake_cfg = {
+        "spotify_client_id": "test-id",
+        "spotify_client_secret": "test-secret",
+        "spotify_redirect_uri": "http://localhost:8888/callback",
+    }
+    monkeypatch.setattr(spotify_config, "load_config", lambda path: fake_cfg)
+
+    client = _spotify_client()
+
+    assert isinstance(client, spotify_client_module.RealSpotifyClient)
+    import spotipy
+    assert isinstance(client._sp, spotipy.Spotify)
+
+
+def test_do_sync_liked_moves_liked_tracks_via_a_real_simulated_client(monkeypatch):
+    """_do_sync_liked() -> spotify_tools.acquire.move_liked_to_playlist() ->
+    a real (unmocked) SimulatedSpotifyClient - the same SpotifyInterface
+    implementation SpotifyTools's own golden-path tests exercise. Only
+    _spotify_client() is monkeypatched (it always builds a RealSpotifyClient,
+    which needs real credentials); everything past that point - the shared
+    acquire.py orchestration function, the SpotifyInterface ABC, the in-memory
+    playlist/liked-songs state - is real SpotifyTools code, genuinely crossing
+    the sibling-repo boundary rather than being mocked away on either side.
+    """
+    sim = SimulatedSpotifyClient(fixture_data={
+        "search_responses": {},
+        "initial_playlist": [],
+        "initial_liked": ["spotify:track:aaa", "spotify:track:bbb"],
+    })
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: sim)
+
+    def _fake_save(*args, **kwargs):
+        pass
+    monkeypatch.setattr(acquire_module, "_save_last_playlist", _fake_save)
+
+    msg = _do_sync_liked()
+
+    assert sim.get_liked_track_uris() == set()  # both tracks removed from Liked
+    assert set(sim.playlist_contents) == {"spotify:track:aaa", "spotify:track:bbb"}
+    assert "Moved 2 track(s)" in msg
+    assert "AudioManager Inbox" in msg
