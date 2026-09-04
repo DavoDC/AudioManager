@@ -4,6 +4,23 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire tab design-review cleanup (8 items)
+
+Closed eight `[GUI]` items from the 2026-09-05 UI/UX design review of `acquire.py`:
+
+- **Progress bar's "missing" segment matched its own background** - added `--track-missing:#565c6e` to `theme.py` and swapped it in for the segment's literal `#3a3f4d`, so a nonzero missing count now shows as a visible grey segment instead of an indistinguishable gap.
+- **Downloaded-row highlight was a hardcoded rgb literal** - moved both the blue "downloaded" tint and the yellow "extra" tint out of `acquire.py`'s inline `style=` strings into `theme.py`'s `.am-table.acquire-table tr.row-downloaded`/`tr.row-extra` classes (same rgb values, now in one place `apply_mood()` can retint).
+- **Read-only "Downloaded" status shown as a disabled checkbox** - `_downloaded_cell_text(is_downloaded)` now renders "✓ Downloaded" (styled via `theme.py`'s `.dl-badge` pill) or a plain "-" instead of `ui.checkbox(...).props("disable")`.
+- **Sortable headers gave no hint they were clickable before the first click** - `_header_label(col, sort_col, sort_reverse)` now renders every sortable header's idle state with a faint "⇅" suffix, in addition to the existing ▲/▼ once a column is active.
+- **No on-screen legend for the table's row-tint states** - the panel-title already carries a `.col-legend` with colored dots for Downloaded/Extra; confirmed wired and left as the legend (the plain-text `_ROW_TINT_LEGEND` constant it made redundant was removed rather than kept unused).
+- **Progress bar's headline percentage and segment widths used different denominators** - `_pct_label(pct)` now labels the headline explicitly as "N% of playlist" rather than bare "N%", since `pct_complete` excludes extra files by design while the segment widths include them.
+- **Playlist-history icon-button had no tooltip** - added a `title` prop via `_HISTORY_BUTTON_TOOLTIP = "Playlist history"`.
+- **Per-row "Search" link label was context-free** - every row's Deemix link now reads `_DEEMIX_LINK_LABEL = "Open in Deemix"` instead of "Search".
+
+Tests added in `gui/tests/test_acquire.py` for `_header_label` (idle/active/ascending/descending), `_downloaded_cell_text` (true/false), and `_DEEMIX_LINK_LABEL`. Full suite green (280 C# tests, 209 GUI tests).
+
+---
+
 ## 2026-09-05 - Real-integration confirm dialog styled at least as loud as the simulated one
 
 Closed "[GUI] Real-integration confirm dialog is styled LESS urgently than the harmless simulated one" from IDEAS.md. `integration.py`'s `_confirm_execute()` gave the simulated-run note `.note.simulated` (loud amber box) but the real-run note - the one dialog that actually moves files out of NewMusic into the library - just plain dim `.note` text, the same weight as routine helper copy elsewhere in the app.

@@ -9,10 +9,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2].parent / "SpotifyTool
 from gui import config
 import gui.tabs.acquire as acquire_module
 from gui.tabs.acquire import (
+    _DEEMIX_LINK_LABEL,
     _do_sync_liked,
+    _downloaded_cell_text,
     _extra_batch_header,
     _extra_segment_label,
     _format_duration,
+    _header_label,
     _length_to_seconds,
     _load_history,
     _load_tracks_cache,
@@ -539,6 +542,37 @@ def test_narrow_extra_segment_falls_back_to_tooltip():
     widths = progress_metrics(downloaded=60, missing=2, extra=2)["widths"]
     assert _segment_shows_label(widths[0]) is True
     assert _segment_shows_label(widths[2]) is False
+
+
+# ------------------------------------------------- header/cell/link labels
+
+
+def test_header_label_idle_shows_sortability_hint():
+    assert _header_label("Artist", None, False) == "Artist ⇅"
+
+
+def test_header_label_idle_hint_shown_for_any_other_active_column():
+    assert _header_label("Title", "Artist", False) == "Title ⇅"
+
+
+def test_header_label_active_ascending_shows_up_arrow():
+    assert _header_label("Artist", "Artist", False) == "Artist ▲"
+
+
+def test_header_label_active_descending_shows_down_arrow():
+    assert _header_label("Artist", "Artist", True) == "Artist ▼"
+
+
+def test_downloaded_cell_text_true_is_a_checkmark_badge():
+    assert _downloaded_cell_text(True) == "✓ Downloaded"
+
+
+def test_downloaded_cell_text_false_is_a_plain_dash():
+    assert _downloaded_cell_text(False) == "-"
+
+
+def test_deemix_link_label_names_the_destination():
+    assert _DEEMIX_LINK_LABEL == "Open in Deemix"
 
 
 # ------------------------------------------- track/downloaded disk persistence

@@ -79,6 +79,7 @@ HEAD_HTML = """
     --bg:#14161c; --panel:#1c1f28; --panel-border:#2a2e3a;
     --text:#e6e8ee; --text-dim:#9aa0ac; --accent:#5b8cff;
     --accent2:#7fd1ae; --accent3:#f2b84b; --accent4:#e26d6d; --accent5:#b98af0;
+    --track-missing:#565c6e;
     --font-body:'IBM Plex Sans',sans-serif;
     --font-mono:'IBM Plex Mono',monospace;
     --radius-panel:3px; --radius-control:4px; --radius-pill:999px;
@@ -136,6 +137,19 @@ HEAD_HTML = """
   .am-table.acquire-table tr:nth-child(even){background:rgba(255,255,255,.02);}
   .am-table.acquire-table a{color:var(--accent);}
   .am-table.acquire-table input[type=checkbox]{width:18px;height:18px;cursor:pointer;}
+  /* Acquire table row tints - literal rgb (not var()), matching mockup convention.
+     .row-downloaded's rgb (91,140,255) is ACCENT's own value, so apply_mood()'s
+     HEAD_HTML string-replace on ACCENT's rgb retints this row too, keeping it
+     consistent with the accent color everywhere else on screen. .row-extra's rgb
+     (242,184,75) is ACCENT3's value, which apply_mood() never retints, so it stays
+     fixed - matching ACCENT3 itself never changing with mood. */
+  .am-table.acquire-table tr.row-downloaded{background-color:rgba(91,140,255,.08);}
+  .am-table.acquire-table tr.row-extra{background-color:rgba(242,184,75,.10);}
+  .dl-badge{font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;
+    border-radius:var(--radius-pill);font-weight:600;color:var(--accent2);background:rgba(127,209,174,.13);}
+  .sort-hint{opacity:.5;font-weight:400;}
+  .col-legend{font-size:11px;color:var(--text-dim);display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .col-legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
   tr.batch-header td{padding-top:14px;font-weight:600;color:var(--accent);font-size:12px;}
   .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--accent2);overflow:auto;white-space:pre-wrap;}
   .console .dim{color:var(--text-dim);}
