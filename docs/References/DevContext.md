@@ -34,7 +34,7 @@ AudioManager/
           ReportWriter.cs      # timestamped report output
           TagFixer.cs          # comprehensive tag cleanup (TCMP, genres, parentheticals, featured artists, file renames)
         Track/                 # data models: Track, TrackTag, TrackXML
-  reports/                     # auto-generated timestamped reports (gitignored, written by C# app)
+  reports/                     # auto-generated timestamped reports (git-tracked back to 2023, written by C# app; only reports/with-issues/ is gitignored)
     YYYY/
       YYYY-MM-DD - AudioReport.txt
 ```

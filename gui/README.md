@@ -60,10 +60,11 @@ own modes, behind its own safety gates. The GUI's only writes are its cache
 |---|---|---|
 | Statistics | Full | All panels + chart-type swaps + date window + analysis freshness controls |
 | Integration | Full (accept-all) | Staged scan/review/confirm/execute; declines block execution (see gaps) |
+| Acquire | Functional | Fetch a Spotify playlist's tracks, per-row Deemix links, Downloaded tracking against NewMusic, hide-downloaded filter, extra-in-NewMusic detection |
 | Library | MVP | Table/grid, real album art, search, filter chips, column picker, pagination |
 | Tag Fix | Skeleton | Documents the exe's fixed transforms; Run = `tagfix --dry-run` |
 | Mirror | Functional | Status + one-click Commit AudioMirror (confirm dialog, local commit only) |
-| Services | Placeholder | Last.fm / Spotify stretch stubs (far future) |
+| Services | Placeholder | Last.fm stretch stub (far future) - Spotify playlist integration already ships via Acquire |
 
 Integration is fully selective: declined tracks are excluded via
 `integrate --manifest gui/.cache/accepted-manifest.json` and stay untouched
