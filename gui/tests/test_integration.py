@@ -11,9 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gui import config
 from gui.runner import RunResult
 from gui.tabs.integration import (
-    IntegrationState, _bulk, _esc, _failed_filename_from_output, _open_run_log,
-    _sample_entries, _update_exec_status, _write_manifest, run_execute,
-    run_execute_simulated, run_simulate,
+    IntegrationState, _bulk, _esc, _failed_filename_from_output, _on_review_key,
+    _open_run_log, _review_key_action, _sample_entries, _update_exec_status,
+    _write_manifest, batch_summary_html, run_execute, run_execute_simulated,
+    run_simulate, sort_by_destination,
 )
 
 
@@ -21,7 +22,7 @@ def _entry(filename, **overrides):
     e = {
         "filename": filename, "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "", "isNewFolder": False,
-        "status": "ok", "inBatchDuplicate": False, "tagChanges": [],
+        "status": "ok", "inBatchDuplicate": False, "compilationAlbum": False, "tagChanges": [],
         "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
         "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
         "dupRecommendation": "", "dupReason": "",
@@ -72,6 +73,30 @@ def test_filtered_conflicts_includes_dupes_and_non_clean_status():
     s.filter = "conflicts"
     names = {e["filename"] for e in s.filtered()}
     assert names == {"dupe.mp3", "err.mp3"}
+
+
+def test_filtered_sorts_by_destination_grouping_same_album_adjacent():
+    """The GUI must mirror the CLI's own destination-path sort
+    (MusicIntegrator.cs ~188-192) so same-album files land next to each
+    other, instead of the exe's raw scan order."""
+    s = IntegrationState()
+    s.entries = [
+        _entry("z.mp3", destination="Artists/B Artist/Album Two"),
+        _entry("a.mp3", destination="Artists/A Artist/Album One"),
+        _entry("b.mp3", destination="Artists/A Artist/Album One"),
+    ]
+    s.filter = "all"
+    assert [e["filename"] for e in s.filtered()] == ["a.mp3", "b.mp3", "z.mp3"]
+
+
+def test_sort_by_destination_ties_break_on_filename():
+    entries = [_entry("b.mp3", destination="X"), _entry("a.mp3", destination="X")]
+    assert [e["filename"] for e in sort_by_destination(entries)] == ["a.mp3", "b.mp3"]
+
+
+def test_sort_by_destination_missing_destination_sorts_first():
+    entries = [_entry("has-dest.mp3", destination="Artists/A"), _entry("no-dest.mp3", destination="")]
+    assert [e["filename"] for e in sort_by_destination(entries)] == ["no-dest.mp3", "has-dest.mp3"]
 
 
 def test_filtered_libdupes_is_distinct_from_inbatch_duplicate():
@@ -439,6 +464,124 @@ def _with_state(state, fn):
         integration_module.S = original
 
 
+# ------------------------------------------------- batch scan-ahead summary
+
+
+def _summary(**overrides):
+    s = {"routes": {}, "miscAutoMigrations": [], "miscAutoMigrationTotal": 0,
+         "compilationAlbums": []}
+    s.update(overrides)
+    return s
+
+
+def test_batch_summary_is_silent_when_there_is_no_batch_context():
+    """No routes, no migrations, no compilations - render nothing rather than
+    an empty strip that means "nothing here"."""
+    assert batch_summary_html(_summary()) == ""
+
+
+def test_batch_summary_lists_routes_highest_count_first():
+    html = batch_summary_html(_summary(routes={"Singles": 4, "Artists": 12, "Compilations": 2}))
+    assert "Artists" in html and "Singles" in html and "Compilations" in html
+    assert html.index("Artists") < html.index("Singles") < html.index("Compilations")
+
+
+def test_batch_summary_route_distribution_alone_is_enough_to_render():
+    assert batch_summary_html(_summary(routes={"Artists": 3})) != ""
+
+
+def test_batch_summary_announces_misc_automigration_as_existing_library_songs():
+    """The highest-stakes line: it says the run moves files ALREADY in the
+    library, not just incoming ones. The wording must carry that."""
+    html = batch_summary_html(_summary(
+        miscAutoMigrations=[{"artist": "Hopsin", "count": 3}], miscAutoMigrationTotal=3))
+    assert "existing library song(s)" in html
+    assert "Hopsin (3)" in html
+    assert "3 existing" in html
+
+
+def test_batch_summary_recomputes_migration_total_when_absent():
+    html = batch_summary_html(_summary(
+        miscAutoMigrations=[{"artist": "A", "count": 2}, {"artist": "B", "count": 3}]))
+    assert "5 existing library song(s)" in html
+
+
+def test_batch_summary_truncates_a_long_migration_list():
+    migrations = [{"artist": f"Artist{i}", "count": 1} for i in range(9)]
+    html = batch_summary_html(_summary(miscAutoMigrations=migrations))
+    assert "+3 more" in html
+    assert "Artist8" not in html
+
+
+def test_batch_summary_names_detected_compilation_albums():
+    html = batch_summary_html(_summary(compilationAlbums=["Now 42", "Trance Nation"]))
+    assert "Now 42" in html and "Trance Nation" in html
+    assert "Compilation album(s) detected" in html
+
+
+def test_batch_summary_truncates_a_long_compilation_list():
+    html = batch_summary_html(_summary(compilationAlbums=[f"Album {i}" for i in range(7)]))
+    assert "+3 more" in html
+
+
+def test_batch_summary_escapes_html_in_artist_and_album_names():
+    html = batch_summary_html(_summary(
+        routes={"<b>Artists</b>": 1},
+        miscAutoMigrations=[{"artist": "A&B <script>", "count": 1}],
+        compilationAlbums=["<img src=x>"]))
+    assert "<script>" not in html
+    assert "<img src=x>" not in html
+    assert "&lt;b&gt;Artists&lt;/b&gt;" in html
+
+
+def test_batch_summary_tolerates_a_summary_with_missing_keys():
+    """Defensive: a summary from an older exe build (or a partial parse) must
+    not raise on a key the renderer expects."""
+    assert batch_summary_html({}) == ""
+
+
+def test_filtered_compilations_selects_only_compilation_album_entries():
+    s = IntegrationState()
+    s.entries = [_entry("a.mp3", compilationAlbum=True), _entry("b.mp3"),
+                 _entry("c.mp3", compilationAlbum=True)]
+    s.filter = "compilations"
+    assert [e["filename"] for e in s.filtered()] == ["a.mp3", "c.mp3"]
+
+
+def test_compilation_album_is_independent_of_the_other_card_signals():
+    """A compilation-album file is not a duplicate and not a new folder - the
+    filters must not alias, or the badge stops meaning anything."""
+    s = IntegrationState()
+    s.entries = [_entry("comp.mp3", compilationAlbum=True)]
+    s.filter = "conflicts"
+    assert s.filtered() == []
+    s.filter = "newfolders"
+    assert s.filtered() == []
+    s.filter = "libdupes"
+    assert s.filtered() == []
+
+
+def test_sample_entries_include_a_compilation_album_card():
+    entries = _sample_entries()
+    comp = [e for e in entries if e.get("compilationAlbum")]
+    assert len(comp) == 1
+    assert comp[0]["destination"].startswith("Compilations/")
+    assert not comp[0]["libraryDuplicate"] and not comp[0]["inBatchDuplicate"]
+
+
+def test_run_simulate_loads_batch_summary_context(monkeypatch):
+    import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module.runner, "run", lambda *a, **k: None)
+
+    state = IntegrationState()
+    _with_state(state, run_simulate)
+
+    assert state.summary["routes"]
+    assert state.summary["miscAutoMigrations"]
+    assert state.summary["compilationAlbums"]
+    assert batch_summary_html(state.summary) != ""
+
+
 def test_sample_entries_cover_every_review_card_state():
     entries = _sample_entries()
     assert any(e["isNewFolder"] for e in entries)
@@ -551,6 +694,101 @@ def test_run_execute_simulated_never_includes_the_error_sample_and_never_fails(m
     for e in samples:
         if e["status"] != "error":
             assert state.exec_status[e["filename"]] == "done"
+
+
+# ---------------------------------------------------- review-stage keyboard
+
+
+class _FakeAction:
+    def __init__(self, keydown=True, repeat=False):
+        self.keydown = keydown
+        self.repeat = repeat
+
+
+class _FakeKey:
+    def __init__(self, name):
+        self.name = name
+
+
+class _FakeKeyEvent:
+    def __init__(self, key_name, keydown=True, repeat=False):
+        self.action = _FakeAction(keydown=keydown, repeat=repeat)
+        self.key = _FakeKey(key_name)
+
+
+def test_review_key_action_maps_letters_and_arrows():
+    assert _review_key_action("a") == "accept"
+    assert _review_key_action("D") == "decline"
+    assert _review_key_action("j") == "next"
+    assert _review_key_action("ArrowDown") == "next"
+    assert _review_key_action("k") == "prev"
+    assert _review_key_action("ArrowUp") == "prev"
+    assert _review_key_action("x") is None
+    assert _review_key_action("") is None
+
+
+def test_on_review_key_ignored_outside_review_stage():
+    """The keyboard element is only mounted while stage_review() renders, but
+    _on_review_key also self-guards on S.stage so a stray leftover handler
+    (e.g. from a slow rebuild) can never accept/decline off-stage."""
+    s = IntegrationState()
+    s.stage = 1
+    s.entries = [_entry("a.mp3")]
+    s.decisions = {"a.mp3": True}
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d")))
+    assert s.decisions["a.mp3"] is True
+
+
+def test_on_review_key_decline_targets_entry_under_cursor():
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    s.decisions = {"a.mp3": True, "b.mp3": True}
+    s.cursor = 1
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d")))
+    assert s.decisions["a.mp3"] is True
+    assert s.decisions["b.mp3"] is False
+
+
+def test_on_review_key_next_and_prev_move_cursor_and_set_keyboard_nav_used():
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("a.mp3"), _entry("b.mp3"), _entry("c.mp3")]
+    s.decisions = {"a.mp3": True, "b.mp3": True, "c.mp3": True}
+    s.cursor = 0
+    assert s.keyboard_nav_used is False
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("j")))
+    assert s.cursor == 1
+    assert s.keyboard_nav_used is True
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("ArrowDown")))
+    assert s.cursor == 2
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("j")))
+    assert s.cursor == 2  # clamped at the last entry
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("k")))
+    assert s.cursor == 1
+
+
+def test_on_review_key_ignores_keyup_and_repeat():
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("a.mp3")]
+    s.decisions = {"a.mp3": True}
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d", keydown=False)))
+    assert s.decisions["a.mp3"] is True
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d", repeat=True)))
+    assert s.decisions["a.mp3"] is True
+
+
+def test_on_review_key_never_accepts_an_error_entry():
+    """A/accept on the cursor must go through _decide's own error guard - a
+    stray keypress on an unresolved-error card can't force an invalid accept."""
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("err.mp3", status="error")]
+    s.decisions = {}
+    s.cursor = 0
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("a")))
+    assert s.accepted == []
 
 
 def _update_exec_status_on(state, line):

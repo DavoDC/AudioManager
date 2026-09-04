@@ -115,7 +115,8 @@ HEAD_HTML = """
   .am-btn.secondary{background:transparent;border:1px solid var(--panel-border);color:var(--text);}
   .am-btn.small{padding:5px 12px;font-size:11px;}
   .am-btn.danger{background:transparent;border:1px solid var(--accent4);color:var(--accent4);}
-  .chip{background:#12141c;border:1px solid var(--panel-border);border-radius:14px;padding:5px 12px;font-size:12px;color:var(--text-dim);cursor:pointer;display:inline-block;}
+  .chip{background:#12141c;border:1px solid var(--panel-border);border-radius:14px;padding:5px 12px;font-size:12px;color:var(--text-dim);cursor:pointer;display:inline-block;font-family:inherit;appearance:none;}
+  .chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
   .chip.active{color:var(--text);border-color:var(--accent);}
   .freshness-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:10px 14px;margin-bottom:18px;flex-wrap:wrap;width:100%;}
   .fresh-info{font-size:12px;color:var(--text-dim);}
@@ -165,22 +166,27 @@ HEAD_HTML = """
   .step.active{color:var(--text);border-color:var(--accent);background:#181b2e;}
   .step.active .n{background:var(--accent);color:#0c0e13;}
   .step.done .n{background:var(--accent2);color:#0c0e13;}
-  .review-card{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px 14px;width:100%;}
-  .review-card.declined{opacity:.55;}
-  .rc-title{font-size:14px;font-weight:600;color:var(--text);}
-  .rc-artist{font-size:12px;color:var(--text-dim);margin-bottom:6px;}
-  .rc-route{font-size:11px;font-family:var(--font-mono);color:var(--accent2);word-break:break-all;}
-  .rc-route .arrow{color:var(--text-dim);}
+  .review-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px 14px;width:100%;max-width:820px;border-left:3px solid transparent;}
+  .review-card.current{outline:2px solid var(--accent);outline-offset:-1px;}
+  .review-card.declined{border-left-color:var(--accent4);}
+  .review-card.declined .rc-route{text-decoration:line-through;color:var(--text-dim);}
+  .rc-declined-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent4);
+    background:rgba(226,109,109,.1);border:1px solid rgba(226,109,109,.35);border-radius:var(--radius-pill);
+    padding:2px 8px;margin-top:6px;display:inline-block;}
+  .rc-title{font-size:13px;font-weight:600;color:var(--text-dim);}
+  .rc-artist{font-size:11px;color:var(--text-dim);margin-bottom:6px;}
+  .rc-route{font-size:14px;font-weight:600;font-family:var(--font-mono);color:var(--text);word-break:break-all;}
+  .rc-route .arrow{color:var(--text-dim);font-weight:400;}
   .rc-reason{font-size:11px;color:var(--text-dim);margin-top:3px;}
   .rc-tags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
   .tag-change{font-size:10px;font-family:var(--font-mono);padding:2px 7px;border-radius:var(--radius-pill);background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);}
   .rc-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
-  .rc-badge{font-size:9px;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:var(--radius-pill);font-weight:600;}
+  .rc-badge{font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:var(--radius-pill);font-weight:600;}
   .rc-badge.newfolder{color:var(--accent);background:rgba(91,140,255,.13);}
   .rc-badge.dupe{color:var(--accent3);background:rgba(242,184,75,.13);}
-  .rc-badge.clean{color:var(--accent2);background:rgba(127,209,174,.12);}
   .rc-badge.err{color:var(--accent4);background:rgba(226,109,109,.13);}
   .rc-badge.libdupe{color:var(--accent5);background:rgba(185,138,240,.13);}
+  .rc-badge.compilation{color:var(--accent2);background:rgba(127,209,174,.13);}
   .rc-dup{margin-top:8px;padding:8px 10px;border:1px solid var(--panel-border);border-radius:var(--radius-control);background:rgba(185,138,240,.06);}
   .rc-dup-info{font-size:11px;color:var(--text-dim);line-height:1.5;}
   .rc-dup-info b{color:var(--accent5);}
@@ -204,6 +210,20 @@ HEAD_HTML = """
   .simulate-banner{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);
     font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
     padding:7px 12px;border-radius:var(--radius-control);margin-bottom:12px;width:100%;}
+  /* Confirm-dialog simulated note: same loud yellow as .simulate-banner. The one
+     moment real-vs-simulated matters most is the confirm, so the signal must not
+     drop to plain grey .note text there. */
+  .note.simulated{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);
+    font-weight:600;padding:8px 12px;border-radius:var(--radius-control);}
+  /* Batch scan-ahead context shown beside the confirm bar */
+  .batch-summary{font-size:12px;padding:9px 12px;border-radius:var(--radius-control);
+    margin-bottom:12px;width:100%;background:rgba(91,140,255,.07);
+    border:1px solid var(--panel-border);color:var(--text-dim);}
+  .batch-summary .bs-routes{color:var(--text);font-weight:600;}
+  .batch-summary .bs-route{color:var(--text-dim);font-weight:500;margin-left:2px;}
+  .batch-summary .bs-sep{color:var(--panel-border);margin:0 7px;}
+  .batch-summary .bs-migrate{display:block;margin-top:6px;color:var(--accent3);font-weight:600;}
+  .batch-summary .bs-comp{display:block;margin-top:5px;color:var(--accent2);font-weight:600;}
   .libchecker-strip{font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--radius-control);
     margin-bottom:12px;width:100%;}
   .libchecker-strip.clean{background:rgba(127,209,174,.12);border:1px solid var(--accent2);color:var(--accent2);}
