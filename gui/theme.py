@@ -173,7 +173,7 @@ HEAD_HTML = """
   .rc-declined-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent4);
     background:rgba(226,109,109,.1);border:1px solid rgba(226,109,109,.35);border-radius:var(--radius-pill);
     padding:2px 8px;margin-top:6px;display:inline-block;}
-  .rc-title{font-size:13px;font-weight:600;color:var(--text-dim);}
+  .rc-title{font-size:13px;font-weight:600;color:var(--text);}
   .rc-artist{font-size:11px;color:var(--text-dim);margin-bottom:6px;}
   .rc-route{font-size:14px;font-weight:600;font-family:var(--font-mono);color:var(--text);word-break:break-all;}
   .rc-route .arrow{color:var(--text-dim);font-weight:400;}
