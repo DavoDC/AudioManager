@@ -65,6 +65,14 @@ _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_r
 
 _SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
 
+_HISTORY_BUTTON_TOOLTIP = "Playlist history"
+# Icon-only history button next to the playlist input carried no title/tooltip -
+# see IDEAS.md "Playlist-history icon-button has no tooltip".
+
+_DEEMIX_LINK_LABEL = "Open in Deemix"
+# Per-row link used to read just "Search" on every row, giving no hint what it
+# opens - see IDEAS.md "Per-row 'Search' link label is context-free".
+
 _refresh_hooks = {"track_table": lambda: None, "progress_bar": lambda: None,
                    "history_items": lambda: None, "simulate_banner": lambda: None}
 # Wired to the real @ui.refreshable closures by build() once they exist. simulate()
@@ -508,6 +516,36 @@ def _segment_shows_label(width_pct: float) -> bool:
     return width_pct >= _LABEL_MIN_PCT
 
 
+def _pct_label(pct: int) -> str:
+    """Headline percentage text above the bar. Spelled out as "N% of playlist"
+    rather than bare "N%" because pct_complete and the bar's own segment
+    widths use different denominators (pct excludes extra files by design,
+    widths include them) - see IDEAS.md "Progress bar's headline percentage
+    and its visual segment widths use different denominators". Labelling the
+    number explicitly is the cheapest fix; the underlying math is unchanged."""
+    return f"{pct}% of playlist"
+
+
+def _header_label(col: str, sort_col: str | None, sort_reverse: bool) -> str:
+    """Sortable-column header text. The active column shows its direction
+    arrow (unchanged); an inactive sortable column now also carries a faint
+    up/down glyph so sortability is discoverable before the first click - see
+    IDEAS.md "Sortable table headers give no visual hint that they're
+    clickable". Only called for columns already in _SORT_COLUMNS."""
+    if sort_col == col:
+        return col + (" ▼" if sort_reverse else " ▲")
+    return col + " ⇅"
+
+
+def _downloaded_cell_text(is_downloaded: bool) -> str:
+    """Read-only Downloaded-column cell text, replacing a disabled checkbox
+    (which read as "broken control", not "status") - see IDEAS.md "Read-only
+    'Downloaded' status shown as a disabled checkbox". A downloaded row gets
+    a checkmark pill (see .dl-badge in theme.py); a missing row gets a plain
+    dash - there is nothing to flag, so it earns no badge."""
+    return "✓ Downloaded" if is_downloaded else "-"
+
+
 def _extra_segment_label(count: int, playlist_loaded: bool) -> str:
     """progress_bar()'s third-segment text. With no playlist loaded,
     find_extra_newmusic_files() correctly returns literally every NewMusic
@@ -586,7 +624,7 @@ def build() -> None:
         total = metrics["total"]
         segments = [
             (downloaded, "var(--accent)", "#0c0e13", f"{downloaded} downloaded"),
-            (missing, "#3a3f4d", "var(--text-dim)", f"{missing} missing"),
+            (missing, "var(--track-missing)", "var(--text-dim)", f"{missing} missing"),
             (extra, "var(--accent3)", "#0c0e13", _extra_segment_label(extra, _state["playlist_loaded"])),
         ]
         with ui.element("div").style(
@@ -597,7 +635,7 @@ def build() -> None:
                 ui.label("Fetch a playlist to see progress").classes("note").style("margin:0;")
                 return
             with ui.row().style("justify-content:flex-end;margin-bottom:4px;"):
-                ui.label(f"{metrics['pct_complete']}%").classes("note").style("margin:0;color:var(--text-dim);")
+                ui.label(_pct_label(metrics["pct_complete"])).classes("note").style("margin:0;color:var(--text-dim);")
             with ui.element("div").style(
                 "height:26px;border-radius:var(--radius-pill);overflow:hidden;"
                 "display:flex;background:#3a3f4d;width:100%;"
@@ -627,6 +665,12 @@ def build() -> None:
     with ui.element("div").classes("panel w-full").style("margin-bottom:16px;"):
         with ui.element("div").classes("panel-title"):
             ui.html("<span>Open Playlist Tracks</span>")
+            ui.html(
+                '<span class="col-legend">'
+                '<span><span class="dot" style="background:var(--accent);"></span>Downloaded</span>'
+                '<span><span class="dot" style="background:var(--accent3);"></span>Extra in NewMusic</span>'
+                "</span>"
+            )
         with ui.row().style("gap:8px;align-items:center;flex-wrap:wrap;"):
             playlist_input = ui.input("Playlist URL or ID", value=_load_last_playlist_id()) \
                 .props("dense dark outlined").style("width:520px;")
@@ -635,7 +679,7 @@ def build() -> None:
                 playlist_input.value = playlist_id
                 asyncio.create_task(fetch())
 
-            with ui.button(icon="history").props("dense outline size=sm"):
+            with ui.button(icon="history").props(f'dense outline size=sm title="{_HISTORY_BUTTON_TOOLTIP}"'):
                 with ui.menu() as history_menu:
                     @ui.refreshable
                     def history_items():
@@ -663,9 +707,7 @@ def build() -> None:
                             "text-align:center;" if h == "Downloaded" else "text-align:left;"
                         ):
                             if h in _SORT_COLUMNS:
-                                arrow = ""
-                                if _state["sort_col"] == h:
-                                    arrow = " ▲" if not _state["sort_reverse"] else " ▼"
+                                label_text = _header_label(h, _state["sort_col"], _state["sort_reverse"])
 
                                 def _make_sort_handler(col=h):
                                     def handler():
@@ -681,7 +723,7 @@ def build() -> None:
                                         track_table.refresh()
                                     return handler
 
-                                ui.label(h + arrow).style("cursor:pointer;").on("click", _make_sort_handler())
+                                ui.label(label_text).style("cursor:pointer;").on("click", _make_sort_handler())
                             else:
                                 ui.label(h)
                 for i, (artist, title, album, year, length, url) in _sorted_tracks():
@@ -689,8 +731,7 @@ def build() -> None:
                     is_downloaded = _state["downloaded"].get(row_key, False)
                     if _state["hide_downloaded"] and is_downloaded:
                         continue
-                    row_style = "background-color:rgba(91,140,255,0.08);" if is_downloaded else ""
-                    with ui.element("tr").style(row_style):
+                    with ui.element("tr").classes("row-downloaded" if is_downloaded else ""):
                         with ui.element("td"):
                             ui.label(artist)
                         with ui.element("td"):
@@ -702,9 +743,11 @@ def build() -> None:
                         with ui.element("td"):
                             ui.label(length)
                         with ui.element("td"):
-                            ui.link("Search", url, new_tab=True)
+                            ui.link(_DEEMIX_LINK_LABEL, url, new_tab=True)
                         with ui.element("td").style("text-align:center;"):
-                            ui.checkbox(value=_state["downloaded"].get(row_key, False)).props("disable")
+                            cell = ui.label(_downloaded_cell_text(is_downloaded))
+                            if is_downloaded:
+                                cell.classes("dl-badge")
 
                 if _state["extra"] and _state["playlist_loaded"]:
                     with ui.element("tr").classes("batch-header"):
@@ -715,7 +758,7 @@ def build() -> None:
                         if _state["hide_downloaded"]:
                             continue
                         album, year, length = _read_mp3_tags(path)
-                        with ui.element("tr").style("background-color:rgba(242,184,75,0.10);"):
+                        with ui.element("tr").classes("row-extra"):
                             with ui.element("td"):
                                 ui.label(artist)
                             with ui.element("td"):
@@ -727,9 +770,9 @@ def build() -> None:
                             with ui.element("td"):
                                 ui.label(length)
                             with ui.element("td"):
-                                ui.link("Search", url, new_tab=True)
+                                ui.link(_DEEMIX_LINK_LABEL, url, new_tab=True)
                             with ui.element("td").style("text-align:center;"):
-                                ui.checkbox(value=True).props("disable")
+                                ui.label(_downloaded_cell_text(True)).classes("dl-badge")
 
         async def fetch():
             try:
