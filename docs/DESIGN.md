@@ -84,6 +84,10 @@ non-dim text color when it's flagging something (downloaded=done in blue,
 extra-in-newmusic=unmatched in yellow, failed=red). Don't tint a row purely
 for decoration; once color stops meaning something, the eye stops reading it.
 
+## Risk-scaled visual weight
+
+A confirmation's visual weight must scale with what actually happens if it's clicked, never with how new, rare, or "just added" the code path is. Found 2026-09-05: the Integration tab's confirm dialog gives the harmless Simulate run a loud amber-highlighted note (`.note.simulated`, same treatment as `.simulate-banner`) while the real run - the one that actually moves files out of NewMusic into the library - gets the plain dim `.note` style, identical to routine helper copy elsewhere. The lower-stakes path ended up looking more urgent than the higher-stakes one simply because Simulate mode was built later and got its own class. Before shipping any new confirm/warning state, ask which of the paths on screen is actually the dangerous one, and check that it doesn't read as the calmer of the two.
+
 ## Typography
 
 - Two font stacks, both declared once in `theme.py`: `--font-body` (IBM Plex
