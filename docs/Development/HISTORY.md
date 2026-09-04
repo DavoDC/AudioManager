@@ -4,6 +4,47 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire tab: state persists across page reload, progress-bar maths and sort/history logic under test
+
+Closed three related `docs/Development/IDEAS.md` items in one pass, all inside `gui/tabs/acquire.py` and
+`gui/tests/test_acquire.py`. GUI suite went from 131 to 176 tests, green throughout.
+
+**State persistence across page reload (also closes "cache fetched tracks to disk").** Fetched tracks and
+the Downloaded-match state lived only in the in-memory `_state` dict, so a browser reload or a tab rebuild
+came back to an empty table. `config.ACQUIRE_STATE_JSON` - which already held the last playlist ID and the
+capped last-5 history - now also carries a `"cache"` block keyed by playlist ID
+(`_save_tracks_cache`/`_load_tracks_cache`), written by `_run_check_against_downloads()` itself so there
+is no separate save call in `fetch()` to forget. `restore_cached_tracks()` reloads it on tab build,
+refusing to clobber live tracks or Simulate mode. Cache entries are pruned to the playlists still in
+history, so the file cannot grow without bound, and a corrupt or absent state file degrades to "nothing
+restored" rather than breaking the build. Simulate-mode data is never persisted (guarded on
+`_state["simulated"]`, same shape as the existing `_poll_should_skip` guard), so a reload can never
+resurrect synthetic tracks as if they were a real playlist. Clear forgets the cached playlist
+(`_forget_cached_playlist`) but deliberately keeps the history: Clear resets the view, it does not erase
+where you have been. One JSON file, no new dependencies.
+
+**`progress_bar()` segment maths extracted and tested.** The downloaded/missing/extra to segment-width
+arithmetic was inline in the refreshable and only verifiable by eyeballing the UI. Now
+`progress_metrics(downloaded, missing, extra)` returns `total`, `pct_complete` and the three `widths`,
+with `_segment_shows_label()` holding the "is this segment wide enough for an inline label, or does it
+fall back to a title tooltip" threshold. `progress_bar()` is a pure consumer of both. Tests pin the
+behaviour that was previously implicit: widths always sum to 100, `pct_complete` counts the playlist only
+(extras in NewMusic are not playlist tracks and must not move completion), and browse mode with extras and
+no playlist is 0% rather than a division by zero.
+
+**`clear()` fully resets, and is finally testable.** `clear()` and `_run_check_against_downloads()` were
+closures nested in `build()`, so nothing about Clear could be tested without a live NiceGUI page. Both are
+now module-level (`clear_tab_state()`, `_run_check_against_downloads()`), with the button handler reduced
+to blanking the input and delegating; refreshes go through the existing `_refresh_hooks` indirection the
+same way `simulate()` already did. Tests prove Clear resets sort column and direction, refreshes all four
+panels including the history menu, drops the disk cache so a rebuild stays blank, keeps the history, and
+leaves the NewMusic extras section intact.
+
+**Test coverage gaps closed:** `_format_duration` (including a round-trip against `_length_to_seconds`),
+the `_sorted_tracks` Length key (proving `"10:00"` sorts after `"2:00"`, which plain text does not),
+Year blanks-last under reversal, and case-insensitive artist sort. The `_save_last_playlist`/`_load_history`
+dedup-and-cap logic already had coverage from an earlier pass and was left as is.
+
 ## 2026-09-04 - Duplicate-resolution UI: the GUI can now express D/L/K for a library duplicate
 
 Implemented the full item David unblocked from `[OPUS]` to `[SONNET]` on 2026-09-03: the GUI previously

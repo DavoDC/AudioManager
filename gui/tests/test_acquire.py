@@ -12,18 +12,25 @@ from gui.tabs.acquire import (
     _do_sync_liked,
     _extra_batch_header,
     _extra_segment_label,
+    _format_duration,
     _length_to_seconds,
     _load_history,
+    _load_tracks_cache,
     _poll_should_skip,
     _read_mp3_tags,
     _sample_extra,
     _sample_tracks,
     _save_last_playlist,
+    _save_tracks_cache,
+    _segment_shows_label,
     _sorted_tracks,
     _spotify_client,
     _state,
+    clear_tab_state,
     find_extra_newmusic_files,
     match_downloads,
+    progress_metrics,
+    restore_cached_tracks,
     simulate,
 )
 
@@ -415,3 +422,375 @@ def test_do_sync_liked_moves_liked_tracks_via_a_real_simulated_client(monkeypatc
     assert set(sim.playlist_contents) == {"spotify:track:aaa", "spotify:track:bbb"}
     assert "Moved 2 track(s)" in msg
     assert "AudioManager Inbox" in msg
+
+
+# ------------------------------------------------- duration + sort-key coverage
+
+
+def test_format_duration_converts_ms_to_m_ss():
+    assert _format_duration(225000) == "3:45"
+
+
+def test_format_duration_zero_pads_seconds():
+    """Regression guard on the display format the Length column and
+    _length_to_seconds both assume: seconds are always two digits."""
+    assert _format_duration(125000) == "2:05"
+
+
+def test_format_duration_of_zero_is_zero_zero_zero():
+    assert _format_duration(0) == "0:00"
+
+
+def test_format_duration_round_trips_through_length_to_seconds():
+    for ms in (0, 59000, 125000, 225000, 3599000):
+        assert _length_to_seconds(_format_duration(ms)) == ms // 1000
+
+
+def test_sorted_tracks_by_length_sorts_numerically_not_lexically():
+    """"10:00" sorts BEFORE "2:00" as plain text - the Length column must use
+    the seconds key, or a long track lands above a short one."""
+    _state["tracks"] = [("A", "T1", "Alb", "2020", "2:00", ""), ("B", "T2", "Alb", "2020", "10:00", "")]
+    _state["sort_col"] = "Length"
+    _state["sort_reverse"] = False
+    assert [row[1][4] for row in _sorted_tracks()] == ["2:00", "10:00"]
+
+
+def test_sorted_tracks_by_length_reversed():
+    _state["tracks"] = [("A", "T1", "Alb", "2020", "2:00", ""), ("B", "T2", "Alb", "2020", "10:00", "")]
+    _state["sort_col"] = "Length"
+    _state["sort_reverse"] = True
+    assert [row[1][4] for row in _sorted_tracks()] == ["10:00", "2:00"]
+
+
+def test_sorted_tracks_year_blanks_stay_last_when_reversed():
+    """Blanks-last is a deliberate asymmetry: reversing the sort must not
+    float empty Year cells to the top of the table."""
+    _state["tracks"] = [
+        ("A", "T1", "Alb", "", "1:00", ""),
+        ("B", "T2", "Alb", "2020", "1:00", ""),
+        ("C", "T3", "Alb", "1999", "1:00", ""),
+    ]
+    _state["sort_col"] = "Year"
+    _state["sort_reverse"] = True
+    assert [row[1][3] for row in _sorted_tracks()] == ["", "2020", "1999"]
+
+
+def test_sorted_tracks_by_artist_is_case_insensitive():
+    _state["tracks"] = [("beta", "T1", "Alb", "", "1:00", ""), ("Alpha", "T2", "Alb", "", "1:00", "")]
+    _state["sort_col"] = "Artist"
+    _state["sort_reverse"] = False
+    assert [row[1][0] for row in _sorted_tracks()] == ["Alpha", "beta"]
+
+
+# ------------------------------------------------- progress bar segment maths
+
+
+def test_progress_metrics_widths_are_shares_of_the_three_counts():
+    metrics = progress_metrics(downloaded=2, missing=2, extra=1)
+    assert metrics["total"] == 5
+    assert metrics["widths"] == [40.0, 40.0, 20.0]
+
+
+def test_progress_metrics_widths_sum_to_one_hundred():
+    for counts in ((1, 0, 0), (3, 7, 5), (60, 1, 2), (0, 0, 9)):
+        widths = progress_metrics(*counts)["widths"]
+        assert round(sum(widths), 6) == 100.0
+
+
+def test_progress_metrics_all_zero_gives_zero_total_and_zero_widths():
+    metrics = progress_metrics(0, 0, 0)
+    assert metrics["total"] == 0
+    assert metrics["widths"] == [0.0, 0.0, 0.0]
+    assert metrics["pct_complete"] == 0
+
+
+def test_progress_metrics_pct_complete_ignores_extra_files():
+    """Extra files sit in NewMusic but are not part of the loaded playlist -
+    counting them would let unrelated downloads inflate playlist completion.
+    3 of 4 playlist tracks downloaded is 75% regardless of how many extras."""
+    assert progress_metrics(3, 1, 0)["pct_complete"] == 75
+    assert progress_metrics(3, 1, 50)["pct_complete"] == 75
+
+
+def test_progress_metrics_pct_complete_is_zero_with_no_playlist_tracks():
+    """Browse mode: extras only, no playlist - no division by zero, 0%."""
+    assert progress_metrics(0, 0, 12)["pct_complete"] == 0
+
+
+def test_progress_metrics_pct_complete_rounds_to_whole_percent():
+    assert progress_metrics(1, 2, 0)["pct_complete"] == 33
+    assert progress_metrics(2, 1, 0)["pct_complete"] == 67
+
+
+def test_progress_metrics_full_completion_is_one_hundred_percent():
+    assert progress_metrics(5, 0, 0)["pct_complete"] == 100
+
+
+def test_segment_label_shown_only_once_segment_is_wide_enough():
+    """Below the threshold progress_bar() falls back to a title tooltip
+    rather than squeezing text into a sliver."""
+    assert _segment_shows_label(12.0) is True
+    assert _segment_shows_label(50.0) is True
+    assert _segment_shows_label(11.9) is False
+
+
+def test_narrow_extra_segment_falls_back_to_tooltip():
+    """Real shape from the UI: a couple of extras next to 60+ downloaded."""
+    widths = progress_metrics(downloaded=60, missing=2, extra=2)["widths"]
+    assert _segment_shows_label(widths[0]) is True
+    assert _segment_shows_label(widths[2]) is False
+
+
+# ------------------------------------------- track/downloaded disk persistence
+
+
+def _isolate_state_file(tmp_path, monkeypatch):
+    """Points config.CACHE_DIR/ACQUIRE_STATE_JSON and NEWMUSIC_DIR at tmp_path
+    so persistence tests never touch the real cache or the real NewMusic
+    inbox (the GUI's read-only contract, gui/config.py)."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "ACQUIRE_STATE_JSON", tmp_path / "acquire-state.json")
+    monkeypatch.setattr(config, "NEWMUSIC_DIR", tmp_path / "newmusic")
+
+
+TRACKS = [
+    ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", "http://x/1"),
+    ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23", "http://x/2"),
+]
+DOWNLOADED = {"0:Eminem:Lose Yourself": True, "1:Dua Lipa:Levitating": False}
+
+
+def test_tracks_cache_round_trips_through_disk(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    tracks, downloaded = _load_tracks_cache("pl1")
+    assert tracks == TRACKS  # JSON lists come back as tuples, the shape track_table() unpacks
+    assert downloaded == DOWNLOADED
+
+
+def test_tracks_cache_is_keyed_by_playlist_id(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_last_playlist("pl2", "Second")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    _save_tracks_cache("pl2", TRACKS[:1], {"0:Eminem:Lose Yourself": False})
+    assert len(_load_tracks_cache("pl1")[0]) == 2
+    assert len(_load_tracks_cache("pl2")[0]) == 1
+    assert _load_tracks_cache("pl1")[1]["0:Eminem:Lose Yourself"] is True
+
+
+def test_tracks_cache_unknown_playlist_returns_empty(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    assert _load_tracks_cache("pl-never-fetched") == ([], {})
+
+
+def test_tracks_cache_missing_state_file_returns_empty(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    assert _load_tracks_cache("pl1") == ([], {})
+
+
+def test_tracks_cache_corrupt_state_file_returns_empty(tmp_path, monkeypatch):
+    """A bad cache must degrade to "nothing restored", never break tab build."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    config.ACQUIRE_STATE_JSON.write_text("{not json at all", encoding="utf-8")
+    assert _load_tracks_cache("pl1") == ([], {})
+
+
+def test_tracks_cache_survives_a_later_history_write(tmp_path, monkeypatch):
+    """_save_last_playlist rewrites the same JSON file - it must not drop the
+    cache block written beside it."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    _save_last_playlist("pl1", "First Renamed")
+    assert _load_tracks_cache("pl1")[0] == TRACKS
+
+
+def test_saving_the_cache_preserves_playlist_id_and_history(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    assert _load_history() == [{"id": "pl1", "name": "First"}]
+
+
+def test_tracks_cache_is_pruned_to_playlists_still_in_history(tmp_path, monkeypatch):
+    """The file can never grow without bound: once a playlist ages out of the
+    capped history, its cached tracks go with it."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    for i in range(6):
+        _save_last_playlist(f"pl{i}", f"Playlist {i}")
+        _save_tracks_cache(f"pl{i}", TRACKS, DOWNLOADED)
+    assert _load_tracks_cache("pl0") == ([], {})  # aged out of the last-5 history
+    assert _load_tracks_cache("pl5")[0] == TRACKS
+
+
+def test_empty_playlist_id_is_never_cached(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_tracks_cache("", TRACKS, DOWNLOADED)
+    assert _load_tracks_cache("") == ([], {})
+
+
+# --------------------------------------------------- restore on tab rebuild
+
+
+def _blank_state():
+    _state["tracks"] = []
+    _state["downloaded"] = {}
+    _state["extra"] = []
+    _state["sort_col"] = None
+    _state["sort_reverse"] = False
+    _state["playlist_loaded"] = False
+    _state["simulated"] = False
+
+
+def test_restore_reloads_tracks_and_ticks_after_a_tab_rebuild(tmp_path, monkeypatch):
+    """The whole point of the persistence item: a browser reload used to come
+    back to an empty table."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    _blank_state()
+    assert restore_cached_tracks() is True
+    assert _state["tracks"] == TRACKS
+    assert _state["downloaded"] == DOWNLOADED
+    assert _state["playlist_loaded"] is True
+
+
+def test_restore_is_a_noop_with_nothing_cached(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    assert restore_cached_tracks() is False
+    assert _state["tracks"] == []
+    assert _state["playlist_loaded"] is False
+
+
+def test_restore_never_clobbers_live_tracks(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    _blank_state()
+    live = [("Live", "Track", "Alb", "2024", "1:00", "")]
+    _state["tracks"] = live
+    assert restore_cached_tracks() is False
+    assert _state["tracks"] == live
+
+
+def test_restore_never_clobbers_simulate_mode(tmp_path, monkeypatch):
+    """Simulate's synthetic data must not be replaced by a real cached
+    playlist, mirroring the _poll_should_skip guard."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    _blank_state()
+    _state["simulated"] = True
+    assert restore_cached_tracks() is False
+    assert _state["tracks"] == []
+
+
+# ------------------------------------------------------------------ clear()
+
+
+def test_clear_resets_sort_state_and_refreshes_history(tmp_path, monkeypatch):
+    """Regression for the noted inconsistency: Clear left _state["sort_col"]/
+    ["sort_reverse"] set and never refreshed the history menu, unlike fetch()."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    refreshed = []
+    monkeypatch.setitem(acquire_module._refresh_hooks, "track_table", lambda: refreshed.append("track_table"))
+    monkeypatch.setitem(acquire_module._refresh_hooks, "progress_bar", lambda: refreshed.append("progress_bar"))
+    monkeypatch.setitem(acquire_module._refresh_hooks, "history_items", lambda: refreshed.append("history_items"))
+    monkeypatch.setitem(acquire_module._refresh_hooks, "simulate_banner", lambda: refreshed.append("simulate_banner"))
+
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["sort_col"] = "Year"
+    _state["sort_reverse"] = True
+    _state["playlist_loaded"] = True
+    _state["simulated"] = True
+
+    clear_tab_state()
+
+    assert _state["tracks"] == []
+    assert _state["downloaded"] == {}
+    assert _state["sort_col"] is None
+    assert _state["sort_reverse"] is False
+    assert _state["playlist_loaded"] is False
+    assert _state["simulated"] is False
+    assert sorted(refreshed) == ["history_items", "progress_bar", "simulate_banner", "track_table"]
+
+
+def test_clear_forgets_the_cached_playlist_so_a_rebuild_stays_blank(tmp_path, monkeypatch):
+    """Without this, restore_cached_tracks() would put back on the next tab
+    build exactly what Clear just removed."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    clear_tab_state()
+
+    assert _load_tracks_cache("pl1") == ([], {})
+    _blank_state()
+    assert restore_cached_tracks() is False
+
+
+def test_clear_keeps_the_playlist_history(tmp_path, monkeypatch):
+    """Clear resets the view, it does not erase where you have been."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    _save_last_playlist("pl2", "Second")
+    _blank_state()
+
+    clear_tab_state()
+
+    assert [h["id"] for h in _load_history()] == ["pl2", "pl1"]
+
+
+def test_clear_leaves_the_newmusic_extras_section_intact(tmp_path, monkeypatch):
+    """Clear rescans NewMusic rather than blanking it - the extra-files view
+    is not part of the fetched playlist and must survive."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    (newmusic / "Drake - Hotline Bling.mp3").write_bytes(b"")
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    clear_tab_state()
+
+    assert [(a, t) for a, t, _url, _path in _state["extra"]] == [("Drake", "Hotline Bling")]
+
+
+def test_fetch_state_is_persisted_by_the_downloads_check(tmp_path, monkeypatch):
+    """End-to-end of the persistence path as fetch() drives it: tracks land in
+    _state, the NewMusic check runs, and the result is on disk for the next
+    tab build - no separate save call in fetch() to forget."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    (newmusic / "Eminem - Lose Yourself.mp3").write_bytes(b"")
+    _save_last_playlist("pl1", "First")
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    acquire_module._run_check_against_downloads()
+
+    cached_tracks, cached_downloaded = _load_tracks_cache("pl1")
+    assert cached_tracks == TRACKS
+    assert cached_downloaded["0:Eminem:Lose Yourself"] is True
+    assert cached_downloaded["1:Dua Lipa:Levitating"] is False
+
+
+def test_simulate_state_is_never_persisted(tmp_path, monkeypatch):
+    """Synthetic sample data must never reach the on-disk cache, or a reload
+    would restore fake tracks as if they were a real playlist."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _save_last_playlist("pl1", "First")
+    simulate()
+
+    acquire_module._run_check_against_downloads()
+
+    assert _load_tracks_cache("pl1") == ([], {})
+
