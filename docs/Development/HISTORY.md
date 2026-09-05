@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Custom-rule Edit/Delete/Enable controls now render inside their own table rows
+
+Closed the "The custom-rule Edit/Delete/Enable controls are a detached stack under the table, not aligned to their rows" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. The rules used to render as a raw-HTML `<table class="am-table">`, with the per-rule Edit/Delete buttons and Enable switch drawn afterwards as a separate `ui.column` nudged up with `margin-top:-8px` - an in-code comment admitted NiceGUI could not put interactive widgets inside `ui.html` rows. Alignment depended on the two independently-laid-out stacks happening to end up with identical row heights, which broke the moment a `Value` cell wrapped onto a second line: the Delete button David clicked could sit next to a different rule than the one it visually lined up with.
+
+Fix: replaced both stacks with a single `ui.table`, copying the Quasar custom header/body-slot idiom `track_table()` already uses in `gui/tabs/acquire.py`. The body slot's `<q-tr>` now contains the rule's own data cells (id, field, match, value, action, pattern, replacement, enabled) plus an actions cell with real `<q-btn>` Edit/Delete controls and a clickable enabled/disabled badge, all inside the same row - alignment is structural, not positional, so it can't drift regardless of how a cell wraps. Clicks emit `edit_rule`/`delete_rule`/`toggle_enabled` events (Quasar's `$parent.$emit`, same pattern as acquire.py's `toggle_downloaded`) carrying the row dict back to Python, where a new `_rule_by_id()` helper looks the live `Rule` back up by id before calling the existing `_open_rule_dialog()`, `_confirm_delete()`, or `_toggle_enabled()` - none of which changed. Extracted `build_rule_rows()` as the pure row-shaping function (mirroring acquire.py's `build_track_rows()`), with four new tests in `gui/tests/test_tagfix.py` covering full field shaping, the enabled/enabled_text pairing for a disabled rule, row_key-equals-id (load-bearing for the lookup-by-id round trip), and the empty-list case.
+
+---
+
 ## 2026-09-05 - A set-value custom rule can no longer be saved with a blank Replacement
 
 Closed the "A set-value rule with an empty Replacement blanks the tag field, and nothing warns" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. This was an explicit save-blocking-validation decision, not a warning: `ApplyAction()` in `TagFixCustomRules.cs` returns `rule.Replacement ?? ""` for `set-value`, and an empty string differs from the current tag value, so it commits and is recorded as a real change - a half-finished rule saved with Replacement left blank would wipe the title (or artists, or album) on every NewMusic file it matched, and since TagFixer also runs inside `integrate` it could land during a real batch, not just a dry run.
