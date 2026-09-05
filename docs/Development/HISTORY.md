@@ -4,6 +4,32 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Investigated: exec-status substring guard did not actually strand a short-titled track
+
+Closed the "exec-status substring guard can leave a short-titled track stuck on 'queued'" item from the
+2026-09-05 "Library Intake design/usability review" section of IDEAS.md. The item described a batch
+containing both "Artist - Run" and "Artist - Runaway": the `[AUTO] Artist - Runaway` line should
+correctly discard "Artist - Run" as a match, but the `[AUTO] Artist - Run` line was claimed to also
+discard "Artist - Run" (because its text is a substring of "Artist - Runaway" among the compared texts),
+leaving that row stuck on "queued"/"notrun" forever.
+
+Read `_update_exec_status()` in `gui/tabs/integration.py` fresh (the item's own line numbers were stale)
+and could not reproduce the failure. Its `candidates`/`texts` are already scoped to only the targets
+whose tag text actually appears in the CURRENT line being processed - a scoping that predates this
+review, from the 2026-09-03 substring-cross-contamination fix. Because "Artist - Runaway" is longer than
+the "Artist - Run" line, it is never a substring of that line and is therefore never a candidate for it,
+so it can never suppress "Artist - Run" from its own line. Verified directly against the running module
+in both line orders (Run-then-Runaway and Runaway-then-Run) before concluding this.
+
+No production code needed changing. Added
+`test_update_exec_status_own_short_line_still_updates_despite_longer_superstring` to
+`gui/tests/test_integration.py` as a permanent regression guard for this exact scenario, since the
+existing cross-contamination test only covered the longer track's line correctly excluding the shorter
+one, not the shorter track's own line correctly updating despite the longer superstring. `verify.bat`
+`[PASS]` (293 C#, 322 GUI).
+
+---
+
 ## 2026-09-05 - Tag Fix's console-line escaping now matches Integration's, quotes included
 
 Closed the "`tagfix.py` has its own `_esc` that does not escape quotes, diverging from `integration.py`" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `gui/tabs/tagfix.py`'s `_esc()` hand-rolled `&`/`<`/`>` replacement only, while `gui/tabs/integration.py`'s `_esc()` already used the stdlib `html.escape(text, quote=True)`. Both feed raw dry-run output into `ui.html`, and while neither currently interpolates into an HTML attribute (so this was not exploitable today), the divergence would bite the first time either is reused in an attribute context.
