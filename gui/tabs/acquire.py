@@ -287,6 +287,31 @@ def _format_duration(duration_ms: int) -> str:
     return f"{total_seconds // 60}:{total_seconds % 60:02d}"
 
 
+def _validate_playlist_input(value: str) -> str | None:
+    """Local (no-network) validation of the Fetch Tracks playlist box - IDEAS.md
+    "Acquire's Fetch accepts an empty or junk playlist id without validating
+    it". extract_playlist_id() itself never raises or signals failure for
+    non-URL input: a raw Spotify playlist id has no "playlist/..." pattern to
+    extract, so anything that doesn't match is echoed back verbatim, stripped
+    - meaning an empty box or free-text junk sails through it unchanged and
+    only failed, expensively, on the round-trip to Spotify inside
+    _do_fetch_tracks(). This adds the two checks extract_playlist_id can't:
+    the box is non-empty after stripping, and whatever it resolves to is
+    actually id-shaped (real Spotify playlist/base62 ids are letters and
+    digits only - see _LIKED_SONGS_ID's own reliance on that same fact).
+
+    Returns the resolved playlist id ready to fetch, or None to tell the
+    caller (fetch()) to show an inline error and never touch the network."""
+    from spotify_tools.open_playlist import extract_playlist_id
+    stripped = (value or "").strip()
+    if not stripped:
+        return None
+    resolved = extract_playlist_id(stripped)
+    if not resolved or not resolved.isalnum():
+        return None
+    return resolved
+
+
 def _do_fetch_tracks(
     playlist_id_or_url: str, on_progress=None
 ) -> list[tuple[str, str, str, str, str, str]]:
@@ -1104,6 +1129,9 @@ def build() -> None:
             _state["fetch_progress"] = (current, total)
 
         async def fetch():
+            if _validate_playlist_input(playlist_input.value) is None:
+                ui.notify("Enter a valid playlist URL or ID", type="negative")
+                return
             _state["fetch_progress"] = (0, 0)
             fetch_progress_label.refresh()
             try:
