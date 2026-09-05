@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire tab's NewMusic scan no longer blocks the event loop on tab build or Clear
+
+Closed the "The NewMusic scan runs synchronously on the event loop during tab build and Clear" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_run_check_against_downloads()` in `gui/tabs/acquire.py` globs the NewMusic inbox and fuzzy-matches every track against every filename on disk, and was called directly (awaited-free) from both `build()` and `clear_tab_state()`. On a large inbox that blocked page construction and the Clear click on NiceGUI's single event loop, freezing every other connected browser view along with it, not just the Acquire tab.
+
+Both call sites now dispatch the scan through `asyncio.to_thread()` and refresh the affected panels once it completes, mirroring the `ui.timer(2.0, _poll_downloads)` pattern already used elsewhere in this same file for exactly this reason. `build()` renders the restored/cached table immediately, then fires the scan via `asyncio.create_task()` from its own synchronous body - the same sync-context dispatch `_apply_history_pick()` already uses - so tab construction never waits on it. `clear_tab_state()` gained an optional `run_check: bool = True` parameter: its direct callers (this module's own unit tests, unchanged) still get the original synchronous scan-then-refresh-inline behavior, while the Clear button's handler (now `async def clear()`) passes `run_check=False`, blanks the table instantly via the existing refresh hooks, then awaits the scan in a worker thread and refreshes the table and progress bar again once it lands. Three new tests in `gui/tests/test_acquire.py` cover `run_check=False` skipping the inline scan, the default still running it, and the four refresh hooks still firing immediately either way.
+
+Invocation-only change: `_run_check_against_downloads()`'s own matching/override/mtime-cache/save-guard logic, and `_poll_downloads()`'s existing timer-based invocation, were untouched. Suite green: 293 C# tests, 305 GUI tests.
+
+---
+
 ## 2026-09-05 - Acquire tab caches mp3 tag reads and stops rewriting the state JSON when nothing changed
 
 Closed the "Every table refresh re-opens every extra MP3 with mutagen, and the 2s poll rewrites the state JSON forever" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_read_mp3_tags(path)` in `gui/tabs/acquire.py` was called fresh for every extra row on every render of `track_table()`, and `_run_check_against_downloads()` called `_save_tracks_cache()` unconditionally on every invocation - including the one `ui.timer(2.0, _poll_downloads)` fires every two seconds while the tab is open. Concrete effect: leaving the Acquire tab open on a 40-file inbox meant a fresh mutagen read of all 40 headers plus a full read-modify-write of `ACQUIRE_STATE_JSON` every two seconds, indefinitely, for state that only actually changes when a download lands.
