@@ -9,7 +9,7 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 | CLI Feature | GUI Equivalent | Notes |
 |-------------|---|---|
 | `audiomanager integrate` (dry-run, confirm/decline per file) | Integration tab with per-track decision blocks | Visual queue + album art + routing preview |
-| `audioManager tag-fix` (define + apply correction rules) | TagFix panel - define rules, apply to library or NewMusic batches | Rules-based bulk operation, NOT individual track editor. No mp3tag-style metadata editor. |
+| `audioManager tag-fix` (define + apply correction rules) | TagFix panel - define rules, apply to NewMusic batches only | Rules-based bulk operation, NOT individual track editor. No mp3tag-style metadata editor. |
 | `audioManager stats` (library analysis) | Statistics Dashboard tab | Charts + distribution analysis |
 | `audioManager sync` (read library state) | Mirror tab (shows last sync state) | Display AudioMirror status without requiring CLI |
 | `audioManager search` / filtering | Library tab with search + filters | Full-text search, filter by genre/decade/artist |
@@ -32,7 +32,7 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 
 **Development priority, confirmed 2026-09-05:** Library Intake (Acquire, Integration, Tag Fix) is the current development focus; Library Insight (Statistics, Library, Mirror, Services) is explicitly lower priority for now - see `docs/Development/IDEAS.md` TIER 2's priority-ordering note.
 
-Verb-only tab naming (Statistics -> "Analyse", Library -> "Browser", etc.) was considered and rejected: half the tabs are already nouns (Statistics, Mirror, Services) by deliberate design, matching the Sonarr/Radarr noun-tab precedent below - forcing verbs onto the rest breaks that precedent for no legibility gain. Tag Fix stays a peer tab inside Intake rather than nested under Integration - its real scope ("apply to library or NewMusic batches", CLI Feature Parity table above) is wider than Integration's NewMusic-only batches, so nesting it would hide the library-wide use case behind a workflow that doesn't cover it. Grouping (same section, same sidebar) achieves "related, keep adjacent" without that loss. Tab `key` values and `?tab=<key>` deep links are unchanged by grouping - see `gui/main.py`'s `NAV_GROUPS`.
+Verb-only tab naming (Statistics -> "Analyse", Library -> "Browser", etc.) was considered and rejected: half the tabs are already nouns (Statistics, Mirror, Services) by deliberate design, matching the Sonarr/Radarr noun-tab precedent below - forcing verbs onto the rest breaks that precedent for no legibility gain. Tag Fix stays a peer tab inside Intake rather than nested under Integration: both operate on NewMusic only (CLAUDE.md's Tag Fixer Constraint - TagFixer must never gain a folder parameter or a library-wide mode), but they are independent workflow stages over the same files, not a sub-step of one another - a user can dry-run and clean up tags before deciding whether or when to integrate, and re-run Tag Fix as new files land regardless of integration timing. Nesting it under Integration would misrepresent it as integration-only tooling. Grouping (same section, same sidebar) achieves "related, keep adjacent" without that loss. Tab `key` values and `?tab=<key>` deep links are unchanged by grouping - see `gui/main.py`'s `NAV_GROUPS`.
 
 **Tab order as built:** Acquire -> Integration -> Tag Fix -> Statistics -> Library -> Mirror -> Services (Spotify/Last.fm/cross-synthesis, far future) - grouped per the sidebar split above.
 

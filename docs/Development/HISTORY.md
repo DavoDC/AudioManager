@@ -4,6 +4,25 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Fixed: GUI-Architecture.md wrongly claimed Tag Fix applies to library batches, not just NewMusic
+
+`GUI-Architecture.md`'s CLI Feature Parity table (line 12) and its "Design Vision" section (line 35) both
+described Tag Fix's scope as "apply to library or NewMusic batches", and used that claim as the stated
+justification for keeping Tag Fix a peer tab rather than nesting it under Integration ("wider than
+Integration's NewMusic-only batches"). This contradicted `CLAUDE.md`'s Tag Fixer Constraint (TagFixer must
+never gain a folder parameter or a library-wide mode), `TagFixer.cs`, and every `FIXED_RULES` card in
+`gui/tabs/tagfix.py` (all five say "NewMusic only") - all of which agree Tag Fix is NewMusic-only, same as
+Integration.
+
+Corrected both lines in `GUI-Architecture.md` to say "NewMusic batches only", and re-derived the "keep Tag
+Fix as its own tab" justification without the false premise: Tag Fix and Integration are independent
+workflow stages over the same NewMusic files, not a sub-step of one another - a user can dry-run and clean
+up tags before deciding whether or when to integrate, and re-run Tag Fix as new files land regardless of
+integration timing. Nesting it under Integration would misrepresent it as integration-only tooling. The
+conclusion (peer tab, grouped under "Library Intake") is unchanged; only the stated reason was wrong.
+Matching correction applied to the "do NOT nest Tag Fix under Integration" item in IDEAS.md. Doc-only
+change, no code touched.
+
 ## 2026-09-05 - Investigated: ui.keyboard does not stack review-stage handlers across refreshes
 
 Closed the "`ui.keyboard` is constructed inside a refreshable, which may stack review-stage key
