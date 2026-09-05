@@ -170,7 +170,9 @@ def _custom_rules_section() -> None:
     ui.html(
         '<div class="gap-note w-full" style="margin-bottom:12px;">'
         "Runs as an additive second pass, after the built-in fixes above. "
-        "Persisted to <code>config/tagfix-custom-rules.xml</code>."
+        "Persisted to <code>config/tagfix-custom-rules.xml</code>. "
+        "<b>Custom rules also run for real during the next batch Integration</b> - "
+        "this tab only ever previews them."
         "</div>"
     )
 
