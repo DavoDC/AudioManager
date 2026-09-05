@@ -1,7 +1,7 @@
 @echo off
 :: Build + unit tests + routing manifest + GUI tests. Human mode: no args (window stays open). Claude mode: --no-pause (clean exit).
 set EXE=%~dp0..\..\project\AudioManager\bin\Release\AudioManager.exe
-set MANIFEST=%~dp0..\..\test-fixtures\routing-manifest.json
+set MANIFEST=%~dp0..\..\csharp-test-fixtures\routing-manifest.json
 set REPO_ROOT=%~dp0..\..
 set START_TIME=%TIME%
 
