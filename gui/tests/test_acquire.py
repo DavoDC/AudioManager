@@ -1,4 +1,5 @@
 """Unit tests for gui.tabs.acquire.match_downloads (pure, no filesystem writes)."""
+import asyncio
 import re
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ from gui.tabs.acquire import (
     _LIKED_SONGS_ID,
     _LIKED_SONGS_NAME,
     _do_fetch_liked_tracks,
+    _do_fetch_tracks,
     _do_sync_liked,
     _downloaded_cell_text,
     _extra_batch_header,
@@ -22,9 +24,12 @@ from gui.tabs.acquire import (
     _length_to_seconds,
     _load_history,
     _load_last_playlist_id,
+    _load_manual_overrides,
     _load_tracks_cache,
     _poll_should_skip,
     _read_mp3_tags,
+    _run_check_against_downloads,
+    _run_sync_liked,
     _sample_extra,
     _sample_tracks,
     _save_last_playlist,
@@ -33,12 +38,14 @@ from gui.tabs.acquire import (
     _sorted_tracks,
     _spotify_client,
     _state,
+    build_track_rows,
     clear_tab_state,
     find_extra_newmusic_files,
     match_downloads,
     progress_metrics,
     restore_cached_tracks,
     simulate,
+    toggle_manual_override,
 )
 
 import spotify_tools.config as spotify_config
@@ -736,6 +743,9 @@ def _blank_state():
     _state["sort_reverse"] = False
     _state["playlist_loaded"] = False
     _state["simulated"] = False
+    _state["manual_override"] = {}
+    _state["fetch_progress"] = None
+    _state["sync_busy"] = False
 
 
 def test_restore_reloads_tracks_and_ticks_after_a_tab_rebuild(tmp_path, monkeypatch):
@@ -887,4 +897,270 @@ def test_simulate_state_is_never_persisted(tmp_path, monkeypatch):
     acquire_module._run_check_against_downloads()
 
     assert _load_tracks_cache("pl1") == ([], {})
+
+
+# ------------------------------------------------- Acquire tab polish (2026-09-05)
+# manual override for verify-download false pos/neg (item 1)
+
+
+def test_toggle_manual_override_flips_value_and_marks_the_row(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["playlist_loaded"] = True
+
+    row_key = "1:Dua Lipa:Levitating"
+    toggle_manual_override(row_key)
+
+    assert _state["downloaded"][row_key] is True  # was False
+    assert _state["manual_override"][row_key] is True
+
+    toggle_manual_override(row_key)
+    assert _state["downloaded"][row_key] is False  # flips back
+
+
+def test_toggle_manual_override_persists_across_a_reload(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _save_last_playlist("pl1", "First")
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["playlist_loaded"] = True
+
+    toggle_manual_override("0:Eminem:Lose Yourself")
+
+    assert _load_manual_overrides("pl1") == {"0:Eminem:Lose Yourself": True}
+
+
+def test_check_against_downloads_skips_overridden_rows(tmp_path, monkeypatch):
+    """The fuzzy match must never touch a row the user has manually set - even
+    when the real NewMusic folder disagrees with the override."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    # Neither file exists on disk, so an un-overridden fuzzy match would mark both False.
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = {"0:Eminem:Lose Yourself": True, "1:Dua Lipa:Levitating": False}
+    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}
+    _state["playlist_loaded"] = True
+
+    _run_check_against_downloads()
+
+    assert _state["downloaded"]["0:Eminem:Lose Yourself"] is True  # override kept, untouched by fuzzy match
+    assert _state["downloaded"]["1:Dua Lipa:Levitating"] is False  # freshly matched (no file -> False)
+
+
+def test_check_against_downloads_still_matches_non_overridden_rows(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    (newmusic / "Dua Lipa - Levitating.mp3").write_bytes(b"")
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = {"0:Eminem:Lose Yourself": False, "1:Dua Lipa:Levitating": False}
+    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}  # user says "not downloaded", stays False
+    _state["playlist_loaded"] = True
+
+    _run_check_against_downloads()
+
+    assert _state["downloaded"]["0:Eminem:Lose Yourself"] is False  # override honored despite no file either way
+    assert _state["downloaded"]["1:Dua Lipa:Levitating"] is True  # freshly matched, file exists
+
+
+def test_clear_tab_state_forgets_manual_overrides(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}
+    _state["playlist_loaded"] = True
+
+    clear_tab_state()
+
+    assert _state["manual_override"] == {}
+
+
+def test_restore_cached_tracks_restores_manual_overrides(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _save_last_playlist("pl1", "First")
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED, {"0:Eminem:Lose Yourself": True})
+
+    assert restore_cached_tracks() is True
+    assert _state["manual_override"] == {"0:Eminem:Lose Yourself": True}
+
+
+# ---------------------------------------------------------- fetch progress (item 2)
+
+
+def test_do_fetch_tracks_reports_progress_per_track(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+
+    class FakeClient:
+        def get_playlist_tracks_detailed(self, playlist_id):
+            return [
+                {"artist": "Eminem", "title": "Lose Yourself", "album": "8 Mile", "year": "2002", "duration_ms": 320000},
+                {"artist": "Dua Lipa", "title": "Levitating", "album": "Future Nostalgia", "year": "2020", "duration_ms": 203000},
+            ]
+
+        def get_playlist_name(self, playlist_id):
+            return "My Playlist"
+
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: FakeClient())
+
+    seen = []
+    _do_fetch_tracks("pl1", on_progress=lambda current, total: seen.append((current, total)))
+
+    assert seen == [(1, 2), (2, 2)]
+
+
+def test_do_fetch_tracks_progress_is_optional(tmp_path, monkeypatch):
+    """Every pre-existing caller passes no on_progress at all - must not break."""
+    _isolate_state_file(tmp_path, monkeypatch)
+
+    class FakeClient:
+        def get_playlist_tracks_detailed(self, playlist_id):
+            return [{"artist": "A", "title": "B", "album": "C", "year": "2020", "duration_ms": 1000}]
+
+        def get_playlist_name(self, playlist_id):
+            return ""
+
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: FakeClient())
+
+    rows = _do_fetch_tracks("pl1")
+    assert len(rows) == 1
+
+
+def test_do_fetch_liked_tracks_reports_progress_per_track(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+
+    class FakeClient:
+        def get_liked_tracks_detailed(self):
+            return [
+                {"artist": "Eminem", "title": "Lose Yourself", "album": "8 Mile", "year": "2002", "duration_ms": 320000},
+                {"artist": "Dua Lipa", "title": "Levitating", "album": "Future Nostalgia", "year": "2020", "duration_ms": 203000},
+                {"artist": "Drake", "title": "Hotline Bling", "album": "Views", "year": "2016", "duration_ms": 267000},
+            ]
+
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: FakeClient())
+
+    seen = []
+    _do_fetch_liked_tracks(on_progress=lambda current, total: seen.append((current, total)))
+
+    assert seen == [(1, 3), (2, 3), (3, 3)]
+
+
+# ------------------------------------------------------------- pagination (item 3)
+
+
+def test_build_track_rows_shapes_every_fetched_track(tmp_path, monkeypatch):
+    """ui.table's own pagination prop decides what renders - build_track_rows()
+    itself must never slice or drop tracks from the full fetched list."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+
+    rows = build_track_rows()
+
+    assert len(rows) == 2
+    assert rows[0]["row_key"] == "0:Eminem:Lose Yourself"
+    assert rows[0]["artist"] == "Eminem"
+    assert rows[0]["is_downloaded"] is True
+    assert rows[1]["is_downloaded"] is False
+
+
+def test_build_track_rows_flags_overridden_rows(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}
+
+    rows = build_track_rows()
+
+    assert rows[0]["is_overridden"] is True
+    assert rows[1]["is_overridden"] is False
+
+
+def test_build_track_rows_respects_hide_downloaded(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["hide_downloaded"] = True
+
+    rows = build_track_rows()
+
+    assert len(rows) == 1
+    assert rows[0]["row_key"] == "1:Dua Lipa:Levitating"
+    _state["hide_downloaded"] = False  # don't leak into other tests sharing module state
+
+
+# ------------------------------------------------------- dedupe guard for Sync Liked (item 4)
+
+
+def test_run_sync_liked_second_call_while_busy_is_a_no_op(tmp_path, monkeypatch):
+    """A second Sync Liked Songs click that lands while the first sync is still
+    in flight must not fire a second overlapping sync - the model is
+    gui/runner.py's `runner.busy` guard. Uses real threading.Events (not
+    asyncio.gather scheduling order, which gives no ordering guarantee once
+    the first call has already reached asyncio.to_thread) to force the second
+    call to land deterministically while the first is genuinely mid-flight."""
+    import threading
+
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    calls = []
+    started = threading.Event()
+    release = threading.Event()
+
+    def fake_sync():
+        calls.append(1)
+        started.set()
+        release.wait(timeout=2)
+        return "Moved 1 track(s)"
+
+    monkeypatch.setattr(acquire_module, "_do_sync_liked", fake_sync)
+
+    async def run_overlapping_clicks():
+        task1 = asyncio.create_task(_run_sync_liked())
+        await asyncio.to_thread(started.wait, 2)  # wait until the first sync is truly in flight
+        await _run_sync_liked()  # the second click, landing mid-flight
+        release.set()
+        await task1
+
+    asyncio.run(run_overlapping_clicks())
+
+    assert calls == [1]  # only the first call's body ever ran
+    assert _state["sync_busy"] is False  # guard cleared afterwards
+
+
+def test_run_sync_liked_clears_busy_flag_on_failure(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+
+    def fake_sync():
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(acquire_module, "_do_sync_liked", fake_sync)
+
+    messages = []
+    asyncio.run(_run_sync_liked(messages.append))
+
+    assert _state["sync_busy"] is False
+    assert "Failed: boom" in messages[-1]
+
+
+def test_run_sync_liked_reports_success_message(tmp_path, monkeypatch):
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    monkeypatch.setattr(acquire_module, "_do_sync_liked", lambda: "Moved 2 track(s)")
+
+    messages = []
+    asyncio.run(_run_sync_liked(messages.append))
+
+    assert messages[-1] == "Moved 2 track(s)"
+    assert _state["sync_busy"] is False
 

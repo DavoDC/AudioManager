@@ -49,7 +49,8 @@ from gui import config
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
-          "hide_downloaded": False, "playlist_loaded": False, "simulated": False}
+          "hide_downloaded": False, "playlist_loaded": False, "simulated": False,
+          "manual_override": {}, "fetch_progress": None, "sync_busy": False}
 # tracks: [(artist, title, album, year, length, url), ...]; downloaded: {row_key: bool};
 # extra: [(artist, title, url, path), ...] - files in NEWMUSIC_DIR matching no loaded track;
 # path is the file's own Path, read by _read_mp3_tags() for Album/Year/Length at render time
@@ -62,8 +63,36 @@ _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_r
 # simulated: True once simulate() has loaded synthetic sample data instead of a real
 # fetch(); reset False by clear() and by a real fetch(), mirroring integration.py's
 # IntegrationState.simulated. Drives the "simulate-banner" in build().
+# manual_override: {row_key: True} for every row whose Downloaded tickbox the user has
+# clicked directly (see toggle_manual_override) - IDEAS.md "Acquire tab polish" OPUS
+# decision 2026-09-05: no separate tickbox column, the existing Downloaded cell becomes
+# clickable instead. A later _run_check_against_downloads() skips fuzzy-matching any
+# row present here and keeps its value exactly as the user set it. Persisted alongside
+# tracks/downloaded in ACQUIRE_STATE_JSON (see _save_tracks_cache/_load_manual_overrides).
+# fetch_progress: (current, total) while fetch()/load_liked() is running, else None -
+# polled by build()'s fetch-progress label timer for a "Fetching track N/M" readout.
+# sync_busy: guards _run_sync_liked() against a double-click firing two overlapping
+# syncs before the first completes - checked/cleared exactly like runner.busy elsewhere
+# in this GUI (gui/runner.py).
 
 _SORT_COLUMNS = {"Artist": 0, "Title": 1, "Album": 2, "Year": 3, "Length": 4}
+
+# (ui.table column name, display header, row-dict field) for the paginated
+# tracks table in track_table(). Column "name" is what the custom header/body
+# Quasar slots and the header_click/toggle_downloaded event handlers key off
+# of; "display" is what _header_label()'s sort-arrow decoration wraps for the
+# _SORT_COLUMNS entries. Kept as one ordered list so the columns= built for
+# ui.table and the header_click -> _SORT_COLUMNS lookup can never drift apart.
+_TABLE_COLUMNS = [
+    ("artist", "Artist", "artist"),
+    ("title", "Title", "title"),
+    ("album", "Album", "album"),
+    ("year", "Year", "year"),
+    ("length", "Length", "length"),
+    ("deemix", "Deemix", "url"),
+    ("downloaded", "Downloaded", "downloaded_text"),
+]
+_TABLE_COLUMN_DISPLAY = {name: display for name, display, _field in _TABLE_COLUMNS}
 
 _HISTORY_BUTTON_TOOLTIP = "Playlist history"
 # Icon-only history button next to the playlist input carried no title/tooltip -
@@ -156,12 +185,17 @@ def _write_state_json(state: dict) -> None:
     config.ACQUIRE_STATE_JSON.write_text(json.dumps(state), encoding="utf-8")
 
 
-def _save_tracks_cache(playlist_id: str, tracks: list, downloaded: dict) -> None:
+def _save_tracks_cache(playlist_id: str, tracks: list, downloaded: dict, manual_override: dict | None = None) -> None:
     """Persists the fetched tracks and their Downloaded ticks to
     config.ACQUIRE_STATE_JSON under {"cache": {playlist_id: {...}}}, so a
     browser reload or a tab rebuild restores the table instead of starting
     empty (see restore_cached_tracks). One mechanism serves both the "state
     persistence across page reload" and "cache fetched tracks to disk" gaps.
+
+    manual_override is optional (defaults to {}) so every pre-existing caller
+    that only knows about tracks/downloaded keeps working unchanged - stored
+    alongside them under its own key and read back by _load_manual_overrides,
+    never by _load_tracks_cache (whose two-value return shape stays as-is).
 
     Cache entries are pruned to the playlists still in history, so the file
     can never grow without bound as playlists come and go. Tracks are stored
@@ -172,7 +206,11 @@ def _save_tracks_cache(playlist_id: str, tracks: list, downloaded: dict) -> None
     cache = state.get("cache", {})
     if not isinstance(cache, dict):
         cache = {}
-    cache[playlist_id] = {"tracks": [list(t) for t in tracks], "downloaded": dict(downloaded)}
+    cache[playlist_id] = {
+        "tracks": [list(t) for t in tracks],
+        "downloaded": dict(downloaded),
+        "manual_override": dict(manual_override or {}),
+    }
     keep = {h.get("id") for h in state.get("history", [])} | {playlist_id}
     state["cache"] = {pid: entry for pid, entry in cache.items() if pid in keep}
     _write_state_json(state)
@@ -190,6 +228,21 @@ def _load_tracks_cache(playlist_id: str) -> tuple[list[tuple], dict]:
     tracks = [tuple(t) for t in entry.get("tracks", []) if isinstance(t, (list, tuple))]
     downloaded = entry.get("downloaded", {})
     return tracks, downloaded if isinstance(downloaded, dict) else {}
+
+
+def _load_manual_overrides(playlist_id: str) -> dict:
+    """Companion to _load_tracks_cache, kept as a separate accessor rather
+    than a third return value so every existing `tracks, downloaded =
+    _load_tracks_cache(...)` call site (this module and its tests) keeps
+    working unchanged. Same degrade-to-empty contract: unknown playlist,
+    missing/corrupt state file, or a malformed entry all return {}."""
+    if not playlist_id:
+        return {}
+    entry = (_load_state_json().get("cache") or {}).get(playlist_id)
+    if not isinstance(entry, dict):
+        return {}
+    overrides = entry.get("manual_override", {})
+    return overrides if isinstance(overrides, dict) else {}
 
 
 def _forget_cached_playlist() -> None:
@@ -234,7 +287,16 @@ def _format_duration(duration_ms: int) -> str:
     return f"{total_seconds // 60}:{total_seconds % 60:02d}"
 
 
-def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, str, str]]:
+def _do_fetch_tracks(
+    playlist_id_or_url: str, on_progress=None
+) -> list[tuple[str, str, str, str, str, str]]:
+    """on_progress, if given, is called (current, total) once per track as the
+    fetched rows are shaped into the tuple track_table() expects - IDEAS.md
+    "Acquire tab polish" item 2 (progress feedback during Fetch/Sync).
+    get_playlist_tracks_detailed() itself has no progress hook of its own
+    (it returns the whole page-paginated list in one call), so this is the
+    "simple counter around the loop" option the item names, applied to the
+    one loop this function actually owns."""
     from spotify_tools.open_playlist import extract_playlist_id, _build_deemix_url
     playlist_id = extract_playlist_id(playlist_id_or_url)
     client = _spotify_client()
@@ -244,32 +306,39 @@ def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, 
     except Exception:
         name = ""
     _save_last_playlist(playlist_id, name)
-    return [
-        (
+    total = len(tracks)
+    rows = []
+    for i, t in enumerate(tracks, start=1):
+        rows.append((
             t["artist"], t["title"], t["album"], t["year"],
             _format_duration(t.get("duration_ms", 0)), _build_deemix_url(t["artist"], t["title"]),
-        )
-        for t in tracks
-    ]
+        ))
+        if on_progress:
+            on_progress(i, total)
+    return rows
 
 
-def _do_fetch_liked_tracks() -> list[tuple[str, str, str, str, str, str]]:
+def _do_fetch_liked_tracks(on_progress=None) -> list[tuple[str, str, str, str, str, str]]:
     """Liked Songs counterpart of _do_fetch_tracks(): identical row shape and
     downstream flow (match_downloads/find_extra_newmusic_files run on the
     result exactly the same way), but sourced from RealSpotifyClient's
     get_liked_tracks_detailed() instead of a playlist id. Persists under
-    _LIKED_SONGS_ID so history/cache/restore all work unmodified."""
+    _LIKED_SONGS_ID so history/cache/restore all work unmodified. Same
+    on_progress contract as _do_fetch_tracks() - see its docstring."""
     from spotify_tools.open_playlist import _build_deemix_url
     client = _spotify_client()
     tracks = client.get_liked_tracks_detailed()
     _save_last_playlist(_LIKED_SONGS_ID, _LIKED_SONGS_NAME)
-    return [
-        (
+    total = len(tracks)
+    rows = []
+    for i, t in enumerate(tracks, start=1):
+        rows.append((
             t["artist"], t["title"], t["album"], t["year"],
             _format_duration(t.get("duration_ms", 0)), _build_deemix_url(t["artist"], t["title"]),
-        )
-        for t in tracks
-    ]
+        ))
+        if on_progress:
+            on_progress(i, total)
+    return rows
 
 
 def _sample_tracks() -> list[tuple[str, str, str, str, str, str]]:
@@ -449,21 +518,76 @@ def _run_check_against_downloads() -> None:
     """Recomputes _state["downloaded"] and _state["extra"] from a read-only
     scan of config.NEWMUSIC_DIR, then persists the result for the loaded
     playlist. Module level (not a build() closure) so it is directly
-    unit-testable and so clear()/restore both reuse the one implementation."""
+    unit-testable and so clear()/restore both reuse the one implementation.
+
+    Rows in _state["manual_override"] are excluded from the fuzzy match
+    entirely and keep exactly the Downloaded value the user set - IDEAS.md
+    "Acquire tab polish" OPUS decision 2026-09-05: a manual override must
+    survive every later re-check, not just the one that set it."""
     from spotify_tools.open_playlist import _build_deemix_url
+    overrides = _state["manual_override"]
     current_tracks = [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]]
-    found, _missing = match_downloads(current_tracks, config.NEWMUSIC_DIR)
-    found_set = set(found)
-    _state["downloaded"] = {
-        f"{i}:{artist}:{title}": f"{artist} - {title}" in found_set
+    to_match = [
+        (artist, title)
         for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"])
-    }
+        if f"{i}:{artist}:{title}" not in overrides
+    ]
+    found, _missing = match_downloads(to_match, config.NEWMUSIC_DIR)
+    found_set = set(found)
+    new_downloaded = {}
+    for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"]):
+        row_key = f"{i}:{artist}:{title}"
+        if row_key in overrides:
+            new_downloaded[row_key] = _state["downloaded"].get(row_key, False)
+        else:
+            new_downloaded[row_key] = f"{artist} - {title}" in found_set
+    _state["downloaded"] = new_downloaded
     _state["extra"] = [
         (artist, title, _build_deemix_url(artist, title), path)
         for artist, title, path in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
     ]
     if _state["playlist_loaded"] and not _state["simulated"]:
-        _save_tracks_cache(_load_last_playlist_id(), _state["tracks"], _state["downloaded"])
+        _save_tracks_cache(_load_last_playlist_id(), _state["tracks"], _state["downloaded"], overrides)
+
+
+def toggle_manual_override(row_key: str) -> None:
+    """Handler behind the now-clickable Downloaded cell (IDEAS.md "Acquire
+    tab polish" OPUS decision 2026-09-05: flip the existing tickbox in place,
+    no new column). Flips the row's Downloaded value and marks it overridden
+    so _run_check_against_downloads() leaves it alone from now on. Module
+    level so it is directly unit-testable, matching clear_tab_state() and
+    _run_check_against_downloads() in this file."""
+    current = _state["downloaded"].get(row_key, False)
+    _state["downloaded"][row_key] = not current
+    _state["manual_override"][row_key] = True
+    if _state["playlist_loaded"] and not _state["simulated"]:
+        _save_tracks_cache(_load_last_playlist_id(), _state["tracks"], _state["downloaded"], _state["manual_override"])
+
+
+def build_track_rows() -> list[dict]:
+    """Row dicts for the paginated ui.table in track_table() - IDEAS.md
+    "Acquire tab polish" item 3 (pagination). This is the render layer only:
+    it shapes the *entire* filtered/sorted _state["tracks"] into rows (same
+    hide_downloaded filtering the old hand-rolled loop did); ui.table's own
+    `pagination` prop, not this function, decides how many DOM rows actually
+    render, so no track is ever sliced or dropped from state here.
+    is_overridden reflects _state["manual_override"] so the table can give an
+    overridden row a distinct marker (see track_table())."""
+    rows = []
+    for i, (artist, title, album, year, length, url) in _sorted_tracks():
+        row_key = f"{i}:{artist}:{title}"
+        is_downloaded = _state["downloaded"].get(row_key, False)
+        if _state["hide_downloaded"] and is_downloaded:
+            continue
+        rows.append({
+            "row_key": row_key,
+            "artist": artist, "title": title, "album": album, "year": year, "length": length,
+            "url": url,
+            "downloaded_text": _downloaded_cell_text(is_downloaded),
+            "is_downloaded": is_downloaded,
+            "is_overridden": row_key in _state["manual_override"],
+        })
+    return rows
 
 
 def restore_cached_tracks() -> bool:
@@ -473,11 +597,13 @@ def restore_cached_tracks() -> bool:
     a session that already has tracks (or is in Simulate mode) is left alone."""
     if _state["tracks"] or _state["simulated"]:
         return False
-    tracks, downloaded = _load_tracks_cache(_load_last_playlist_id())
+    playlist_id = _load_last_playlist_id()
+    tracks, downloaded = _load_tracks_cache(playlist_id)
     if not tracks:
         return False
     _state["tracks"] = tracks
     _state["downloaded"] = downloaded
+    _state["manual_override"] = _load_manual_overrides(playlist_id)
     _state["playlist_loaded"] = True
     return True
 
@@ -490,6 +616,7 @@ def clear_tab_state() -> None:
     history included, matching what fetch() does."""
     _state["tracks"] = []
     _state["downloaded"] = {}
+    _state["manual_override"] = {}
     _state["sort_col"] = None
     _state["sort_reverse"] = False
     _state["playlist_loaded"] = False
@@ -595,6 +722,36 @@ def _extra_batch_header(count: int, playlist_loaded: bool) -> str:
     return f"NEWMUSIC FOLDER ({count})"
 
 
+async def _run_sync_liked(status_cb=lambda msg: None) -> None:
+    """Guarded, testable body of the Sync Liked Songs button handler -
+    IDEAS.md "Acquire tab polish" item 4 (dedupe protection). A second call
+    made while one is already in flight is a no-op, exactly like
+    gui/runner.py's `runner.busy` guard: checked at the top, cleared in a
+    finally so a raised exception can never leave the flag stuck True.
+    status_cb defaults to a no-op so this runs standalone in tests with no
+    live UI, mirroring _refresh_hooks' default no-ops elsewhere in this file.
+    Kept separate from _build_sync_liked_card() (still not called from
+    build() - Spotify 403s in Development Mode, account not allowlisted) so
+    the guard is unit-testable without a live NiceGUI page."""
+    if _state["sync_busy"]:
+        return
+    _state["sync_busy"] = True
+    status_cb("Working...")
+    try:
+        msg = await asyncio.to_thread(_do_sync_liked)
+        status_cb(msg)
+    except Exception as e:
+        hint = ""
+        if "403" in str(e):
+            hint = (" - likely your Spotify account isn't allowlisted for this app "
+                    "(Development Mode apps require adding your account under "
+                    "Users Management on https://developer.spotify.com/dashboard, "
+                    "separate from OAuth scope consent)")
+        status_cb(f"Failed: {e}{hint}")
+    finally:
+        _state["sync_busy"] = False
+
+
 def _build_sync_liked_card() -> None:
     """Deferred, not called from build() - Spotify 403s in Development Mode
     (account not allowlisted). See IDEAS.md TIER 2 'Sync Liked Songs broken'.
@@ -605,20 +762,13 @@ def _build_sync_liked_card() -> None:
         result_label = ui.label("").classes("note")
 
         async def sync():
-            result_label.set_text("Working...")
-            try:
-                msg = await asyncio.to_thread(_do_sync_liked)
+            def status_cb(msg: str) -> None:
                 result_label.set_text(msg)
-                ui.notify(msg, type="positive")
-            except Exception as e:
-                hint = ""
-                if "403" in str(e):
-                    hint = (" - likely your Spotify account isn't allowlisted for this app "
-                            "(Development Mode apps require adding your account under "
-                            "Users Management on https://developer.spotify.com/dashboard, "
-                            "separate from OAuth scope consent)")
-                result_label.set_text(f"Failed: {e}{hint}")
-                ui.notify(f"Sync failed: {e}{hint}", type="negative", multi_line=True)
+                if msg == "Working...":
+                    return
+                ui.notify(msg, type="negative" if msg.startswith("Failed:") else "positive",
+                          multi_line=msg.startswith("Failed:"))
+            await _run_sync_liked(status_cb)
 
         ui.button("Move Liked Songs to Inbox", icon="playlist_add", on_click=sync) \
             .props("unelevated dense color=primary size=sm")
@@ -736,65 +886,90 @@ def build() -> None:
                     history_menu.on("show", history_items.refresh)
                     history_items()
 
+        def _handle_header_click(col_name: str) -> None:
+            col = _TABLE_COLUMN_DISPLAY.get(col_name)
+            if col is None:
+                return
+            # cycle: unset -> asc -> desc -> unset (back to playlist order)
+            if _state["sort_col"] != col:
+                _state["sort_col"] = col
+                _state["sort_reverse"] = False
+            elif not _state["sort_reverse"]:
+                _state["sort_reverse"] = True
+            else:
+                _state["sort_col"] = None
+                _state["sort_reverse"] = False
+            track_table.refresh()
+
+        def _handle_row_toggle(row: dict) -> None:
+            toggle_manual_override(row["row_key"])
+            track_table.refresh()
+            progress_bar.refresh()
+
         @ui.refreshable
         def track_table():
+            """Fetched tracks render through NiceGUI/Quasar's ui.table with
+            pagination={'rowsPerPage': 50} - IDEAS.md "Acquire tab polish"
+            OPUS decision 2026-09-05: the render layer is the only thing that
+            paginates, _state["tracks"] always holds every fetched track.
+            build_track_rows() does the sort/hide_downloaded shaping (same
+            logic the old hand-rolled loop did); ui.table's own pagination
+            prop decides how many of those rows actually hit the DOM. The
+            "extra" (NewMusic-only) section below stays a plain table - it is
+            not the large list this item targets."""
             if not _state["tracks"] and not _state["extra"]:
                 ui.label("No tracks fetched yet, and nothing sitting unmatched in NewMusic.").classes("note")
                 return
-            with ui.element("table").classes("am-table acquire-table").style("width:100%;"):
-                with ui.element("tr"):
-                    for h in ("Artist", "Title", "Album", "Year", "Length", "Deemix", "Downloaded"):
-                        with ui.element("th").style(
-                            "text-align:center;" if h == "Downloaded" else "text-align:left;"
-                        ):
-                            if h in _SORT_COLUMNS:
-                                label_text = _header_label(h, _state["sort_col"], _state["sort_reverse"])
+            if _state["tracks"]:
+                columns = [
+                    {"name": name, "label": _header_label(display, _state["sort_col"], _state["sort_reverse"])
+                              if display in _SORT_COLUMNS else display,
+                     "field": field, "align": "center" if name == "downloaded" else "left", "sortable": False}
+                    for name, display, field in _TABLE_COLUMNS
+                ]
+                table = ui.table(
+                    rows=build_track_rows(), columns=columns, row_key="row_key",
+                    pagination={"rowsPerPage": 50},
+                ).classes("am-table acquire-table").style("width:100%;")
+                table.add_slot("header", r'''
+                    <q-tr :props="props">
+                        <q-th v-for="col in props.cols" :key="col.name" :props="props"
+                              style="cursor:pointer;" @click="() => $parent.$emit('header_click', col.name)">
+                            {{ col.label }}
+                        </q-th>
+                    </q-tr>
+                ''')
+                table.add_slot("body", r'''
+                    <q-tr :props="props" :class="props.row.is_downloaded ? 'row-downloaded' : ''">
+                        <q-td key="artist" :props="props">{{ props.row.artist }}</q-td>
+                        <q-td key="title" :props="props">{{ props.row.title }}</q-td>
+                        <q-td key="album" :props="props">{{ props.row.album }}</q-td>
+                        <q-td key="year" :props="props">{{ props.row.year }}</q-td>
+                        <q-td key="length" :props="props">{{ props.row.length }}</q-td>
+                        <q-td key="deemix" :props="props">
+                            <a :href="props.row.url" target="_blank">Open in Deemix</a>
+                        </q-td>
+                        <q-td key="downloaded" :props="props" style="text-align:center;cursor:pointer;"
+                              :title="props.row.is_overridden ? 'Manually set by you' : ''"
+                              @click="() => $parent.$emit('toggle_downloaded', props.row)">
+                            <span :class="[props.row.is_downloaded ? 'dl-badge' : '', props.row.is_overridden ? 'dl-override' : '']">
+                                {{ props.row.downloaded_text }}
+                            </span>
+                        </q-td>
+                    </q-tr>
+                ''')
+                table.on("header_click", lambda e: _handle_header_click(e.args))
+                table.on("toggle_downloaded", lambda e: _handle_row_toggle(e.args))
 
-                                def _make_sort_handler(col=h):
-                                    def handler():
-                                        # cycle: unset -> asc -> desc -> unset (back to playlist order)
-                                        if _state["sort_col"] != col:
-                                            _state["sort_col"] = col
-                                            _state["sort_reverse"] = False
-                                        elif not _state["sort_reverse"]:
-                                            _state["sort_reverse"] = True
-                                        else:
-                                            _state["sort_col"] = None
-                                            _state["sort_reverse"] = False
-                                        track_table.refresh()
-                                    return handler
-
-                                ui.label(label_text).style("cursor:pointer;").on("click", _make_sort_handler())
-                            else:
-                                ui.label(h)
-                for i, (artist, title, album, year, length, url) in _sorted_tracks():
-                    row_key = f"{i}:{artist}:{title}"
-                    is_downloaded = _state["downloaded"].get(row_key, False)
-                    if _state["hide_downloaded"] and is_downloaded:
-                        continue
-                    with ui.element("tr").classes("row-downloaded" if is_downloaded else ""):
-                        with ui.element("td"):
-                            ui.label(artist)
-                        with ui.element("td"):
-                            ui.label(title)
-                        with ui.element("td"):
-                            ui.label(album)
-                        with ui.element("td"):
-                            ui.label(year)
-                        with ui.element("td"):
-                            ui.label(length)
-                        with ui.element("td"):
-                            ui.link(_DEEMIX_LINK_LABEL, url, new_tab=True)
-                        with ui.element("td").style("text-align:center;"):
-                            cell = ui.label(_downloaded_cell_text(is_downloaded))
-                            if is_downloaded:
-                                cell.classes("dl-badge")
-
-                if _state["extra"] and _state["playlist_loaded"]:
-                    with ui.element("tr").classes("batch-header"):
-                        with ui.element("td").props("colspan=7"):
-                            ui.label(_extra_batch_header(len(_state["extra"]), _state["playlist_loaded"]))
-                if _state["extra"]:
+            # "extra" (NewMusic-only) rows stay a plain hand-rolled table, separate
+            # from the paginated ui.table above - the OPUS pagination decision
+            # names only the large fetched-tracks list, not this smaller diff view.
+            if _state["extra"]:
+                with ui.element("table").classes("am-table acquire-table").style("width:100%;"):
+                    if _state["playlist_loaded"]:
+                        with ui.element("tr").classes("batch-header"):
+                            with ui.element("td").props("colspan=7"):
+                                ui.label(_extra_batch_header(len(_state["extra"]), _state["playlist_loaded"]))
                     for artist, title, url, path in sorted(_state["extra"], key=lambda r: r[0].lower()):
                         if _state["hide_downloaded"]:
                             continue
@@ -815,9 +990,16 @@ def build() -> None:
                             with ui.element("td").style("text-align:center;"):
                                 ui.label(_downloaded_cell_text(True)).classes("dl-badge")
 
+        def _set_fetch_progress(current: int, total: int) -> None:
+            _state["fetch_progress"] = (current, total)
+
         async def fetch():
+            _state["fetch_progress"] = (0, 0)
+            fetch_progress_label.refresh()
             try:
-                _state["tracks"] = await asyncio.to_thread(_do_fetch_tracks, playlist_input.value or "")
+                _state["tracks"] = await asyncio.to_thread(
+                    _do_fetch_tracks, playlist_input.value or "", _set_fetch_progress
+                )
                 _state["playlist_loaded"] = True
                 _state["simulated"] = False  # a real fetch always supersedes a prior Simulate run
                 await asyncio.to_thread(_run_check_against_downloads)
@@ -828,14 +1010,19 @@ def build() -> None:
                 ui.notify(f"Fetched {len(_state['tracks'])} tracks", type="positive")
             except Exception as e:
                 ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
+            finally:
+                _state["fetch_progress"] = None
+                fetch_progress_label.refresh()
 
         async def load_liked():
             """Liked Songs counterpart of fetch(): same downstream flow (match
             against NEWMUSIC_DIR, persist, refresh table/progress/history),
             sourced from _do_fetch_liked_tracks() instead of a playlist id -
             see that function's docstring for the persistence-key rationale."""
+            _state["fetch_progress"] = (0, 0)
+            fetch_progress_label.refresh()
             try:
-                _state["tracks"] = await asyncio.to_thread(_do_fetch_liked_tracks)
+                _state["tracks"] = await asyncio.to_thread(_do_fetch_liked_tracks, _set_fetch_progress)
                 _state["playlist_loaded"] = True
                 _state["simulated"] = False
                 await asyncio.to_thread(_run_check_against_downloads)
@@ -846,6 +1033,9 @@ def build() -> None:
                 ui.notify(f"Loaded {len(_state['tracks'])} liked songs", type="positive")
             except Exception as e:
                 ui.notify(f"Load Liked Songs failed: {e}", type="negative", multi_line=True)
+            finally:
+                _state["fetch_progress"] = None
+                fetch_progress_label.refresh()
 
         def clear():
             playlist_input.value = ""
@@ -855,6 +1045,22 @@ def build() -> None:
             _state["hide_downloaded"] = e.value
             track_table.refresh()
 
+        @ui.refreshable
+        def fetch_progress_label():
+            """Per-track "Fetching track N/M" readout for the Fetch/Load Liked
+            Songs loop - IDEAS.md "Acquire tab polish" item 2. _state["fetch_progress"]
+            is written from the worker thread inside _do_fetch_tracks/
+            _do_fetch_liked_tracks (see on_progress); a ui.timer below polls it
+            and calls .refresh() on the event-loop thread, since NiceGUI UI
+            updates aren't safe to fire directly from a to_thread() worker."""
+            progress = _state["fetch_progress"]
+            if progress is None:
+                ui.label("").classes("note")
+                return
+            current, total = progress
+            text = "Fetching..." if total == 0 else f"Fetching track {current}/{total}"
+            ui.label(text).classes("note")
+
         with ui.row().style("gap:8px;margin:8px 0;align-items:center;"):
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
             ui.button("Load Liked Songs", icon="favorite", on_click=load_liked).props("dense outline size=sm")
@@ -863,6 +1069,7 @@ def build() -> None:
             ui.button("Clear", icon="clear", on_click=clear).props("dense outline size=sm color=grey")
             ui.checkbox("Hide downloaded", value=_state["hide_downloaded"], on_change=_toggle_hide_downloaded) \
                 .props("dense").classes("note").style("margin:0;padding:0;")
+            fetch_progress_label()
         # Restore the last playlist's tracks/ticks from disk (see
         # restore_cached_tracks) so a browser reload or a tab rebuild comes
         # back to the table you left, then run the NewMusic scan once
@@ -898,3 +1105,19 @@ def build() -> None:
                 _poll["busy"] = False
 
         ui.timer(2.0, _poll_downloads)
+
+        _fetch_progress_seen = {"value": None}
+
+        def _poll_fetch_progress():
+            """Ticks fetch_progress_label() while a fetch is in flight -
+            _set_fetch_progress() (item 2's on_progress callback) writes
+            _state["fetch_progress"] from the asyncio.to_thread() worker, and
+            NiceGUI refreshes must happen on the event-loop thread, so this
+            timer is the bridge rather than refreshing straight from the
+            worker. Only refreshes when the value actually changed."""
+            current = _state["fetch_progress"]
+            if current != _fetch_progress_seen["value"]:
+                _fetch_progress_seen["value"] = current
+                fetch_progress_label.refresh()
+
+        ui.timer(0.2, _poll_fetch_progress)
