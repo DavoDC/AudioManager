@@ -38,6 +38,7 @@ from gui.tabs.acquire import (
     _sorted_tracks,
     _spotify_client,
     _state,
+    build_extra_rows,
     build_track_rows,
     clear_tab_state,
     find_extra_newmusic_files,
@@ -1235,6 +1236,68 @@ def test_build_track_rows_respects_hide_downloaded(tmp_path, monkeypatch):
 
     assert len(rows) == 1
     assert rows[0]["row_key"] == "dua lipa:levitating"
+    _state["hide_downloaded"] = False  # don't leak into other tests sharing module state
+
+
+EXTRA = [
+    ("Tame Impala", "The Less I Know The Better", "http://x/3", Path("NewMusic/Tame Impala - The Less I Know The Better.mp3")),
+    ("Metro Boomin", "Space Cadet", "http://x/4", Path("NewMusic/Metro Boomin - Space Cadet.mp3")),
+]
+
+
+def test_build_extra_rows_ignores_hide_downloaded(tmp_path, monkeypatch):
+    """IDEAS.md "Extra-rows section prints a count in its header, then hides
+    every row under it" (2026-09-05): these files matched no track in the
+    loaded playlist at all, so "Downloaded" is not a concept that applies to
+    them - hide_downloaded must never touch this section, unlike the main
+    track table. With hide_downloaded=True, every extra row still comes back,
+    so the batch header's count (len(_state["extra"])) and the rendered row
+    count always agree."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["extra"] = list(EXTRA)
+    _state["hide_downloaded"] = True
+
+    rows = build_extra_rows()
+
+    assert len(rows) == len(_state["extra"]) == 2
+    _state["hide_downloaded"] = False  # don't leak into other tests sharing module state
+
+
+def test_build_extra_rows_also_returns_all_rows_when_hide_downloaded_is_off(tmp_path, monkeypatch):
+    """Same result whether hide_downloaded is on or off - confirms the toggle
+    genuinely has no effect on this section, not just that True happens to
+    pass."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["extra"] = list(EXTRA)
+    _state["hide_downloaded"] = False
+
+    rows = build_extra_rows()
+
+    assert len(rows) == len(_state["extra"]) == 2
+
+
+def test_build_track_rows_still_filters_the_main_table_when_extra_rows_are_present(tmp_path, monkeypatch):
+    """Guards the asymmetry both ways: with hide_downloaded=True, the main
+    playlist track table must still filter downloaded rows exactly as before
+    (test_build_track_rows_respects_hide_downloaded covers that in
+    isolation) - here extra rows are populated at the same time, to prove
+    fixing the extra-rows section did not accidentally make the main table
+    stop filtering too."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["extra"] = list(EXTRA)
+    _state["hide_downloaded"] = True
+
+    track_rows = build_track_rows()
+    extra_rows = build_extra_rows()
+
+    assert len(track_rows) == 1  # the downloaded Eminem row is still hidden
+    assert track_rows[0]["row_key"] == "dua lipa:levitating"
+    assert len(extra_rows) == 2  # extra rows are unaffected
     _state["hide_downloaded"] = False  # don't leak into other tests sharing module state
 
 
