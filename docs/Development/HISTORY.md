@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Extra-rows section no longer hides rows while showing a nonzero header count
+
+Closed the "Extra-rows section prints a count in its header, then hides every row under it" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. In `gui/tabs/acquire.py`'s `track_table()`, the "IN NEWMUSIC, NOT IN THIS PLAYLIST (N)" batch header was always computed from the full, unfiltered `_state["extra"]` list, but the row loop under it skipped downloaded rows whenever `hide_downloaded` was on - so with the toggle on, David could see a header claiming several unmatched files above an empty table with no way to tell whether that was a rendering bug or a genuinely empty inbox.
+
+The fix takes the second of the two options the item posed: hide_downloaded now never touches the extra-rows section at all, rather than trying to make the header count match a filtered view. These rows are files sitting in NewMusic that matched no track in the loaded playlist whatsoever, so "Downloaded" is not a concept that applies to them the way it does to a playlist row - the toggle is scoped to the main track table only. The render loop's filtering was extracted into a new pure function, `build_extra_rows()` (sorted, but never filtered by `hide_downloaded`), mirroring the existing `build_track_rows()` pattern so the section's row set is directly unit-testable without a live NiceGUI page. Three new tests in `gui/tests/test_acquire.py` cover the extra-rows section returning every row regardless of `hide_downloaded`'s state, and confirm the main track table's own `hide_downloaded` filtering is unchanged when both sections are populated at once.
+
+Display-only inside `gui/tabs/acquire.py`'s render layer: no change to `match_downloads`, `find_extra_newmusic_files`, row-key construction, or the manual-override toggle. Suite green: 297 GUI tests.
+
+---
+
 ## 2026-09-05 - Tag Fix now states that custom rules also run for real during Integration
 
 Closed the "Tag Fix never says custom rules also fire during Integration" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. The tab's only mention of custom-rule scope was "Runs as an additive second pass, after the built-in fixes above" - true but silent on the one fact that actually matters: `run_tagfix()` is hardcoded to `--dry-run`, so this tab itself never touches a real file, but the exe's real `integrate` run applies the same custom rules for real via `TagFixCustomRuleSet`. Authoring or enabling a rule here was understood by David as a preview-only action, when in fact it takes effect on the very next batch Integration whether or not it was ever run from this tab.
