@@ -140,8 +140,14 @@ TagFixer modifies ID3 tags and renames files to match library convention. Tag ch
 
 **What the program can/cannot do to files already in the Audio library:** see "Library Operations Constraint" in `docs/References/DevContext.md`.
 
+## GUI Code-Change Escalation Boundary
+
+**The guarded path:** the path from a decline click to the exe's argument list - `IntegrationState.accepted`/`declined`, the manifest-writing block in `run_execute`, and the construction of `args` - is the only thing standing between a declined file and it being moved for real. A change there is written unattended but reviewed before it ships.
+
+**Everything else in `gui/` is permissionless:** tests, display logic, status labels, styling, docs. Shrinking the guarded set never needs approval; growing it always does.
+
 ## What the Test Suite Can and Cannot Prove
 
 `scripts\dev\verify.bat --no-pause` is the single pass/fail judge - it runs the C# build and unit tests, the routing manifest check, and the GUI pytest suite. A green run proves the logic is right. It can never prove the batch is safe: nothing in the suite observes the exe actually moving files. On any change touching the integration path, treat green as "the logic is right", never as "the run is safe to fire".
 
-The code-change escalation boundary for the GUI is recorded in `docs/Development/IDEAS.md` under the readiness verdict. Growing that guarded set always needs David; shrinking it never does.
+See "GUI Code-Change Escalation Boundary" above for which GUI code changes need David before shipping.

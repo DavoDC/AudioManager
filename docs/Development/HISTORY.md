@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - GUI code-change escalation boundary promoted to CLAUDE.md
+
+Closed "Promote the code-change escalation boundary into `CLAUDE.md`" from IDEAS.md. The rule - that the path from a decline click to the exe's argument list (`IntegrationState.accepted`/`declined`, the manifest-writing block in `run_execute`, the construction of `args`) is guarded and reviewed before shipping, while everything else in `gui/` is permissionless - previously lived only in the 2026-09-02 readiness verdict in IDEAS.md. It now has a permanent home as its own section in `CLAUDE.md`, "GUI Code-Change Escalation Boundary", placed after the existing "Library Operations Constraint" section since the two are related but distinct: one governs what the program can do to library files, the other governs which GUI code changes need David before they ship. IDEAS.md's readiness verdict paragraph was replaced with a pointer to `CLAUDE.md` rather than restating the rule in two places.
+
+---
+
 ## 2026-09-05 - Load Liked Songs button on Acquire tab
 
 Closed the "load queue directly from Liked Songs" item from IDEAS.md - GUI wiring for the backend capability (`RealSpotifyClient.get_liked_tracks_detailed()`, SpotifyTools commit `4657ed0`) added earlier the same day. Landed in `9955eb42` (`gui/tabs/acquire.py`, `gui/tests/test_acquire.py`), ahead of the later `ef7a8b5e` "Acquire tab polish" pass in this same session - confirmed already complete and green (293 C#, 263 GUI) when this task was picked up a second time, so no further code change was needed; this entry closes out the docs.
