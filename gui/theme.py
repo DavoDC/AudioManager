@@ -181,7 +181,7 @@ HEAD_HTML = """
   .step.active .n{background:var(--accent);color:#0c0e13;}
   .step.done .n{background:var(--accent2);color:#0c0e13;}
   .review-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px 14px;width:100%;max-width:820px;border-left:3px solid transparent;}
-  .review-card.current{outline:2px solid var(--accent);outline-offset:-1px;}
+  .review-card.current{outline:2px solid var(--accent);outline-offset:-1px;scroll-margin:80px;}
   .review-card.declined{border-left-color:var(--accent4);}
   .review-card.declined .rc-route{text-decoration:line-through;color:var(--text-dim);}
   .rc-declined-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent4);
@@ -207,10 +207,26 @@ HEAD_HTML = """
   .rc-dup-resolve{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
   .rc-dup-resolve button{font-size:10px;padding:4px 9px;border-radius:var(--radius-control);cursor:pointer;font-family:inherit;border:1px solid var(--panel-border);background:#12141c;color:var(--text-dim);}
   .rc-dup-resolve button.on{background:rgba(185,138,240,.15);border-color:var(--accent5);color:var(--accent5);}
-  .rc-decision{display:flex;flex-direction:column;gap:6px;min-width:104px;}
-  .rc-decision button{font-size:11px;padding:6px 10px;border-radius:var(--radius-control);cursor:pointer;font-family:inherit;border:1px solid var(--panel-border);background:#12141c;color:var(--text-dim);}
-  .rc-decision button.accept.on{background:rgba(127,209,174,.15);border-color:var(--accent2);color:var(--accent2);}
-  .rc-decision button.decline.on{background:rgba(226,109,109,.15);border-color:var(--accent4);color:var(--accent4);}
+  .rc-decision{display:flex;flex-direction:column;gap:6px;min-width:124px;}
+  /* One toggle per card, never a pair of buttons - it shows the state it is in
+     and flips on click. Accepted is the default and by far the common state, so
+     it reads as calm positive (accent2); declined earns the attention color
+     (accent4) because it is the deliberate exception the eye should catch. */
+  .rc-toggle{font-size:11px;padding:7px 12px;width:100%;border-radius:var(--radius-control);cursor:pointer;font-family:inherit;font-weight:600;border:1px solid var(--panel-border);background:#12141c;color:var(--text-dim);}
+  .rc-toggle.on{background:rgba(127,209,174,.15);border-color:var(--accent2);color:var(--accent2);}
+  .rc-toggle.off{background:rgba(226,109,109,.15);border-color:var(--accent4);color:var(--accent4);}
+  .rc-toggle.err{background:rgba(226,109,109,.08);border-color:rgba(226,109,109,.35);color:var(--accent4);cursor:not-allowed;opacity:.75;}
+  .rc-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  /* Triage-mode key legend. Only rendered while the mode is on - the keys it
+     lists are only armed then, so a permanent legend would be a lie. */
+  .triage-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text-dim);
+    background:rgba(91,140,255,.08);border:1px solid var(--accent);border-radius:var(--radius-control);
+    padding:7px 12px;margin-bottom:10px;width:100%;max-width:820px;}
+  .triage-bar .tb-on{font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);margin-right:4px;}
+  .triage-bar .tb-key{font-family:var(--font-mono);font-size:10px;color:var(--text);background:#12141c;
+    border:1px solid var(--panel-border);border-radius:4px;padding:1px 6px;}
+  .triage-bar .tb-what{margin-right:8px;}
+  .triage-bar .tb-where{margin-left:auto;font-family:var(--font-mono);color:var(--text);}
   .progress-track{height:8px;background:#12141c;border:1px solid var(--panel-border);border-radius:var(--radius-pill);overflow:hidden;width:100%;}
   .progress-track .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s;}
   .progress-track .fill.fail{background:var(--accent4);}
@@ -307,7 +323,7 @@ HEAD_HTML = """
   .am-brand span{background:linear-gradient(90deg,var(--accent),var(--accent5));
     -webkit-background-clip:text;background-clip:text;color:transparent;}
   /* controls */
-  .am-btn,.chip,.toggle-pair button,.view-toggle button,.rc-decision button,.pages span,.q-btn{
+  .am-btn,.chip,.toggle-pair button,.view-toggle button,.rc-toggle,.rc-dup-resolve button,.pages span,.q-btn{
     transition:transform .15s ease,border-color .2s ease,color .2s ease,background .2s ease,box-shadow .2s ease;}
   .chip:hover,.toggle-pair button:hover,.view-toggle button:hover,.pages span:hover{
     border-color:var(--accent);color:var(--text);transform:translateY(-1px);}

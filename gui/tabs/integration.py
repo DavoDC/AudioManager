@@ -2,7 +2,8 @@
 
 Stage 1  Scan       integrate --dry-run --no-input --json-output -> routing JSON
 Stage 2  Review     one card per proposed track: art, destination, reason,
-                    tag-change chips, badges, Accept/Decline
+                    tag-change chips, badges, and a single accept/decline
+                    toggle (plus an explicit keyboard Triage mode)
 Stage 3  Confirm    summary bar + single primary action
 Stage 4  Execute    real integrate --no-input with structured per-track
                     progress parsed from the exe's live output
@@ -55,7 +56,7 @@ class IntegrationState:
         self.dup_resolutions: dict[str, str] = {}  # filename -> "D"/"L"/"K" (explicit override only)
         self.filter = "all"                 # all | conflicts | newfolders | libdupes
         self.cursor = 0                     # index into filtered() for keyboard nav (A/D/J/K)
-        self.keyboard_nav_used = False      # only show the cursor highlight once keyboard nav is used
+        self.triage = False                 # keyboard Triage mode: cursor visible, A/D armed
         self.scan_lines: list[str] = []
         self.exec_lines: list[str] = []
         self.exec_status: dict[str, str] = {}  # filename -> queued/moving/done/failed/notrun
@@ -120,7 +121,12 @@ def _review_key_action(key_name: str) -> str | None:
     """Maps a raw keyboard key name to a review-stage action - pure and
     case-insensitive so it's unit-testable without a real NiceGUI KeyboardKey.
     'a'/'d' accept/decline the card under the cursor; 'j'/ArrowDown and
-    'k'/ArrowUp move the cursor. Anything else is not a review shortcut."""
+    'k'/ArrowUp move the cursor; 't' toggles Triage mode and Escape leaves it.
+    Anything else is not a review shortcut.
+
+    Mapping only - it says nothing about whether the action is currently
+    allowed. Which of these keys are armed depends on Triage mode, and that
+    gate lives in _on_review_key() alone so there is one place to read it."""
     name = (key_name or "").lower()
     if name == "a":
         return "accept"
@@ -130,7 +136,17 @@ def _review_key_action(key_name: str) -> str | None:
         return "next"
     if name in ("k", "arrowup"):
         return "prev"
+    if name == "t":
+        return "triage"
+    if name in ("escape", "esc"):
+        return "exit"
     return None
+
+
+#: Actions that change a decision. Armed only while Triage mode is on - see
+#: _on_review_key(). Navigation is deliberately NOT in here: moving a cursor
+#: is harmless, so J/K/arrows stay live and switch Triage mode on themselves.
+TRIAGE_ONLY_ACTIONS = ("accept", "decline")
 
 
 S = IntegrationState()
@@ -276,7 +292,7 @@ def run_simulate() -> None:
     S.exec_done = False
     S.exec_ok = None
     S.cursor = 0
-    S.keyboard_nav_used = False
+    S.triage = False
     S.scan_lines = ["[SIMULATE] Sample data only - nothing in NewMusic was scanned or touched."]
     S.simulated = True
     # Batch scan-ahead context the real exe emits in the routing JSON's summary block.
@@ -327,7 +343,7 @@ async def run_scan() -> None:
     S.exec_done = False
     S.exec_ok = None
     S.cursor = 0
-    S.keyboard_nav_used = False
+    S.triage = False
     S.projected_libchecker = routing.parse_projected_libchecker(result.lines)
     S.stage = 2
     S.refresh()
@@ -377,13 +393,19 @@ def stage_review() -> None:
                 .props("outline dense color=negative size=sm")
             ui.button("Re-scan", icon="refresh", on_click=lambda: asyncio.create_task(run_scan())) \
                 .props("outline dense color=grey size=sm")
+            ui.button("Triage mode", icon="keyboard", on_click=lambda: _set_triage(not S.triage)) \
+                .props(f'dense size=sm color={"primary" if S.triage else "grey"} '
+                       f'{"unelevated" if S.triage else "outline"}')
 
     entries_view = S.filtered()
     if entries_view:
         S.cursor = max(0, min(S.cursor, len(entries_view) - 1))
     ui.keyboard(on_key=_on_review_key)
+    triage_bar(len(entries_view))
     for idx, e in enumerate(entries_view):
         review_card(e, idx)
+    if S.triage:
+        _scroll_cursor_into_view()
 
     batch_summary_strip()
     confirm_bar()
@@ -443,11 +465,22 @@ def _set_filter(k: str) -> None:
 
 def _on_review_key(e) -> None:
     """Global keyboard handler, mounted only while stage_review() is on
-    screen (stage 2) - never active during scan/confirm/execute. A = accept,
-    D = decline the card under the cursor; J/ArrowDown, K/ArrowUp move the
-    cursor. Scoped deliberately to accept/decline/navigate only - the
-    duplicate-resolution radio control stays mouse-only (see IDEAS.md
-    '[OPUS] accept/decline interaction redesign' for anything beyond this)."""
+    screen (stage 2) - never active during scan/confirm/execute.
+
+    Triage mode is the gate. A (accept) and D (decline) only act while it is
+    on, because a bare letter key that silently flips a decision on a card
+    the user may not even be looking at is the mis-key hazard this redesign
+    exists to remove. Navigation is exempt and self-arming: J/ArrowDown and
+    K/ArrowUp move the cursor AND switch Triage mode on, so the keyboard path
+    is still discovered by pressing an arrow key rather than by reading docs -
+    it just announces itself (visible cursor + key legend) before any key can
+    change a decision. T toggles the mode, Escape leaves it.
+
+    The duplicate-resolution radio control stays mouse-only, deliberately.
+    When it is made keyboard-driven it must become a SECOND AXIS on this same
+    cursor (e.g. 1/2/3 or Left/Right setting D/L/K on the card under the
+    cursor), never a nested focus cursor that J/K have to step through - one
+    cursor, one Triage mode. See docs/Development/IDEAS.md."""
     if not e.action.keydown or e.action.repeat:
         return
     if S.stage != 2 or not S.entries:
@@ -455,11 +488,20 @@ def _on_review_key(e) -> None:
     action = _review_key_action(e.key.name)
     if action is None:
         return
+    if action == "triage":
+        _set_triage(not S.triage)
+        return
+    if action == "exit":
+        if S.triage:
+            _set_triage(False)
+        return
+    if action in TRIAGE_ONLY_ACTIONS and not S.triage:
+        return
     entries = S.filtered()
     if not entries:
         return
     S.cursor = max(0, min(S.cursor, len(entries) - 1))
-    S.keyboard_nav_used = True
+    S.triage = True
     if action == "next":
         S.cursor = min(S.cursor + 1, len(entries) - 1)
         S.refresh()
@@ -470,6 +512,60 @@ def _on_review_key(e) -> None:
         _decide(entries[S.cursor]["filename"], True)
     elif action == "decline":
         _decide(entries[S.cursor]["filename"], False)
+
+
+def _set_triage(on: bool) -> None:
+    """Entering Triage mode always starts the cursor from the top of the
+    current filtered view - a cursor left over from a previous session on a
+    different filter would arm A/D against a card that isn't where the user
+    is looking."""
+    S.triage = on
+    if on:
+        S.cursor = 0
+    S.refresh()
+
+
+def triage_bar_html(triage: bool, cursor: int, total: int) -> str:
+    """The Triage-mode key legend and cursor position, or "" when the mode is
+    off. Pure so the wording and the stay-silent-when-off rule are testable
+    without a NiceGUI client.
+
+    A legend is not decoration here: before this redesign the keyboard layer
+    was completely undiscoverable (nothing on screen mentioned A/D/J/K) AND
+    always live, which is the worst pairing - invisible but able to change a
+    decision. Making the keys visible is half of what makes gating them on an
+    explicit mode acceptable; the position readout is the other half, because
+    at 84-126 cards "which one is the cursor on" is otherwise a scroll hunt."""
+    if not triage:
+        return ""
+    keys = [("J", "next"), ("K", "prev"), ("A", "accept"), ("D", "decline"), ("Esc", "exit")]
+    cells = "".join(f'<span class="tb-key">{k}</span><span class="tb-what">{w}</span>'
+                    for k, w in keys)
+    where = f"Card {min(cursor + 1, total)} of {total}" if total else "No cards in this filter"
+    return (f'<span class="tb-on">Triage mode</span>{cells}'
+            f'<span class="tb-where">{_esc(where)}</span>')
+
+
+def triage_bar(total: int) -> None:
+    inner = triage_bar_html(S.triage, S.cursor, total)
+    if inner:
+        ui.html(f'<div class="triage-bar">{inner}</div>').classes("w-full")
+
+
+def _scroll_cursor_into_view() -> None:
+    """A keyboard cursor you have to scroll to find is not a keyboard path.
+    Runs once per refresh while Triage mode is on; purely cosmetic, so a
+    failure here must never take the whole review render down with it."""
+    def scroll() -> None:
+        try:
+            ui.run_javascript("document.querySelector('.review-card.current')"
+                              "?.scrollIntoView({block:'nearest'})")
+        except Exception:  # noqa: BLE001 - cosmetic only, never fail the render
+            pass
+    try:
+        ui.timer(0.05, scroll, once=True)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _bulk(accept: bool) -> None:
@@ -490,7 +586,7 @@ def review_card(e: dict, idx: int = 0) -> None:
     card_cls = "review-card"
     if not accepted:
         card_cls += " declined"
-    if S.keyboard_nav_used and idx == S.cursor:
+    if S.triage and idx == S.cursor:
         card_cls += " current"
     with ui.element("div").classes(card_cls).style("margin-bottom:10px;"):
         # album art from the NewMusic file itself (read-only extraction) -
@@ -546,14 +642,22 @@ def review_card(e: dict, idx: int = 0) -> None:
 
         with ui.element("div").classes("rc-decision"):
             if is_error:
-                ui.html('<button class="accept" disabled title="Cannot accept: unresolved error">'
-                        '&#10003; Accept</button>')
-                ui.html('<button class="decline on" disabled>&#10005; Declined (error)</button>')
+                ui.html('<button class="rc-toggle err" disabled aria-disabled="true" '
+                        'title="Cannot accept: unresolved error">&#10005; Declined (error)</button>')
             else:
-                acc = ui.html(f'<button class="accept{" on" if accepted else ""}">&#10003; Accept</button>')
-                dec = ui.html(f'<button class="decline{"" if accepted else " on"}">&#10005; Decline</button>')
-                acc.on("click", lambda _, f=e["filename"]: _decide(f, True))
-                dec.on("click", lambda _, f=e["filename"]: _decide(f, False))
+                # ONE control, not two. Accept/decline is a binary with a
+                # default (accepted), so a second always-visible button spends
+                # card width restating the state the first one already shows -
+                # and on an accepted card the Accept button is a no-op the eye
+                # still has to read. The toggle shows the state it is in and
+                # flips on click, so an undo is the same click again in the
+                # same place rather than a hunt for the opposite button.
+                btn = ui.html(
+                    f'<button class="rc-toggle {"on" if accepted else "off"}" '
+                    f'aria-pressed="{"true" if accepted else "false"}" '
+                    f'title="{"Click to decline - leaves the file in NewMusic" if accepted else "Click to accept"}">'
+                    f'{"&#10003; Accepted" if accepted else "&#10005; Declined"}</button>')
+                btn.on("click", lambda _, f=e["filename"]: _toggle_decision(f))
 
 
 DUP_OPTIONS = [("D", "Delete new file"), ("L", "Delete library copy"), ("K", "Keep both")]
@@ -600,6 +704,18 @@ def _decide(filename: str, accept: bool) -> None:
         return
     S.decisions[filename] = accept
     S.refresh()
+
+
+def _toggle_decision(filename: str) -> None:
+    """Flip one card's accept/decline. The mouse's single-toggle counterpart
+    to the keyboard's explicit A/D: both funnel through _decide(), so the
+    error guard and the accepted/declined partition have exactly one
+    implementation. Deliberately NOT bound to a key - when you are moving
+    through 100+ cards, A and D are idempotent and you always know which
+    state you produced, whereas a toggle key's outcome depends on the state
+    you did not stop to read."""
+    current = S.decisions.get(filename, True)
+    _decide(filename, not current)
 
 
 # -------------------------------------------------------- stage 3 confirm
