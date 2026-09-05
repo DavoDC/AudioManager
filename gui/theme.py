@@ -147,6 +147,11 @@ HEAD_HTML = """
   .am-table.acquire-table tr.row-extra{background-color:rgba(242,184,75,.10);}
   .dl-badge{font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;
     border-radius:var(--radius-pill);font-weight:600;color:var(--accent2);background:rgba(127,209,174,.13);}
+  /* Acquire tab polish (IDEAS.md, 2026-09-05): a manually-overridden Downloaded
+     cell gets a small distinct marker (dashed outline in --accent5, the same hue
+     already used for user-authored content in custom-rule-line) so an override
+     reads as "you set this" without a whole extra tickbox column. */
+  .dl-override{outline:1px dashed var(--accent5);outline-offset:2px;border-radius:var(--radius-pill);}
   .sort-hint{opacity:.5;font-weight:400;}
   .col-legend{font-size:11px;color:var(--text-dim);display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
   .col-legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
