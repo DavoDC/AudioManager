@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Tag Fix's console-line escaping now matches Integration's, quotes included
+
+Closed the "`tagfix.py` has its own `_esc` that does not escape quotes, diverging from `integration.py`" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `gui/tabs/tagfix.py`'s `_esc()` hand-rolled `&`/`<`/`>` replacement only, while `gui/tabs/integration.py`'s `_esc()` already used the stdlib `html.escape(text, quote=True)`. Both feed raw dry-run output into `ui.html`, and while neither currently interpolates into an HTML attribute (so this was not exploitable today), the divergence would bite the first time either is reused in an attribute context.
+
+`tagfix.py`'s `_esc()` has one call site, inside `_render_console_lines()`, so the fix delegates its body to `html.escape(text, quote=True)` directly (added `import html`) rather than removing the helper and rewriting the call site - the smaller of the two mechanical options the item posed. Added `test_render_console_lines_escapes_quotes` to `gui/tests/test_tagfix.py`, confirming a line containing both `"` and `'` now renders with `&quot;`/`&#x27;` in place of the raw quote characters.
+
+Mechanical, single-behavior-change fix: none of the day's other `tagfix.py` work (the live regex-warning check, the `ui.table`-based rules table, `build_rule_rows()`/`_rule_by_id()`, the custom-rule-warning badge, the `.gap-note` Integration note, or the `merge_toggle_enabled`/`merge_saved_rule` race-fix helpers) was touched, and `gui/tabs/integration.py` was read-only reference for this change. Suite green: 293 C# tests, 321 GUI tests.
+
+---
+
 ## 2026-09-05 - Year sort no longer floats blank-year rows to the top when reversed
 
 Closed the "Year sort puts blank years last ascending but first descending" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_sorted_tracks()` in `gui/tabs/acquire.py` sorted the Year column with a `(is_blank, year)` key, relying on `sorted()`'s `reverse=True` to flip the whole ordering for a descending click - which also flipped the blank marker, so the second click on the Year header (descending) filled the top of the table with every track that had no year at all instead of pinning them to the bottom as the first click (ascending) correctly did.
