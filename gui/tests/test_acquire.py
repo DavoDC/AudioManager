@@ -38,6 +38,7 @@ from gui.tabs.acquire import (
     _sorted_tracks,
     _spotify_client,
     _state,
+    _validate_playlist_input,
     build_extra_rows,
     build_track_rows,
     clear_tab_state,
@@ -1558,4 +1559,94 @@ def test_run_sync_liked_reports_success_message(tmp_path, monkeypatch):
 
     assert messages[-1] == "Moved 2 track(s)"
     assert _state["sync_busy"] is False
+
+
+# --------------------------------------------- Fetch input validation (IDEAS.md, 2026-09-05)
+# "Acquire's Fetch accepts an empty or junk playlist id without validating it"
+
+
+def test_validate_playlist_input_rejects_empty_string():
+    assert _validate_playlist_input("") is None
+
+
+def test_validate_playlist_input_rejects_whitespace_only():
+    assert _validate_playlist_input("   ") is None
+
+
+def test_validate_playlist_input_rejects_junk_free_text():
+    """extract_playlist_id() has no "playlist/..." pattern to match here, so it
+    echoes the free text straight back, stripped - this is exactly the case
+    extract_playlist_id can't catch on its own (see _validate_playlist_input's
+    docstring), and the check this test guards (non-alnum after resolution)
+    is what rejects it instead."""
+    assert _validate_playlist_input("not a real playlist") is None
+
+
+def test_validate_playlist_input_rejects_a_non_playlist_url():
+    """A Spotify-looking URL that isn't a playlist link: no "playlist/" match,
+    so extract_playlist_id() returns the whole URL (slashes and colons
+    included) - must be rejected, not fed to a network call."""
+    assert _validate_playlist_input("https://open.spotify.com/track/abc123") is None
+
+
+def test_validate_playlist_input_accepts_a_bare_playlist_id():
+    assert _validate_playlist_input("37i9dQZF1DXcBWIGoYBM5M") == "37i9dQZF1DXcBWIGoYBM5M"
+
+
+def test_validate_playlist_input_accepts_a_bare_id_with_surrounding_whitespace():
+    assert _validate_playlist_input("  37i9dQZF1DXcBWIGoYBM5M  ") == "37i9dQZF1DXcBWIGoYBM5M"
+
+
+def test_validate_playlist_input_accepts_a_full_playlist_url():
+    resolved = _validate_playlist_input(
+        "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=abc123"
+    )
+    assert resolved == "37i9dQZF1DXcBWIGoYBM5M"
+
+
+def test_fetch_with_invalid_playlist_input_never_calls_the_spotify_client(tmp_path, monkeypatch):
+    """End-to-end guard on the actual network boundary: _do_fetch_tracks() is
+    the only thing in this module that talks to Spotify (via
+    _spotify_client()), so confirming _validate_playlist_input() rejects the
+    same empty/junk inputs fetch() gates on is equivalent to confirming
+    fetch() itself never reaches _do_fetch_tracks() for them - _spotify_client
+    is monkeypatched to blow up if it's ever called, so a regression that
+    accidentally routed a rejected input through to the network trips it."""
+    def _boom():
+        raise AssertionError("_spotify_client() must not be called for invalid input")
+
+    monkeypatch.setattr(acquire_module, "_spotify_client", _boom)
+
+    for junk in ("", "   ", "not a real playlist"):
+        assert _validate_playlist_input(junk) is None
+        # fetch()'s own guard (identical check) would have returned here
+        # before ever reaching _do_fetch_tracks()/_spotify_client().
+
+
+def test_fetch_with_valid_playlist_input_proceeds_to_the_network_call(tmp_path, monkeypatch):
+    """The other half: a valid id/URL must still resolve and reach
+    _do_fetch_tracks() -> _spotify_client() exactly as before this change."""
+    _isolate_state_file(tmp_path, monkeypatch)
+
+    class FakeClient:
+        def get_playlist_tracks_detailed(self, playlist_id):
+            return [{"artist": "Eminem", "title": "Lose Yourself", "album": "8 Mile",
+                     "year": "2002", "duration_ms": 320000}]
+
+        def get_playlist_name(self, playlist_id):
+            return "My Playlist"
+
+    calls = []
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: (calls.append(1), FakeClient())[1])
+
+    playlist_id = _validate_playlist_input("37i9dQZF1DXcBWIGoYBM5M")
+    assert playlist_id == "37i9dQZF1DXcBWIGoYBM5M"
+
+    rows = _do_fetch_tracks(playlist_id)
+
+    from spotify_tools.open_playlist import _build_deemix_url
+
+    assert calls == [1]  # the network layer was genuinely reached
+    assert rows == [("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20",
+                      _build_deemix_url("Eminem", "Lose Yourself"))]
 
