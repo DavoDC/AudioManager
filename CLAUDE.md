@@ -55,6 +55,10 @@ If `scripts\launch-gui-dev.bat` is running while editing `gui/`, touch/create
 `gui/.cache/reload.trigger` once ready instead of `taskkill`/closing the window.
 Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
 
+### Development priority: Library Intake over Library Insight (confirmed 2026-09-05)
+
+**Library Intake (Acquire, Integration, Tag Fix - the GUI's write/mutate tabs) is the current development focus; Library Insight (Statistics, Library, Mirror, Services - read-only views) is explicitly lower priority for now.** When picking up open work with no other signal, prefer an open Intake item over an open Insight item. See `docs/Development/IDEAS.md` TIER 2 priority-ordering note for the audited item order.
+
 ### Claude: GUI visual design - read docs/DESIGN.md first
 
 Before adding or changing any control, panel, table, or layout in `gui/`,
@@ -134,18 +138,7 @@ TagFixer modifies ID3 tags and renames files to match library convention. Tag ch
 
 ## Library Operations Constraint
 
-**In the Audio library, the program can ONLY:**
-- Move files from NewMusic into library destinations
-- Create destination folders as needed
-- Delete duplicates (user-approved L decisions only)
-
-**The program CANNOT:**
-- Modify tags on library files
-- Rename library files (except during move)
-- Delete files for any reason other than duplicates
-- Reorganise existing library structure without user approval
-
-**Audit trail:** See `docs/References/SAFETY_CONSTRAINTS.md` for a detailed safety review against these rules.
+**What the program can/cannot do to files already in the Audio library:** see "Library Operations Constraint" in `docs/References/DevContext.md`.
 
 ## What the Test Suite Can and Cannot Prove
 

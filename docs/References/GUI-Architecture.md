@@ -30,6 +30,8 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 - **"Library Intake"** - Acquire, Integration, Tag Fix (workflow order: acquire new files, integrate them, fix their tags).
 - **"Library Insight"** - Statistics, Library, Mirror, Services (Services fits Insight since its whole design is a cross-source overlay *view*, not a mutation).
 
+**Development priority, confirmed 2026-09-05:** Library Intake (Acquire, Integration, Tag Fix) is the current development focus; Library Insight (Statistics, Library, Mirror, Services) is explicitly lower priority for now - see `docs/Development/IDEAS.md` TIER 2's priority-ordering note.
+
 Verb-only tab naming (Statistics -> "Analyse", Library -> "Browser", etc.) was considered and rejected: half the tabs are already nouns (Statistics, Mirror, Services) by deliberate design, matching the Sonarr/Radarr noun-tab precedent below - forcing verbs onto the rest breaks that precedent for no legibility gain. Tag Fix stays a peer tab inside Intake rather than nested under Integration - its real scope ("apply to library or NewMusic batches", CLI Feature Parity table above) is wider than Integration's NewMusic-only batches, so nesting it would hide the library-wide use case behind a workflow that doesn't cover it. Grouping (same section, same sidebar) achieves "related, keep adjacent" without that loss. Tab `key` values and `?tab=<key>` deep links are unchanged by grouping - see `gui/main.py`'s `NAV_GROUPS`.
 
 **Tab order as built:** Acquire -> Integration -> Tag Fix -> Statistics -> Library -> Mirror -> Services (Spotify/Last.fm/cross-synthesis, far future) - grouped per the sidebar split above.
