@@ -73,6 +73,17 @@ _DEEMIX_LINK_LABEL = "Open in Deemix"
 # Per-row link used to read just "Search" on every row, giving no hint what it
 # opens - see IDEAS.md "Per-row 'Search' link label is context-free".
 
+_LIKED_SONGS_ID = "__liked_songs__"
+_LIKED_SONGS_NAME = "Liked Songs"
+# Liked Songs has no playlist id of its own, but every persistence path
+# (_save_last_playlist/_save_tracks_cache/_load_tracks_cache, and therefore
+# history and restore_cached_tracks) is keyed by playlist id - so Liked
+# Songs is given this sentinel to stand in as its "playlist id" rather than
+# building a second, parallel persistence mechanism. A real Spotify playlist
+# id is base62 (letters/digits only), so this can never collide with one.
+# _apply_history_pick() and the playlist-input default both special-case
+# this id so it never leaks into a real playlist fetch by accident.
+
 _refresh_hooks = {"track_table": lambda: None, "progress_bar": lambda: None,
                    "history_items": lambda: None, "simulate_banner": lambda: None}
 # Wired to the real @ui.refreshable closures by build() once they exist. simulate()
@@ -233,6 +244,25 @@ def _do_fetch_tracks(playlist_id_or_url: str) -> list[tuple[str, str, str, str, 
     except Exception:
         name = ""
     _save_last_playlist(playlist_id, name)
+    return [
+        (
+            t["artist"], t["title"], t["album"], t["year"],
+            _format_duration(t.get("duration_ms", 0)), _build_deemix_url(t["artist"], t["title"]),
+        )
+        for t in tracks
+    ]
+
+
+def _do_fetch_liked_tracks() -> list[tuple[str, str, str, str, str, str]]:
+    """Liked Songs counterpart of _do_fetch_tracks(): identical row shape and
+    downstream flow (match_downloads/find_extra_newmusic_files run on the
+    result exactly the same way), but sourced from RealSpotifyClient's
+    get_liked_tracks_detailed() instead of a playlist id. Persists under
+    _LIKED_SONGS_ID so history/cache/restore all work unmodified."""
+    from spotify_tools.open_playlist import _build_deemix_url
+    client = _spotify_client()
+    tracks = client.get_liked_tracks_detailed()
+    _save_last_playlist(_LIKED_SONGS_ID, _LIKED_SONGS_NAME)
     return [
         (
             t["artist"], t["title"], t["album"], t["year"],
@@ -672,10 +702,20 @@ def build() -> None:
                 "</span>"
             )
         with ui.row().style("gap:8px;align-items:center;flex-wrap:wrap;"):
-            playlist_input = ui.input("Playlist URL or ID", value=_load_last_playlist_id()) \
-                .props("dense dark outlined").style("width:520px;")
+            _last_id = _load_last_playlist_id()
+            playlist_input = ui.input(
+                "Playlist URL or ID", value=_last_id if _last_id != _LIKED_SONGS_ID else ""
+            ).props("dense dark outlined").style("width:520px;")
+            # A prior Load Liked Songs leaves _LIKED_SONGS_ID as the persisted
+            # "current" id (see _do_fetch_liked_tracks) - shown here it would
+            # read as a bogus playlist id and, if left in the box, get fed
+            # straight to fetch() as one. Blank the box instead; restore_cached_tracks()
+            # still brings the Liked Songs table back regardless of this box's value.
 
             def _apply_history_pick(playlist_id: str):
+                if playlist_id == _LIKED_SONGS_ID:
+                    asyncio.create_task(load_liked())
+                    return
                 playlist_input.value = playlist_id
                 asyncio.create_task(fetch())
 
@@ -691,7 +731,8 @@ def build() -> None:
                         ui.menu_item("OTHER PLAYLISTS").props("disable").classes("text-caption")
                         for h in history:
                             label = h.get("name") or "(unnamed)"
-                            ui.menu_item(f"{label} - {h['id']}", on_click=lambda pid=h["id"]: _apply_history_pick(pid))
+                            text = label if h["id"] == _LIKED_SONGS_ID else f"{label} - {h['id']}"
+                            ui.menu_item(text, on_click=lambda pid=h["id"]: _apply_history_pick(pid))
                     history_menu.on("show", history_items.refresh)
                     history_items()
 
@@ -788,6 +829,24 @@ def build() -> None:
             except Exception as e:
                 ui.notify(f"Fetch failed: {e}", type="negative", multi_line=True)
 
+        async def load_liked():
+            """Liked Songs counterpart of fetch(): same downstream flow (match
+            against NEWMUSIC_DIR, persist, refresh table/progress/history),
+            sourced from _do_fetch_liked_tracks() instead of a playlist id -
+            see that function's docstring for the persistence-key rationale."""
+            try:
+                _state["tracks"] = await asyncio.to_thread(_do_fetch_liked_tracks)
+                _state["playlist_loaded"] = True
+                _state["simulated"] = False
+                await asyncio.to_thread(_run_check_against_downloads)
+                track_table.refresh()
+                progress_bar.refresh()
+                history_items.refresh()
+                simulate_banner.refresh()
+                ui.notify(f"Loaded {len(_state['tracks'])} liked songs", type="positive")
+            except Exception as e:
+                ui.notify(f"Load Liked Songs failed: {e}", type="negative", multi_line=True)
+
         def clear():
             playlist_input.value = ""
             clear_tab_state()
@@ -798,6 +857,7 @@ def build() -> None:
 
         with ui.row().style("gap:8px;margin:8px 0;align-items:center;"):
             ui.button("Fetch Tracks", icon="download", on_click=fetch).props("dense outline size=sm")
+            ui.button("Load Liked Songs", icon="favorite", on_click=load_liked).props("dense outline size=sm")
             ui.button("Simulate (sample data)", icon="science", on_click=simulate) \
                 .props("dense outline size=sm color=grey")
             ui.button("Clear", icon="clear", on_click=clear).props("dense outline size=sm color=grey")
