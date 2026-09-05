@@ -153,6 +153,11 @@ HEAD_HTML = """
   tr.batch-header td{padding-top:14px;font-weight:600;color:var(--accent);font-size:12px;}
   .console{background:#0c0e13;border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--accent2);overflow:auto;white-space:pre-wrap;}
   .console .dim{color:var(--text-dim);}
+  /* Custom-rule dry-run lines (marked "[custom rule: <id>]" by the exe) get the
+     same accent5 used for the library-duplicate badge family - distinguishes
+     a user-authored rule's change from a built-in fixed-transform change. */
+  .console .custom-rule-line{color:var(--accent5);}
+  .console .custom-rule-line::before{content:"\2605  ";}
   /* library */
   .toolbar-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;width:100%;}
   .view-toggle button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:12px;padding:6px 14px;border-radius:var(--radius-pill);cursor:pointer;font-family:inherit;}

@@ -17,6 +17,11 @@ TRACKS_JSON = LOGS_DIR / "tracks.json"
 
 AUDIOMIRROR_REPO = REPO_ROOT.parent / "AudioMirror"
 
+# User-defined TagFixer rules (config/tagfix-custom-rules.xml) - tracked XML,
+# read/written by gui.rules_store and read by the exe's TagFixCustomRuleSet.
+# The GUI CRUDs this file directly; it never touches the library or NewMusic.
+TAGFIX_CUSTOM_RULES_XML = REPO_ROOT / "config" / "tagfix-custom-rules.xml"
+
 # SPOTIFY_TOOLS_ROOT env var wins over the sibling-folder assumption - same
 # env var name SpotifyTools's own src/spotify_tools/paths.py checks, so one
 # variable controls both sides of the sys.path.insert boundary (see Task 2,
