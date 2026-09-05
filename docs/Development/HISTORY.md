@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Year sort no longer floats blank-year rows to the top when reversed
+
+Closed the "Year sort puts blank years last ascending but first descending" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_sorted_tracks()` in `gui/tabs/acquire.py` sorted the Year column with a `(is_blank, year)` key, relying on `sorted()`'s `reverse=True` to flip the whole ordering for a descending click - which also flipped the blank marker, so the second click on the Year header (descending) filled the top of the table with every track that had no year at all instead of pinning them to the bottom as the first click (ascending) correctly did.
+
+The blank marker now depends on the sort direction itself rather than riding along with it: `1` when ascending, `-1` when descending, versus `0` for any row with a real year. Since `-1 < 0`, a descending comparison still ranks blank rows last even though the whole tuple order is reversed; non-blank rows keep sorting by year exactly as before in both directions. One existing test, `test_sorted_tracks_year_blanks_stay_last_when_reversed`, had actually been asserting the buggy behaviour (`["", "2020", "1999"]`) despite its own docstring - corrected to `["2020", "1999", ""]`. Added `test_sorted_tracks_year_multiple_blanks_stay_last_ascending` covering two blank rows staying together at the tail while non-blank rows still sort oldest-first among themselves.
+
+Scoped entirely to the Year column's blank-handling in `_sorted_tracks()` - no other column's sort key, and none of the day's other Acquire tab fixes (row-key construction, manual-override toggle, extra-rows, mp3-tag caching, async build()/clear_tab_state() dispatch, Fetch input validation), were touched. Suite green: 293 C# tests, 315 GUI tests.
+
+---
+
 ## 2026-09-05 - Acquire's Fetch now validates the playlist box locally before any Spotify call
 
 Closed the "Acquire's Fetch accepts an empty or junk playlist id without validating it" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `fetch()` in `gui/tabs/acquire.py` passed `playlist_input.value or ""` straight through to `_do_fetch_tracks()`, so an empty box (or free-text junk) produced a full Spotify round-trip and only then an error, rather than being caught before the network call. `extract_playlist_id` from SpotifyTools can't tell the difference on its own: non-URL input has no `playlist/...` pattern to extract, so it's echoed straight back stripped, whether that's a genuine raw id or garbage.
