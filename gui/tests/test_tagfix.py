@@ -10,8 +10,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gui.rules_store import ACTIONS, FIELDS, MATCHES, Rule, load_rules, save_rules, validate_rule
 from gui.tabs.tagfix import (
     _is_custom_rule_line,
+    _is_custom_rule_warning_line,
     _render_console_lines,
     build_rule_rows,
+    count_custom_rule_warnings,
     literal_value_regex_metachars,
 )
 
@@ -312,6 +314,59 @@ def test_render_console_lines_escapes_html():
     html = _render_console_lines(['Title: "A" -> "<b>bold</b>" [custom rule: x]'])
     assert "&lt;b&gt;" in html
     assert "<b>bold</b>" not in html
+
+
+# ------------------------------------------- custom-rule warning highlighting
+
+
+# Exact line formats printed by TagFixCustomRuleSet (TagFixCustomRules.cs) -
+# ParseRule()'s validation failures and Apply()'s catch block.
+_WARN_FAILED = "  [WARN] Custom tag rule 'strip-bonus' failed: parsing \"[\" - Unterminated [] set."
+_WARN_SKIPPED_FIELD = "  [WARN] Custom tag rule 'r1' skipped: unknown field 'titel'"
+_WARN_SKIPPED_MATCH = "  [WARN] Custom tag rule 'r1' skipped: unknown match 'fuzzy'"
+_WARN_SKIPPED_ACTION = "  [WARN] Custom tag rule 'r1' skipped: unknown action 'nuke'"
+_WARN_SKIPPED_MISSING_ID = "  [WARN] Custom tag rule skipped: missing id attribute"
+_WARN_LOAD_FAILURE = "  [WARN] Could not load custom tag rules (config/tagfix-custom-rules.xml): root element is missing."
+
+
+def test_is_custom_rule_warning_line_true_for_failed_and_skipped():
+    assert _is_custom_rule_warning_line(_WARN_FAILED) is True
+    assert _is_custom_rule_warning_line(_WARN_SKIPPED_FIELD) is True
+    assert _is_custom_rule_warning_line(_WARN_SKIPPED_MATCH) is True
+    assert _is_custom_rule_warning_line(_WARN_SKIPPED_ACTION) is True
+    assert _is_custom_rule_warning_line(_WARN_SKIPPED_MISSING_ID) is True
+
+
+def test_is_custom_rule_warning_line_false_for_ordinary_change_line():
+    assert _is_custom_rule_warning_line(SAMPLE_OUTPUT[1]) is False
+    assert _is_custom_rule_warning_line(SAMPLE_OUTPUT[3]) is False
+    assert _is_custom_rule_warning_line(SAMPLE_OUTPUT[0]) is False
+
+
+def test_is_custom_rule_warning_line_false_for_unrelated_load_warning():
+    # Different concern (missing/malformed rules file), already out of scope -
+    # must not be conflated with a rule-authoring error.
+    assert _is_custom_rule_warning_line(_WARN_LOAD_FAILURE) is False
+
+
+def test_count_custom_rule_warnings_counts_only_warning_lines():
+    lines = [
+        *SAMPLE_OUTPUT,
+        _WARN_FAILED,
+        _WARN_SKIPPED_FIELD,
+        _WARN_LOAD_FAILURE,
+    ]
+    assert count_custom_rule_warnings(lines) == 2
+
+
+def test_count_custom_rule_warnings_zero_when_none_present():
+    assert count_custom_rule_warnings(SAMPLE_OUTPUT) == 0
+
+
+def test_render_console_lines_marks_warning_lines_distinctly():
+    html = _render_console_lines([_WARN_FAILED, SAMPLE_OUTPUT[1]])
+    assert html.count('class="custom-rule-warning-line"') == 1
+    assert html.count('class="custom-rule-line"') == 1
 
 
 # ------------------------------------------- literal_value_regex_metachars

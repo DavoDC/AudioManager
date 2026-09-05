@@ -39,6 +39,16 @@ FIXED_RULES = [
 # ChangeMarkerPrefix in TagFixCustomRules.cs) - used to render those lines distinctly.
 _CUSTOM_RULE_MARKER = "[custom rule: "
 
+# Substring shared by both custom-rule-authoring warning formats TagFixCustomRuleSet
+# prints (TagFixCustomRules.cs, ParseRule() and Apply()'s catch block):
+#   "  [WARN] Custom tag rule '<id>' failed: <message>"
+#   "  [WARN] Custom tag rule '<id>' skipped: unknown field '<x>'" (also missing-id,
+#   unknown match, unknown action)
+# Capital "Custom tag rule" (singular) deliberately excludes the unrelated load-time
+# warning "  [WARN] Could not load custom tag rules (...)" (lowercase "custom", plural
+# "rules") - that one is a config-file problem, not a rule-authoring error.
+_CUSTOM_RULE_WARNING_MARKER = "[WARN] Custom tag rule"
+
 # Regex metacharacters (.NET Regex syntax, same set the C# loader's Regex.Replace
 # would interpret) - used only to warn when an empty Pattern falls back to Value
 # as-is (TagFixCustomRules.cs's Pattern = IsNullOrEmpty(Pattern) ? Value : Pattern,
@@ -90,8 +100,16 @@ def build() -> None:
         _custom_rules_section()
 
         if T.lines:
+            warning_count = count_custom_rule_warnings(T.lines)
+            if warning_count:
+                ui.html(
+                    f'<div class="rule-warning-badge" style="margin-top:14px;">'
+                    f'{warning_count} rule warning{"s" if warning_count != 1 else ""} - '
+                    "open the dry-run output below to see them</div>"
+                )
             with ui.expansion("Dry-run output").classes("w-full") \
-                    .style("margin-top:14px;border:1px solid var(--panel-border);border-radius:3px;"):
+                    .style(f"margin-top:{0 if warning_count else 14}px;"
+                           "border:1px solid var(--panel-border);border-radius:3px;"):
                 ui.html(f'<div class="console" style="max-height:260px;">'
                         f'{_render_console_lines(T.lines[-300:])}</div>')
 
@@ -381,13 +399,37 @@ def _is_custom_rule_line(line: str) -> bool:
     return _CUSTOM_RULE_MARKER in line
 
 
+def _is_custom_rule_warning_line(line: str) -> bool:
+    """True if this dry-run output line is one of TagFixCustomRuleSet's two
+    rule-authoring warnings (a rule that failed to apply, or one skipped at
+    load time for a bad id/field/match/action) - see TagFixCustomRules.cs,
+    ParseRule() and Apply()'s catch block for the exact text. These render as
+    ordinary grey console text otherwise, so a bad rule (e.g. an uncompilable
+    regex) looks identical to a rule that simply matched nothing. Deliberately
+    excludes the unrelated "Could not load custom tag rules (...)" file-load
+    warning, which is a config-file problem rather than a rule-authoring one."""
+    return _CUSTOM_RULE_WARNING_MARKER in line
+
+
+def count_custom_rule_warnings(lines: list[str]) -> int:
+    """Count of rule-authoring warning lines in dry-run output, shown outside
+    the collapsed expansion so a bad rule is visible without opening it."""
+    return sum(1 for line in lines if _is_custom_rule_warning_line(line))
+
+
 def _render_console_lines(lines: list[str]) -> str:
     """Render dry-run output as one <div> per line, tagging custom-rule lines
-    with a distinct class so they read differently from built-in-fix lines."""
+    with a distinct class so they read differently from built-in-fix lines,
+    and rule-authoring warning lines with a second distinct class."""
     out = []
     for line in lines:
         esc = _esc(line)
-        cls = "custom-rule-line" if _is_custom_rule_line(line) else ""
+        if _is_custom_rule_warning_line(line):
+            cls = "custom-rule-warning-line"
+        elif _is_custom_rule_line(line):
+            cls = "custom-rule-line"
+        else:
+            cls = ""
         out.append(f'<div class="{cls}">{esc}</div>' if cls else f"<div>{esc}</div>")
     return "".join(out)
 
