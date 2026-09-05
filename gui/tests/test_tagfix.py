@@ -15,6 +15,8 @@ from gui.tabs.tagfix import (
     build_rule_rows,
     count_custom_rule_warnings,
     literal_value_regex_metachars,
+    merge_saved_rule,
+    merge_toggle_enabled,
 )
 
 SAMPLE_HEADER = (
@@ -445,3 +447,100 @@ def test_build_rule_rows_row_key_matches_rule_id_for_lookup():
 
 def test_build_rule_rows_empty_list():
     assert build_rule_rows([]) == []
+
+
+# --------------------------------------- concurrent rule writers (merge-by-id)
+#
+# _toggle_enabled() and the rule-edit dialog's do_save() in gui.tabs.tagfix
+# each re-load_rules() fresh from disk immediately before mutating, then
+# apply their own single-rule change via these merge helpers, rather than
+# blindly overwriting the whole file from whatever in-memory snapshot was
+# current when a switch or dialog was first opened. These tests simulate the
+# "someone else wrote to the file in between" scenario directly against the
+# real XML file on disk (same load_rules/save_rules round trip other tests
+# above use), one for each writer.
+
+
+def test_toggle_enabled_after_independent_add_preserves_both_changes(tmp_path):
+    p = tmp_path / "rules.xml"
+    _write_sample(p)
+    save_rules([Rule(id="r1", field="title", match="contains", value="x",
+                      action="set-value", replacement="y", enabled=True)], p)
+
+    # Simulate: a switch was flipped elsewhere, we still hold r1's older
+    # in-memory copy (loaded before the independent change below landed).
+    stale_r1 = load_rules(p)[0]
+
+    # Independent on-disk change made "while the toggle was in flight":
+    # a second rule gets added.
+    save_rules(load_rules(p) + [Rule(id="r2", field="album", match="contains", value="x",
+                                      action="set-value", replacement="y", enabled=True)], p)
+
+    # The toggle writer re-reads fresh immediately before merging its change,
+    # rather than trusting stale_r1's snapshot of the rule list.
+    merged = merge_toggle_enabled(load_rules(p), stale_r1.id, False)
+    save_rules(merged, p)
+
+    reloaded = {r.id: r for r in load_rules(p)}
+    assert set(reloaded) == {"r1", "r2"}
+    assert reloaded["r1"].enabled is False
+    assert reloaded["r2"].id == "r2"  # independent add survived
+
+
+def test_save_edited_rule_after_independent_toggle_preserves_both_changes(tmp_path):
+    p = tmp_path / "rules.xml"
+    _write_sample(p)
+    save_rules([
+        Rule(id="r1", field="title", match="contains", value="old",
+             action="set-value", replacement="y", enabled=True),
+        Rule(id="r2", field="album", match="contains", value="x",
+             action="set-value", replacement="y", enabled=True),
+    ], p)
+
+    # Dialog opened for r1, user is editing it (snapshot not needed further -
+    # do_save() only ever re-reads fresh right before merging/saving).
+    edited_r1 = Rule(id="r1", field="title", match="contains", value="new",
+                      action="set-value", replacement="y", enabled=True)
+
+    # Independent on-disk change made while the dialog was open: r2 gets
+    # toggled off elsewhere.
+    save_rules(merge_toggle_enabled(load_rules(p), "r2", False), p)
+
+    # The edit-dialog writer re-reads fresh immediately before merging its
+    # change, rather than overwriting the whole list from a stale snapshot.
+    merged = merge_saved_rule(load_rules(p), edited_r1, editing_id="r1")
+    save_rules(merged, p)
+
+    reloaded = {r.id: r for r in load_rules(p)}
+    assert reloaded["r1"].value == "new"
+    assert reloaded["r2"].enabled is False  # independent toggle survived
+
+
+def test_merge_toggle_enabled_only_changes_target_rule():
+    rules = [
+        Rule(id="a", field="title", match="contains", value="x", action="set-value", replacement="y", enabled=True),
+        Rule(id="b", field="album", match="contains", value="x", action="set-value", replacement="y", enabled=True),
+    ]
+    merged = merge_toggle_enabled(rules, "a", False)
+    by_id = {r.id: r for r in merged}
+    assert by_id["a"].enabled is False
+    assert by_id["b"].enabled is True
+
+
+def test_merge_saved_rule_replaces_by_id_when_editing():
+    existing = [
+        Rule(id="a", field="title", match="contains", value="old", action="set-value", replacement="y"),
+        Rule(id="b", field="album", match="contains", value="x", action="set-value", replacement="y"),
+    ]
+    new_a = Rule(id="a", field="title", match="contains", value="new", action="set-value", replacement="y")
+    merged = merge_saved_rule(existing, new_a, editing_id="a")
+    by_id = {r.id: r for r in merged}
+    assert by_id["a"].value == "new"
+    assert by_id["b"].value == "x"
+
+
+def test_merge_saved_rule_appends_when_not_editing():
+    existing = [Rule(id="a", field="title", match="contains", value="x", action="set-value", replacement="y")]
+    new_b = Rule(id="b", field="album", match="contains", value="x", action="set-value", replacement="y")
+    merged = merge_saved_rule(existing, new_b, editing_id=None)
+    assert [r.id for r in merged] == ["a", "b"]

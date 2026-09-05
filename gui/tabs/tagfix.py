@@ -247,11 +247,24 @@ def _custom_rules_section() -> None:
     table.on("toggle_enabled", lambda e: _handle_toggle_enabled(e.args))
 
 
-def _toggle_enabled(rule: Rule, value: bool) -> None:
-    rules = rules_store.load_rules()
+def merge_toggle_enabled(rules: list[Rule], rule_id: str, enabled: bool) -> list[Rule]:
+    """Apply one rule's enabled flag onto `rules` (a list just freshly
+    load_rules()'d from disk), by id. Pulled out of _toggle_enabled so the
+    merge-by-id step is independently testable, and so the only thing
+    _toggle_enabled ever writes back is a freshly re-read list with this one
+    field changed - never a stale snapshot from whenever the row was first
+    rendered. See rule-edit dialog's do_save() below for the analogous case."""
     for r in rules:
-        if r.id == rule.id:
-            r.enabled = bool(value)
+        if r.id == rule_id:
+            r.enabled = bool(enabled)
+    return rules
+
+
+def _toggle_enabled(rule: Rule, value: bool) -> None:
+    # Re-read from disk immediately before mutating: a rule-edit dialog left
+    # open elsewhere may have saved in the meantime, and its change must
+    # survive this save rather than being overwritten by an older snapshot.
+    rules = merge_toggle_enabled(rules_store.load_rules(), rule.id, value)
     rules_store.save_rules(rules)
     ui.notify(f"Rule '{rule.id}' {'enabled' if value else 'disabled'}", type="positive")
     T.refresh()
@@ -275,6 +288,19 @@ def _confirm_delete(rule: Rule) -> None:
 
             ui.button("Delete", on_click=do_delete).props("unelevated color=negative")
     dlg.open()
+
+
+def merge_saved_rule(existing_rules: list[Rule], new_rule: Rule, editing_id: str | None) -> list[Rule]:
+    """Apply one added/edited rule onto `existing_rules` (a list just
+    freshly load_rules()'d from disk immediately before save), by id.
+    Pulled out of the rule-edit dialog's do_save() so the merge-by-id step
+    is independently testable, and so the list ever written back is always
+    a freshly re-read one with this one rule changed - never the snapshot
+    that was current when the dialog was first opened, which could be stale
+    by the time Save is clicked."""
+    if editing_id:
+        return [new_rule if x.id == editing_id else x for x in existing_rules]
+    return existing_rules + [new_rule]
 
 
 def _open_rule_dialog(existing: Rule | None = None) -> None:
@@ -335,8 +361,7 @@ def _open_rule_dialog(existing: Rule | None = None) -> None:
                     replacement=replacement_input.value or "",
                     enabled=bool(enabled_switch.value),
                 )
-                existing_rules = rules_store.load_rules()
-                errors = rules_store.validate_rule(new_rule, existing_rules, editing_id=editing_id)
+                errors = rules_store.validate_rule(new_rule, rules_store.load_rules(), editing_id=editing_id)
                 if errors:
                     error_box.clear()
                     with error_box:
@@ -344,10 +369,12 @@ def _open_rule_dialog(existing: Rule | None = None) -> None:
                             ui.label(msg).style("color:var(--accent4);font-size:12px;")
                     return
 
-                if editing_id:
-                    existing_rules = [new_rule if x.id == editing_id else x for x in existing_rules]
-                else:
-                    existing_rules.append(new_rule)
+                # Re-read from disk immediately before mutating (not the
+                # snapshot validate_rule() checked against above, and not
+                # whatever was current when this dialog was opened): a
+                # switch toggled elsewhere in the meantime must survive this
+                # save rather than being overwritten by an older snapshot.
+                existing_rules = merge_saved_rule(rules_store.load_rules(), new_rule, editing_id)
                 rules_store.save_rules(existing_rules)
                 ui.notify(f"Saved rule '{new_rule.id}'", type="positive")
                 dlg.close()
