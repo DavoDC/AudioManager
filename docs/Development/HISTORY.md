@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Icon usage on action buttons made consistent between Acquire and Integration
+
+Closed "[GUI] [Intake-priority, elevated 2026-09-05] Icon usage on action buttons is inconsistent between the two tabs" from IDEAS.md. Acquire's primary row (Fetch Tracks/Simulate/Clear) already carried Material icons; Integration's equivalent tab-level actions (Scan NewMusic, Accept all, Decline all, Re-scan, Cancel) carried none, and no doc stated a rule for when a button earns an icon. Commit `03844cea`.
+
+Adopted rule: every tab-level action button carries a Material icon, matching Acquire's existing pattern. Applied to Integration: Scan NewMusic -> `travel_explore`, Accept all -> `done_all`, Decline all -> `clear_all`, Re-scan -> `refresh`, Cancel -> `cancel`, plus the confirm dialog's Integrate -> `play_arrow` / Cancel -> `close`, and New scan -> `restart_alt`. Icons chosen for semantic clarity rather than reused arbitrarily (e.g. search-flavoured icon for scan, checkmark-flavoured for accept, cross-flavoured for decline/cancel). Rule recorded in `docs/DESIGN.md`'s Buttons section so future tab-level buttons don't regress the inconsistency.
+
+---
+
 ## 2026-09-05 - Accept/decline interaction redesign for the review card
 
 Closed "[OPUS decided] Accept/decline interaction redesign for the review card" from IDEAS.md, deferred from the review-card layout item above once the mechanical fixes there stopped short of redesigning the actual interaction model: accept/decline was two separate always-visible buttons per card plus a bolted-on keyboard layer (A/D/J/K), not a considered single interaction pattern for triaging 84-126 files. Commit `6f8ad62e`.
