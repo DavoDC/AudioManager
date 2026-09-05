@@ -635,6 +635,21 @@ def build_track_rows() -> list[dict]:
     return rows
 
 
+def build_extra_rows() -> list[tuple[str, str, str, Path]]:
+    """Row tuples for the extra-rows (NewMusic-not-in-playlist) section below
+    track_table()'s main table, sorted the same way the render loop always
+    has. Deliberately NOT filtered by _state["hide_downloaded"]: these files
+    sit in NEWMUSIC_DIR but matched no track in the loaded playlist at all, so
+    "Downloaded" is not a concept that applies to them the way it does to a
+    playlist row - IDEAS.md "Extra-rows section prints a count in its header,
+    then hides every row under it" 2026-09-05. The header count
+    (_extra_batch_header/len(_state["extra"])) and this function's row count
+    must always match, in both hide_downloaded states, unlike
+    build_track_rows() which the main table's own hide_downloaded toggle is
+    meant to affect."""
+    return sorted(_state["extra"], key=lambda r: r[0].lower())
+
+
 def restore_cached_tracks() -> bool:
     """Reloads the last playlist's tracks/ticks from disk into _state on tab
     build, so a browser reload or a tab rebuild no longer starts empty.
@@ -1015,9 +1030,7 @@ def build() -> None:
                         with ui.element("tr").classes("batch-header"):
                             with ui.element("td").props("colspan=7"):
                                 ui.label(_extra_batch_header(len(_state["extra"]), _state["playlist_loaded"]))
-                    for artist, title, url, path in sorted(_state["extra"], key=lambda r: r[0].lower()):
-                        if _state["hide_downloaded"]:
-                            continue
+                    for artist, title, url, path in build_extra_rows():
                         album, year, length = _read_mp3_tags(path)
                         with ui.element("tr").classes("row-extra"):
                             with ui.element("td"):
