@@ -4,6 +4,29 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Added: dedicated cancelled-mid-batch modal for real Integration cancels
+
+Closed the "Add a dedicated cancelled-mid-batch modal to Integration" item from the 2026-09-05 "Library
+Intake design/usability review" section of IDEAS.md. `runner.cancel()` does a `taskkill /T /F` partway
+through a sequence of real file moves - some files may already be in the library and the rest still in
+NewMusic, and the post-integration mirror regen and LibChecker validation never ran, so no confidence
+report exists either. `_finish_execute()` previously routed a real-execute cancel to `show_error_modal`,
+whose title reads "`<action> failed`" - misleading, since `result.interpreted()` already distinguishes
+cancelled from failed and a cancel here is not a benign no-op the way it is for a Scan/Tag Fix dry-run
+cancel (nothing was mutated in those cases).
+
+Added `show_cancelled_modal()` in `gui/components/error_modal.py`, styled per the file's existing
+`err-modal`/`err-title`/`err-meaning` conventions: title "Integration cancelled partway through" (not
+"failed"), body stating plainly that some files may already be in the library and the rest still in
+NewMusic, and that the post-run mirror update and LibChecker safety check did not run, so the library's
+state is not verified. Two actions - "Run Analysis Now" (reuses the existing `reset()` + `run_scan()`
+pattern already used elsewhere in `integration.py` to return to the scan stage and kick off a fresh dry
+run) and "Dismiss" - deliberately no "Retry execution" button, since retrying blindly against files that
+may have already moved is not safe to offer without knowing which ones moved. Wired into
+`_finish_execute()` only on the real `run_execute()` path (`result.cancelled` there can only be true for a
+real run); Scan and Tag Fix dry-run cancels are untouched, and Simulate mode's own synthetic
+`run_execute_simulated()` never constructs a cancelled `RunResult`, so it can't reach this path either.
+
 ## 2026-09-05 - Fixed: GUI-Architecture.md wrongly claimed Tag Fix applies to library batches, not just NewMusic
 
 `GUI-Architecture.md`'s CLI Feature Parity table (line 12) and its "Design Vision" section (line 35) both
