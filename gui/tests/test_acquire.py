@@ -111,6 +111,32 @@ def test_extra_returns_every_file_when_no_playlist_loaded(tmp_path):
     assert extra == [("Eminem", "Lose Yourself", tmp_path / "Eminem - Lose Yourself.mp3")]
 
 
+def test_matches_downloaded_file_in_subfolder(tmp_path):
+    """Regression: Deemix commonly writes an album into its own subfolder
+    (e.g. NewMusic/Some Album/Artist - Title.mp3), and the C# side always
+    scans with SearchOption.AllDirectories. The GUI's scan must match that
+    behavior, not just the top level of NEWMUSIC_DIR."""
+    album_dir = tmp_path / "Some Album"
+    album_dir.mkdir()
+    (album_dir / "Eminem - Lose Yourself.mp3").write_bytes(b"")
+    found, missing = match_downloads([("Eminem", "Lose Yourself")], tmp_path)
+    assert found == ["Eminem - Lose Yourself"]
+    assert missing == []
+
+
+def test_extra_finds_file_in_subfolder_not_in_playlist(tmp_path):
+    """Same subfoldered-download scenario as
+    test_matches_downloaded_file_in_subfolder, but for the reverse direction:
+    a file sitting in a subfolder that matches no track in the loaded
+    playlist must still surface in the "IN NEWMUSIC, NOT IN THIS PLAYLIST"
+    section, not silently disappear."""
+    album_dir = tmp_path / "Some Album"
+    album_dir.mkdir()
+    (album_dir / "Drake - Hotline Bling.mp3").write_bytes(b"")
+    extra = find_extra_newmusic_files([("Eminem", "Lose Yourself")], tmp_path)
+    assert extra == [("Drake", "Hotline Bling", album_dir / "Drake - Hotline Bling.mp3")]
+
+
 # --------------------------------------------------------------- tag reading
 
 

@@ -449,7 +449,7 @@ def _scan_newmusic_filenames(newmusic_dir: Path) -> list[tuple[str, str, str, st
 
     parts = []
     if newmusic_dir.is_dir():
-        for p in newmusic_dir.glob("*.mp3"):
+        for p in newmusic_dir.rglob("*.mp3"):
             fa, _, ft = p.stem.partition(" - ")
             parts.append((fa.strip(), ft.strip(), normalise(_primary_artist(fa, clean_artist)), normalise(clean_title(ft)), p))
     return parts
