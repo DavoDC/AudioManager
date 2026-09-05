@@ -684,7 +684,7 @@ TRACKS = [
     ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", "http://x/1"),
     ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23", "http://x/2"),
 ]
-DOWNLOADED = {"0:Eminem:Lose Yourself": True, "1:Dua Lipa:Levitating": False}
+DOWNLOADED = {"eminem:lose yourself": True, "dua lipa:levitating": False}
 
 
 def test_tracks_cache_round_trips_through_disk(tmp_path, monkeypatch):
@@ -700,10 +700,10 @@ def test_tracks_cache_is_keyed_by_playlist_id(tmp_path, monkeypatch):
     _save_last_playlist("pl1", "First")
     _save_last_playlist("pl2", "Second")
     _save_tracks_cache("pl1", TRACKS, DOWNLOADED)
-    _save_tracks_cache("pl2", TRACKS[:1], {"0:Eminem:Lose Yourself": False})
+    _save_tracks_cache("pl2", TRACKS[:1], {"eminem:lose yourself": False})
     assert len(_load_tracks_cache("pl1")[0]) == 2
     assert len(_load_tracks_cache("pl2")[0]) == 1
-    assert _load_tracks_cache("pl1")[1]["0:Eminem:Lose Yourself"] is True
+    assert _load_tracks_cache("pl1")[1]["eminem:lose yourself"] is True
 
 
 def test_tracks_cache_unknown_playlist_returns_empty(tmp_path, monkeypatch):
@@ -909,8 +909,8 @@ def test_fetch_state_is_persisted_by_the_downloads_check(tmp_path, monkeypatch):
 
     cached_tracks, cached_downloaded = _load_tracks_cache("pl1")
     assert cached_tracks == TRACKS
-    assert cached_downloaded["0:Eminem:Lose Yourself"] is True
-    assert cached_downloaded["1:Dua Lipa:Levitating"] is False
+    assert cached_downloaded["eminem:lose yourself"] is True
+    assert cached_downloaded["dua lipa:levitating"] is False
 
 
 def test_simulate_state_is_never_persisted(tmp_path, monkeypatch):
@@ -936,7 +936,7 @@ def test_toggle_manual_override_flips_value_and_marks_the_row(tmp_path, monkeypa
     _state["downloaded"] = dict(DOWNLOADED)
     _state["playlist_loaded"] = True
 
-    row_key = "1:Dua Lipa:Levitating"
+    row_key = "dua lipa:levitating"
     toggle_manual_override(row_key)
 
     assert _state["downloaded"][row_key] is True  # was False
@@ -954,9 +954,9 @@ def test_toggle_manual_override_persists_across_a_reload(tmp_path, monkeypatch):
     _state["downloaded"] = dict(DOWNLOADED)
     _state["playlist_loaded"] = True
 
-    toggle_manual_override("0:Eminem:Lose Yourself")
+    toggle_manual_override("eminem:lose yourself")
 
-    assert _load_manual_overrides("pl1") == {"0:Eminem:Lose Yourself": True}
+    assert _load_manual_overrides("pl1") == {"eminem:lose yourself": True}
 
 
 def test_check_against_downloads_skips_overridden_rows(tmp_path, monkeypatch):
@@ -968,14 +968,14 @@ def test_check_against_downloads_skips_overridden_rows(tmp_path, monkeypatch):
     # Neither file exists on disk, so an un-overridden fuzzy match would mark both False.
     _blank_state()
     _state["tracks"] = list(TRACKS)
-    _state["downloaded"] = {"0:Eminem:Lose Yourself": True, "1:Dua Lipa:Levitating": False}
-    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}
+    _state["downloaded"] = {"eminem:lose yourself": True, "dua lipa:levitating": False}
+    _state["manual_override"] = {"eminem:lose yourself": True}
     _state["playlist_loaded"] = True
 
     _run_check_against_downloads()
 
-    assert _state["downloaded"]["0:Eminem:Lose Yourself"] is True  # override kept, untouched by fuzzy match
-    assert _state["downloaded"]["1:Dua Lipa:Levitating"] is False  # freshly matched (no file -> False)
+    assert _state["downloaded"]["eminem:lose yourself"] is True  # override kept, untouched by fuzzy match
+    assert _state["downloaded"]["dua lipa:levitating"] is False  # freshly matched (no file -> False)
 
 
 def test_check_against_downloads_still_matches_non_overridden_rows(tmp_path, monkeypatch):
@@ -985,21 +985,21 @@ def test_check_against_downloads_still_matches_non_overridden_rows(tmp_path, mon
     (newmusic / "Dua Lipa - Levitating.mp3").write_bytes(b"")
     _blank_state()
     _state["tracks"] = list(TRACKS)
-    _state["downloaded"] = {"0:Eminem:Lose Yourself": False, "1:Dua Lipa:Levitating": False}
-    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}  # user says "not downloaded", stays False
+    _state["downloaded"] = {"eminem:lose yourself": False, "dua lipa:levitating": False}
+    _state["manual_override"] = {"eminem:lose yourself": True}  # user says "not downloaded", stays False
     _state["playlist_loaded"] = True
 
     _run_check_against_downloads()
 
-    assert _state["downloaded"]["0:Eminem:Lose Yourself"] is False  # override honored despite no file either way
-    assert _state["downloaded"]["1:Dua Lipa:Levitating"] is True  # freshly matched, file exists
+    assert _state["downloaded"]["eminem:lose yourself"] is False  # override honored despite no file either way
+    assert _state["downloaded"]["dua lipa:levitating"] is True  # freshly matched, file exists
 
 
 def test_clear_tab_state_forgets_manual_overrides(tmp_path, monkeypatch):
     _isolate_state_file(tmp_path, monkeypatch)
     _blank_state()
     _state["tracks"] = list(TRACKS)
-    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}
+    _state["manual_override"] = {"eminem:lose yourself": True}
     _state["playlist_loaded"] = True
 
     clear_tab_state()
@@ -1011,10 +1011,67 @@ def test_restore_cached_tracks_restores_manual_overrides(tmp_path, monkeypatch):
     _isolate_state_file(tmp_path, monkeypatch)
     _blank_state()
     _save_last_playlist("pl1", "First")
-    _save_tracks_cache("pl1", TRACKS, DOWNLOADED, {"0:Eminem:Lose Yourself": True})
+    _save_tracks_cache("pl1", TRACKS, DOWNLOADED, {"eminem:lose yourself": True})
 
     assert restore_cached_tracks() is True
-    assert _state["manual_override"] == {"0:Eminem:Lose Yourself": True}
+    assert _state["manual_override"] == {"eminem:lose yourself": True}
+
+
+# ------------------------------------------- row keys are content-based, not index-based (IDEAS.md, 2026-09-05)
+
+
+def test_row_keys_are_independent_of_fetch_order():
+    """Regression for IDEAS.md "Acquire's persisted row keys are index-based":
+    the same set of tracks must produce the same set of row_keys whether or
+    not the fetch reordered them - each key must depend only on that track's
+    own artist/title content."""
+    forward = acquire_module._row_keys_for_tracks(TRACKS)
+    reversed_keys = acquire_module._row_keys_for_tracks(list(reversed(TRACKS)))
+    assert set(forward) == set(reversed_keys)
+    assert forward == list(reversed(reversed_keys))
+
+
+def test_row_keys_disambiguate_genuine_duplicates():
+    """Two tracks that normalise to the same content key (a real duplicate in
+    the fetched list) must still get distinct, non-colliding keys."""
+    dup_tracks = [
+        ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", "http://x/1"),
+        ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", "http://x/1"),
+    ]
+    keys = acquire_module._row_keys_for_tracks(dup_tracks)
+    assert len(set(keys)) == 2
+
+
+def test_manual_override_follows_the_track_after_a_reordered_refetch(tmp_path, monkeypatch):
+    """The core regression: David marks a track's Downloaded cell as a
+    manual override, then re-fetches a reordered playlist (a new track lands
+    at the top upstream, shifting every later track's index). The override
+    must keep applying to the SAME track by artist/title content, not to
+    whatever track now sits at the old numeric index."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    (tmp_path / "newmusic").mkdir()
+    _blank_state()
+    _state["tracks"] = list(TRACKS)  # [Eminem - Lose Yourself, Dua Lipa - Levitating]
+    _state["playlist_loaded"] = True
+
+    dua_lipa_key = build_track_rows()[1]["row_key"]
+    toggle_manual_override(dua_lipa_key)
+    assert _state["manual_override"] == {dua_lipa_key: True}
+    assert _state["downloaded"][dua_lipa_key] is True
+
+    # Simulate a re-fetch of a reordered playlist: a new track is now first,
+    # pushing Dua Lipa from index 1 to index 2 and Eminem from 0 to 1.
+    new_track = ("New Artist", "New Song", "New Album", "2024", "1:00", "http://x/3")
+    _state["tracks"] = [new_track, TRACKS[0], TRACKS[1]]
+
+    _run_check_against_downloads()  # no files on disk - a fresh match marks everything else False
+
+    rows = {row["artist"]: row for row in build_track_rows()}
+    assert rows["Dua Lipa"]["row_key"] == dua_lipa_key
+    assert rows["Dua Lipa"]["is_downloaded"] is True  # override survived the reorder
+    assert rows["Dua Lipa"]["is_overridden"] is True
+    assert rows["Eminem"]["is_downloaded"] is False  # untouched by the override
+    assert rows["Eminem"]["is_overridden"] is False
 
 
 # ---------------------------------------------------------- fetch progress (item 2)
@@ -1091,7 +1148,7 @@ def test_build_track_rows_shapes_every_fetched_track(tmp_path, monkeypatch):
     rows = build_track_rows()
 
     assert len(rows) == 2
-    assert rows[0]["row_key"] == "0:Eminem:Lose Yourself"
+    assert rows[0]["row_key"] == "eminem:lose yourself"
     assert rows[0]["artist"] == "Eminem"
     assert rows[0]["is_downloaded"] is True
     assert rows[1]["is_downloaded"] is False
@@ -1102,7 +1159,7 @@ def test_build_track_rows_flags_overridden_rows(tmp_path, monkeypatch):
     _blank_state()
     _state["tracks"] = list(TRACKS)
     _state["downloaded"] = dict(DOWNLOADED)
-    _state["manual_override"] = {"0:Eminem:Lose Yourself": True}
+    _state["manual_override"] = {"eminem:lose yourself": True}
 
     rows = build_track_rows()
 
@@ -1120,7 +1177,7 @@ def test_build_track_rows_respects_hide_downloaded(tmp_path, monkeypatch):
     rows = build_track_rows()
 
     assert len(rows) == 1
-    assert rows[0]["row_key"] == "1:Dua Lipa:Levitating"
+    assert rows[0]["row_key"] == "dua lipa:levitating"
     _state["hide_downloaded"] = False  # don't leak into other tests sharing module state
 
 
