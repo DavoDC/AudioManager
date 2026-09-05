@@ -1203,6 +1203,60 @@ def test_clear_tab_state_forgets_manual_overrides(tmp_path, monkeypatch):
     assert _state["manual_override"] == {}
 
 
+def test_clear_tab_state_run_check_false_skips_the_scan(tmp_path, monkeypatch):
+    """Regression for IDEAS.md "The NewMusic scan runs synchronously on the
+    event loop during tab build and Clear": build()'s async Clear handler
+    passes run_check=False and runs _run_check_against_downloads() itself
+    off the event loop instead, so clear_tab_state() must not call it inline
+    when told not to."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+    calls = []
+    monkeypatch.setattr(acquire_module, "_run_check_against_downloads", lambda: calls.append(1))
+
+    clear_tab_state(run_check=False)
+
+    assert calls == []
+    assert _state["tracks"] == []
+
+
+def test_clear_tab_state_run_check_true_still_runs_the_scan_inline(tmp_path, monkeypatch):
+    """Default behavior (every existing caller, including every other test in
+    this file) must be unchanged: the scan still runs inline unless the
+    caller explicitly opts out."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+    calls = []
+    monkeypatch.setattr(acquire_module, "_run_check_against_downloads", lambda: calls.append(1))
+
+    clear_tab_state()
+
+    assert calls == [1]
+
+
+def test_clear_tab_state_run_check_false_still_refreshes_all_four_panels(tmp_path, monkeypatch):
+    """Skipping the inline scan must not skip the immediate UI reset - the
+    table/progress/history/simulate-banner panels still need to blank out
+    right away, before the deferred scan's own follow-up refresh lands."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    refreshed = []
+    monkeypatch.setitem(acquire_module._refresh_hooks, "track_table", lambda: refreshed.append("track_table"))
+    monkeypatch.setitem(acquire_module._refresh_hooks, "progress_bar", lambda: refreshed.append("progress_bar"))
+    monkeypatch.setitem(acquire_module._refresh_hooks, "history_items", lambda: refreshed.append("history_items"))
+    monkeypatch.setitem(acquire_module._refresh_hooks, "simulate_banner", lambda: refreshed.append("simulate_banner"))
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    clear_tab_state(run_check=False)
+
+    assert sorted(refreshed) == ["history_items", "progress_bar", "simulate_banner", "track_table"]
+
+
 def test_restore_cached_tracks_restores_manual_overrides(tmp_path, monkeypatch):
     _isolate_state_file(tmp_path, monkeypatch)
     _blank_state()
