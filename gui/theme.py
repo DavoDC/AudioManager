@@ -163,6 +163,15 @@ HEAD_HTML = """
      a user-authored rule's change from a built-in fixed-transform change. */
   .console .custom-rule-line{color:var(--accent5);}
   .console .custom-rule-line::before{content:"\2605  ";}
+  /* Custom-rule-authoring warnings ("[WARN] Custom tag rule '<id>' failed/skipped: ...")
+     use the same accent3 amber already used for warning-toned elements elsewhere
+     (.gap-note, .simulate-banner, .status-badge.draft) - these are silent failures
+     otherwise, indistinguishable from a rule that simply matched nothing. */
+  .console .custom-rule-warning-line{color:var(--accent3);}
+  .console .custom-rule-warning-line::before{content:"\26A0  ";}
+  .rule-warning-badge{display:inline-block;font-size:12px;font-weight:600;color:var(--accent3);
+    background:rgba(242,184,75,.13);border:1px solid var(--accent3);border-radius:var(--radius-pill);
+    padding:3px 10px;}
   /* library */
   .toolbar-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;width:100%;}
   .view-toggle button{background:#12141c;border:1px solid var(--panel-border);color:var(--text-dim);font-size:12px;padding:6px 14px;border-radius:var(--radius-pill);cursor:pointer;font-family:inherit;}
