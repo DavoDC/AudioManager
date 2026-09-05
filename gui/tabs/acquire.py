@@ -395,9 +395,10 @@ def simulate() -> None:
     extra = _sample_extra()
     downloaded_labels = {"Bring Me The Horizon - Doomed", "Fred again.. - Delilah (pull me out of this)"}
     _state["tracks"] = tracks
+    row_keys = _row_keys_for_tracks(tracks)
     _state["downloaded"] = {
-        f"{i}:{artist}:{title}": f"{artist} - {title}" in downloaded_labels
-        for i, (artist, title, *_rest) in enumerate(tracks)
+        row_key: f"{artist} - {title}" in downloaded_labels
+        for row_key, (artist, title, *_rest) in zip(row_keys, tracks)
     }
     _state["extra"] = extra
     _state["playlist_loaded"] = True
@@ -471,6 +472,39 @@ def _artist_title_match(norm_artist: str, norm_title: str, fa: str, ft: str) -> 
     return bool(title_words and ft_words) and len(title_words & ft_words) / max(len(title_words), len(ft_words)) >= 0.4
 
 
+def _content_key(artist: str, title: str) -> str:
+    """Normalised artist+title key, content-only (no fetch-order index).
+    Reuses _artist_title_match's own normalisation (clean_artist/clean_title/
+    normalise from spotify_tools.matcher, plus _primary_artist for a
+    multi-artist field) so this file has exactly one normalisation scheme,
+    not a second parallel one invented for persistence."""
+    from spotify_tools.matcher import clean_artist, clean_title, normalise
+    return f"{normalise(_primary_artist(artist, clean_artist))}:{normalise(clean_title(title))}"
+
+
+def _row_keys_for_tracks(tracks: list[tuple]) -> list[str]:
+    """Stable per-track row keys, in the same order as `tracks`, used to
+    persist manual overrides and Downloaded ticks (see _save_tracks_cache /
+    _load_manual_overrides / toggle_manual_override). Built from
+    _content_key() alone, so the same track keeps the same key across a
+    re-fetch even if the playlist has been reordered or had tracks
+    added/removed upstream - the old f"{i}:{artist}:{title}" scheme let the
+    fetch-order index re-attach a persisted override to whatever track now
+    sits at that old position (IDEAS.md "Acquire's persisted row keys are
+    index-based"). A genuine duplicate - two tracks in the same fetch that
+    normalise to the same content key - is disambiguated with an occurrence
+    suffix, but only once a collision actually happens, so the common
+    no-duplicates case never depends on fetch order at all."""
+    seen: dict[str, int] = {}
+    keys = []
+    for artist, title, *_rest in tracks:
+        base = _content_key(artist, title)
+        n = seen.get(base, 0)
+        seen[base] = n + 1
+        keys.append(base if n == 0 else f"{base}:{n}")
+    return keys
+
+
 def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[list[str], list[str]]:
     """Read-only fuzzy match of (artist, title) pairs against filenames already
     in newmusic_dir. Returns (found_labels, missing_labels). Pure/testable -
@@ -527,16 +561,16 @@ def _run_check_against_downloads() -> None:
     from spotify_tools.open_playlist import _build_deemix_url
     overrides = _state["manual_override"]
     current_tracks = [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]]
+    row_keys = _row_keys_for_tracks(_state["tracks"])
     to_match = [
         (artist, title)
-        for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"])
-        if f"{i}:{artist}:{title}" not in overrides
+        for row_key, (artist, title, _album, _year, _length, _url) in zip(row_keys, _state["tracks"])
+        if row_key not in overrides
     ]
     found, _missing = match_downloads(to_match, config.NEWMUSIC_DIR)
     found_set = set(found)
     new_downloaded = {}
-    for i, (artist, title, _album, _year, _length, _url) in enumerate(_state["tracks"]):
-        row_key = f"{i}:{artist}:{title}"
+    for row_key, (artist, title, _album, _year, _length, _url) in zip(row_keys, _state["tracks"]):
         if row_key in overrides:
             new_downloaded[row_key] = _state["downloaded"].get(row_key, False)
         else:
@@ -573,9 +607,10 @@ def build_track_rows() -> list[dict]:
     render, so no track is ever sliced or dropped from state here.
     is_overridden reflects _state["manual_override"] so the table can give an
     overridden row a distinct marker (see track_table())."""
+    row_keys = _row_keys_for_tracks(_state["tracks"])
     rows = []
     for i, (artist, title, album, year, length, url) in _sorted_tracks():
-        row_key = f"{i}:{artist}:{title}"
+        row_key = row_keys[i]
         is_downloaded = _state["downloaded"].get(row_key, False)
         if _state["hide_downloaded"] and is_downloaded:
             continue
