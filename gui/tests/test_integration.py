@@ -13,8 +13,9 @@ from gui.runner import RunResult
 from gui.tabs.integration import (
     IntegrationState, _bulk, _confirm_note_class, _esc, _failed_filename_from_output,
     _on_review_key, _open_run_log, _review_key_action, _sample_entries,
-    _update_exec_status, _write_manifest, batch_summary_html, run_execute,
-    run_execute_simulated, run_simulate, sort_by_destination,
+    _set_triage, _toggle_decision, _update_exec_status, _write_manifest,
+    batch_summary_html, run_execute, run_execute_simulated, run_simulate,
+    sort_by_destination, triage_bar_html,
 )
 
 
@@ -738,6 +739,8 @@ def test_review_key_action_maps_letters_and_arrows():
     assert _review_key_action("ArrowDown") == "next"
     assert _review_key_action("k") == "prev"
     assert _review_key_action("ArrowUp") == "prev"
+    assert _review_key_action("t") == "triage"
+    assert _review_key_action("Escape") == "exit"
     assert _review_key_action("x") is None
     assert _review_key_action("") is None
 
@@ -748,15 +751,72 @@ def test_on_review_key_ignored_outside_review_stage():
     (e.g. from a slow rebuild) can never accept/decline off-stage."""
     s = IntegrationState()
     s.stage = 1
+    s.triage = True
     s.entries = [_entry("a.mp3")]
     s.decisions = {"a.mp3": True}
     _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d")))
     assert s.decisions["a.mp3"] is True
 
 
+def test_decision_keys_are_inert_until_triage_mode_is_on():
+    """The whole point of the mode: a stray 'a'/'d' while the user is just
+    reading the review list must never flip a decision on a card they aren't
+    even looking at. Navigation keys stay exempt - they only move a cursor."""
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    s.decisions = {"a.mp3": True, "b.mp3": True}
+    assert s.triage is False
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d")))
+    assert s.decisions["a.mp3"] is True
+    assert s.triage is False  # a blocked decision key must not arm the mode either
+
+
+def test_navigation_key_self_arms_triage_mode():
+    """Discoverability: pressing an arrow/J turns the mode ON (and shows the
+    cursor + key legend) rather than doing nothing, so the keyboard path is
+    still found by trying it - it just announces itself before A/D can fire."""
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    s.decisions = {"a.mp3": True, "b.mp3": True}
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("j")))
+    assert s.triage is True
+    assert s.cursor == 1
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d")))
+    assert s.decisions["b.mp3"] is False
+
+
+def test_t_toggles_triage_mode_and_escape_exits():
+    s = IntegrationState()
+    s.stage = 2
+    s.entries = [_entry("a.mp3")]
+    s.decisions = {"a.mp3": True}
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("t")))
+    assert s.triage is True
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("Escape")))
+    assert s.triage is False
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("T")))
+    assert s.triage is True
+    _with_state(s, lambda: _on_review_key(_FakeKeyEvent("t")))
+    assert s.triage is False
+
+
+def test_entering_triage_mode_resets_the_cursor_to_the_top():
+    """A cursor left over from a previous filter would arm A/D against a card
+    that is not where the user is looking when the mode comes back on."""
+    s = IntegrationState()
+    s.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    s.cursor = 1
+    _with_state(s, lambda: _set_triage(True))
+    assert s.triage is True
+    assert s.cursor == 0
+
+
 def test_on_review_key_decline_targets_entry_under_cursor():
     s = IntegrationState()
     s.stage = 2
+    s.triage = True
     s.entries = [_entry("a.mp3"), _entry("b.mp3")]
     s.decisions = {"a.mp3": True, "b.mp3": True}
     s.cursor = 1
@@ -765,16 +825,14 @@ def test_on_review_key_decline_targets_entry_under_cursor():
     assert s.decisions["b.mp3"] is False
 
 
-def test_on_review_key_next_and_prev_move_cursor_and_set_keyboard_nav_used():
+def test_on_review_key_next_and_prev_move_cursor():
     s = IntegrationState()
     s.stage = 2
     s.entries = [_entry("a.mp3"), _entry("b.mp3"), _entry("c.mp3")]
     s.decisions = {"a.mp3": True, "b.mp3": True, "c.mp3": True}
     s.cursor = 0
-    assert s.keyboard_nav_used is False
     _with_state(s, lambda: _on_review_key(_FakeKeyEvent("j")))
     assert s.cursor == 1
-    assert s.keyboard_nav_used is True
     _with_state(s, lambda: _on_review_key(_FakeKeyEvent("ArrowDown")))
     assert s.cursor == 2
     _with_state(s, lambda: _on_review_key(_FakeKeyEvent("j")))
@@ -786,6 +844,7 @@ def test_on_review_key_next_and_prev_move_cursor_and_set_keyboard_nav_used():
 def test_on_review_key_ignores_keyup_and_repeat():
     s = IntegrationState()
     s.stage = 2
+    s.triage = True
     s.entries = [_entry("a.mp3")]
     s.decisions = {"a.mp3": True}
     _with_state(s, lambda: _on_review_key(_FakeKeyEvent("d", keydown=False)))
@@ -799,11 +858,57 @@ def test_on_review_key_never_accepts_an_error_entry():
     stray keypress on an unresolved-error card can't force an invalid accept."""
     s = IntegrationState()
     s.stage = 2
+    s.triage = True
     s.entries = [_entry("err.mp3", status="error")]
     s.decisions = {}
     s.cursor = 0
     _with_state(s, lambda: _on_review_key(_FakeKeyEvent("a")))
     assert s.accepted == []
+
+
+# ------------------------------------------------ single accept/decline toggle
+
+
+def test_toggle_decision_flips_from_the_accepted_default():
+    """No decision recorded means accepted, so the first click on an untouched
+    card must decline it - not re-accept an already-accepted card."""
+    s = IntegrationState()
+    s.entries = [_entry("a.mp3")]
+    _with_state(s, lambda: _toggle_decision("a.mp3"))
+    assert s.decisions["a.mp3"] is False
+    _with_state(s, lambda: _toggle_decision("a.mp3"))
+    assert s.decisions["a.mp3"] is True
+
+
+def test_toggle_decision_cannot_accept_an_error_entry():
+    """The toggle funnels through _decide(), so the error guard applies to the
+    mouse path exactly as it does to the keyboard path."""
+    s = IntegrationState()
+    s.entries = [_entry("err.mp3", status="error")]
+    s.decisions = {"err.mp3": False}
+    _with_state(s, lambda: _toggle_decision("err.mp3"))
+    assert s.accepted == []
+    assert s.decisions["err.mp3"] is False
+
+
+def test_triage_bar_is_silent_when_the_mode_is_off():
+    """The legend lists keys that are only armed in Triage mode - showing it
+    while they are inert would advertise shortcuts that do nothing."""
+    assert triage_bar_html(False, 0, 12) == ""
+
+
+def test_triage_bar_lists_the_keys_and_the_cursor_position():
+    out = triage_bar_html(True, 4, 126)
+    assert "Triage mode" in out
+    for key in ("J", "K", "A", "D", "Esc"):
+        assert f">{key}<" in out
+    assert "Card 5 of 126" in out
+
+
+def test_triage_bar_handles_an_empty_filtered_view():
+    out = triage_bar_html(True, 0, 0)
+    assert "No cards in this filter" in out
+    assert "Card" not in out
 
 
 def _update_exec_status_on(state, line):
