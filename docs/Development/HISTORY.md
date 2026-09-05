@@ -4,6 +4,22 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Load Liked Songs button on Acquire tab
+
+Closed the "load queue directly from Liked Songs" item from IDEAS.md - GUI wiring for the backend capability (`RealSpotifyClient.get_liked_tracks_detailed()`, SpotifyTools commit `4657ed0`) added earlier the same day. Landed in `9955eb42` (`gui/tabs/acquire.py`, `gui/tests/test_acquire.py`), ahead of the later `ef7a8b5e` "Acquire tab polish" pass in this same session - confirmed already complete and green (293 C#, 263 GUI) when this task was picked up a second time, so no further code change was needed; this entry closes out the docs.
+
+A "Load Liked Songs" button sits next to Fetch Tracks, wired via `_do_fetch_liked_tracks()` to `RealSpotifyClient.get_liked_tracks_detailed(limit=None)`, reusing the exact same downstream pipeline a playlist fetch uses (`match_downloads`, `find_extra_newmusic_files`, table/progress render, `_format_duration`/`_build_deemix_url`) - the row shape (`{artist, title, album, year, duration_ms}`) is identical, so no new fetch/display/persist/verify logic was needed, only a second source.
+
+**Decision 1 - `playlist_loaded` flag:** set `True` on a Liked Songs load, exactly as a real playlist fetch does. A definite, closed track set is now loaded (Liked Songs has a real end, unlike an open-ended folder scan), so the yellow "IN NEWMUSIC, NOT IN THIS PLAYLIST" diff framing is accurate rather than the "browse mode" framing used when nothing has been fetched yet.
+
+**Decision 2 - persistence key:** Liked Songs has no Spotify playlist id of its own, so it persists through the existing playlist-id-keyed history/cache/restore machinery (`_save_last_playlist`, `_save_tracks_cache`, `_load_tracks_cache`) under a fixed sentinel, `_LIKED_SONGS_ID = "__liked_songs__"`. A real Spotify playlist id is base62 (letters/digits only), so this string can never collide with one. The history-menu display and the playlist-input box both special-case the sentinel (`_apply_history_pick`, the input's default-value logic) so it never leaks into a real playlist fetch by accident.
+
+**Simulate path:** not touched, and correctly so - `get_liked_tracks_detailed` exists only on `RealSpotifyClient`, not on the `SpotifyInterface` ABC or `SimulatedSpotifyClient`, but the Acquire tab's own "Simulate (sample data)" mode (`simulate()`) never calls a real or simulated Spotify client at all - it loads synthetic `_sample_tracks()`/`_sample_extra()` data entirely in memory. `SimulatedSpotifyClient` is exercised elsewhere in this test suite only for the unrelated Sync Liked Songs path (`_do_sync_liked`), which is a separate, still-blocked (403) feature. No stub methods were needed on the ABC or simulator.
+
+Test coverage in `gui/tests/test_acquire.py`: row-shape parity with a playlist fetch, sentinel-key persistence (history and cache both keyed by `_LIKED_SONGS_ID`), sentinel-cannot-collide-with-a-real-id, and per-track progress reporting. `verify.bat` `[PASS]` (293 C#, 263 GUI) - unchanged from before this task, confirming nothing needed to move.
+
+---
+
 ## 2026-09-05 - Acquire tab polish (manual override, progress feedback, pagination, dedupe guard)
 
 Closed "[GUI] Acquire tab polish" from IDEAS.md - the four items deferred from the 2026-08-31 MVP, including the two 2026-09-05 Opus design calls on manual override and pagination. Landed in `ef7a8b5e` (`gui/tabs/acquire.py`, `gui/theme.py`, `gui/tests/test_acquire.py`).
