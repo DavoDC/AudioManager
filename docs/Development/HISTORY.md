@@ -4,6 +4,30 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Accept/decline interaction redesign for the review card
+
+Closed "[OPUS decided] Accept/decline interaction redesign for the review card" from IDEAS.md, deferred from the review-card layout item above once the mechanical fixes there stopped short of redesigning the actual interaction model: accept/decline was two separate always-visible buttons per card plus a bolted-on keyboard layer (A/D/J/K), not a considered single interaction pattern for triaging 84-126 files. Commit `6f8ad62e`.
+
+**One toggle per card** (`.rc-toggle`, `review_card()`/`_toggle_decision()` in `gui/tabs/integration.py`) replaces the Accept + Decline button pair. The pair spent 252 controls on a 126-card batch to express a binary that already has a default, with the Accept half a no-op on nearly every card, and made undoing a mis-click a hunt for the opposite button rather than a second click in the same place. The toggle shows the state it is in, flips on click, carries `aria-pressed`, and renders accepted as calm positive (`--accent2`) against declined as attention (`--accent4`) so the deliberate exceptions are what the eye catches. The disabled "Declined (error)" variant is the one fixed-state case.
+
+**Triage mode** gates the decision keys. A/D used to be globally live on stage 2 with nothing on screen saying they existed and an invisible cursor, so a stray letter key could silently flip a decision on a card the user was not even looking at. They are now armed only inside an explicit mode - toolbar button (`icon="keyboard"`), `T` to toggle, `Esc` to leave - which renders a `.triage-bar` legend of every armed key plus a `Card N of M` readout, keeps the `.review-card.current` cursor highlighted and scrolls it into view. Navigation (J/K, arrows) is deliberately exempt and self-arming: it only moves a cursor, so pressing it switches the mode on rather than doing nothing, which is what keeps the keyboard path discoverable.
+
+**No toggle key on the keyboard.** A and D are already one keystroke each and idempotent, so you always know which state you produced, whereas a toggle key's outcome depends on state you did not stop to read - the toggle is the right mouse control, explicit set-keys are the right keyboard control. Both rules recorded in `docs/DESIGN.md` ("Binary decisions: one toggle, not a pair of buttons" and "Destructive keyboard shortcuts live in an explicit, visible mode").
+
+12 new/updated GUI tests. `verify.bat` `[PASS]` (280 C# / 221 GUI). Nothing in the guarded escalation path changed: `IntegrationState.accepted`/`.declined`, `_write_manifest`, `run_execute` and `_confirm_execute` are untouched - only how a decision is expressed, never what it does.
+
+**Left open deliberately - keyboard-driving the duplicate-resolution radio.** Still mouse-only, as scoped. The design call for whenever it is picked up is recorded in `_on_review_key`'s docstring: it must become a second axis on the same cursor and the same Triage mode (e.g. `1`/`2`/`3`, or Left/Right cycling, setting D/L/K on the card under the cursor), never a nested focus cursor that J/K have to step through - one cursor, one mode. Only worth doing if a real batch shows the mouse round-trip to the radio actually breaking the keyboard flow.
+
+---
+
+## 2026-09-05 - SpotifyInterface ABC extended to match RealSpotifyClient's actual surface
+
+Closed "[OPUS decided] SpotifyInterface ABC was missing 3 (then 4, once Liked Songs landed) methods the GUI's primary path actually depends on" from IDEAS.md. `RealSpotifyClient` implemented `get_playlist_tracks`, `get_playlist_name`, `get_playlist_tracks_detailed`, and `get_liked_tracks_detailed` - none declared on the `SpotifyInterface` ABC, none on `SimulatedSpotifyClient`. `gui/tabs/acquire.py` called them directly on whatever `_spotify_client()` returns, bypassing the ABC boundary and untestable against the simulator. Decided to extend the ABC + simulator rather than accept the path as permanently real-network-only.
+
+All 4 methods were added as `@abstractmethod`s on `SpotifyInterface`, and implemented on `SimulatedSpotifyClient` via a `_detail_row_for()` helper (fixture `track_details` override, else an obviously-synthetic row) plus fixture-driven `get_playlist_name`. Added `test_interface_declares_every_public_real_client_method` - a structural guard that fails automatically if `RealSpotifyClient` ever grows another undeclared public method. No AudioManager-side change was needed: `gui/tabs/acquire.py` already called these methods directly, so the ABC now just declares what was already being used. SpotifyTools commit `abff9ea` (250/250 tests pass); AudioManager `verify.bat` `[PASS]` (280 C# / 212 GUI tests, no AudioManager files changed).
+
+---
+
 ## 2026-09-05 - Acquire tab design-review cleanup (8 items)
 
 Closed eight `[GUI]` items from the 2026-09-05 UI/UX design review of `acquire.py`:
