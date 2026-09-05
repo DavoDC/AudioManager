@@ -102,6 +102,51 @@ def build() -> None:
 # --------------------------------------------------------- custom rules CRUD
 
 
+_RULE_TABLE_COLUMNS = [
+    # (Quasar column name, header label, row-dict field)
+    ("id", "ID", "id"),
+    ("field", "Field", "field"),
+    ("match", "Match", "match"),
+    ("value", "Value", "value"),
+    ("action", "Action", "action"),
+    ("pattern", "Pattern", "pattern"),
+    ("replacement", "Replacement", "replacement"),
+    ("enabled", "Enabled", "enabled_text"),
+    ("actions", "", "id"),
+]
+
+
+def build_rule_rows(rules: list[Rule]) -> list[dict]:
+    """Row dicts for the custom-rules ui.table - render layer only, one dict
+    per Rule with every field the table's body slot binds to. `row_key` is
+    the rule id (already required to be unique by validate_rule), used both
+    as ui.table's row_key and to look the Rule back up from an emitted
+    Quasar row-click event (those events hand back the row dict, not the
+    dataclass)."""
+    return [
+        {
+            "row_key": r.id,
+            "id": r.id,
+            "field": r.field,
+            "match": r.match,
+            "value": r.value,
+            "action": r.action,
+            "pattern": r.pattern,
+            "replacement": r.replacement,
+            "enabled": r.enabled,
+            "enabled_text": "Yes" if r.enabled else "No",
+        }
+        for r in rules
+    ]
+
+
+def _rule_by_id(rule_id: str) -> Rule | None:
+    for r in rules_store.load_rules():
+        if r.id == rule_id:
+            return r
+    return None
+
+
 def _custom_rules_section() -> None:
     ui.html('<div class="panel-title" style="margin-top:22px;">Custom Rules</div>')
     ui.html(
@@ -119,36 +164,67 @@ def _custom_rules_section() -> None:
         ui.html('<div class="note" style="margin:0;">No custom rules yet.</div>')
         return
 
-    head = ("<th>ID</th><th>Field</th><th>Match</th><th>Value</th><th>Action</th>"
-            "<th>Enabled</th><th></th>")
-    rows = []
-    for r in rules:
-        rows.append(
-            "<tr>"
-            f"<td>{_esc(r.id)}</td>"
-            f"<td>{_esc(r.field)}</td>"
-            f"<td>{_esc(r.match)}</td>"
-            f"<td>{_esc(r.value)}</td>"
-            f"<td>{_esc(r.action)}</td>"
-            f'<td><span class="status-badge {"active" if r.enabled else "draft"}">'
-            f'{"Yes" if r.enabled else "No"}</span></td>'
-            "<td></td>"
-            "</tr>"
-        )
-    ui.html('<table class="am-table"><thead><tr>' + head + "</tr></thead><tbody>"
-            + "".join(rows) + "</tbody></table>").classes("w-full")
+    def _handle_edit_rule(row: dict) -> None:
+        rule = _rule_by_id(row["id"])
+        if rule is not None:
+            _open_rule_dialog(rule)
 
-    # Action buttons per row, laid out over the table (NiceGUI can't put
-    # interactive widgets inside raw ui.html rows, so they're rendered as a
-    # second, aligned column stack rather than true inline <td> buttons).
-    with ui.column().style("gap:4px;margin-top:-8px;"):
-        for r in rules:
-            with ui.row().style("gap:6px;align-items:center;"):
-                ui.label(r.id).style("font-family:var(--font-mono);font-size:12px;color:var(--text-dim);min-width:140px;")
-                ui.button("Edit", on_click=lambda _, r=r: _open_rule_dialog(r)).props("flat dense size=sm color=primary")
-                ui.button("Delete", on_click=lambda _, r=r: _confirm_delete(r)).props("flat dense size=sm color=negative")
-                ui.switch(value=r.enabled, on_change=lambda e, r=r: _toggle_enabled(r, e.value)) \
-                    .props("dense color=primary").tooltip("Enable/disable this rule")
+    def _handle_delete_rule(row: dict) -> None:
+        rule = _rule_by_id(row["id"])
+        if rule is not None:
+            _confirm_delete(rule)
+
+    def _handle_toggle_enabled(row: dict) -> None:
+        rule = _rule_by_id(row["id"])
+        if rule is not None:
+            _toggle_enabled(rule, not rule.enabled)
+
+    columns = [
+        {"name": name, "label": label, "field": field,
+         "align": "center" if name in ("enabled", "actions") else "left", "sortable": False}
+        for name, label, field in _RULE_TABLE_COLUMNS
+    ]
+    table = ui.table(
+        rows=build_rule_rows(rules), columns=columns, row_key="row_key",
+    ).classes("am-table w-full")
+    # Per-row Edit/Delete/Enable controls live inside the same q-tr as the
+    # rule's own data (genuinely part of the row, not a second stack
+    # positioned underneath it) - same Quasar header/body-slot idiom as
+    # track_table() in gui/tabs/acquire.py.
+    table.add_slot("header", r'''
+        <q-tr :props="props">
+            <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                {{ col.label }}
+            </q-th>
+        </q-tr>
+    ''')
+    table.add_slot("body", r'''
+        <q-tr :props="props">
+            <q-td key="id" :props="props">{{ props.row.id }}</q-td>
+            <q-td key="field" :props="props">{{ props.row.field }}</q-td>
+            <q-td key="match" :props="props">{{ props.row.match }}</q-td>
+            <q-td key="value" :props="props">{{ props.row.value }}</q-td>
+            <q-td key="action" :props="props">{{ props.row.action }}</q-td>
+            <q-td key="pattern" :props="props">{{ props.row.pattern }}</q-td>
+            <q-td key="replacement" :props="props">{{ props.row.replacement }}</q-td>
+            <q-td key="enabled" :props="props" style="text-align:center;cursor:pointer;"
+                  title="Enable/disable this rule"
+                  @click="() => $parent.$emit('toggle_enabled', props.row)">
+                <span :class="props.row.enabled ? 'status-badge active' : 'status-badge draft'">
+                    {{ props.row.enabled_text }}
+                </span>
+            </q-td>
+            <q-td key="actions" :props="props" style="text-align:right;white-space:nowrap;">
+                <q-btn flat dense size="sm" color="primary" label="Edit"
+                       @click="() => $parent.$emit('edit_rule', props.row)" />
+                <q-btn flat dense size="sm" color="negative" label="Delete"
+                       @click="() => $parent.$emit('delete_rule', props.row)" />
+            </q-td>
+        </q-tr>
+    ''')
+    table.on("edit_rule", lambda e: _handle_edit_rule(e.args))
+    table.on("delete_rule", lambda e: _handle_delete_rule(e.args))
+    table.on("toggle_enabled", lambda e: _handle_toggle_enabled(e.args))
 
 
 def _toggle_enabled(rule: Rule, value: bool) -> None:
