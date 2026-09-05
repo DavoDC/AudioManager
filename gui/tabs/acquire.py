@@ -409,6 +409,16 @@ def simulate() -> None:
     _refresh_hooks["simulate_banner"]()
 
 
+_mp3_tags_cache: dict[str, tuple[float | None, tuple[str, str, str]]] = {}
+# Keyed by str(path) -> (mtime at read time, (album, year, length)). extra
+# rows are re-rendered on every table refresh (build(), every 2s poll tick)
+# but the files themselves only change when a download lands or a tag gets
+# rewritten - re-parsing the same untouched mp3 with mutagen on every render
+# was pure waste on a large inbox. A cache hit requires the stored mtime to
+# still match the file's current mtime, so a re-downloaded or re-tagged file
+# (new mtime) is transparently re-read rather than serving a stale result.
+
+
 def _read_mp3_tags(path: Path) -> tuple[str, str, str]:
     """Read-only (album, year, length) straight from an mp3's own ID3 tags,
     mirroring gui/art.py's read-only mutagen precedent for album art. Used
@@ -416,7 +426,27 @@ def _read_mp3_tags(path: Path) -> tuple[str, str, str]:
     so there's no Spotify API data to show Album/Year/Length from instead -
     the file's own tags are the only source). Never raises: missing file,
     missing tags, or an unreadable/corrupt mp3 all fall back to blanks so a
-    single bad file never breaks the row render."""
+    single bad file never breaks the row render.
+
+    Results are cached by (path, mtime) - see _mp3_tags_cache - so repeated
+    calls for the same untouched file (every render of the extra-rows
+    section) skip mutagen entirely after the first read."""
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = None
+    cache_key = str(path)
+    cached = _mp3_tags_cache.get(cache_key)
+    if cached is not None and cached[0] == mtime:
+        return cached[1]
+    result = _read_mp3_tags_uncached(path)
+    _mp3_tags_cache[cache_key] = (mtime, result)
+    return result
+
+
+def _read_mp3_tags_uncached(path: Path) -> tuple[str, str, str]:
+    """The actual mutagen read, split out of _read_mp3_tags() so the caching
+    wrapper has a single well-defined call to count/monkeypatch in tests."""
     album = year = length_str = ""
     try:
         from mutagen.easyid3 import EasyID3
@@ -557,9 +587,19 @@ def _run_check_against_downloads() -> None:
     Rows in _state["manual_override"] are excluded from the fuzzy match
     entirely and keep exactly the Downloaded value the user set - IDEAS.md
     "Acquire tab polish" OPUS decision 2026-09-05: a manual override must
-    survive every later re-check, not just the one that set it."""
+    survive every later re-check, not just the one that set it.
+
+    Persists only when the freshly computed downloaded/extra state actually
+    differs from what _state already held before this call - IDEAS.md
+    "Every table refresh re-opens every extra MP3 with mutagen, and the 2s
+    poll rewrites the state JSON forever": _poll_downloads() calls this
+    unconditionally every 2 seconds, and without this guard every tick did a
+    full read-modify-write of ACQUIRE_STATE_JSON even when nothing on disk
+    had changed."""
     from spotify_tools.open_playlist import _build_deemix_url
     overrides = _state["manual_override"]
+    old_downloaded = dict(_state["downloaded"])
+    old_extra = list(_state["extra"])
     current_tracks = [(a, t) for a, t, _album, _year, _length, _url in _state["tracks"]]
     row_keys = _row_keys_for_tracks(_state["tracks"])
     to_match = [
@@ -580,7 +620,8 @@ def _run_check_against_downloads() -> None:
         (artist, title, _build_deemix_url(artist, title), path)
         for artist, title, path in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
     ]
-    if _state["playlist_loaded"] and not _state["simulated"]:
+    changed = new_downloaded != old_downloaded or _state["extra"] != old_extra
+    if _state["playlist_loaded"] and not _state["simulated"] and changed:
         _save_tracks_cache(_load_last_playlist_id(), _state["tracks"], _state["downloaded"], overrides)
 
 

@@ -157,6 +157,57 @@ def test_read_mp3_tags_corrupt_file_returns_blanks(tmp_path):
     assert (album, year, length) == ("", "", "")
 
 
+def test_read_mp3_tags_caches_by_path_and_mtime(tmp_path, monkeypatch):
+    """Regression for IDEAS.md "Every table refresh re-opens every extra MP3
+    with mutagen": a second call for the same path with an unchanged mtime
+    must not re-invoke the underlying mutagen read at all."""
+    acquire_module._mp3_tags_cache.clear()
+    path = tmp_path / "Artist - Title.mp3"
+    path.write_bytes(b"")
+
+    calls = []
+
+    def fake_uncached(p):
+        calls.append(p)
+        return ("Album", "2020", "3:00")
+
+    monkeypatch.setattr(acquire_module, "_read_mp3_tags_uncached", fake_uncached)
+
+    first = _read_mp3_tags(path)
+    second = _read_mp3_tags(path)
+
+    assert first == ("Album", "2020", "3:00")
+    assert second == first
+    assert len(calls) == 1  # second call served entirely from cache
+
+
+def test_read_mp3_tags_re_reads_after_mtime_changes(tmp_path, monkeypatch):
+    """A changed mtime (re-downloaded or re-tagged file) must invalidate the
+    cache entry and trigger a fresh read, not keep serving the stale one."""
+    import os
+    import time
+
+    acquire_module._mp3_tags_cache.clear()
+    path = tmp_path / "Artist - Title.mp3"
+    path.write_bytes(b"")
+
+    calls = []
+
+    def fake_uncached(p):
+        calls.append(p)
+        return (f"Album{len(calls)}", "2020", "3:00")
+
+    monkeypatch.setattr(acquire_module, "_read_mp3_tags_uncached", fake_uncached)
+
+    first = _read_mp3_tags(path)
+    time.sleep(0.01)
+    os.utime(path, (time.time() + 5, time.time() + 5))  # force a distinct mtime
+    second = _read_mp3_tags(path)
+
+    assert len(calls) == 2  # mtime changed, so the cache entry was not reused
+    assert first != second
+
+
 def test_read_mp3_tags_reads_real_newmusic_file_if_any_exist():
     """Integration check against the real NEWMUSIC_DIR (read-only) - skipped
     if the folder isn't present/empty on this machine (e.g. CI). Confirms
@@ -912,6 +963,93 @@ def test_fetch_state_is_persisted_by_the_downloads_check(tmp_path, monkeypatch):
     assert cached_tracks == TRACKS
     assert cached_downloaded["eminem:lose yourself"] is True
     assert cached_downloaded["dua lipa:levitating"] is False
+
+
+def test_check_against_downloads_does_not_save_when_nothing_changed(tmp_path, monkeypatch):
+    """Regression for IDEAS.md "the 2s poll rewrites the state JSON forever":
+    a re-invocation that recomputes the exact same downloaded/extra state
+    must not call _save_tracks_cache() again - the shape of every
+    ui.timer(2.0, _poll_downloads) tick when nothing has actually changed on
+    disk."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    (newmusic / "Eminem - Lose Yourself.mp3").write_bytes(b"")
+    _save_last_playlist("pl1", "First")
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    acquire_module._run_check_against_downloads()  # first call: establishes state, does save
+
+    save_calls = []
+    real_save = acquire_module._save_tracks_cache
+
+    def counting_save(*args, **kwargs):
+        save_calls.append(1)
+        return real_save(*args, **kwargs)
+
+    monkeypatch.setattr(acquire_module, "_save_tracks_cache", counting_save)
+
+    acquire_module._run_check_against_downloads()  # second call: nothing on disk changed
+
+    assert save_calls == []
+
+
+def test_check_against_downloads_saves_when_downloaded_state_changes(tmp_path, monkeypatch):
+    """The other half of the guard: a genuine change (a file lands in
+    NewMusic between checks) must still persist."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    _save_last_playlist("pl1", "First")
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    acquire_module._run_check_against_downloads()  # first call: nothing downloaded yet
+
+    save_calls = []
+    real_save = acquire_module._save_tracks_cache
+
+    def counting_save(*args, **kwargs):
+        save_calls.append(1)
+        return real_save(*args, **kwargs)
+
+    monkeypatch.setattr(acquire_module, "_save_tracks_cache", counting_save)
+
+    (newmusic / "Eminem - Lose Yourself.mp3").write_bytes(b"")  # a download lands
+    acquire_module._run_check_against_downloads()  # second call: downloaded state changed
+
+    assert save_calls == [1]
+
+
+def test_check_against_downloads_saves_when_extra_state_changes(tmp_path, monkeypatch):
+    """A change in the extra (NewMusic-not-in-playlist) set alone, with
+    downloaded state unchanged, must also persist."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    _save_last_playlist("pl1", "First")
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["playlist_loaded"] = True
+
+    acquire_module._run_check_against_downloads()  # first call: no extras yet
+
+    save_calls = []
+    real_save = acquire_module._save_tracks_cache
+
+    def counting_save(*args, **kwargs):
+        save_calls.append(1)
+        return real_save(*args, **kwargs)
+
+    monkeypatch.setattr(acquire_module, "_save_tracks_cache", counting_save)
+
+    (newmusic / "Drake - Hotline Bling.mp3").write_bytes(b"")  # a new extra file appears
+    acquire_module._run_check_against_downloads()
+
+    assert save_calls == [1]
 
 
 def test_simulate_state_is_never_persisted(tmp_path, monkeypatch):
