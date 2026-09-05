@@ -4,6 +4,22 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire tab polish (manual override, progress feedback, pagination, dedupe guard)
+
+Closed "[GUI] Acquire tab polish" from IDEAS.md - the four items deferred from the 2026-08-31 MVP, including the two 2026-09-05 Opus design calls on manual override and pagination. Landed in `ef7a8b5e` (`gui/tabs/acquire.py`, `gui/theme.py`, `gui/tests/test_acquire.py`).
+
+**Manual override for a verify-download false pos/neg.** Per the Opus design call, no new tickbox column was added - the existing read-only Downloaded cell became directly clickable instead (`toggle_manual_override`). A click flips the row's value and records a per-track flag in `ACQUIRE_STATE_JSON` alongside the existing tracks/downloaded cache (`_save_tracks_cache`'s new optional `manual_override` parameter, `_load_manual_overrides` as a separate accessor so every pre-existing `_load_tracks_cache` caller's two-value unpack stayed unchanged). `_run_check_against_downloads()` now excludes any overridden row from the fuzzy match entirely, keeping its value exactly as the user set it; only rows without an override get freshly matched. An overridden cell gets a small dashed `.dl-override` outline (`gui/theme.py`) so it reads as "user-set" rather than "freshly matched."
+
+**Progress feedback during Fetch/Load Liked Songs.** `_do_fetch_tracks` and `_do_fetch_liked_tracks` take an optional `on_progress(current, total)` callback, called once per track from the existing per-track shaping loop (a simple counter, since neither SpotifyTools call exposes its own progress signal). A "Fetching track N/M" label polls `_state["fetch_progress"]` via a lightweight `ui.timer`, since the callback fires from the `asyncio.to_thread()` worker and NiceGUI refreshes must happen on the event-loop thread.
+
+**Pagination for the fetched-tracks table.** Per the Opus design call, the fix is render-layer only: the hand-rolled `<table>` became a NiceGUI/Quasar `ui.table` with `pagination={'rowsPerPage': 50}`, with custom `header` and `body` Quasar slots preserving the existing 3-state sort cycle, row tinting, Deemix links, and the new clickable override cell. `_state["tracks"]` is never sliced - `build_track_rows()` shapes the full filtered/sorted list every time, and `ui.table`'s own pagination prop decides what actually renders, so the row-shaping logic stays directly unit-tested even though the Quasar template rendering itself isn't exercised by pytest. The NewMusic-only "extra" rows section is unchanged and now renders as its own small hand-rolled table below the paginated one.
+
+**Dedupe protection for double-clicking Sync Liked Songs.** `_run_sync_liked()` checks/sets/clears a `sync_busy` flag exactly like `gui/runner.py`'s `runner.busy` guard, so a second click landing while a sync is in flight is a no-op; the existing `sync()` handler (still not wired into `build()` - Spotify 403, account not allowlisted) became a thin wrapper around it. Tested with real `threading.Event`s to force deterministic overlap rather than relying on `asyncio.gather` scheduling order.
+
+Tests added to `gui/tests/test_acquire.py` for all four behaviors. `verify.bat` `[PASS]` (293 C#, 263 GUI).
+
+---
+
 ## 2026-09-05 - TagFix configurable rules (C# engine + GUI CRUD)
 
 Closed "[GUI] [Intake-priority, elevated 2026-09-05] TagFix configurable rules" from IDEAS.md - the Tag Fix tab's fixed-transforms-only limitation flagged by the 2026-09-03/05 Opus design reviews. Landed in two halves, same story: the C# rule engine (commit `4e57d873`) earlier this session, then the GUI wiring (commit `1ed3eb10`) closing it out.
