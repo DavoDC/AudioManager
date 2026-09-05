@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire's Fetch now validates the playlist box locally before any Spotify call
+
+Closed the "Acquire's Fetch accepts an empty or junk playlist id without validating it" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `fetch()` in `gui/tabs/acquire.py` passed `playlist_input.value or ""` straight through to `_do_fetch_tracks()`, so an empty box (or free-text junk) produced a full Spotify round-trip and only then an error, rather than being caught before the network call. `extract_playlist_id` from SpotifyTools can't tell the difference on its own: non-URL input has no `playlist/...` pattern to extract, so it's echoed straight back stripped, whether that's a genuine raw id or garbage.
+
+New module-level `_validate_playlist_input(value)` strips the input, resolves it through `extract_playlist_id()`, and returns `None` when the result is empty or not alphanumeric (real Spotify playlist ids are base62 - letters and digits only, the same fact `_LIKED_SONGS_ID` already relies on to avoid colliding with one). `fetch()` now checks this first and, on `None`, shows `ui.notify("Enter a valid playlist URL or ID", type="negative")` - the same error idiom already used elsewhere in this file for fetch failures - and returns without touching `_state["fetch_progress"]` or making any network call. Kept at module level rather than inlined in `fetch()`'s closure so it is directly unit-testable, matching every other build()-adjacent helper in this file.
+
+Eight new tests in `gui/tests/test_acquire.py` cover empty/whitespace-only input, free-text junk, a non-playlist Spotify URL, a bare id, a bare id with surrounding whitespace, a full playlist URL, and the two network-boundary cases (invalid input never reaches `_spotify_client()`; valid input still resolves and reaches `_do_fetch_tracks()` exactly as before). Scoped entirely to Fetch's input validation - no other Acquire tab logic (row keys, manual override, extra-rows, mp3-tag caching, the async `build()`/`clear_tab_state()` dispatch) was touched. Suite green: 293 C# tests, 314 GUI tests.
+
+---
+
 ## 2026-09-05 - Acquire tab's NewMusic scan no longer blocks the event loop on tab build or Clear
 
 Closed the "The NewMusic scan runs synchronously on the event loop during tab build and Clear" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_run_check_against_downloads()` in `gui/tabs/acquire.py` globs the NewMusic inbox and fuzzy-matches every track against every filename on disk, and was called directly (awaited-free) from both `build()` and `clear_tab_state()`. On a large inbox that blocked page construction and the Clear click on NiceGUI's single event loop, freezing every other connected browser view along with it, not just the Acquire tab.
