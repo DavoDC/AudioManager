@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire tab caches mp3 tag reads and stops rewriting the state JSON when nothing changed
+
+Closed the "Every table refresh re-opens every extra MP3 with mutagen, and the 2s poll rewrites the state JSON forever" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_read_mp3_tags(path)` in `gui/tabs/acquire.py` was called fresh for every extra row on every render of `track_table()`, and `_run_check_against_downloads()` called `_save_tracks_cache()` unconditionally on every invocation - including the one `ui.timer(2.0, _poll_downloads)` fires every two seconds while the tab is open. Concrete effect: leaving the Acquire tab open on a 40-file inbox meant a fresh mutagen read of all 40 headers plus a full read-modify-write of `ACQUIRE_STATE_JSON` every two seconds, indefinitely, for state that only actually changes when a download lands.
+
+Two independent fixes. First, `_read_mp3_tags` now wraps a new `_read_mp3_tags_uncached()` (the original mutagen logic, unchanged) behind a module-level cache keyed by `(str(path), mtime)`; a second call for the same untouched file is served from the cache with no mutagen call at all, while a changed mtime (a re-download or re-tag) still triggers a fresh read. Second, `_run_check_against_downloads()` now snapshots `_state["downloaded"]`/`_state["extra"]` before recomputing them and only calls `_save_tracks_cache()` when the freshly computed values actually differ from that snapshot - a poll tick that finds nothing new on disk no longer touches the state file at all. Five new tests in `gui/tests/test_acquire.py` cover both fixes: a cache hit skipping the underlying read, a changed mtime forcing a re-read, no save on an unchanged re-check, and a save firing when either the downloaded set or the extra set genuinely changes.
+
+Scoped entirely to `gui/tabs/acquire.py`'s mp3-tag-reading and state-persistence logic - row-key construction, the manual-override toggle, and the extra-rows `hide_downloaded` behavior (all closed earlier the same day) were untouched. Suite green.
+
+---
+
 ## 2026-09-05 - Extra-rows section no longer hides rows while showing a nonzero header count
 
 Closed the "Extra-rows section prints a count in its header, then hides every row under it" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. In `gui/tabs/acquire.py`'s `track_table()`, the "IN NEWMUSIC, NOT IN THIS PLAYLIST (N)" batch header was always computed from the full, unfiltered `_state["extra"]` list, but the row loop under it skipped downloaded rows whenever `hide_downloaded` was on - so with the toggle on, David could see a header claiming several unmatched files above an empty table with no way to tell whether that was a rendering bug or a genuinely empty inbox.
