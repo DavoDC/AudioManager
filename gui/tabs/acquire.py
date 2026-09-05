@@ -585,15 +585,25 @@ def _run_check_against_downloads() -> None:
 
 
 def toggle_manual_override(row_key: str) -> None:
-    """Handler behind the now-clickable Downloaded cell (IDEAS.md "Acquire
-    tab polish" OPUS decision 2026-09-05: flip the existing tickbox in place,
-    no new column). Flips the row's Downloaded value and marks it overridden
-    so _run_check_against_downloads() leaves it alone from now on. Module
-    level so it is directly unit-testable, matching clear_tab_state() and
-    _run_check_against_downloads() in this file."""
-    current = _state["downloaded"].get(row_key, False)
-    _state["downloaded"][row_key] = not current
-    _state["manual_override"][row_key] = True
+    """Handler behind the clickable Downloaded cell. A true toggle (IDEAS.md
+    "Manual override is one-way", 2026-09-05): the first click on a row flips
+    its Downloaded value and marks it overridden, exactly as before, so
+    _run_check_against_downloads() leaves it alone from now on. The second
+    click on an already-overridden row now removes the row_key from
+    _state["manual_override"] entirely - not "present and False", genuinely
+    absent - which restores the row's eligibility for the real fuzzy-match
+    scan on the next check (_run_check_against_downloads() already treats
+    "not in overrides" as "let the scan decide", so nothing else needs to
+    change there). Without this, a mis-click could only be undone with Clear,
+    which discards the whole fetched playlist along with every other
+    override. Module level so it is directly unit-testable, matching
+    clear_tab_state() and _run_check_against_downloads() in this file."""
+    if row_key in _state["manual_override"]:
+        del _state["manual_override"][row_key]
+    else:
+        current = _state["downloaded"].get(row_key, False)
+        _state["downloaded"][row_key] = not current
+        _state["manual_override"][row_key] = True
     if _state["playlist_loaded"] and not _state["simulated"]:
         _save_tracks_cache(_load_last_playlist_id(), _state["tracks"], _state["downloaded"], _state["manual_override"])
 

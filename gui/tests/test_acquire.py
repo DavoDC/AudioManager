@@ -942,8 +942,65 @@ def test_toggle_manual_override_flips_value_and_marks_the_row(tmp_path, monkeypa
     assert _state["downloaded"][row_key] is True  # was False
     assert _state["manual_override"][row_key] is True
 
+
+def test_toggle_manual_override_second_click_un_overrides(tmp_path, monkeypatch):
+    """Regression for IDEAS.md "Manual override is one-way": a second click on
+    an already-overridden row must be a true toggle - the row_key is removed
+    from _state["manual_override"] entirely (genuinely absent, not
+    present-and-False), not left permanently stuck. Clear used to be the only
+    escape from a mis-click; this is the cheap undo instead."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["playlist_loaded"] = True
+
+    row_key = "dua lipa:levitating"
     toggle_manual_override(row_key)
-    assert _state["downloaded"][row_key] is False  # flips back
+    assert row_key in _state["manual_override"]
+
+    toggle_manual_override(row_key)
+    assert row_key not in _state["manual_override"]
+
+
+def test_toggle_manual_override_un_override_restores_scan_eligibility(tmp_path, monkeypatch):
+    """After un-overriding, the row must go back to being decided by the real
+    fuzzy-match scan on the next check, not stay stuck at whatever value the
+    override left it at."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    newmusic = tmp_path / "newmusic"
+    newmusic.mkdir()
+    _blank_state()
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["playlist_loaded"] = True
+
+    row_key = "dua lipa:levitating"
+    toggle_manual_override(row_key)  # override on, downloaded forced True
+    toggle_manual_override(row_key)  # override off again
+    assert row_key not in _state["manual_override"]
+
+    _run_check_against_downloads()  # no matching file on disk
+
+    assert _state["downloaded"][row_key] is False  # scan decided it, override no longer shielding it
+
+
+def test_toggle_manual_override_persists_the_removal_across_a_reload(tmp_path, monkeypatch):
+    """The un-override half of the toggle must persist the same way the
+    override itself does - otherwise a reload would resurrect a deleted key."""
+    _isolate_state_file(tmp_path, monkeypatch)
+    _blank_state()
+    _save_last_playlist("pl1", "First")
+    _state["tracks"] = list(TRACKS)
+    _state["downloaded"] = dict(DOWNLOADED)
+    _state["playlist_loaded"] = True
+
+    row_key = "eminem:lose yourself"
+    toggle_manual_override(row_key)
+    assert _load_manual_overrides("pl1") == {row_key: True}
+
+    toggle_manual_override(row_key)
+    assert _load_manual_overrides("pl1") == {}
 
 
 def test_toggle_manual_override_persists_across_a_reload(tmp_path, monkeypatch):
