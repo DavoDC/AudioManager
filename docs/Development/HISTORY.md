@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - A set-value custom rule can no longer be saved with a blank Replacement
+
+Closed the "A set-value rule with an empty Replacement blanks the tag field, and nothing warns" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. This was an explicit save-blocking-validation decision, not a warning: `ApplyAction()` in `TagFixCustomRules.cs` returns `rule.Replacement ?? ""` for `set-value`, and an empty string differs from the current tag value, so it commits and is recorded as a real change - a half-finished rule saved with Replacement left blank would wipe the title (or artists, or album) on every NewMusic file it matched, and since TagFixer also runs inside `integrate` it could land during a real batch, not just a dry run.
+
+Fix, entirely inside `gui/rules_store.py`'s `validate_rule()`: a new check rejects any rule where `action == "set-value"` and `replacement` is empty or whitespace-only, with the message "Replacement is required for a set-value rule (use regex-replace with an empty Replacement if you actually want to remove text)." No change was needed in `gui/tabs/tagfix.py` - its `do_save()` already renders every `validate_rule()` error into the dialog's `error_box` and blocks the save, so the new error surfaces the same way as the existing id/field/match/action/value checks. `regex-replace`'s legitimate use of an empty Replacement to delete matched text is untouched, since the new check is scoped to `action == "set-value"` only. Three new tests in `gui/tests/test_tagfix.py`: `test_validate_rule_rejects_set_value_with_empty_replacement`, `test_validate_rule_accepts_set_value_with_replacement`, and `test_validate_rule_allows_regex_replace_with_empty_replacement` (the unaffected case).
+
+---
+
 ## 2026-09-05 - Custom-rule dialog warns when an empty Pattern will use Value as regex
 
 Closed the "A custom rule with an empty Pattern silently uses the Value as a regex, which is not what the dialog implies" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. This was closed per an explicit OPUS decision recorded in that IDEAS.md entry, not by changing the underlying behaviour: `TagFixCustomRules.cs`'s fallback (`Pattern = string.IsNullOrEmpty(Pattern) ? Value : Pattern`) and `rules_store.py`'s XML round-trip stay exactly as they were, since the fallback is a legitimate convenience for the common "Value IS the regex" case and changing it risks breaking existing saved rules and the Integration-time TagFix path - out of proportion to a dialog-wording issue.
