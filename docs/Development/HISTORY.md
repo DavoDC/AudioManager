@@ -4,6 +4,18 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - TagFix configurable rules (C# engine + GUI CRUD)
+
+Closed "[GUI] [Intake-priority, elevated 2026-09-05] TagFix configurable rules" from IDEAS.md - the Tag Fix tab's fixed-transforms-only limitation flagged by the 2026-09-03/05 Opus design reviews. Landed in two halves, same story: the C# rule engine (commit `4e57d873`) earlier this session, then the GUI wiring (commit `1ed3eb10`) closing it out.
+
+**C# half (`4e57d873`).** Added an additive second pass to `TagFixer.ProcessFile()`: after the existing hardcoded transforms run exactly as before (parenthetical stripping, album suffix stripping, artist extraction/casing, Musivation/Motivation genre normalization, the Akira The Don instrumental auto-delete), `TagFixCustomRuleSet.Load()` reads user-defined rules from `config/tagfix-custom-rules.xml` and `Apply()`s each enabled one in file order. A rule has an `id`, a `field` (title/album/artists/genre), a `match` test (contains/equals/regex/startsWith/endsWith), a `value` operand, an `action` (regex-replace/set-value), and optional `pattern`/`replacement`/`enabled`. Loading fails safe - a missing or malformed file yields an empty rule set with a warning, never a crash, and one bad rule is skipped without disabling the rest. Every change a custom rule makes is suffixed `"[custom rule: <id>]"` in the change string (`TagFixCustomRuleChange.Describe()`), keeping it distinguishable from a built-in fix in the exe's own output. Config file follows the existing tracked-XML convention (`artist-name-overrides.xml`'s style), not the gitignored-JSON pattern an earlier draft of this item mistakenly proposed.
+
+**GUI half (`1ed3eb10`).** Tag Fix tab gained a Custom Rules section below the read-only built-in-fix cards: a table of existing rules (id/field/match/value/action/enabled) with New/Edit/Delete buttons and an inline enable/disable switch per row, all reading and writing `config/tagfix-custom-rules.xml` directly through the new `gui/rules_store.py`. That module is the Python-side counterpart to `TagFixCustomRules.cs` - same valid-value sets, same case-insensitive matching, same fail-soft loading - and its `save_rules()` round-trips only the content between `<TagFixCustomRules>` and `</TagFixCustomRules>`, so the file's documentation-comment header survives every GUI edit untouched. The add/edit dialog validates client-side (required/unique id, field/match/action must be one of the C#-recognised values) before writing. "Run Fixed Rules (dry run)" still calls the exe's existing `tagfix --dry-run` unchanged, but its output now renders one `<div>` per line and tags any line carrying the `[custom rule: <id>]` marker with a distinct highlighted style (`accent5`, a small star prefix) so a custom-rule-driven change reads apart from a built-in-fix line at a glance.
+
+27 new tests in `gui/tests/test_tagfix.py` (load/save round-trip, header-preservation, XML-escaping, add/edit/delete/toggle, validation rejecting bad field/match/action and duplicate ids, and the line-highlighting classifier). `verify.bat` `[PASS]` (293 C#, 248 GUI).
+
+---
+
 ## 2026-09-05 - Icon usage on action buttons made consistent between Acquire and Integration
 
 Closed "[GUI] [Intake-priority, elevated 2026-09-05] Icon usage on action buttons is inconsistent between the two tabs" from IDEAS.md. Acquire's primary row (Fetch Tracks/Simulate/Clear) already carried Material icons; Integration's equivalent tab-level actions (Scan NewMusic, Accept all, Decline all, Re-scan, Cancel) carried none, and no doc stated a rule for when a button earns an icon. Commit `03844cea`.
