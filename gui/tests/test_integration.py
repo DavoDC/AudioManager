@@ -518,6 +518,36 @@ def test_update_exec_status_overlapping_tag_text_does_not_cross_contaminate():
     assert s.exec_status["Song.mp3"] == "queued"  # untouched: not the file this line is about
 
 
+def test_update_exec_status_own_short_line_still_updates_despite_longer_superstring():
+    """Regression for the IDEAS.md 'Artist - Run' / 'Artist - Runaway' scenario
+    (2026-09-05 review): a shorter candidate's OWN line - the line's full text
+    IS that candidate's tag text, not merely a substring occurring inside a
+    longer candidate's line - must always update that candidate's status, even
+    though its tag text is also a substring of another candidate's tag text.
+
+    `candidates`/`texts` in _update_exec_status are scoped to only the targets
+    whose tag text actually appears in THIS line, so "Artist - Runaway" is
+    never a candidate for the "Artist - Run" line (it isn't a substring of the
+    shorter line) and can never suppress it - unlike the cross-contamination
+    guard above, which only ever needs to exclude a shorter candidate from a
+    line that genuinely belongs to a longer one. Checked in both orders since
+    the exe's own two lines can print in either sequence within a batch."""
+    s = IntegrationState()
+    s.exec_targets = [
+        _entry("run.mp3", artist="Artist", title="Run"),
+        _entry("runaway.mp3", artist="Artist", title="Runaway"),
+    ]
+    s.exec_status = {"run.mp3": "queued", "runaway.mp3": "queued"}
+
+    _update_exec_status_on(s, "[AUTO] Artist - Run")
+    assert s.exec_status["run.mp3"] == "done"
+    assert s.exec_status["runaway.mp3"] == "queued"  # not yet touched by its own line
+
+    _update_exec_status_on(s, "[AUTO] Artist - Runaway")
+    assert s.exec_status["runaway.mp3"] == "done"
+    assert s.exec_status["run.mp3"] == "done"  # unaffected by the longer track's line
+
+
 # ------------------------------------------------------------- Simulate mode
 
 
