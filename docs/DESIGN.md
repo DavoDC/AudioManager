@@ -149,6 +149,9 @@ environment, so the container was constrained directly instead):
   checkbox) sits inline in the same `ui.row()` as the buttons it modifies,
   with `.classes("note")` so its label matches `.note`'s dim, small text
   rather than full-brightness body text - it's a filter, not an action.
+- Every tab-level action button carries a Material icon (`ui.button(..., icon="...")`),
+  matching Acquire's Fetch Tracks/Simulate/Clear row - see Integration's
+  Scan/Accept all/Decline all/Re-scan/Cancel for the pattern applied elsewhere.
 
 ## Tables
 
