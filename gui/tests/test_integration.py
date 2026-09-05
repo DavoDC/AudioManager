@@ -347,6 +347,55 @@ def test_finish_execute_sets_exec_ok_false_on_failure(monkeypatch):
     assert state.exec_ok is False
 
 
+def test_finish_execute_prefers_confidence_report_counts_over_local_sweep():
+    """The exe's own CONFIDENCE REPORT counts are authoritative. Concrete
+    regression scenario from the 2026-09-05 review: a batch of 12 where 3
+    files already existed at their destination ([SKIP]) and 9 were actually
+    moved ([AUTO]). Before this fix, _finish_execute's success sweep counted
+    every non-failed row (skipped rows included, since they were lumped in
+    with done) as 'moved', reporting '12 moved' while the confidence report
+    beneath it said 'Moved: 9 | Skipped: 3' - two contradictory numbers on
+    the same panel. The summary must match the confidence report instead."""
+    import gui.tabs.integration as integration_module
+
+    state = IntegrationState()
+    targets = [_entry(f"{i}.mp3") for i in range(12)]
+    state.exec_targets = targets
+    # 9 already settled to "done" via [AUTO] lines, 3 settled to "skipped"
+    # via [SKIP] lines - nothing left "queued" for the success sweep to
+    # mislabel, isolating this test to the summary-count logic itself.
+    state.exec_status = {t["filename"]: "done" for t in targets[:9]}
+    state.exec_status.update({t["filename"]: "skipped" for t in targets[9:]})
+
+    lines = [
+        "CONFIDENCE REPORT",
+        "  Files in NewMusic: 12  |  Moved: 9  |  Skipped: 3",
+        "  Sanity check: all 9 moved file(s) exist and are readable.",
+    ]
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=lines)))
+
+    assert "9 moved" in state.exec_summary
+    assert "12 moved" not in state.exec_summary
+    assert "3" in state.exec_summary and "already in library" in state.exec_summary
+
+
+def test_finish_execute_falls_back_to_local_counts_when_confidence_report_absent():
+    """Dry runs / simulate never reach the confidence-report step - when it
+    fails to parse, the old locally-derived counts must still work."""
+    import gui.tabs.integration as integration_module
+
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3"), _entry("b.mp3")]
+    state.exec_status = {"a.mp3": "done", "b.mp3": "queued"}
+
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=["no confidence section here"])))
+
+    assert "2 moved" in state.exec_summary
+    assert state.exec_status["b.mp3"] == "done"
+
+
 def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
@@ -429,15 +478,18 @@ def test_update_exec_status_marks_auto_line_done():
     assert s.exec_status["Song.mp3"] == "done"
 
 
-def test_update_exec_status_marks_skip_line_done():
+def test_update_exec_status_marks_skip_line_skipped_not_done():
     """`[SKIP]` means the exe deliberately left the file in place (e.g.
-    already exists at destination) - not a failure, so it also settles to
-    'done' rather than 'failed'."""
+    already exists at destination) - it is not a failure, but it is also not
+    a move: the file is still sitting in NewMusic. It must get its own
+    'skipped' status, distinct from 'done' (which means actually moved), so
+    the row renders and counts differently from a moved row (2026-09-05:
+    'A file the exe SKIPPED is reported as moved' fix)."""
     s = IntegrationState()
     s.exec_targets = [_entry("Song.mp3", artist="Some Artist", title="Some Title")]
     s.exec_status = {"Song.mp3": "queued"}
     _update_exec_status_on(s, "[SKIP] Some Artist - Some Title: already exists at destination")
-    assert s.exec_status["Song.mp3"] == "done"
+    assert s.exec_status["Song.mp3"] == "skipped"
 
 
 def test_update_exec_status_marks_named_file_failed_on_error_line():

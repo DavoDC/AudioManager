@@ -245,6 +245,7 @@ HEAD_HTML = """
   .st-done{color:var(--accent2);}
   .st-moving{color:var(--accent3);}
   .st-queued{color:var(--text-dim);}
+  .st-skipped{color:var(--accent3);}
   .st-failed{color:var(--accent4);}
   .st-notrun{color:var(--accent3);}
   .simulate-banner{background:rgba(230,180,60,.12);border:1px solid var(--accent3);color:var(--accent3);

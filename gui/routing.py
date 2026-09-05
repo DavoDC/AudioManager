@@ -214,10 +214,14 @@ def parse_confidence_report(lines: list[str]) -> dict | None:
     sanity_ok = True
     sanity_summary = ""
     error_count = 0
+    total_count = moved_count = skipped_count = None
     for ln in lines[start:]:
         s = ln.strip()
         if s.startswith("Files in NewMusic:"):
             count_line = s
+            m = re.search(r"Files in NewMusic:\s*(\d+)\s*\|\s*Moved:\s*(\d+)\s*\|\s*Skipped:\s*(\d+)", s)
+            if m:
+                total_count, moved_count, skipped_count = (int(g) for g in m.groups())
         elif "[ERROR] Count mismatch!" in ln:
             count_ok = False
         elif "[ERROR] Destination sanity check FAILED" in ln:
@@ -232,6 +236,7 @@ def parse_confidence_report(lines: list[str]) -> dict | None:
         "count_line": count_line, "count_ok": count_ok,
         "sanity_ok": sanity_ok, "sanity_summary": sanity_summary,
         "error_count": error_count,
+        "total_count": total_count, "moved_count": moved_count, "skipped_count": skipped_count,
     }
 
 
