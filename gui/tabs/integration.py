@@ -190,11 +190,12 @@ def stage_scan() -> None:
             if runner.busy:
                 ui.html('<div class="note" style="margin:0;"><span class="spin"></span>'
                         f"{runner.current_action} running&hellip;</div>")
-                ui.button("Cancel", on_click=lambda: runner.cancel()).props("outline color=negative dense")
+                ui.button("Cancel", icon="cancel", on_click=lambda: runner.cancel()) \
+                    .props("outline color=negative dense")
             else:
-                ui.button("Scan NewMusic", on_click=lambda: asyncio.create_task(run_scan())) \
+                ui.button("Scan NewMusic", icon="travel_explore", on_click=lambda: asyncio.create_task(run_scan())) \
                     .props("unelevated color=primary")
-                ui.button("Simulate (sample data)", on_click=run_simulate) \
+                ui.button("Simulate (sample data)", icon="science", on_click=run_simulate) \
                     .props("outline color=grey dense")
         ui.html('<div class="note" style="margin:8px 0 0;">Simulate loads synthetic sample entries '
                 "and a synthetic execute run - no real exe call, no NewMusic file is read or moved. "
@@ -342,7 +343,7 @@ def stage_review() -> None:
                     "NewMusic is empty</div>")
             ui.html('<div class="note" style="margin:0 0 14px;">The dry run found no files to route. '
                     "Drop new MP3s into the NewMusic folder and re-scan.</div>")
-            ui.button("Re-scan", on_click=lambda: asyncio.create_task(run_scan())) \
+            ui.button("Re-scan", icon="refresh", on_click=lambda: asyncio.create_task(run_scan())) \
                 .props("outline color=primary dense")
         return
 
@@ -370,9 +371,11 @@ def stage_review() -> None:
                 chip = ui.html(f'<button type="button" class="{cls}">{label}</button>')
                 chip.on("click", lambda _, k=key: _set_filter(k))
         with ui.row().style("gap:8px;"):
-            ui.button("Accept all", on_click=lambda: _bulk(True)).props("outline dense color=positive size=sm")
-            ui.button("Decline all", on_click=lambda: _bulk(False)).props("outline dense color=negative size=sm")
-            ui.button("Re-scan", on_click=lambda: asyncio.create_task(run_scan())) \
+            ui.button("Accept all", icon="done_all", on_click=lambda: _bulk(True)) \
+                .props("outline dense color=positive size=sm")
+            ui.button("Decline all", icon="clear_all", on_click=lambda: _bulk(False)) \
+                .props("outline dense color=negative size=sm")
+            ui.button("Re-scan", icon="refresh", on_click=lambda: asyncio.create_task(run_scan())) \
                 .props("outline dense color=grey size=sm")
 
     entries_view = S.filtered()
@@ -713,7 +716,7 @@ def _confirm_execute() -> None:
                 f"safety gate (stale mirror / dirty LibChecker blocks the run).{declined_note}"
             ).classes(_confirm_note_class(False)).style("margin:0;")
         with ui.row().classes("w-full justify-end").style("gap:10px;"):
-            ui.button("Cancel", on_click=dlg.close).props("flat color=grey")
+            ui.button("Cancel", icon="close", on_click=dlg.close).props("flat color=grey")
 
             async def go():
                 dlg.close()
@@ -722,7 +725,7 @@ def _confirm_execute() -> None:
                 else:
                     await run_execute()
 
-            ui.button("Integrate", on_click=go).props("unelevated color=primary")
+            ui.button("Integrate", icon="play_arrow", on_click=go).props("unelevated color=primary")
     dlg.open()
 
 
@@ -986,7 +989,8 @@ def stage_execute() -> None:
             label = "Integration result" if S.exec_done else "Integrating&hellip;"
             ui.html(f"<span>{label}</span>")
             if not S.exec_done:
-                ui.button("Cancel", on_click=lambda: runner.cancel()).props("outline dense color=negative size=sm")
+                ui.button("Cancel", icon="cancel", on_click=lambda: runner.cancel()) \
+                    .props("outline dense color=negative size=sm")
         fill_class = "fill fail" if S.exec_ok is False else "fill"
         ui.html(f'<div class="progress-track"><div class="{fill_class}" style="width:{pct}%;"></div></div>')
 
@@ -1010,7 +1014,7 @@ def stage_execute() -> None:
                 S.simulated = False
                 S.refresh()
 
-            ui.button("New scan", on_click=reset).props("outline dense color=primary size=sm") \
+            ui.button("New scan", icon="restart_alt", on_click=reset).props("outline dense color=primary size=sm") \
                 .style("margin-top:10px;")
 
 
