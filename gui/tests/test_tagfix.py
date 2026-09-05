@@ -8,7 +8,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui.rules_store import ACTIONS, FIELDS, MATCHES, Rule, load_rules, save_rules, validate_rule
-from gui.tabs.tagfix import _is_custom_rule_line, _render_console_lines, literal_value_regex_metachars
+from gui.tabs.tagfix import (
+    _is_custom_rule_line,
+    _render_console_lines,
+    build_rule_rows,
+    literal_value_regex_metachars,
+)
 
 SAMPLE_HEADER = (
     '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -340,3 +345,48 @@ def test_literal_value_regex_metachars_whitespace_only_pattern_does_not_warn():
     # IsNullOrWhiteSpace - a whitespace-only Pattern is NOT empty there, so no
     # fallback to Value happens and no warning is warranted here either.
     assert literal_value_regex_metachars("regex-replace", "   ", "(x)") == []
+
+
+# ------------------------------------------------------------- build_rule_rows
+
+
+def test_build_rule_rows_shapes_every_field():
+    rule = Rule(id="strip-bonus", field="title", match="endsWith", value="[Bonus]",
+                action="regex-replace", pattern=r"\[Bonus\]$", replacement="", enabled=True)
+    rows = build_rule_rows([rule])
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["row_key"] == "strip-bonus"
+    assert row["id"] == "strip-bonus"
+    assert row["field"] == "title"
+    assert row["match"] == "endsWith"
+    assert row["value"] == "[Bonus]"
+    assert row["action"] == "regex-replace"
+    assert row["pattern"] == r"\[Bonus\]$"
+    assert row["replacement"] == ""
+    assert row["enabled"] is True
+    assert row["enabled_text"] == "Yes"
+
+
+def test_build_rule_rows_enabled_text_reflects_disabled_rule():
+    rule = Rule(id="r1", field="genre", match="equals", value="Rap",
+                action="set-value", replacement="Hip-Hop", enabled=False)
+    row = build_rule_rows([rule])[0]
+    assert row["enabled"] is False
+    assert row["enabled_text"] == "No"
+
+
+def test_build_rule_rows_row_key_matches_rule_id_for_lookup():
+    # _rule_by_id() in gui.tabs.tagfix looks a Rule back up by the id an
+    # emitted Quasar row event hands back - row_key must equal id for that
+    # round trip to work.
+    rules = [
+        Rule(id="a", field="title", match="contains", value="x", action="set-value", replacement="y"),
+        Rule(id="b", field="album", match="contains", value="x", action="set-value", replacement="y"),
+    ]
+    rows = build_rule_rows(rules)
+    assert [r["row_key"] for r in rows] == [r["id"] for r in rows] == ["a", "b"]
+
+
+def test_build_rule_rows_empty_list():
+    assert build_rule_rows([]) == []
