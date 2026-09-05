@@ -401,6 +401,7 @@ def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monk
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
 
     import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module, "show_cancelled_modal", lambda *a, **k: None)
 
     state = IntegrationState()
     state.entries = [_entry("a.mp3")]
@@ -418,6 +419,103 @@ def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monk
         integration_module.S = original
 
     assert state.exec_status["a.mp3"] == "notrun"
+
+
+def test_run_execute_on_cancel_triggers_cancelled_modal_not_error_modal(tmp_path, monkeypatch):
+    """A real-execute cancel must open the new dedicated cancelled-mid-batch
+    modal, never the generic 'failed' error modal - a cancel is not a
+    subprocess failure."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    calls = []
+    monkeypatch.setattr(integration_module, "show_cancelled_modal",
+                         lambda *a, **k: calls.append("cancelled"))
+    monkeypatch.setattr(integration_module, "show_error_modal",
+                         lambda *a, **k: calls.append("error"))
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=None, cancelled=True, lines=[])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert calls == ["cancelled"]
+
+
+def test_run_execute_on_non_cancelled_failure_still_uses_error_modal(tmp_path, monkeypatch):
+    """Regression: a real-execute failure that is NOT a cancel must keep
+    using show_error_modal, unchanged from before this feature."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    calls = []
+    monkeypatch.setattr(integration_module, "show_cancelled_modal",
+                         lambda *a, **k: calls.append("cancelled"))
+    monkeypatch.setattr(integration_module, "show_error_modal",
+                         lambda *a, **k: calls.append("error"))
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=1,
+                          lines=["Error processing file: a.mp3", "INTEGRATION FAILED"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert calls == ["error"]
+
+
+def test_run_execute_on_success_shows_no_modal_at_all(tmp_path, monkeypatch):
+    """Regression: a clean real-execute success must not open either modal."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+
+    import gui.tabs.integration as integration_module
+
+    calls = []
+    monkeypatch.setattr(integration_module, "show_cancelled_modal",
+                         lambda *a, **k: calls.append("cancelled"))
+    monkeypatch.setattr(integration_module, "show_error_modal",
+                         lambda *a, **k: calls.append("error"))
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=0, lines=["[AUTO] Artist - Title"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert calls == []
 
 
 # --------------------------------------------------------------- _open_run_log

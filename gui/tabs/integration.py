@@ -42,7 +42,7 @@ from nicegui import ui
 
 from gui import config, routing
 from gui.art import get_thumbnail, initials, placeholder_style
-from gui.components.error_modal import show_error_modal
+from gui.components.error_modal import show_cancelled_modal, show_error_modal
 from gui.runner import RunResult, runner
 
 SIMULATE_STEP_DELAY = 0.15
@@ -971,6 +971,18 @@ async def run_execute() -> None:
     _finish_execute(result)
 
 
+def _run_analysis_now() -> None:
+    """Wired to the cancelled-mid-batch modal's "Run Analysis Now" action -
+    the exact reset() + run_scan() pattern the "New scan" button in
+    stage_execute() already uses to return to the scan stage and kick off a
+    fresh dry run, just triggered directly instead of via a second click."""
+    S.stage = 1
+    S.entries = []
+    S.simulated = False
+    S.refresh()
+    asyncio.create_task(run_scan())
+
+
 def _finish_execute(result: RunResult) -> None:
     """Shared post-run finalization for both a real run_execute() and the
     synthetic run_execute_simulated() - both produce a RunResult and must be
@@ -979,6 +991,7 @@ def _finish_execute(result: RunResult) -> None:
     S.exec_ok = result.ok
     S.confidence_report = routing.parse_confidence_report(result.lines)
     show_modal = False
+    show_cancelled = False
     if result.ok:
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
         for k, v in S.exec_status.items():
@@ -1019,13 +1032,18 @@ def _finish_execute(result: RunResult) -> None:
         # repeating it here would duplicate the filename with no separator.
         if n_notrun:
             S.exec_summary += f" {n_notrun} file(s) were not attempted."
-        show_modal = not result.cancelled
-    # Refresh BEFORE opening the error modal: S.refresh() rebuilds the
+        if result.cancelled:
+            show_cancelled = True
+        else:
+            show_modal = True
+    # Refresh BEFORE opening either modal: S.refresh() rebuilds the
     # @ui.refreshable slot this function is called from, which would destroy
     # a dialog created inside it a moment earlier - opening the modal after
     # the rebuild lets it survive.
     S.refresh()
-    if show_modal:
+    if show_cancelled:
+        show_cancelled_modal(_run_analysis_now)
+    elif show_modal:
         show_error_modal("Integration", result)
 
 
