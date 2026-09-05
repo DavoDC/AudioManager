@@ -4,6 +4,16 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire's NewMusic scan now recurses into subfolders
+
+Closed the "Acquire's NewMusic scan is non-recursive but the exe scans subfolders" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md - the highest-severity finding in that pass. `_scan_newmusic_filenames()` (`gui/tabs/acquire.py`) used `newmusic_dir.glob("*.mp3")`, top-level only, while every C# consumer of NewMusic (`MusicIntegrator.cs`, `TagFixer.cs`) scans with `SearchOption.AllDirectories`. Deemix commonly writes an album into its own subfolder, so a subfoldered download was invisible in both directions: `match_downloads` never ticked those tracks as Downloaded (so David would re-download an album he already had), and `find_extra_newmusic_files` never surfaced them in the "IN NEWMUSIC, NOT IN THIS PLAYLIST" section (so the tab could report an empty inbox while a full album sat there waiting to be integrated).
+
+Fix: `_scan_newmusic_filenames()` now uses `newmusic_dir.rglob("*.mp3")`, matching the C# side's `AllDirectories` behavior. Two regression tests added in `gui/tests/test_acquire.py` (`test_matches_downloaded_file_in_subfolder`, `test_extra_finds_file_in_subfolder_not_in_playlist`), each placing an MP3 inside a subfolder and asserting both `match_downloads` and `find_extra_newmusic_files` see it.
+
+**Subpath-display decision:** left the extra-rows display unchanged (artist/title parsed from the filename stem only, no path shown). The row already displayed identically for a top-level or subfoldered file before this fix - there was never a directory component in the rendered text - so adding one now would be a display change orthogonal to the bug being fixed here, not something the bug introduced. Revisit only if a user report says the plain artist/title is ambiguous in practice.
+
+---
+
 ## 2026-09-05 - Renamed root `test-fixtures/` to `csharp-test-fixtures/`
 
 Closed the "`test-fixtures/` at repo root - re-examine, not a true duplicate of `gui/tests/fixtures/`" item from IDEAS.md. The 2026-09-05 investigation had already established this was never a duplicate of `gui/tests/fixtures/` - the root directory holds `routing-manifest.json`, consumed only by the C# `--verify` routing check in `scripts/dev/verify.bat`, while `gui/tests/fixtures/` holds unrelated Python test fixtures for `gui/tests/test_data_loader.py`. The similar directory name had repeatedly caused this to be mis-flagged as a consolidation candidate despite the two having nothing in common. Rather than continuing to document the distinction away each time it resurfaced, the root directory was renamed to `csharp-test-fixtures/` (`git mv`, history preserved) to make the naming collision impossible going forward. `scripts/dev/verify.bat`'s `MANIFEST` path was updated to match, and `verify.bat --no-pause` was rerun to confirm the routing-manifest check still passes under the new path.
