@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui.rules_store import ACTIONS, FIELDS, MATCHES, Rule, load_rules, save_rules, validate_rule
-from gui.tabs.tagfix import _is_custom_rule_line, _render_console_lines
+from gui.tabs.tagfix import _is_custom_rule_line, _render_console_lines, literal_value_regex_metachars
 
 SAMPLE_HEADER = (
     '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -290,3 +290,36 @@ def test_render_console_lines_escapes_html():
     html = _render_console_lines(['Title: "A" -> "<b>bold</b>" [custom rule: x]'])
     assert "&lt;b&gt;" in html
     assert "<b>bold</b>" not in html
+
+
+# ------------------------------------------- literal_value_regex_metachars
+
+
+def test_literal_value_regex_metachars_no_warning_when_pattern_set():
+    # Pattern non-empty -> no fallback to Value-as-regex, so nothing to warn about.
+    assert literal_value_regex_metachars("regex-replace", r"\d+", "(Official Video)") == []
+
+
+def test_literal_value_regex_metachars_no_warning_when_not_regex_replace():
+    assert literal_value_regex_metachars("set-value", "", "(Official Video)") == []
+
+
+def test_literal_value_regex_metachars_no_warning_when_value_has_no_metachars():
+    assert literal_value_regex_metachars("regex-replace", "", "Official Video") == []
+
+
+def test_literal_value_regex_metachars_lists_only_present_characters():
+    chars = literal_value_regex_metachars("regex-replace", "", "(Official Video)")
+    assert chars == ["(", ")"]
+
+
+def test_literal_value_regex_metachars_lists_each_metachar_once_in_first_seen_order():
+    chars = literal_value_regex_metachars("regex-replace", "", "a.b.c*d")
+    assert chars == [".", "*"]
+
+
+def test_literal_value_regex_metachars_whitespace_only_pattern_does_not_warn():
+    # Matches TagFixCustomRules.cs exactly: string.IsNullOrEmpty(Pattern), not
+    # IsNullOrWhiteSpace - a whitespace-only Pattern is NOT empty there, so no
+    # fallback to Value happens and no warning is warranted here either.
+    assert literal_value_regex_metachars("regex-replace", "   ", "(x)") == []

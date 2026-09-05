@@ -39,6 +39,12 @@ FIXED_RULES = [
 # ChangeMarkerPrefix in TagFixCustomRules.cs) - used to render those lines distinctly.
 _CUSTOM_RULE_MARKER = "[custom rule: "
 
+# Regex metacharacters (.NET Regex syntax, same set the C# loader's Regex.Replace
+# would interpret) - used only to warn when an empty Pattern falls back to Value
+# as-is (TagFixCustomRules.cs's Pattern = IsNullOrEmpty(Pattern) ? Value : Pattern,
+# left untouched by this fix per the recorded OPUS decision, docs/Development/IDEAS.md).
+_REGEX_METACHARS = ".^$*+?()[]{}|\\"
+
 
 class TagFixState:
     def __init__(self):
@@ -188,12 +194,34 @@ def _open_rule_dialog(existing: Rule | None = None) -> None:
             id_input.props("readonly")
         field_select = ui.select(list(FIELDS), value=r.field, label="Field").props("dense dark outlined").classes("w-full")
         match_select = ui.select(list(MATCHES), value=r.match, label="Match").props("dense dark outlined").classes("w-full")
-        value_input = ui.input("Value", value=r.value).props("dense dark outlined").classes("w-full")
-        action_select = ui.select(list(ACTIONS), value=r.action, label="Action").props("dense dark outlined").classes("w-full")
-        pattern_input = ui.input("Pattern (regex-replace only, optional)", value=r.pattern) \
+        value_input = ui.input("Value", value=r.value, on_change=lambda e: _update_regex_warning()) \
+            .props('dense dark outlined debounce="200"').classes("w-full")
+        action_select = ui.select(list(ACTIONS), value=r.action, label="Action",
+                                   on_change=lambda e: _update_regex_warning()) \
             .props("dense dark outlined").classes("w-full")
+        pattern_input = ui.input("Pattern (regex-replace only, optional)", value=r.pattern,
+                                  on_change=lambda e: _update_regex_warning()) \
+            .props('dense dark outlined debounce="200"').classes("w-full")
         replacement_input = ui.input("Replacement", value=r.replacement).props("dense dark outlined").classes("w-full")
         enabled_switch = ui.switch("Enabled", value=r.enabled).props("dense color=primary")
+
+        regex_warning_box = ui.column().classes("w-full")
+
+        def _update_regex_warning() -> None:
+            chars = literal_value_regex_metachars(
+                action_select.value, pattern_input.value or "", value_input.value or ""
+            )
+            regex_warning_box.clear()
+            if not chars:
+                return
+            with regex_warning_box:
+                ui.label(
+                    "These characters in Value will be treated as regex syntax, not "
+                    f"matched literally: {' '.join(chars)}. Leave Pattern blank only if "
+                    "that's intended."
+                ).style("color:var(--accent3, #d9a441);font-size:12px;")
+
+        _update_regex_warning()
 
         error_box = ui.column().classes("w-full")
 
@@ -250,6 +278,24 @@ async def run_tagfix() -> None:
         show_error_modal("Tag fix (dry run)", result, retry=run_tagfix)
     elif result.ok:
         ui.notify("Dry run complete - output below", type="positive")
+
+
+def literal_value_regex_metachars(action: str, pattern: str, value: str) -> list[str]:
+    """Return the regex metacharacters present in `value`, in the order they
+    first appear, when an empty Pattern would fall back to using Value as the
+    regex verbatim (TagFixCustomRules.cs's Pattern-defaults-to-Value fallback,
+    `string.IsNullOrEmpty(rule.Pattern) ? rule.Value : rule.Pattern` - matched
+    here exactly, so a whitespace-only Pattern does NOT count as empty, same
+    as the C# side). Empty list means no warning is warranted: the action
+    isn't regex-replace, Pattern is already set (no fallback happens), or
+    Value has nothing a regex engine would treat specially."""
+    if action != "regex-replace" or pattern:
+        return []
+    seen: list[str] = []
+    for ch in value or "":
+        if ch in _REGEX_METACHARS and ch not in seen:
+            seen.append(ch)
+    return seen
 
 
 def _is_custom_rule_line(line: str) -> bool:
