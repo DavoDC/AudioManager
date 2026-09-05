@@ -293,6 +293,22 @@ def test_sorted_tracks_year_blanks_sort_last():
     assert [row[1][3] for row in result] == ["2020", ""]
 
 
+def test_sorted_tracks_year_multiple_blanks_stay_last_ascending():
+    """Two blank-year rows ascending: both trail the non-blank rows, and
+    non-blank rows still sort oldest-first among themselves."""
+    _state["tracks"] = [
+        ("A", "T1", "Alb", "", "1:00", ""),
+        ("B", "T2", "Alb", "2020", "1:00", ""),
+        ("C", "T3", "Alb", "", "1:00", ""),
+        ("D", "T4", "Alb", "1999", "1:00", ""),
+    ]
+    _state["sort_col"] = "Year"
+    _state["sort_reverse"] = False
+    result = [row[1][3] for row in _sorted_tracks()]
+    assert result[:2] == ["1999", "2020"]
+    assert result[2:] == ["", ""]
+
+
 def test_matches_when_fetched_track_has_extra_collab_artists(tmp_path):
     """Regression: a Spotify track's artist field can carry featured/collab
     artists ("DC The Don & Someone") that the downloaded filename never
@@ -613,7 +629,10 @@ def test_sorted_tracks_by_length_reversed():
 
 def test_sorted_tracks_year_blanks_stay_last_when_reversed():
     """Blanks-last is a deliberate asymmetry: reversing the sort must not
-    float empty Year cells to the top of the table."""
+    float empty Year cells to the top of the table. Regression for IDEAS.md
+    "Year sort puts blank years last ascending but first descending" -
+    non-blank years still sort newest-first (descending), blanks stay
+    pinned to the end either way."""
     _state["tracks"] = [
         ("A", "T1", "Alb", "", "1:00", ""),
         ("B", "T2", "Alb", "2020", "1:00", ""),
@@ -621,7 +640,7 @@ def test_sorted_tracks_year_blanks_stay_last_when_reversed():
     ]
     _state["sort_col"] = "Year"
     _state["sort_reverse"] = True
-    assert [row[1][3] for row in _sorted_tracks()] == ["", "2020", "1999"]
+    assert [row[1][3] for row in _sorted_tracks()] == ["2020", "1999", ""]
 
 
 def test_sorted_tracks_by_artist_is_case_insensitive():

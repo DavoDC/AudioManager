@@ -138,7 +138,15 @@ def _sorted_tracks() -> list[tuple[str, str, str, str, str, str]]:
         return list(enumerate(_state["tracks"]))
     idx = _SORT_COLUMNS[col]
     if idx == 3:
-        key = lambda row: (row[1][3] == "", row[1][3])  # Year: blanks last, else lexical (YYYY string)
+        # Year: blanks last in BOTH directions. sorted()'s reverse flips the
+        # whole key tuple's comparison, so a plain (is_blank, year) key put
+        # blanks first once reverse=True (IDEAS.md "Year sort puts blank
+        # years last ascending but first descending"). The blank marker is
+        # negated when reversed so it still ends up smallest under a
+        # descending comparison, keeping blanks pinned to the end either way.
+        reverse = _state["sort_reverse"]
+        blank_rank = -1 if reverse else 1
+        key = lambda row: (blank_rank if row[1][3] == "" else 0, row[1][3])
     elif idx == 4:
         key = lambda row: _length_to_seconds(row[1][4])
     else:
