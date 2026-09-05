@@ -4,6 +4,12 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Renamed root `test-fixtures/` to `csharp-test-fixtures/`
+
+Closed the "`test-fixtures/` at repo root - re-examine, not a true duplicate of `gui/tests/fixtures/`" item from IDEAS.md. The 2026-09-05 investigation had already established this was never a duplicate of `gui/tests/fixtures/` - the root directory holds `routing-manifest.json`, consumed only by the C# `--verify` routing check in `scripts/dev/verify.bat`, while `gui/tests/fixtures/` holds unrelated Python test fixtures for `gui/tests/test_data_loader.py`. The similar directory name had repeatedly caused this to be mis-flagged as a consolidation candidate despite the two having nothing in common. Rather than continuing to document the distinction away each time it resurfaced, the root directory was renamed to `csharp-test-fixtures/` (`git mv`, history preserved) to make the naming collision impossible going forward. `scripts/dev/verify.bat`'s `MANIFEST` path was updated to match, and `verify.bat --no-pause` was rerun to confirm the routing-manifest check still passes under the new path.
+
+---
+
 ## 2026-09-05 - GUI code-change escalation boundary promoted to CLAUDE.md
 
 Closed "Promote the code-change escalation boundary into `CLAUDE.md`" from IDEAS.md. The rule - that the path from a decline click to the exe's argument list (`IntegrationState.accepted`/`declined`, the manifest-writing block in `run_execute`, the construction of `args`) is guarded and reviewed before shipping, while everything else in `gui/` is permissionless - previously lived only in the 2026-09-02 readiness verdict in IDEAS.md. It now has a permanent home as its own section in `CLAUDE.md`, "GUI Code-Change Escalation Boundary", placed after the existing "Library Operations Constraint" section since the two are related but distinct: one governs what the program can do to library files, the other governs which GUI code changes need David before they ship. IDEAS.md's readiness verdict paragraph was replaced with a pointer to `CLAUDE.md` rather than restating the rule in two places.
