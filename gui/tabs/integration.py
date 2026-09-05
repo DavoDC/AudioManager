@@ -957,10 +957,23 @@ def _finish_execute(result: RunResult) -> None:
         for k, v in S.exec_status.items():
             if v in ("queued", "moving"):
                 S.exec_status[k] = "done"
-        moved = sum(1 for v in S.exec_status.values() if v == "done")
+        # The confidence report's own Moved/Skipped counts are authoritative
+        # (they come from the exe re-reading NewMusic after the run) - prefer
+        # them over a locally-derived count whenever the report parsed, so
+        # this summary can never contradict confidence_report_strip() right
+        # below it. A [SKIP] file was never moved and stays in NewMusic; a
+        # local sweep that lumps it in with 'done' rows overcounts 'moved'.
+        report = S.confidence_report
+        if report and report.get("moved_count") is not None and report.get("skipped_count") is not None:
+            moved = report["moved_count"]
+            skipped = report["skipped_count"]
+        else:
+            moved = sum(1 for v in S.exec_status.values() if v == "done")
+            skipped = sum(1 for v in S.exec_status.values() if v == "skipped")
         skipped_note = f", {len(S.declined)} declined left in NewMusic" if S.declined else ""
         S.exec_summary = (f"Integration complete - {moved} moved"
-                          + (f", {failed} skipped/failed" if failed else "")
+                          + (f", {skipped} already in library" if skipped else "")
+                          + (f", {failed} failed" if failed else "")
                           + skipped_note
                           + ". Statistics will reflect the new batch after the next analysis run.")
     else:
@@ -1049,7 +1062,7 @@ def _failed_filename_from_output(lines: list[str]) -> str | None:
 
 EXEC_STATUS_LABELS = {
     "queued": "queued", "moving": "moving", "done": "done",
-    "failed": "failed", "notrun": "not run",
+    "skipped": "skipped", "failed": "failed", "notrun": "not run",
 }
 
 
@@ -1058,11 +1071,14 @@ def _update_exec_status(line: str) -> None:
 
     The exe never prints filenames for a success/skip - only tag text via
     `[AUTO] {Artists} - {Title}` (moved) and `[SKIP] {Artists} - {Title}`
-    (left in place), one line per file, after it's already done (there's no
-    separate "started processing" line, so there's no observable "moving"
-    state - a file goes straight from queued to done/failed). The one line
-    that DOES carry a filename is the halt-on-error line,
-    `Error processing file: {filename}`, handled separately below.
+    (left in place - already exists at the destination, so the file is still
+    sitting in NewMusic), one line per file, after it's already done (there's
+    no separate "started processing" line, so there's no observable "moving"
+    state - a file goes straight from queued to done/skipped/failed). `[SKIP]`
+    gets its own 'skipped' status, distinct from 'done', so a not-moved row
+    never renders or counts as a moved one (2026-09-05 fix - see IDEAS.md/
+    HISTORY.md). The one line that DOES carry a filename is the halt-on-error
+    line, `Error processing file: {filename}`, handled separately below.
 
     A match only counts if no OTHER target's "artist - title" text
     containing it as a substring also appears in the line - otherwise one
@@ -1078,8 +1094,9 @@ def _update_exec_status(line: str) -> None:
                 S.exec_status[e["filename"]] = "failed"
         return
 
-    is_done = "[auto]" in low or "[skip]" in low
-    if not is_done:
+    is_moved = "[auto]" in low
+    is_skipped = "[skip]" in low
+    if not is_moved and not is_skipped:
         return
 
     def tag_text(e: dict) -> str:
@@ -1090,13 +1107,14 @@ def _update_exec_status(line: str) -> None:
     matches = [c for c in candidates
                if not any(tag_text(c) != other and tag_text(c) in other
                           for other in texts)]
+    new_status = "done" if is_moved else "skipped"
     for e in matches:
-        S.exec_status[e["filename"]] = "done"
+        S.exec_status[e["filename"]] = new_status
 
 
 def stage_execute() -> None:
     total = max(1, len(S.exec_targets))
-    done = sum(1 for v in S.exec_status.values() if v in ("done", "failed"))
+    done = sum(1 for v in S.exec_status.values() if v in ("done", "skipped", "failed"))
     moving = sum(1 for v in S.exec_status.values() if v == "moving")
     pct = 100 if S.exec_done else int(100 * (done + 0.5 * moving) / total)
 

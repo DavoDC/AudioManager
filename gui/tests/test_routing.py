@@ -325,7 +325,31 @@ def test_parse_confidence_report_clean_run():
         "count_ok": True, "sanity_ok": True,
         "sanity_summary": "Sanity check: all 12 moved file(s) exist and are readable.",
         "error_count": 0,
+        "total_count": 12, "moved_count": 12, "skipped_count": 0,
     }
+
+
+def test_parse_confidence_report_parses_moved_and_skipped_counts_separately():
+    """`_finish_execute` needs the exe's own Moved/Skipped counts (not just
+    the raw count_line text) to show a summary that agrees with this report
+    instead of a locally-swept count that can contradict it."""
+    lines = [
+        "CONFIDENCE REPORT",
+        "  Files in NewMusic: 12  |  Moved: 9  |  Skipped: 3",
+        "  Sanity check: all 9 moved file(s) exist and are readable.",
+    ]
+    v = routing.parse_confidence_report(lines)
+    assert v["total_count"] == 12
+    assert v["moved_count"] == 9
+    assert v["skipped_count"] == 3
+
+
+def test_parse_confidence_report_counts_are_none_when_count_line_missing():
+    lines = ["CONFIDENCE REPORT", "[ERRORS: 1]", "- Song.mp3: could not read tags"]
+    v = routing.parse_confidence_report(lines)
+    assert v["total_count"] is None
+    assert v["moved_count"] is None
+    assert v["skipped_count"] is None
 
 
 def test_parse_confidence_report_count_mismatch():
