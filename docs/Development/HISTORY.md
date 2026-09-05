@@ -4,6 +4,36 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Investigated: ui.keyboard does not stack review-stage handlers across refreshes
+
+Closed the "`ui.keyboard` is constructed inside a refreshable, which may stack review-stage key
+handlers" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. The
+concern: `ui.keyboard(on_key=_on_review_key)` sits inside `stage_review()`, which reruns on every
+`content.refresh()` (fired by every accept/decline/filter click while the review stage is on screen) -
+if NiceGUI's `@ui.refreshable` left the previous render's `ui.keyboard()` handler registered instead of
+tearing it down, a single keypress (e.g. `j` to advance the cursor) would fire once per stacked handler,
+performing several decisions at once - a decision-integrity bug, not a cosmetic one.
+
+Answered definitively by reading NiceGUI 3.14.0's own installed source rather than guessing or writing a
+live-browser check: `refreshable._execute_refresh()` (`nicegui/functions/refreshable.py`) clears the
+previous render's container before rerunning the function; `Element.clear()` -> `Client.remove_elements()`
+(`nicegui/client.py`) marks every old child element (including the old `Keyboard`) deleted and pops it out
+of `Client.elements`; `Client.handle_event()` looks the sender up in `Client.elements` and silently drops
+the event if it is missing. So even though `Keyboard`'s own `mounted()` hook
+(`nicegui/elements/keyboard.js`) binds a `document`-level `keydown`/`keyup` listener with no matching
+`unmounted()` cleanup - meaning a stale render's browser-side listener genuinely never gets removed and
+keeps firing on every keystroke - the server can never route that stale listener's event back to Python,
+because its element id is no longer registered. A keypress reaches `_on_review_key` exactly once per
+render regardless of how many past renders have occurred. Confirmed non-issue for decision integrity;
+the leaked browser-side listener is a separate, real but inert (accumulating dead socket messages, not
+extra decisions) NiceGUI-level detail, worth knowing about but not worth restructuring around.
+
+No production logic changed. Documented the finding as a comment directly above the `ui.keyboard(...)`
+call in `gui/tabs/integration.py` (file/line citations into NiceGUI's own source) so a future reader
+doesn't have to re-derive this. `verify.bat` `[PASS]` (293 C#, 322 GUI).
+
+---
+
 ## 2026-09-05 - Investigated: exec-status substring guard did not actually strand a short-titled track
 
 Closed the "exec-status substring guard can leave a short-titled track stuck on 'queued'" item from the
