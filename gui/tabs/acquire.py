@@ -709,12 +709,22 @@ def restore_cached_tracks() -> bool:
     return True
 
 
-def clear_tab_state() -> None:
+def clear_tab_state(run_check: bool = True) -> None:
     """Clear button's whole effect apart from blanking the input box: resets
     every piece of _state to a blank slate (sort order included), forgets the
     cached playlist so a rebuild does not restore it, rescans NewMusic so the
     extra-files section survives the clear, and refreshes all four panels -
-    history included, matching what fetch() does."""
+    history included, matching what fetch() does.
+
+    run_check=False skips the inline _run_check_against_downloads() call (the
+    four refresh-hook calls still fire, against the just-blanked state) so an
+    async caller can run the scan itself off the event loop and refresh again
+    once it completes - see build()'s Clear button, which does exactly this
+    to avoid blocking on a large NewMusic inbox (IDEAS.md "The NewMusic scan
+    runs synchronously on the event loop during tab build and Clear").
+    Defaulting to True keeps every other caller - this module's own tests
+    included - on the original synchronous scan-then-refresh-inline
+    behavior, unchanged."""
     _state["tracks"] = []
     _state["downloaded"] = {}
     _state["manual_override"] = {}
@@ -723,7 +733,8 @@ def clear_tab_state() -> None:
     _state["playlist_loaded"] = False
     _state["simulated"] = False
     _forget_cached_playlist()
-    _run_check_against_downloads()
+    if run_check:
+        _run_check_against_downloads()
     _refresh_hooks["track_table"]()
     _refresh_hooks["progress_bar"]()
     _refresh_hooks["history_items"]()
@@ -1136,9 +1147,21 @@ def build() -> None:
                 _state["fetch_progress"] = None
                 fetch_progress_label.refresh()
 
-        def clear():
+        async def clear():
+            """Async so the NewMusic rescan clear_tab_state() would otherwise
+            run inline can happen off the event loop instead - IDEAS.md "The
+            NewMusic scan runs synchronously on the event loop during tab
+            build and Clear". clear_tab_state(run_check=False) still resets
+            _state and refreshes every panel immediately (an instant blank
+            table), then the scan itself runs in a worker thread exactly
+            like _poll_downloads() below, with a follow-up refresh once it
+            completes so the extra-files section and Downloaded ticks catch
+            up without having blocked the click."""
             playlist_input.value = ""
-            clear_tab_state()
+            clear_tab_state(run_check=False)
+            await asyncio.to_thread(_run_check_against_downloads)
+            track_table.refresh()
+            progress_bar.refresh()
 
         def _toggle_hide_downloaded(e):
             _state["hide_downloaded"] = e.value
@@ -1171,14 +1194,26 @@ def build() -> None:
             fetch_progress_label()
         # Restore the last playlist's tracks/ticks from disk (see
         # restore_cached_tracks) so a browser reload or a tab rebuild comes
-        # back to the table you left, then run the NewMusic scan once
-        # synchronously so extra rows and Downloaded ticks are current
-        # immediately, even before any playlist has been fetched.
+        # back to the table you left, then render immediately and kick the
+        # NewMusic scan off the event loop rather than running it inline -
+        # IDEAS.md "The NewMusic scan runs synchronously on the event loop
+        # during tab build and Clear": on a large inbox the synchronous scan
+        # used to stall tab construction, freezing every other connected
+        # browser view along with it. asyncio.create_task() from this sync
+        # function mirrors _apply_history_pick()'s dispatch above; the scan
+        # itself running in asyncio.to_thread() and refreshing afterwards
+        # mirrors _poll_downloads() below.
         restore_cached_tracks()
-        _run_check_against_downloads()
         track_table()
         _refresh_hooks["track_table"] = track_table.refresh
         _refresh_hooks["history_items"] = history_items.refresh
+
+        async def _initial_downloads_check() -> None:
+            await asyncio.to_thread(_run_check_against_downloads)
+            track_table.refresh()
+            progress_bar.refresh()
+
+        asyncio.create_task(_initial_downloads_check())
 
         _poll = {"busy": False}
 
