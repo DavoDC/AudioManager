@@ -247,6 +247,23 @@ def test_validate_rule_allows_same_id_when_editing():
     assert errors == []
 
 
+def test_validate_rule_rejects_set_value_with_empty_replacement():
+    r = Rule(id="ok", field="title", match="contains", value="x", action="set-value", replacement="")
+    errors = validate_rule(r, existing=[])
+    assert any("Replacement is required" in e for e in errors)
+
+
+def test_validate_rule_accepts_set_value_with_replacement():
+    r = Rule(id="ok", field="title", match="contains", value="x", action="set-value", replacement="y")
+    assert validate_rule(r, existing=[]) == []
+
+
+def test_validate_rule_allows_regex_replace_with_empty_replacement():
+    r = Rule(id="ok", field="title", match="contains", value="x", action="regex-replace",
+             pattern="x", replacement="")
+    assert validate_rule(r, existing=[]) == []
+
+
 def test_valid_field_match_action_sets_match_the_c_sharp_loader():
     # Guards against this Python module and TagFixCustomRules.cs's ValidFields/
     # ValidMatches/ValidActions arrays silently drifting apart.

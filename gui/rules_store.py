@@ -186,4 +186,10 @@ def validate_rule(rule: Rule, existing: list[Rule], editing_id: str | None = Non
     if not rule.value:
         errors.append("Value (the match operand) is required.")
 
+    if rule.action == "set-value" and not (rule.replacement or "").strip():
+        errors.append(
+            "Replacement is required for a set-value rule (use regex-replace "
+            "with an empty Replacement if you actually want to remove text)."
+        )
+
     return errors
