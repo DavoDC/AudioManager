@@ -4,6 +4,14 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Tag Fix now states that custom rules also run for real during Integration
+
+Closed the "Tag Fix never says custom rules also fire during Integration" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. The tab's only mention of custom-rule scope was "Runs as an additive second pass, after the built-in fixes above" - true but silent on the one fact that actually matters: `run_tagfix()` is hardcoded to `--dry-run`, so this tab itself never touches a real file, but the exe's real `integrate` run applies the same custom rules for real via `TagFixCustomRuleSet`. Authoring or enabling a rule here was understood by David as a preview-only action, when in fact it takes effect on the very next batch Integration whether or not it was ever run from this tab.
+
+Per OPUS decision recorded in that IDEAS.md entry, this was explicitly split from the separate "Tag Fix has no real-apply path, only dry-run" item, which stays open and flagged for David - adding a real (non-dry-run) apply button here is a new destructive-capability decision on real ID3 tags, not something to decide unilaterally, and was not touched. The fix here is text-only: the existing `.gap-note` above the custom-rules table in `gui/tabs/tagfix.py`'s `_custom_rules_section()` now adds "Custom rules also run for real during the next batch Integration - this tab only ever previews them." `run_tagfix()` and its `--dry-run` flag were not touched, and no C# or `runner.py` change was needed.
+
+---
+
 ## 2026-09-05 - Custom-rule warning lines are now highlighted and counted in the Tag Fix dry-run output
 
 Closed the "Rule-authoring errors from the exe are invisible in the Tag Fix output" item from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_is_custom_rule_line()` in `gui/tabs/tagfix.py` only matched the `[custom rule: <id>]` change marker, but every custom-rule authoring failure the exe reports comes through as a `  [WARN] Custom tag rule '<id>' failed: <message>` line (a bad regex thrown from `TagFixCustomRuleSet.Apply()`'s catch block) or a `  [WARN] Custom tag rule '<id>' skipped: unknown field/match/action '<x>'` line (a bad rule rejected at load time in `ParseRule()`) - both rendered as ordinary grey console text inside the collapsed "Dry-run output" expansion. Concrete failure this caused: David writes a rule with an uncompilable regex, runs the dry run, sees zero highlighted change lines, and concludes the rule simply matched nothing - when in fact it threw on every file and never had a chance to match.
