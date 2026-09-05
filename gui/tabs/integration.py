@@ -400,6 +400,33 @@ def stage_review() -> None:
     entries_view = S.filtered()
     if entries_view:
         S.cursor = max(0, min(S.cursor, len(entries_view) - 1))
+    # INVESTIGATED 2026-09-05 (docs/Development/IDEAS.md): a fresh ui.keyboard()
+    # is constructed here on every refresh of the @ui.refreshable content()
+    # (build(), above) that wraps this function - refresh fires on every
+    # accept/decline/filter click while stage_review() is on screen. Confirmed
+    # via NiceGUI 3.14.0's own source (installed package, not guessed) that
+    # this does NOT double-fire _on_review_key, i.e. it is NOT a decision-
+    # integrity bug:
+    #   - refreshable._execute_refresh() calls target.container.clear() before
+    #     re-running the function (nicegui/functions/refreshable.py L115).
+    #   - Element.clear() -> Client.remove_elements() marks every old child
+    #     (including the old Keyboard) _deleted=True and pops it out of
+    #     Client.elements (nicegui/client.py L427-435).
+    #   - Client.handle_event() looks up the target element via
+    #     self.elements.get(msg['id']) and does nothing if it is missing
+    #     (nicegui/client.py L393-401) - so any 'key' message that reaches the
+    #     server from a stale (previous-render) Keyboard component is silently
+    #     dropped. Only the current render's Keyboard element is ever in
+    #     Client.elements, so a keypress reaches _on_review_key exactly once.
+    #   - There IS a real but separate leak one layer down: Keyboard's own
+    #     mounted() hook binds `document.addEventListener` for keydown/keyup
+    #     (nicegui/elements/keyboard.js) with no matching unmounted() cleanup,
+    #     so every past render's browser-side listener keeps firing and
+    #     sending a (harmlessly-dropped) socket message on every keystroke -
+    #     a growing-but-inert message count over a long review session, not a
+    #     decision bug. Nothing to fix here on our side; documented rather than
+    #     restructured per the "do not change production code just to touch
+    #     it" guidance for a confirmed non-issue.
     ui.keyboard(on_key=_on_review_key)
     triage_bar(len(entries_view))
     for idx, e in enumerate(entries_view):
