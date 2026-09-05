@@ -406,7 +406,7 @@ namespace AudioManager
         /// starting tags. No binary fixture is committed to the repo - the frame is synthesized
         /// so TagLib# recognizes the file and can read/write ID3v2 tags on it.
         /// </summary>
-        private static string CreateSilentMp3Fixture(string directory, string filename, string title, string album, string artist)
+        internal static string CreateSilentMp3Fixture(string directory, string filename, string title, string album, string artist)
         {
             string path = System.IO.Path.Combine(directory, filename);
             const int frameLength = 417; // floor(144 * 128000 / 44100), no padding
