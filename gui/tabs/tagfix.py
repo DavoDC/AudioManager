@@ -13,6 +13,7 @@ with "[custom rule: <id>]") distinctly from built-in-fix lines.
 from __future__ import annotations
 
 import asyncio
+import html
 
 from nicegui import ui
 
@@ -464,4 +465,4 @@ def _render_console_lines(lines: list[str]) -> str:
 
 
 def _esc(text: str) -> str:
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return html.escape(text, quote=True)

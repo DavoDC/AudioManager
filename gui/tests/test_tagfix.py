@@ -318,6 +318,18 @@ def test_render_console_lines_escapes_html():
     assert "<b>bold</b>" not in html
 
 
+def test_render_console_lines_escapes_quotes():
+    # _esc() delegates to html.escape(text, quote=True) (matching
+    # gui/tabs/integration.py's _esc()), so both quote characters are escaped
+    # too, not just &/</> - needed the first time this output is reused
+    # inside an HTML attribute rather than element text content.
+    out = _render_console_lines(["Title: \"A\" -> 'B'"])
+    assert "&quot;" in out
+    assert "&#x27;" in out
+    assert '"A"' not in out
+    assert "'B'" not in out
+
+
 # ------------------------------------------- custom-rule warning highlighting
 
 
