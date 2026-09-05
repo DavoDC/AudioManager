@@ -61,5 +61,38 @@ def show_error_modal(
     dialog.on("hide", lambda: dialog.clear())
 
 
+def show_cancelled_modal(on_run_analysis: Callable[[], None]) -> None:
+    """A real integration run cancelled mid-batch is not a subprocess failure
+    (result.interpreted() already distinguishes cancelled from failed) - it is
+    a partial-mutation warning. `runner.cancel()` does a `taskkill /T /F`
+    partway through a sequence of real file moves, so some files may already
+    be in the library and the rest still in NewMusic, and the post-run mirror
+    update + LibChecker safety check never ran. Deliberately no "Retry
+    execution" button here: retrying blindly against files that may have
+    already moved is not safe to offer without knowing which ones moved."""
+    with ui.dialog() as dialog, ui.card().classes("err-modal").style("padding:18px 20px;gap:12px;"):
+        with ui.row().classes("w-full items-center justify-between"):
+            ui.label("Integration cancelled partway through").classes("err-title")
+            ui.button(icon="close", on_click=dialog.close).props("flat round dense size=sm color=grey")
+
+        ui.label(
+            "Some files may already be in the library and the rest may still be in NewMusic. "
+            "The post-run mirror update and LibChecker safety check did not run, so the "
+            "library's state has not been verified. Run Analysis before the next integration "
+            "batch to see exactly where things stand."
+        ).classes("err-meaning")
+
+        with ui.row().classes("w-full justify-end").style("gap:10px;"):
+            ui.button("Dismiss", on_click=dialog.close).props("flat color=grey")
+
+            def do_run_analysis():
+                dialog.close()
+                on_run_analysis()
+            ui.button("Run Analysis Now", on_click=do_run_analysis).props("unelevated color=primary")
+
+    dialog.open()
+    dialog.on("hide", lambda: dialog.clear())
+
+
 def _escape(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
