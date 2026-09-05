@@ -40,6 +40,8 @@ This verdict is dated because it goes stale the moment the repo changes shape.
 
 **Goal: improve UX, add test coverage, and audit metadata quality.**
 
+**Priority ordering, confirmed 2026-09-05: Library Intake work (Acquire, Integration, Tag Fix - the GUI's write/mutate tabs) outranks Library Insight work (Statistics, Library, Mirror, Services - read-only views) within this tier.** Audited item-by-item against this rule: every open Intake item already sits above both Insight items in file order (Library Browser polish, Metadata enrichment tab), so no reordering was needed - the two Fable design-review findings that are Intake-scoped (Icon usage on action buttons, TagFix configurable rules) are called out below as elevated/confirmed-priority; the Insight-scoped Fable findings (Library Browser polish, Metadata enrichment tab) stay at their existing position/tier unchanged. See `CLAUDE.md` and `GUI-Architecture.md` for the standing statement that Intake is the current development focus.
+
 ### Do these before the next real batch integration
 
 Ranked by risk to the run itself, not by code quality. Everything below this sub-section is maintainability or polish and can wait until after the batch. Assessed 2026-09-02 against the current source; every line reference here was re-checked against the file, not copied from an older entry.
@@ -117,11 +119,11 @@ Full review exercised every stage of the Integration tab via the new Simulate mo
 
 ### UI/UX design review, 2026-09-05 (Acquire tab, Integration tab, theme.py)
 
-Static read-only design review of `gui/tabs/acquire.py`, `gui/tabs/integration.py`, and `gui/theme.py` against `docs/DESIGN.md`'s own stated rules. Ranked by impact. No code changed by this pass.
+Static read-only design review of `gui/tabs/acquire.py`, `gui/tabs/integration.py`, and `gui/theme.py` against `docs/DESIGN.md`'s own stated rules. Ranked by impact. No code changed by this pass. The two Intake-scoped findings from this review (icon usage, TagFix configurable rules) are elevated above per the 2026-09-05 reprioritization; the Insight-scoped findings below (Library Browser polish, Metadata enrichment tab) are left at their existing tier/position, deliberately not elevated.
 
-- [ ] **[GUI] Icon usage on action buttons is inconsistent between the two tabs** `[SONNET]` - Acquire's primary row (Fetch Tracks/Simulate/Clear) all carry Material icons (`download`/`science`/`clear`); Integration's equivalent actions (Scan NewMusic, Accept all, Decline all, Re-scan, Cancel) carry none. Neither `docs/DESIGN.md`'s Buttons section nor any other doc states a rule for when a button gets an icon - pick one (e.g. "icon on every tab-level action button") and apply it to both tabs.
+- [ ] **[GUI] [Intake-priority, elevated 2026-09-05] Icon usage on action buttons is inconsistent between the two tabs** `[SONNET]` - Acquire's primary row (Fetch Tracks/Simulate/Clear) all carry Material icons (`download`/`science`/`clear`); Integration's equivalent actions (Scan NewMusic, Accept all, Decline all, Re-scan, Cancel) carry none. Both tabs are Library Intake, so this is an Intake-scoped Fable finding, elevated per the 2026-09-05 Intake-first reprioritization. Neither `docs/DESIGN.md`'s Buttons section nor any other doc states a rule for when a button gets an icon - pick one (e.g. "icon on every tab-level action button") and apply it to both tabs.
 
-- [ ] **[GUI] TagFix configurable rules** - Tag Fix tab currently shows the exe's fixed transforms only (`tagfix --dry-run`). Needs a C# change to accept user-defined rules (condition -> fix); see the rule-builder design in `docs/References/GUI-Architecture.md`.
+- [ ] **[GUI] [Intake-priority, elevated 2026-09-05] TagFix configurable rules** - Tag Fix tab currently shows the exe's fixed transforms only (`tagfix --dry-run`). Needs a C# change to accept user-defined rules (condition -> fix); see the rule-builder design in `docs/References/GUI-Architecture.md`. Intake-scoped (Tag Fix tab), elevated per the 2026-09-05 Intake-first reprioritization - still needs an `[OPUS]`/`[SONNET]` split decision before it's dispatch-ready (the C# rule-builder shape is a design call; wiring an agreed shape into the tab is mechanical).
 
 - [ ] **[GUI] Library Browser polish** - MVP is table/grid + search/chips/pagination; still missing: track detail panel (full tags, file path), multi-select for batch TagFix apply.
 
