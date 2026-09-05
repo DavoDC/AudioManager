@@ -23,6 +23,12 @@ namespace AudioManager
         private int skippedCount = 0;
 
         /// <summary>
+        /// User-defined rules from config/tagfix-custom-rules.xml, applied as an additive pass
+        /// AFTER the built-in hardcoded fixes. Empty when the file is missing or malformed.
+        /// </summary>
+        private readonly TagFixCustomRuleSet customRules;
+
+        /// <summary>
         /// Per-file tag changes for display in MusicIntegrator's combined routing block.
         /// Key: filename MusicIntegrator will see (original in dry-run; post-rename in real mode).
         /// Value: list of change strings e.g. "Title: \"X\" -> \"Y\"". Excludes filename renames.
@@ -41,6 +47,7 @@ namespace AudioManager
         public TagFixer(bool dryRun = false)
         {
             this.dryRun = dryRun;
+            this.customRules = TagFixCustomRuleSet.Load();
             string modeLabel = dryRun ? " [DRY RUN - no files will be modified]" : "";
             Console.WriteLine($"\nFixing music tags...{modeLabel}");
 
@@ -82,15 +89,17 @@ namespace AudioManager
         /// <summary>
         /// Test-only entry point. Skips the NewMusicPath directory scan so tests can call
         /// ProcessFile() directly against a fixture path without touching the real inbox.
+        /// Pass customRulesPath to load custom rules from a fixture file instead of the repo config.
         /// </summary>
-        internal static TagFixer ForTesting(bool dryRun)
+        internal static TagFixer ForTesting(bool dryRun, string customRulesPath = null)
         {
-            return new TagFixer(dryRun, skipScan: true);
+            return new TagFixer(dryRun, skipScan: true, customRulesPath: customRulesPath);
         }
 
-        private TagFixer(bool dryRun, bool skipScan)
+        private TagFixer(bool dryRun, bool skipScan, string customRulesPath = null)
         {
             this.dryRun = dryRun;
+            this.customRules = TagFixCustomRuleSet.Load(customRulesPath);
         }
 
         /// <summary>
@@ -133,20 +142,55 @@ namespace AudioManager
                     return log;
                 }
 
-                // Apply tag cleanup rules
+                // Apply built-in tag cleanup rules (unchanged - custom rules run after these)
                 string cleanTitle = RemoveParentheticals(title);
                 string cleanAlbum = StripAlbumSuffixes(RemoveParentheticals(album));
                 var artistList = ExtractAndFixArtists(title, artists);
                 string cleanArtists = string.Join(";", artistList);
 
-                // Check if any changes needed
-                bool titleChanged = cleanTitle != title;
-                bool albumChanged = cleanAlbum != album;
-                bool artistsChanged = cleanArtists != artists && !string.IsNullOrEmpty(cleanArtists);
                 bool tcmpNeeded = !id3.IsCompilation;
                 bool genreNeeded = ShouldFixGenre(cleanArtists, genres);
+                string cleanGenres = genreNeeded ? DetermineGenre(cleanArtists) : genres;
 
-                if (!titleChanged && !albumChanged && !artistsChanged && !tcmpNeeded && !genreNeeded)
+                // Built-in deltas, recorded before the custom pass so each layer is separately visible
+                bool builtInTitleChanged = cleanTitle != title;
+                bool builtInAlbumChanged = cleanAlbum != album;
+                bool builtInArtistsChanged = cleanArtists != artists && !string.IsNullOrEmpty(cleanArtists);
+
+                // ADDITIVE PASS: user-defined rules from config/tagfix-custom-rules.xml.
+                // Operates on the already-cleaned values; never alters built-in behaviour.
+                var customValues = new TagFieldValues
+                {
+                    Title = cleanTitle ?? "",
+                    Album = cleanAlbum ?? "",
+                    Artists = cleanArtists ?? "",
+                    Genre = cleanGenres ?? ""
+                };
+                var customChanges = customRules != null
+                    ? customRules.Apply(customValues)
+                    : new List<TagFixCustomRuleChange>();
+
+                string finalTitle = customValues.Title;
+                string finalAlbum = customValues.Album;
+                string finalArtists = customValues.Artists;
+                string finalGenres = customValues.Genre;
+                if (customChanges.Any(c => c.Field == "artists"))
+                {
+                    artistList = finalArtists
+                        .Split(';')
+                        .Select(a => a.Trim())
+                        .Where(a => !string.IsNullOrEmpty(a))
+                        .ToList();
+                    finalArtists = string.Join(";", artistList);
+                }
+
+                // Check if any changes needed (built-in plus custom)
+                bool titleChanged = finalTitle != title;
+                bool albumChanged = finalAlbum != album;
+                bool artistsChanged = finalArtists != artists && !string.IsNullOrEmpty(finalArtists);
+                bool genreChanged = finalGenres != genres;
+
+                if (!titleChanged && !albumChanged && !artistsChanged && !tcmpNeeded && !genreChanged)
                 {
                     log.Status = "skipped";
                     log.Detail = "no fixes needed";
@@ -154,31 +198,28 @@ namespace AudioManager
                     return log;
                 }
 
-                // Record what will change
-                if (titleChanged) log.Changes.Add($"Title: \"{title}\"  -> \"{cleanTitle}\"");
-                if (albumChanged) log.Changes.Add($"Album: \"{album}\"  -> \"{cleanAlbum}\"");
-                if (artistsChanged) log.Changes.Add($"Artists: \"{artists}\"  -> \"{cleanArtists}\"");
+                // Record what will change - built-in fixes first, then each custom rule's own change
+                if (builtInTitleChanged) log.Changes.Add($"Title: \"{title}\"  -> \"{cleanTitle}\"");
+                if (builtInAlbumChanged) log.Changes.Add($"Album: \"{album}\"  -> \"{cleanAlbum}\"");
+                if (builtInArtistsChanged) log.Changes.Add($"Artists: \"{artists}\"  -> \"{cleanArtists}\"");
                 // TCMP fix is silent - almost always needed, adds noise to output
-                if (genreNeeded)
-                {
-                    string newGenre = DetermineGenre(cleanArtists);
-                    log.Changes.Add($"Genre: \"{genres}\"  -> \"{newGenre}\"");
-                }
+                if (genreNeeded) log.Changes.Add($"Genre: \"{genres}\"  -> \"{cleanGenres}\"");
+                foreach (var change in customChanges) log.Changes.Add(change.Describe());
 
                 // Apply changes (write tags + rename file)
                 if (!dryRun)
                 {
-                    if (titleChanged) tag.Title = cleanTitle;
-                    if (albumChanged) tag.Album = cleanAlbum;
+                    if (titleChanged) tag.Title = finalTitle;
+                    if (albumChanged) tag.Album = finalAlbum;
                     if (artistsChanged) tag.Performers = artistList.ToArray();
                     if (tcmpNeeded) id3.IsCompilation = true;
-                    if (genreNeeded) tag.Genres = new[] { DetermineGenre(cleanArtists) };
+                    if (genreChanged) tag.Genres = new[] { finalGenres };
 
                     tagFile.Save();
 
                     // Rename file: {artists} - {title}.mp3
-                    string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
-                    string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
+                    string sanitisedArtists = Reflector.SanitiseFilename(finalArtists);
+                    string sanitisedTitle = Reflector.SanitiseFilename(finalTitle);
                     if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
                     {
                         log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");
@@ -201,8 +242,8 @@ namespace AudioManager
                 else
                 {
                     // Dry run: show what would change
-                    string sanitisedArtists = Reflector.SanitiseFilename(cleanArtists);
-                    string sanitisedTitle = Reflector.SanitiseFilename(cleanTitle);
+                    string sanitisedArtists = Reflector.SanitiseFilename(finalArtists);
+                    string sanitisedTitle = Reflector.SanitiseFilename(finalTitle);
                     if (string.IsNullOrEmpty(sanitisedArtists) || string.IsNullOrEmpty(sanitisedTitle))
                     {
                         log.Changes.Add("[WARN] Rename skipped: empty artist or title after sanitisation");

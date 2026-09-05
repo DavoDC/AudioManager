@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  User-defined custom tag cleanup rules for TagFixer.
+
+  These run as an ADDITIVE second pass, AFTER TagFixer's built-in hardcoded fixes
+  (parenthetical stripping, album suffix stripping, artist extraction/casing, genre
+  normalization). The built-in fixes are not configurable here and are unaffected by
+  anything in this file. Every change a rule makes is labelled "[custom rule: <id>]"
+  in the run output so it is distinguishable from a built-in fix.
+
+  A missing or malformed file is not an error: custom rules are simply skipped.
+  One invalid rule is skipped on its own; the remaining rules still apply.
+
+  Rule attributes:
+    id           Required. Short unique name; appears in the change label.
+    field        Required. Which tag to act on: title | album | artists | genre
+    match        Required. How to test the field: contains | equals | regex | startsWith | endsWith
+    value        The operand for the match test (the substring, exact value, or regex).
+    action       Required. What to do when the rule matches: regex-replace | set-value
+    pattern      regex-replace only. The regex to replace. Omit to reuse value (handy with match="regex").
+    replacement  regex-replace: the replacement text (omit for deletion).
+                 set-value: the new value for the field.
+    enabled      Optional, default true. Set false to keep a rule on file without running it.
+
+  Matching and replacing are case-insensitive. Rules run in file order, each seeing the
+  result of the ones before it. The "artists" field is the semicolon-separated joined form.
+
+  Example (commented out - illustrative only, remove the comment markers to activate):
+
+  <Rule id="strip-bonus-track-suffix"
+        field="title"
+        match="endsWith"
+        value=" [Bonus Track]"
+        action="regex-replace"
+        pattern="\s*\[Bonus Track\]$"
+        replacement="" />
+-->
+<TagFixCustomRules>
+
+  <!-- No active rules yet. Add <Rule .../> elements here. -->
+
+</TagFixCustomRules>

@@ -70,6 +70,7 @@
     <Compile Include="Code\Tests\Assert.cs" />
     <Compile Include="Code\Tests\TestRunner.cs" />
     <Compile Include="Code\Tests\TagFixerTests.cs" />
+    <Compile Include="Code\Tests\TagFixCustomRulesTests.cs" />
     <Compile Include="Code\Tests\RoutingFixtures.cs" />
     <Compile Include="Code\Tests\RoutingTests.cs" />
     <Compile Include="Code\Tests\MusicIntegratorRouteAllFilesTests.cs" />
@@ -101,6 +102,7 @@
     <Compile Include="Code\Doer\MusicIntegrator.cs" />
     <Compile Include="Code\Doer\IntegrationManifest.cs" />
     <Compile Include="Code\Doer\TagFixer.cs" />
+    <Compile Include="Code\Doer\TagFixCustomRules.cs" />
     <Compile Include="Code\Doer\Reflector.cs" />
     <Compile Include="Code\Doer\ReportWriter.cs" />
     <Compile Include="Code\Doer\ParseCache.cs" />
