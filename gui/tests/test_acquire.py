@@ -10,6 +10,9 @@ from gui import config
 import gui.tabs.acquire as acquire_module
 from gui.tabs.acquire import (
     _DEEMIX_LINK_LABEL,
+    _LIKED_SONGS_ID,
+    _LIKED_SONGS_NAME,
+    _do_fetch_liked_tracks,
     _do_sync_liked,
     _downloaded_cell_text,
     _extra_batch_header,
@@ -18,6 +21,7 @@ from gui.tabs.acquire import (
     _header_label,
     _length_to_seconds,
     _load_history,
+    _load_last_playlist_id,
     _load_tracks_cache,
     _poll_should_skip,
     _read_mp3_tags,
@@ -425,6 +429,62 @@ def test_do_sync_liked_moves_liked_tracks_via_a_real_simulated_client(monkeypatc
     assert set(sim.playlist_contents) == {"spotify:track:aaa", "spotify:track:bbb"}
     assert "Moved 2 track(s)" in msg
     assert "AudioManager Inbox" in msg
+
+
+# ---------------------------------------------------- Load Liked Songs (_do_fetch_liked_tracks)
+
+
+def test_do_fetch_liked_tracks_returns_same_row_shape_as_playlist_fetch(tmp_path, monkeypatch):
+    """get_liked_tracks_detailed() returns the identical {artist, title, album,
+    year, duration_ms} row shape as get_playlist_tracks_detailed() (shared
+    _detail_row helper in SpotifyTools) - confirms _do_fetch_liked_tracks()
+    turns that into the same 6-tuple _do_fetch_tracks() does, so every
+    downstream consumer (track_table, match_downloads) needs no branching."""
+    _isolate_state_file(tmp_path, monkeypatch)
+
+    class FakeClient:
+        def get_liked_tracks_detailed(self):
+            return [
+                {"artist": "Eminem", "title": "Lose Yourself", "album": "8 Mile",
+                 "year": "2002", "duration_ms": 320000},
+                {"artist": "Dua Lipa", "title": "Levitating", "album": "Future Nostalgia",
+                 "year": "2020", "duration_ms": 203000},
+            ]
+
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: FakeClient())
+
+    from spotify_tools.open_playlist import _build_deemix_url
+
+    rows = _do_fetch_liked_tracks()
+
+    assert rows == [
+        ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", _build_deemix_url("Eminem", "Lose Yourself")),
+        ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23", _build_deemix_url("Dua Lipa", "Levitating")),
+    ]
+
+
+def test_do_fetch_liked_tracks_persists_under_the_sentinel_id(tmp_path, monkeypatch):
+    """Persistence key must be _LIKED_SONGS_ID, not a real playlist id - so it
+    round-trips through _load_last_playlist_id()/restore_cached_tracks() the
+    same way a playlist fetch does, without colliding with one."""
+    _isolate_state_file(tmp_path, monkeypatch)
+
+    class FakeClient:
+        def get_liked_tracks_detailed(self):
+            return []
+
+    monkeypatch.setattr(acquire_module, "_spotify_client", lambda: FakeClient())
+
+    _do_fetch_liked_tracks()
+
+    assert _load_last_playlist_id() == _LIKED_SONGS_ID
+    assert _load_history() == [{"id": _LIKED_SONGS_ID, "name": _LIKED_SONGS_NAME}]
+
+
+def test_liked_songs_sentinel_cannot_collide_with_a_real_playlist_id():
+    """Real Spotify playlist/base62 ids are alphanumeric - the sentinel's
+    underscores and double-underscore wrapper can never be produced by one."""
+    assert not _LIKED_SONGS_ID.isalnum()
 
 
 # ------------------------------------------------- duration + sort-key coverage
