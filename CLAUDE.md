@@ -57,7 +57,7 @@ Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
 
 ### Development priority: Library Intake over Library Insight (confirmed 2026-09-05)
 
-**Library Intake (Acquire, Integration, Tag Fix - the GUI's write/mutate tabs) is the current development focus; Library Insight (Statistics, Library, Mirror, Services - read-only views) is explicitly lower priority for now.** When picking up open work with no other signal, prefer an open Intake item over an open Insight item. See `docs/Development/IDEAS.md` TIER 2 priority-ordering note for the audited item order.
+**Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight (Statistics, Library, Mirror, Services) for now.** No-signal work picks: Intake first. See `docs/Development/IDEAS.md` TIER 2 priority note.
 
 ### Claude: GUI visual design - read docs/DESIGN.md first
 
@@ -105,8 +105,6 @@ For LibChecker-warning triage, post-integration validation mechanics, AudioMirro
 
 **Only the user (David) runs real integration.** Real integration moves files from NewMusic into the library - user must manually trigger via `launch.bat` for data safety and auditability.
 
-**`audioTags` list order is non-deterministic** (Parser uses `Parallel.ForEach` + `ConcurrentBag` since 2026-06-27). LibChecker, Analyser, and ParseCache all consume it without order dependency - safe. If any new consumer needs ordered output, sort explicitly after `parser.audioTags` is returned.
-
 **Claude CAN run (read-only, no file moves):**
 - `analysis` (and `analysis --force-regen`) - reads library, generates report, no writes except AudioMirror XML regen
 - `integrate --dry-run` - previews routing decisions without touching any files
@@ -136,11 +134,11 @@ TagFixer modifies ID3 tags and renames files to match library convention. Tag ch
 
 **Rule:** Never refactor this to accept a `folderPath` parameter or add a library mode. If you need to fix tags in the library, implement it as a separate, read-only analysis tool first, then ask David before touching any files.
 
-## Library Operations Constraint
-
-**What the program can/cannot do to files already in the Audio library:** see "Library Operations Constraint" in `docs/References/DevContext.md`.
+**Library Operations Constraint:** what the program can/cannot do to files already in the Audio library - see "Library Operations Constraint" in `docs/References/DevContext.md`.
 
 ## GUI Code-Change Escalation Boundary
+
+**C#/Python split (decided 2026-09-06, do not relitigate):** keep the language split; never let Python write to the library, reimplement C# logic, or parse AudioMirror XML (2 read-only tag/art exceptions excepted). Reasoning: `docs/References/Architecture-Language-Decision.md`.
 
 **The guarded path:** the path from a decline click to the exe's argument list - `IntegrationState.accepted`/`declined`, the manifest-writing block in `run_execute`, and the construction of `args` - is the only thing standing between a declined file and it being moved for real. A change there is written unattended but reviewed before it ships.
 
@@ -148,6 +146,4 @@ TagFixer modifies ID3 tags and renames files to match library convention. Tag ch
 
 ## What the Test Suite Can and Cannot Prove
 
-`scripts\dev\verify.bat --no-pause` is the single pass/fail judge - it runs the C# build and unit tests, the routing manifest check, and the GUI pytest suite. A green run proves the logic is right. It can never prove the batch is safe: nothing in the suite observes the exe actually moving files. On any change touching the integration path, treat green as "the logic is right", never as "the run is safe to fire".
-
-See "GUI Code-Change Escalation Boundary" above for which GUI code changes need David before shipping.
+See "What the test suite can and cannot prove" in `docs/References/DevContext.md` - a green `verify.bat` proves the logic, never that a real integration batch is safe to fire.
