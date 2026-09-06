@@ -1099,22 +1099,61 @@ namespace AudioManager
         /// (see docs/References/Execution-Record-Contract-Design.md section 2). Unconditional on a
         /// real run, not gated on jsonOutput. A failed write must never fail an integration run that
         /// already moved files, so failures are caught and warned, never thrown.
+        ///
+        /// On a write failure, attempts exactly one retry to an alternate "-retry" filename before
+        /// giving up (docs/References/Execution-Record-Fallback-Removal-Design.md section 4.9) - the
+        /// dominant real-world cause of the primary write failing is transient (antivirus/indexer
+        /// holding the just-created file), and a retry to a different filename costs nothing on the
+        /// success path. A retry success prints the SAME "EXECUTION JSON:" marker the GUI matches on,
+        /// so no GUI-side change is needed to recognise it. Total failure is promoted from [WARN] to
+        /// [ERROR] and reworded, since the GUI now treats an absent record as a hard verification
+        /// failure rather than a soft degrade - this line is for a human reading
+        /// gui/.cache/run-logs/, not parsed by the GUI.
         /// </summary>
         private void WriteExecutionRecord(List<LogEntry> entries, ConfidenceRecord confidence)
         {
+            string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            string json = BuildJson(entries, BuildCurrentSummary(), dryRun: false, confidence: confidence);
+            WriteExecutionRecordWithRetry(Constants.LogsPath, timestamp, json, Console.WriteLine);
+        }
+
+        /// <summary>
+        /// The write-with-one-retry logic extracted out of WriteExecutionRecord so it is reachable
+        /// from a test without reflecting into a private instance method (docs/References/
+        /// Execution-Record-Fallback-Removal-Design.md section 5.3, test 11/12) - takes the logs
+        /// directory, timestamp and pre-built JSON as plain values and a log sink instead of writing
+        /// to Console directly, so a test can capture the printed lines. Returns true when either the
+        /// primary or the retry write succeeded, false only when both failed - the caller (a real run)
+        /// never inspects this return value today because a failed write must never fail an
+        /// integration run that already moved files (see WriteExecutionRecord's own doc comment), but
+        /// the return value lets a test assert success/failure without parsing console text.
+        /// </summary>
+        internal static bool WriteExecutionRecordWithRetry(string logsPath, string timestamp, string json, Action<string> log)
+        {
             try
             {
-                string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                if (!Directory.Exists(Constants.LogsPath))
-                    Directory.CreateDirectory(Constants.LogsPath);
-                string jsonPath = Path.Combine(Constants.LogsPath, $"execution-{timestamp}.json");
+                if (!Directory.Exists(logsPath))
+                    Directory.CreateDirectory(logsPath);
+                string jsonPath = Path.Combine(logsPath, $"execution-{timestamp}.json");
 
-                File.WriteAllText(jsonPath, BuildJson(entries, BuildCurrentSummary(), dryRun: false, confidence: confidence), System.Text.Encoding.UTF8);
-                Console.WriteLine($"\n  EXECUTION JSON: {jsonPath}");
+                File.WriteAllText(jsonPath, json, System.Text.Encoding.UTF8);
+                log($"\n  EXECUTION JSON: {jsonPath}");
+                return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"\n  [WARN] Execution record failed: {ex.Message}");
+                try
+                {
+                    string retryPath = Path.Combine(logsPath, $"execution-{timestamp}-retry.json");
+                    File.WriteAllText(retryPath, json, System.Text.Encoding.UTF8);
+                    log($"\n  EXECUTION JSON: {retryPath}");
+                    return true;
+                }
+                catch (Exception retryEx)
+                {
+                    log($"\n  [ERROR] EXECUTION RECORD FAILED: {retryEx.Message}");
+                    return false;
+                }
             }
         }
 

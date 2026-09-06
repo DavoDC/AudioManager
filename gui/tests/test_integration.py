@@ -3,6 +3,7 @@ _esc, _update_exec_status). UI-building functions (stage_scan/review_card/etc.)
 need a NiceGUI page context and are exercised manually per gui/README.md."""
 import asyncio
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -10,9 +11,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui import config
 from gui.runner import RunResult
+from gui import routing
+from gui.data_loader import SchemaVersionError
 from gui.tabs.integration import (
-    IntegrationState, _bulk, _confirm_note_class, _esc, _failed_filename_from_output,
-    _on_review_key, _open_run_log, _review_key_action, _sample_entries,
+    EXEC_STATUS_LABELS, IntegrationState, _bulk, _confirm_note_class, _esc,
+    _on_review_key, _open_run_log, _review_key_action, _run_analysis_now, _sample_entries,
     _set_triage, _toggle_decision, _update_exec_status, _write_manifest,
     batch_summary_html, run_execute, run_execute_simulated, run_simulate,
     sort_by_destination, triage_bar_html,
@@ -261,23 +264,15 @@ def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeyp
     assert [e["filename"] for e in written] == ["keep.mp3"]
 
 
-# -------------------------------------------------- _failed_filename_from_output
+# -------------------------------------------------- verification-failed (no/unreadable record)
 
 
-def test_failed_filename_from_output_extracts_name_after_prefix():
-    lines = ["[AUTO] Artist - Title", "Error processing file: Song.mp3", "INTEGRATION FAILED"]
-    assert _failed_filename_from_output(lines) == "Song.mp3"
-
-
-def test_failed_filename_from_output_returns_none_when_absent():
-    assert _failed_filename_from_output(["[AUTO] Artist - Title", "INTEGRATION FAILED"]) is None
-
-
-def test_run_execute_on_exe_failure_marks_named_file_failed_others_notrun(tmp_path, monkeypatch):
-    """The exe processes targets one at a time and halts on its first error -
-    only the file it names in 'Error processing file: <name>' was actually
-    attempted; everything still queued/moving after that is unattempted, not
-    failed, and must be labelled accordingly rather than lumped in as failed."""
+def test_run_execute_on_exe_failure_with_no_record_marks_everything_unknown(tmp_path, monkeypatch):
+    """docs/References/Execution-Record-Fallback-Removal-Design.md: a missing
+    execution record is a terminal verification failure, not a degraded
+    console-derived account - naming a 'failed' file from console text is
+    gone along with _failed_filename_from_output. Every target becomes
+    'unknown' and exec_record_fail_reason is 'missing'."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
     monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
@@ -300,15 +295,11 @@ def test_run_execute_on_exe_failure_marks_named_file_failed_others_notrun(tmp_pa
     finally:
         integration_module.S = original
 
-    assert state.exec_status["a.mp3"] == "notrun"
-    assert state.exec_status["b.mp3"] == "failed"
-    assert state.exec_status["c.mp3"] == "notrun"
-    assert "b.mp3" in state.exec_summary
-    assert "2 file(s) were not attempted" in state.exec_summary
-    # Regression: the old code appended "1 file failed: b.mp3." after a
-    # summary that already ends in "...Error processing file: b.mp3" with no
-    # separator, producing a duplicated, run-on filename mention.
-    assert state.exec_summary.count("b.mp3") == 1
+    assert state.exec_status["a.mp3"] == "unknown"
+    assert state.exec_status["b.mp3"] == "unknown"
+    assert state.exec_status["c.mp3"] == "unknown"
+    assert state.exec_record_fail_reason == "missing"
+    assert "VERIFICATION FAILED" in state.exec_summary
 
 
 def test_run_execute_on_failure_refreshes_before_opening_error_modal(tmp_path, monkeypatch):
@@ -369,55 +360,6 @@ def test_finish_execute_sets_exec_ok_false_on_failure(monkeypatch):
     assert state.exec_ok is False
 
 
-def test_finish_execute_prefers_confidence_report_counts_over_local_sweep():
-    """The exe's own CONFIDENCE REPORT counts are authoritative. Concrete
-    regression scenario from the 2026-09-05 review: a batch of 12 where 3
-    files already existed at their destination ([SKIP]) and 9 were actually
-    moved ([AUTO]). Before this fix, _finish_execute's success sweep counted
-    every non-failed row (skipped rows included, since they were lumped in
-    with done) as 'moved', reporting '12 moved' while the confidence report
-    beneath it said 'Moved: 9 | Skipped: 3' - two contradictory numbers on
-    the same panel. The summary must match the confidence report instead."""
-    import gui.tabs.integration as integration_module
-
-    state = IntegrationState()
-    targets = [_entry(f"{i}.mp3") for i in range(12)]
-    state.exec_targets = targets
-    # 9 already settled to "done" via [AUTO] lines, 3 settled to "skipped"
-    # via [SKIP] lines - nothing left "queued" for the success sweep to
-    # mislabel, isolating this test to the summary-count logic itself.
-    state.exec_status = {t["filename"]: "done" for t in targets[:9]}
-    state.exec_status.update({t["filename"]: "skipped" for t in targets[9:]})
-
-    lines = [
-        "CONFIDENCE REPORT",
-        "  Files in NewMusic: 12  |  Moved: 9  |  Skipped: 3",
-        "  Sanity check: all 9 moved file(s) exist and are readable.",
-    ]
-    _with_state(state, lambda: integration_module._finish_execute(
-        RunResult(command=["integrate"], returncode=0, lines=lines)))
-
-    assert "9 moved" in state.exec_summary
-    assert "12 moved" not in state.exec_summary
-    assert "3" in state.exec_summary and "already in library" in state.exec_summary
-
-
-def test_finish_execute_falls_back_to_local_counts_when_confidence_report_absent():
-    """Dry runs / simulate never reach the confidence-report step - when it
-    fails to parse, the old locally-derived counts must still work."""
-    import gui.tabs.integration as integration_module
-
-    state = IntegrationState()
-    state.exec_targets = [_entry("a.mp3"), _entry("b.mp3")]
-    state.exec_status = {"a.mp3": "done", "b.mp3": "queued"}
-
-    _with_state(state, lambda: integration_module._finish_execute(
-        RunResult(command=["integrate"], returncode=0, lines=["no confidence section here"])))
-
-    assert "2 moved" in state.exec_summary
-    assert state.exec_status["b.mp3"] == "done"
-
-
 def test_finish_execute_record_maps_moved_skipped_error_and_absent_to_notrun(monkeypatch):
     """The execution record is authoritative once _finish_execute has one:
     every exec_status entry is OVERWRITTEN from the record (matched on
@@ -454,10 +396,11 @@ def test_finish_execute_record_maps_moved_skipped_error_and_absent_to_notrun(mon
     assert state.exec_record_missing is False
 
 
-def test_finish_execute_none_record_sets_exec_record_missing_and_appends_unverified_sentence():
-    """No execution record found/parsed: today's local-sweep behaviour still
-    runs, but the outcome is now flagged unverified - see design doc section
-    4.5's 'record absent' path."""
+def test_finish_execute_none_record_sets_all_statuses_unknown_and_reports_verification_failed():
+    """No execution record found/parsed: this is now a terminal verification
+    failure, not a degraded success - see docs/References/
+    Execution-Record-Fallback-Removal-Design.md. Every status becomes
+    'unknown' and the summary carries no counts."""
     import gui.tabs.integration as integration_module
     state = IntegrationState()
     state.exec_targets = [_entry("a.mp3")]
@@ -466,8 +409,8 @@ def test_finish_execute_none_record_sets_exec_record_missing_and_appends_unverif
         RunResult(command=["integrate"], returncode=0, lines=[]), None))
     assert state.exec_record_missing is True
     assert state.confidence_report is None
-    assert "No execution record was found" in state.exec_summary
-    assert state.exec_status["a.mp3"] == "done"
+    assert "VERIFICATION FAILED" in state.exec_summary
+    assert state.exec_status["a.mp3"] == "unknown"
 
 
 def test_finish_execute_unrecognized_status_flags_only_that_row(monkeypatch):
@@ -524,7 +467,7 @@ def test_run_execute_simulated_populates_confidence_report_without_console_repar
     assert state.confidence_report["skipped_count"] == 0
 
 
-def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monkeypatch):
+def test_run_execute_on_cancel_marks_everything_unknown_not_notrun(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
     monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
@@ -547,7 +490,10 @@ def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monk
     finally:
         integration_module.S = original
 
-    assert state.exec_status["a.mp3"] == "notrun"
+    assert state.exec_status["a.mp3"] == "unknown"
+    assert state.exec_record_fail_reason == "cancelled"
+    assert "Run cancelled" in state.exec_summary
+    assert "VERIFICATION FAILED" not in state.exec_summary
 
 
 def test_run_execute_on_cancel_triggers_cancelled_modal_not_error_modal(tmp_path, monkeypatch):
@@ -647,7 +593,268 @@ def test_run_execute_on_success_shows_no_modal_at_all(tmp_path, monkeypatch):
     finally:
         integration_module.S = original
 
+    # A successful run with no record still shows no modal - the banner and
+    # acknowledgement gate are not a modal - but the outcome is still an
+    # unverified/"unknown" batch, not a quiet success.
     assert calls == []
+    assert all(v == "unknown" for v in state.exec_status.values())
+
+
+# ---------------------------------------------- new verification-failure tests
+# docs/References/Execution-Record-Fallback-Removal-Design.md section 5.2
+
+
+def test_finish_execute_none_record_on_success_still_reports_verification_failed():
+    """Item 1 of section 5.2: even a clean exit (result.ok) with no record is
+    a hard verification failure - no counts, no 'Integration complete'."""
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3"), _entry("b.mp3")]
+    state.exec_status = {"a.mp3": "queued", "b.mp3": "queued"}
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=[]), None))
+    assert all(v == "unknown" for v in state.exec_status.values())
+    assert state.exec_record_missing is True
+    assert "VERIFICATION FAILED" in state.exec_summary
+    assert "Integration complete" not in state.exec_summary
+    assert not re.search(r"\d+ moved", state.exec_summary)
+
+
+def test_finish_execute_none_record_overwrites_statuses_already_set_by_update_exec_status():
+    """Item 2: a status _update_exec_status wrote mid-run (e.g. 'done' from an
+    [AUTO] line) must not survive a missing record - it is overwritten to
+    'unknown' unconditionally."""
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3"), _entry("b.mp3")]
+    state.exec_status = {"a.mp3": "done", "b.mp3": "skipped"}
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=[]), None))
+    assert state.exec_status == {"a.mp3": "unknown", "b.mp3": "unknown"}
+
+
+def test_run_execute_with_no_execution_json_marker_sets_fail_reason_missing(tmp_path, monkeypatch):
+    """Item 3: no 'EXECUTION JSON:' marker in the exe's output and no
+    matching file on disk means the record genuinely never got written."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path / "logs")
+
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=0, lines=["[AUTO] Artist - Title"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert state.exec_record_fail_reason == "missing"
+    assert state.exec_record_path == ""
+
+
+def test_run_execute_on_schema_version_error_sets_fail_reason_unreadable(tmp_path, monkeypatch):
+    """Item 4: a record path resolves (the file exists on disk) but parsing
+    it raises SchemaVersionError - the record is unreadable, not absent."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path / "logs")
+
+    import gui.tabs.integration as integration_module
+    record_path = tmp_path / "execution-20260906-000000.json"
+    record_path.write_text("{}", encoding="utf-8")
+
+    def raise_schema_error(path):
+        raise SchemaVersionError(path.name, 0, 1)
+
+    monkeypatch.setattr(routing, "parse_execution_record", raise_schema_error)
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=0, lines=[f"  EXECUTION JSON: {record_path}"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert state.exec_record_fail_reason == "unreadable"
+    assert state.exec_record_path == str(record_path)
+    assert "could not be read" in state.exec_summary
+
+
+def test_run_execute_on_json_decode_error_sets_fail_reason_unreadable(tmp_path, monkeypatch):
+    """Item 5: json.JSONDecodeError must route to 'unreadable' too, not just
+    SchemaVersionError - the whole exception tuple, not one member."""
+    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path / "logs")
+
+    import gui.tabs.integration as integration_module
+    record_path = tmp_path / "execution-20260906-000001.json"
+    record_path.write_text("not json", encoding="utf-8")
+
+    def raise_decode_error(path):
+        raise json.JSONDecodeError("boom", "not json", 0)
+
+    monkeypatch.setattr(routing, "parse_execution_record", raise_decode_error)
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3")]
+
+    async def fake_run(args, action="", on_line=None, timeout=None):
+        return RunResult(command=args, returncode=0, lines=[f"  EXECUTION JSON: {record_path}"])
+
+    monkeypatch.setattr(integration_module.runner, "run", fake_run)
+
+    original = integration_module.S
+    integration_module.S = state
+    try:
+        asyncio.run(run_execute())
+    finally:
+        integration_module.S = original
+
+    assert state.exec_record_fail_reason == "unreadable"
+    assert state.exec_record_path == str(record_path)
+
+
+def test_finish_execute_cancelled_no_record_has_no_verification_failed_wording(monkeypatch):
+    """Item 6: cancellation gets its own calmer wording ('Run cancelled'),
+    never the alarming 'VERIFICATION FAILED' heading, though the status
+    semantics (every row unknown) are identical."""
+    import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module, "show_cancelled_modal", lambda *a, **k: None)
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3")]
+    state.exec_status = {"a.mp3": "queued"}
+    state.exec_record_fail_reason = "cancelled"
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=None, cancelled=True, lines=[]), None))
+    assert state.exec_record_fail_reason == "cancelled"
+    assert "Run cancelled" in state.exec_summary
+    assert "VERIFICATION FAILED" not in state.exec_summary
+    assert state.exec_status["a.mp3"] == "unknown"
+
+
+def test_finish_execute_non_cancelled_failure_prepends_interpreted_text_before_verification_sentence(monkeypatch):
+    """Item 7: on a not-ok, non-cancelled run with no record, the exe's own
+    error text (result.interpreted) is still real evidence - it is prepended
+    to, not replaced by, the verification-failed sentence, in that order."""
+    import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module, "show_error_modal", lambda *a, **k: None)
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3")]
+    state.exec_status = {"a.mp3": "queued"}
+    result = RunResult(command=["integrate"], returncode=1, lines=["INTEGRATION FAILED"])
+    _with_state(state, lambda: integration_module._finish_execute(result, None))
+    interpreted = result.interpreted("Integration")
+    verification_idx = state.exec_summary.find("VERIFICATION FAILED")
+    interpreted_idx = state.exec_summary.find(interpreted)
+    assert interpreted in state.exec_summary
+    assert verification_idx != -1
+    assert interpreted_idx != -1
+    assert interpreted_idx < verification_idx
+
+
+def test_run_analysis_now_is_gated_behind_unknown_ack(monkeypatch):
+    """Item 8: the cancelled-modal's 'Run Analysis Now' bypass must respect
+    the same acknowledgement gate as the 'New scan' button - otherwise
+    cancellation, the most common route into an unverified batch, has a
+    one-click way around the gate it just triggered."""
+    import gui.tabs.integration as integration_module
+
+    scan_calls = []
+
+    def fake_run_scan():
+        # Not a coroutine: asyncio.create_task is also mocked below and never
+        # actually schedules/awaits whatever run_scan() returns, so a plain
+        # marker object avoids an "never awaited" warning from a real coroutine.
+        scan_calls.append(1)
+        return object()
+
+    monkeypatch.setattr(integration_module, "run_scan", fake_run_scan)
+
+    notified = []
+    monkeypatch.setattr(integration_module.ui, "notify", lambda *a, **k: notified.append(a))
+
+    tasks_created = []
+    monkeypatch.setattr(integration_module.asyncio, "create_task", lambda coro: tasks_created.append(coro))
+
+    state = IntegrationState()
+    state.stage = 4
+    state.exec_record_missing = True
+    state.exec_unknown_ack = False
+    state.refresh = lambda: None
+
+    _with_state(state, integration_module._run_analysis_now)
+    assert state.stage == 4
+    assert tasks_created == []
+    assert notified
+
+    state.exec_unknown_ack = True
+    _with_state(state, integration_module._run_analysis_now)
+    assert state.stage == 1
+    assert len(tasks_created) == 1
+
+
+def test_exec_status_labels_covers_every_status_finish_execute_and_update_exec_status_can_produce():
+    """Item 9: table-driven guard so a future status can never render a
+    KeyError in stage_execute - every value _finish_execute's
+    _RECORD_STATUS_MAP, its own hardcoded statuses, and _update_exec_status
+    can produce must have a label."""
+    possible_statuses = {
+        "queued", "moving", "done", "skipped", "failed", "notrun", "unverified", "unknown",
+    }
+    for status in possible_statuses:
+        assert status in EXEC_STATUS_LABELS, f"missing EXEC_STATUS_LABELS entry for {status!r}"
+
+
+def test_finish_execute_with_valid_record_on_success_is_unaffected_by_strict_path(monkeypatch):
+    """Item 10: regression guard - a successful run WITH a valid record must
+    keep behaving exactly as before this change (exec_record_missing False,
+    empty fail_reason, normal 'Integration complete' summary with counts).
+    The strict verification-failure path must never leak into the happy
+    path."""
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    targets = [_entry("a.mp3"), _entry("b.mp3")]
+    state.exec_targets = targets
+    state.exec_status = {e["filename"]: "queued" for e in targets}
+    confidence = {
+        "count_ok": True, "sanity_ran": True, "sanity_ok": True, "sanity_checked": 2,
+        "sanity_failures": [], "new_folders": [], "error_count": 0, "errors": [],
+        "total_count": 2, "moved_count": 2, "skipped_count": 0,
+    }
+    record = {
+        "generatedAt": "x", "summary": {}, "confidence": confidence,
+        "files": [
+            {"filename": "a.mp3", "status": "moved", "detail": ""},
+            {"filename": "b.mp3", "status": "moved", "detail": ""},
+        ],
+    }
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=[]), record))
+
+    assert state.exec_record_missing is False
+    assert state.exec_record_fail_reason == ""
+    assert "Integration complete" in state.exec_summary
+    assert "2 moved" in state.exec_summary
 
 
 # --------------------------------------------------------------- _open_run_log

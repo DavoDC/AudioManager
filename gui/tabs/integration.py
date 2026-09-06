@@ -30,8 +30,14 @@ required tag) to exercise the review card's error-badge rendering - but per
 IntegrationState.accepted, an error-status entry can never be accepted, so it
 never reaches run_execute_simulated's targets and Simulate mode can never show
 a failed integration run. Real mid-batch failure output (`INTEGRATION FAILED`,
-"Error processing file: ...") is only ever seen on a real run, parsed by
-_finish_execute/_failed_filename_from_output below.
+"Error processing file: ...") is only ever seen on a real run.
+
+Stage 4 (execute) no longer trusts console output for per-file outcomes at
+all: since docs/References/Execution-Record-Fallback-Removal-Design.md, a
+missing or unreadable execution record is a terminal verification failure -
+every target is marked "unknown" and the user must acknowledge the
+unverified batch (S.exec_unknown_ack) before starting a new scan. See
+_finish_execute below.
 """
 from __future__ import annotations
 
@@ -72,7 +78,10 @@ class IntegrationState:
         self.summary: dict = routing.empty_summary()  # batch scan-ahead context (routes, Misc migrations, compilations)
         self.projected_libchecker: dict | None = None  # dry run's own safety verdict
         self.confidence_report: dict | None = None  # real run's post-run integrity check
-        self.exec_record_missing = False    # True: no execution record found - statuses are unverified console-derived
+        self.exec_record_missing = False    # True: no execution record could be found or parsed - outcomes are UNKNOWN
+        self.exec_record_fail_reason = ""   # "" | "missing" | "unreadable" | "cancelled"
+        self.exec_record_path = ""          # str path of the record that failed to parse ("unreadable" only)
+        self.exec_unknown_ack = False       # user has acknowledged the unverified batch; ungates "New scan"
         self.refresh = lambda: None
 
     @property
@@ -965,6 +974,10 @@ async def run_execute() -> None:
     S.exec_summary = ""
     S.exec_targets = targets
     S.exec_status = {e["filename"]: "queued" for e in targets}
+    S.exec_record_missing = False
+    S.exec_record_fail_reason = ""
+    S.exec_record_path = ""
+    S.exec_unknown_ack = False
     S.refresh()
 
     throttle = {"pending": False}
@@ -1001,11 +1014,18 @@ async def run_execute() -> None:
 
     record = None
     path = routing.execution_record_path(result.lines, started)
-    if path:
+    if path is None:
+        S.exec_record_fail_reason = "missing"
+        S.exec_record_path = ""
+    else:
         try:
             record = routing.parse_execution_record(path)
         except (OSError, ValueError, json.JSONDecodeError, SchemaVersionError):
             record = None
+            S.exec_record_fail_reason = "unreadable"
+            S.exec_record_path = str(path)
+    if result.cancelled and record is None:
+        S.exec_record_fail_reason = "cancelled"
     _finish_execute(result, record)
 
 
@@ -1013,7 +1033,16 @@ def _run_analysis_now() -> None:
     """Wired to the cancelled-mid-batch modal's "Run Analysis Now" action -
     the exact reset() + run_scan() pattern the "New scan" button in
     stage_execute() already uses to return to the scan stage and kick off a
-    fresh dry run, just triggered directly instead of via a second click."""
+    fresh dry run, just triggered directly instead of via a second click.
+
+    Must respect the same acknowledgement gate stage_execute()'s "New scan"
+    button does - otherwise cancellation, the most common route into an
+    unverified batch, would have a one-click bypass around the gate it just
+    triggered (docs/References/Execution-Record-Fallback-Removal-Design.md
+    section 4.7)."""
+    if S.exec_record_missing and not S.exec_unknown_ack:
+        ui.notify("Acknowledge the unverified batch first", type="warning")
+        return
     S.stage = 1
     S.entries = []
     S.simulated = False
@@ -1034,8 +1063,17 @@ def _finish_execute(result: RunResult, record: dict | None = None) -> None:
     the execution-record contract, an optional parsed execution record) and
     must be interpreted identically so a simulated run exercises the real UI
     logic. `record` is `routing.parse_execution_record`'s return value, or
-    None when no record could be found/parsed for this run - see
-    docs/References/Execution-Record-Contract-Design.md section 4.5.
+    None when no record could be found/parsed for this run.
+
+    A missing or unreadable record is now a TERMINAL VERIFICATION FAILURE,
+    not a degraded success - see docs/References/
+    Execution-Record-Fallback-Removal-Design.md (supersedes the "keep
+    today's behaviour + unverified sentence" instruction in
+    Execution-Record-Contract-Design.md section 4.5). There is no console-
+    derived fallback any more: when `record is None`, every S.exec_status
+    entry is unconditionally set to "unknown" and S.exec_summary carries no
+    counts and no outcome claim - see `S.exec_record_fail_reason`
+    ("missing" | "unreadable" | "cancelled") for the exact wording chosen.
 
     When a record is present, it is treated as authoritative: every
     exec_status entry is OVERWRITTEN from the record (matched on filename; a
@@ -1073,11 +1111,35 @@ def _finish_execute(result: RunResult, record: dict | None = None) -> None:
 
     show_modal = False
     show_cancelled = False
-    if result.ok:
-        if record is None:
-            for k, v in S.exec_status.items():
-                if v in ("queued", "moving"):
-                    S.exec_status[k] = "done"
+    if record is None:
+        if not S.exec_record_fail_reason:
+            S.exec_record_fail_reason = "missing"
+        for k in list(S.exec_status.keys()):
+            S.exec_status[k] = "unknown"
+        for e in S.exec_targets:
+            S.exec_status[e["filename"]] = "unknown"
+        if S.exec_record_fail_reason == "cancelled":
+            S.exec_summary = (
+                "Run cancelled - no execution record was written, so what happened to each file "
+                "is UNKNOWN. Some files may already have been moved. Verify the library before "
+                "running another batch.")
+        elif S.exec_record_fail_reason == "unreadable":
+            S.exec_summary = (
+                "VERIFICATION FAILED - an execution record was written but could not be read, so "
+                "what happened to each file is UNKNOWN. Some or all files may already have been "
+                "moved. Verify the library before running another batch.")
+        else:
+            S.exec_summary = (
+                "VERIFICATION FAILED - the integration produced no execution record, so what "
+                "happened to each file is UNKNOWN. Some or all files may already have been moved. "
+                "Verify the library before running another batch.")
+        if not result.ok and not result.cancelled:
+            # The exe's own error text is still real evidence, it just is not a
+            # per-file account - prepend it rather than replace the verification
+            # sentence. Cancellation gets its own calmer wording above instead
+            # (it already says "Run cancelled"), so it is excluded here.
+            S.exec_summary = f"{result.interpreted('Integration')} {S.exec_summary}"
+    elif result.ok:
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
         moved = sum(1 for v in S.exec_status.values() if v == "done")
         skipped = sum(1 for v in S.exec_status.values() if v == "skipped")
@@ -1089,34 +1151,19 @@ def _finish_execute(result: RunResult, record: dict | None = None) -> None:
                           + ". Statistics will reflect the new batch after the next analysis run.")
     else:
         S.exec_summary = result.interpreted("Integration")
-        if record is None:
-            failed_name = _failed_filename_from_output(result.lines) if not result.cancelled else None
-            n_notrun = 0
-            for k, v in S.exec_status.items():
-                if v not in ("queued", "moving"):
-                    continue
-                if failed_name and k == failed_name:
-                    S.exec_status[k] = "failed"
-                else:
-                    S.exec_status[k] = "notrun"
-                    n_notrun += 1
-        else:
-            # Statuses already came from the record above - no console
-            # re-parsing needed, a run can fail after moving some files and
-            # the record is the best account of exactly which.
-            n_notrun = sum(1 for v in S.exec_status.values() if v == "notrun")
-        # failed_name is already named in result.interpreted()'s cause line above -
-        # repeating it here would duplicate the filename with no separator.
+        # Statuses already came from the record above - no console re-parsing
+        # needed, a run can fail after moving some files and the record is the
+        # best account of exactly which.
+        n_notrun = sum(1 for v in S.exec_status.values() if v == "notrun")
         if n_notrun:
             S.exec_summary += f" {n_notrun} file(s) were not attempted."
+
+    if not result.ok:
         if result.cancelled:
             show_cancelled = True
         else:
             show_modal = True
 
-    if S.exec_record_missing:
-        S.exec_summary += (" No execution record was found - these outcomes are from console "
-                           "output and are unverified.")
     if unverified_files:
         names = ", ".join(unverified_files)
         S.exec_summary += (f" {len(unverified_files)} file(s) had an unrecognized status in "
@@ -1156,6 +1203,10 @@ async def run_execute_simulated() -> None:
     S.exec_summary = ""
     S.exec_targets = targets
     S.exec_status = {e["filename"]: "queued" for e in targets}
+    S.exec_record_missing = False
+    S.exec_record_fail_reason = ""
+    S.exec_record_path = ""
+    S.exec_unknown_ack = False
     S.refresh()
 
     lines: list[str] = []
@@ -1191,27 +1242,10 @@ async def run_execute_simulated() -> None:
     _finish_execute(result, record)
 
 
-def _failed_filename_from_output(lines: list[str]) -> str | None:
-    """The exe processes targets one at a time and halts on the first error,
-    printing 'Error processing file: <filename>' before stopping - the only
-    line in its output that names which specific file failed (everything
-    else, e.g. `[AUTO]`/`[SKIP]`, prints artist/title text, not a filename).
-    Everything still queued/moving after this file is therefore genuinely
-    unattempted, not failed."""
-    prefix = "Error processing file:"
-    for line in lines:
-        idx = line.find(prefix)
-        if idx != -1:
-            name = line[idx + len(prefix):].strip()
-            if name:
-                return name
-    return None
-
-
 EXEC_STATUS_LABELS = {
     "queued": "queued", "moving": "moving", "done": "done",
     "skipped": "skipped", "failed": "failed", "notrun": "not run",
-    "unverified": "unverified",
+    "unverified": "unverified", "unknown": "unknown",
 }
 
 
@@ -1271,7 +1305,7 @@ def _update_exec_status(line: str) -> None:
 
 def stage_execute() -> None:
     total = max(1, len(S.exec_targets))
-    done = sum(1 for v in S.exec_status.values() if v in ("done", "skipped", "failed", "unverified"))
+    done = sum(1 for v in S.exec_status.values() if v in ("done", "skipped", "failed", "unverified", "unknown"))
     moving = sum(1 for v in S.exec_status.values() if v == "moving")
     pct = 100 if S.exec_done else int(100 * (done + 0.5 * moving) / total)
 
@@ -1298,8 +1332,18 @@ def stage_execute() -> None:
         if S.exec_done:
             ui.html(f'<div class="note" style="margin-top:12px;">{_esc(S.exec_summary)}</div>')
             if S.exec_record_missing:
-                ui.html('<div class="libchecker-strip dirty">&#9888; No execution record was found - '
-                        "the statuses above are from console output only and are unverified.</div>")
+                heading = ("Run cancelled - outcomes are UNKNOWN" if S.exec_record_fail_reason == "cancelled"
+                           else "VERIFICATION FAILED - outcomes are UNKNOWN")
+                strip_html = (f'<div class="libchecker-strip dirty">&#9888; {heading}<br>'
+                              'Every track above is shown as "unknown" because the GUI has no '
+                              "trustworthy record of what the integrator did. Console output is "
+                              "not used as a substitute.")
+                if S.exec_record_fail_reason == "unreadable":
+                    strip_html += f"<br>Record file that could not be read: {_esc(S.exec_record_path)}"
+                strip_html += (f"<br>Check {_esc(str(config.LOGS_DIR))} for an execution-*.json file "
+                               f"and {_esc(str(config.RUN_LOGS_DIR))} for this run's raw output before "
+                               "starting another batch.</div>")
+                ui.html(strip_html)
             confidence_report_strip()
 
             def reset():
@@ -1308,8 +1352,18 @@ def stage_execute() -> None:
                 S.simulated = False
                 S.refresh()
 
-            ui.button("New scan", icon="restart_alt", on_click=reset).props("outline dense color=primary size=sm") \
-                .style("margin-top:10px;")
+            if S.exec_record_missing and not S.exec_unknown_ack:
+                def ack(e):
+                    S.exec_unknown_ack = True
+                    S.refresh()
+
+                ui.checkbox("I understand this batch could not be verified and I will check the "
+                            "library myself", on_change=ack).style("margin-top:10px;")
+                ui.button("New scan", icon="restart_alt", on_click=reset) \
+                    .props("outline dense color=primary size=sm disable").style("margin-top:10px;")
+            else:
+                ui.button("New scan", icon="restart_alt", on_click=reset) \
+                    .props("outline dense color=primary size=sm").style("margin-top:10px;")
 
 
 # --------------------------------------------------------- advanced log
