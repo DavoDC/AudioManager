@@ -418,6 +418,108 @@ def test_finish_execute_falls_back_to_local_counts_when_confidence_report_absent
     assert state.exec_status["b.mp3"] == "done"
 
 
+def test_finish_execute_record_maps_moved_skipped_error_and_absent_to_notrun(monkeypatch):
+    """The execution record is authoritative once _finish_execute has one:
+    every exec_status entry is OVERWRITTEN from the record (matched on
+    filename); a target absent from the record becomes 'notrun' rather than
+    being left at whatever the live console sweep guessed."""
+    import gui.tabs.integration as integration_module
+    monkeypatch.setattr(integration_module, "show_error_modal", lambda *a, **k: None)
+
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3"), _entry("b.mp3"), _entry("c.mp3"), _entry("d.mp3")]
+    state.exec_status = {e["filename"]: "queued" for e in state.exec_targets}
+    confidence = {
+        "count_ok": True, "sanity_ran": True, "sanity_ok": True, "sanity_checked": 2,
+        "sanity_failures": [], "new_folders": [], "error_count": 1,
+        "errors": [{"filename": "c.mp3", "detail": "boom"}],
+        "total_count": 4, "moved_count": 1, "skipped_count": 1,
+    }
+    record = {
+        "generatedAt": "2026-09-06T00:00:00", "summary": {}, "confidence": confidence,
+        "files": [
+            {"filename": "a.mp3", "status": "moved", "detail": ""},
+            {"filename": "b.mp3", "status": "skipped", "detail": ""},
+            {"filename": "c.mp3", "status": "error", "detail": "boom"},
+        ],
+    }
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=1, lines=[]), record))
+
+    assert state.exec_status["a.mp3"] == "done"
+    assert state.exec_status["b.mp3"] == "skipped"
+    assert state.exec_status["c.mp3"] == "failed"
+    assert state.exec_status["d.mp3"] == "notrun"
+    assert state.confidence_report == confidence
+    assert state.exec_record_missing is False
+
+
+def test_finish_execute_none_record_sets_exec_record_missing_and_appends_unverified_sentence():
+    """No execution record found/parsed: today's local-sweep behaviour still
+    runs, but the outcome is now flagged unverified - see design doc section
+    4.5's 'record absent' path."""
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3")]
+    state.exec_status = {"a.mp3": "queued"}
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=[]), None))
+    assert state.exec_record_missing is True
+    assert state.confidence_report is None
+    assert "No execution record was found" in state.exec_summary
+    assert state.exec_status["a.mp3"] == "done"
+
+
+def test_finish_execute_unrecognized_status_discards_whole_record(monkeypatch):
+    """A status this GUI doesn't recognise (e.g. a dry-run-only 'would-move'
+    leaking into a real record) makes the WHOLE record untrustworthy - never
+    trusted partially. The run falls back to the same behaviour as record=None."""
+    import gui.tabs.integration as integration_module
+    state = IntegrationState()
+    state.exec_targets = [_entry("a.mp3"), _entry("b.mp3")]
+    state.exec_status = {"a.mp3": "done", "b.mp3": "queued"}
+    confidence = {
+        "count_ok": True, "sanity_ran": True, "sanity_ok": True, "sanity_checked": 2,
+        "sanity_failures": [], "new_folders": [], "error_count": 0, "errors": [],
+        "total_count": 2, "moved_count": 2, "skipped_count": 0,
+    }
+    record = {
+        "generatedAt": "x", "summary": {}, "confidence": confidence,
+        "files": [
+            {"filename": "a.mp3", "status": "moved", "detail": ""},
+            {"filename": "b.mp3", "status": "would-move", "detail": ""},
+        ],
+    }
+    _with_state(state, lambda: integration_module._finish_execute(
+        RunResult(command=["integrate"], returncode=0, lines=[]), record))
+
+    assert state.exec_record_missing is True
+    assert state.confidence_report is None
+    assert "No execution record was found" in state.exec_summary
+    assert state.exec_status["b.mp3"] == "done"  # local sweep fallback, not the discarded record
+
+
+def test_run_execute_simulated_populates_confidence_report_without_console_reparsing():
+    """run_execute_simulated builds its own synthetic execution record and
+    feeds it straight to _finish_execute - the confidence panel must come
+    from that record, not from re-parsing the synthetic CONFIDENCE REPORT
+    console lines it also emits (those exist only to exercise
+    _update_exec_status's live-progress path)."""
+    import gui.tabs.integration as integration_module
+
+    state = IntegrationState()
+    state.entries = [_entry("a.mp3"), _entry("b.mp3")]
+    state.simulated = True
+
+    _with_state(state, lambda: asyncio.run(run_execute_simulated()))
+
+    assert state.exec_record_missing is False
+    assert state.confidence_report is not None
+    assert state.confidence_report["moved_count"] == 2
+    assert state.confidence_report["total_count"] == 2
+    assert state.confidence_report["skipped_count"] == 0
+
+
 def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")

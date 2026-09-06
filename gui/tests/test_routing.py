@@ -1,14 +1,17 @@
-"""Unit tests for gui.routing - the exe's dry-run routing JSON contract
-(parse_routing_file) and the JSON-path extraction regex that reads the exe's
-stdout (routing_path_from_output). Both are pure and exe-output-format
-sensitive, so a silent drift in either contract should fail here first."""
+"""Unit tests for gui.routing - the exe's routing/execution JSON contract
+(parse_routing_file, parse_execution_record) and the marker-line extraction
+regexes that read the exe's stdout (routing_path_from_output,
+execution_record_path). All three are pure and exe-output-format sensitive,
+so a silent drift in any of them should fail here first."""
 import json
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gui import config, routing
+from gui.data_loader import SchemaVersionError
 
 
 # ------------------------------------------------------- parse_routing_file
@@ -18,23 +21,33 @@ def _write_json(path, data):
     path.write_text(json.dumps(data), encoding="utf-8")
 
 
+def _doc(files=None, summary=None, **extra):
+    """A minimal valid routing document - always carries schemaVersion,
+    since every parser in this module now hard-fails without one."""
+    d = {"schemaVersion": 1, "files": files if files is not None else []}
+    if summary is not None:
+        d["summary"] = summary
+    d.update(extra)
+    return d
+
+
 def test_parse_routing_file_full_entry_round_trips_all_fields(tmp_path):
     path = tmp_path / "routing.json"
-    _write_json(path, [{
+    _write_json(path, _doc([{
         "filename": "Song.mp3", "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "clean", "isNewFolder": True,
-        "status": "ok", "inBatchDuplicate": True, "compilationAlbum": True,
+        "status": "ok", "detail": "", "inBatchDuplicate": True, "compilationAlbum": True,
         "tagChanges": ["title", "artist"],
         "libraryDuplicate": True, "dupLibraryPath": "Artists/Artist/Album/Song.mp3",
         "dupLibraryTrack": "Title", "dupLibraryAlbum": "Album", "dupNewAlbum": "Album (Deluxe)",
         "dupRecommendationKey": "L", "dupRecommendation": "Delete library copy",
         "dupReason": "deluxe preferred",
-    }])
+    }]))
     entries = routing.parse_routing_file(path)
     assert entries == [{
         "filename": "Song.mp3", "artist": "Artist", "title": "Title", "album": "Album",
         "destination": "Artists/Artist", "reason": "clean", "isNewFolder": True,
-        "status": "ok", "inBatchDuplicate": True, "compilationAlbum": True,
+        "status": "ok", "detail": "", "inBatchDuplicate": True, "compilationAlbum": True,
         "tagChanges": ["title", "artist"],
         "libraryDuplicate": True, "dupLibraryPath": "Artists/Artist/Album/Song.mp3",
         "dupLibraryTrack": "Title", "dupLibraryAlbum": "Album", "dupNewAlbum": "Album (Deluxe)",
@@ -45,12 +58,12 @@ def test_parse_routing_file_full_entry_round_trips_all_fields(tmp_path):
 
 def test_parse_routing_file_missing_fields_default_to_safe_values(tmp_path):
     path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "Song.mp3"}])
+    _write_json(path, _doc([{"filename": "Song.mp3"}]))
     entries = routing.parse_routing_file(path)
     assert entries == [{
         "filename": "Song.mp3", "artist": "", "title": "", "album": "",
         "destination": "", "reason": "", "isNewFolder": False,
-        "status": "", "inBatchDuplicate": False, "compilationAlbum": False,
+        "status": "", "detail": "", "inBatchDuplicate": False, "compilationAlbum": False,
         "tagChanges": [],
         "libraryDuplicate": False, "dupLibraryPath": "", "dupLibraryTrack": "",
         "dupLibraryAlbum": "", "dupNewAlbum": "", "dupRecommendationKey": "",
@@ -60,21 +73,21 @@ def test_parse_routing_file_missing_fields_default_to_safe_values(tmp_path):
 
 def test_parse_routing_file_drops_entries_missing_filename(tmp_path):
     path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "keep.mp3"}, {"artist": "no filename"}])
+    _write_json(path, _doc([{"filename": "keep.mp3"}, {"artist": "no filename"}]))
     entries = routing.parse_routing_file(path)
     assert [e["filename"] for e in entries] == ["keep.mp3"]
 
 
 def test_parse_routing_file_drops_non_dict_entries(tmp_path):
     path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "keep.mp3"}, "a string", 123, None])
+    _write_json(path, _doc([{"filename": "keep.mp3"}, "a string", 123, None]))
     entries = routing.parse_routing_file(path)
     assert [e["filename"] for e in entries] == ["keep.mp3"]
 
 
-def test_parse_routing_file_non_list_root_returns_empty(tmp_path):
+def test_parse_routing_file_missing_files_key_returns_empty(tmp_path):
     path = tmp_path / "routing.json"
-    _write_json(path, {"filename": "not-a-list"})
+    _write_json(path, {"schemaVersion": 1})
     assert routing.parse_routing_file(path) == []
 
 
@@ -83,7 +96,7 @@ def test_parse_routing_file_non_string_optional_fields_default_safely(tmp_path):
     crash the parser - it should fall back to the same default as a missing
     field, not propagate the wrong type into the GUI."""
     path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "Song.mp3", "artist": None, "tagChanges": [1, "title", None]}])
+    _write_json(path, _doc([{"filename": "Song.mp3", "artist": None, "tagChanges": [1, "title", None]}]))
     entries = routing.parse_routing_file(path)
     assert entries[0]["artist"] == ""
     assert entries[0]["tagChanges"] == ["title"]
@@ -91,31 +104,56 @@ def test_parse_routing_file_non_string_optional_fields_default_safely(tmp_path):
 
 def test_parse_routing_file_handles_utf8_bom(tmp_path):
     path = tmp_path / "routing.json"
-    path.write_bytes(b"\xef\xbb\xbf" + json.dumps([{"filename": "Song.mp3"}]).encode("utf-8"))
+    path.write_bytes(b"\xef\xbb\xbf" + json.dumps(_doc([{"filename": "Song.mp3"}])).encode("utf-8"))
     entries = routing.parse_routing_file(path)
     assert [e["filename"] for e in entries] == ["Song.mp3"]
 
 
+# --------------------------------------------------------- schemaVersion
+
+
+def test_parse_routing_file_missing_schema_version_raises(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, {"files": [{"filename": "Song.mp3"}]})
+    try:
+        routing.parse_routing_file(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError as e:
+        assert e.found is None
+        assert e.expected == 1
+
+
+def test_parse_routing_file_mismatched_schema_version_raises(tmp_path):
+    path = tmp_path / "routing.json"
+    _write_json(path, {"schemaVersion": 2, "files": [{"filename": "Song.mp3"}]})
+    try:
+        routing.parse_routing_file(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError as e:
+        assert e.found == 2
+
+
+def test_parse_routing_file_bare_array_now_raises_instead_of_being_accepted(tmp_path):
+    """The pre-versioned bare-top-level-array shape used to be read directly
+    as the file list. Once schemaVersion exists, an unversioned document is a
+    hard failure, never a silent read of an old file - see contract design
+    doc section 4.2 ("hard-fail on missing or mismatched schemaVersion")."""
+    path = tmp_path / "routing.json"
+    _write_json(path, [{"filename": "Old.mp3"}])
+    try:
+        routing.parse_routing_file(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError:
+        pass
+
+
 # ------------------------------------------------ batch summary (both shapes)
-
-
-def _doc(files=None, summary=None):
-    d = {"files": files if files is not None else []}
-    if summary is not None:
-        d["summary"] = summary
-    return d
 
 
 def test_parse_routing_file_reads_files_from_the_summary_shape(tmp_path):
     path = tmp_path / "routing.json"
     _write_json(path, _doc([{"filename": "Song.mp3"}], {"routes": {"Artists": 1}}))
     assert [e["filename"] for e in routing.parse_routing_file(path)] == ["Song.mp3"]
-
-
-def test_parse_routing_file_still_reads_a_bare_array_from_an_older_exe(tmp_path):
-    path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "Old.mp3"}])
-    assert [e["filename"] for e in routing.parse_routing_file(path)] == ["Old.mp3"]
 
 
 def test_parse_batch_summary_reads_all_four_fields(tmp_path):
@@ -131,14 +169,6 @@ def test_parse_batch_summary_reads_all_four_fields(tmp_path):
     assert s["miscAutoMigrations"] == [{"artist": "Hopsin", "count": 3}]
     assert s["miscAutoMigrationTotal"] == 3
     assert s["compilationAlbums"] == ["Now 42"]
-
-
-def test_parse_batch_summary_bare_array_yields_the_empty_summary(tmp_path):
-    """An older exe's routing JSON has no batch context - the GUI must get the
-    full key set with everything empty, never a KeyError."""
-    path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "Old.mp3"}])
-    assert routing.parse_batch_summary(path) == routing.EMPTY_SUMMARY
 
 
 def test_parse_batch_summary_missing_or_malformed_summary_is_empty(tmp_path):
@@ -202,7 +232,7 @@ def test_empty_summary_constant_is_not_shared_between_callers(tmp_path):
     """EMPTY_SUMMARY is a module-level dict - a caller mutating what it got
     back must not poison the next parse."""
     path = tmp_path / "routing.json"
-    _write_json(path, [{"filename": "A.mp3"}])
+    _write_json(path, _doc([{"filename": "A.mp3"}]))
     first = routing.parse_batch_summary(path)
     first["routes"]["Injected"] = 99
     assert routing.parse_batch_summary(path)["routes"] == {}
@@ -213,9 +243,9 @@ def test_empty_summary_constant_is_not_shared_between_callers(tmp_path):
 
 def test_routing_path_from_output_extracts_path_when_file_exists(tmp_path, monkeypatch):
     json_path = tmp_path / "routing-20260903-120000.json"
-    json_path.write_text("[]", encoding="utf-8")
+    json_path.write_text("{}", encoding="utf-8")
     lines = ["Some other output", f"  JSON: {json_path}", "Done"]
-    assert routing.routing_path_from_output(lines) == json_path
+    assert routing.routing_path_from_output(lines, 0.0) == json_path
 
 
 def test_routing_path_from_output_ignores_matched_path_that_does_not_exist(tmp_path, monkeypatch):
@@ -224,27 +254,37 @@ def test_routing_path_from_output_ignores_matched_path_that_does_not_exist(tmp_p
     handing back a dead path."""
     monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
     real = tmp_path / "routing-20260903-090000.json"
-    real.write_text("[]", encoding="utf-8")
+    real.write_text("{}", encoding="utf-8")
     missing = tmp_path / "routing-20260903-120000.json"
     lines = [f"  JSON: {missing}"]
-    assert routing.routing_path_from_output(lines) == real
+    assert routing.routing_path_from_output(lines, 0.0) == real
 
 
 def test_routing_path_from_output_falls_back_to_newest_in_logs_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
     older = tmp_path / "routing-20260901-000000.json"
     newer = tmp_path / "routing-20260902-000000.json"
-    older.write_text("[]", encoding="utf-8")
-    newer.write_text("[]", encoding="utf-8")
+    older.write_text("{}", encoding="utf-8")
+    newer.write_text("{}", encoding="utf-8")
     import os
-    import time
     os.utime(older, (time.time() - 100, time.time() - 100))
-    assert routing.routing_path_from_output([]) == newer
+    assert routing.routing_path_from_output([], 0.0) == newer
 
 
 def test_routing_path_from_output_returns_none_when_nothing_found(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
-    assert routing.routing_path_from_output(["no json line here"]) is None
+    assert routing.routing_path_from_output(["no json line here"], 0.0) is None
+
+
+def test_routing_path_from_output_ignores_files_older_than_since(tmp_path, monkeypatch):
+    """A stale routing-*.json from an earlier run must never be picked up as
+    this run's output - only the marker-line match is exempt from `since`,
+    because it names the exact artifact this run wrote."""
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
+    stale = tmp_path / "routing-20260901-000000.json"
+    stale.write_text("{}", encoding="utf-8")
+    since = time.time() + 1000
+    assert routing.routing_path_from_output([], since) is None
 
 
 # ------------------------------------------------- parse_projected_libchecker
@@ -300,90 +340,198 @@ def test_parse_projected_libchecker_skip_when_library_tags_unloadable():
     assert v["clean"] is False
 
 
-# --------------------------------------------------- parse_confidence_report
+# --------------------------------------------------- parse_execution_record
 
 
-def test_parse_confidence_report_returns_none_when_section_absent():
-    assert routing.parse_confidence_report(["some", "other", "output"]) is None
+def _execution_doc(files=None, confidence=None, record_type="execution", dry_run=False, **extra):
+    d = {
+        "schemaVersion": 1, "recordType": record_type, "dryRun": dry_run,
+        "generatedAt": "2026-09-06T14:03:11",
+        "summary": {"routes": {"Artists": 1}, "miscAutoMigrations": [], "miscAutoMigrationTotal": 0,
+                    "compilationAlbums": []},
+        "confidence": confidence,
+        "files": files if files is not None else [],
+    }
+    d.update(extra)
+    return d
 
 
-def test_parse_confidence_report_clean_run():
-    lines = [
-        "===========================================================================",
-        "  CONFIDENCE REPORT",
-        "===========================================================================",
-        "",
-        "  Files in NewMusic: 12  |  Moved: 12  |  Skipped: 0",
-        "  [MOVED] Song.mp3",
-        "    -> Artists/Artist/Song.mp3",
-        "",
-        "  Sanity check: all 12 moved file(s) exist and are readable.",
-    ]
-    v = routing.parse_confidence_report(lines)
-    assert v == {
-        "count_line": "Files in NewMusic: 12  |  Moved: 12  |  Skipped: 0",
-        "count_ok": True, "sanity_ok": True,
-        "sanity_summary": "Sanity check: all 12 moved file(s) exist and are readable.",
-        "error_count": 0,
-        "total_count": 12, "moved_count": 12, "skipped_count": 0,
+def _clean_confidence():
+    return {
+        "countCheck": {"totalFiles": 12, "moved": 12, "skipped": 0, "expectedMoved": 12, "ok": True},
+        "sanityCheck": {"ran": True, "ok": True, "checked": 12, "failures": []},
+        "newFolders": ["Artists/Dave/Singles"],
+        "errorCount": 0,
+        "errors": [],
     }
 
 
-def test_parse_confidence_report_parses_moved_and_skipped_counts_separately():
-    """`_finish_execute` needs the exe's own Moved/Skipped counts (not just
-    the raw count_line text) to show a summary that agrees with this report
-    instead of a locally-swept count that can contradict it."""
-    lines = [
-        "CONFIDENCE REPORT",
-        "  Files in NewMusic: 12  |  Moved: 9  |  Skipped: 3",
-        "  Sanity check: all 9 moved file(s) exist and are readable.",
-    ]
-    v = routing.parse_confidence_report(lines)
-    assert v["total_count"] == 12
-    assert v["moved_count"] == 9
-    assert v["skipped_count"] == 3
+def test_parse_execution_record_valid_fixture_returns_full_shape(tmp_path):
+    path = tmp_path / "execution.json"
+    _write_json(path, _execution_doc(
+        files=[{"filename": "Dave - Titanium.mp3", "artist": "Dave", "status": "moved", "detail": ""}],
+        confidence=_clean_confidence(),
+    ))
+    record = routing.parse_execution_record(path)
+    assert record["generatedAt"] == "2026-09-06T14:03:11"
+    assert record["summary"]["routes"] == {"Artists": 1}
+    assert record["files"][0]["filename"] == "Dave - Titanium.mp3"
+    assert record["files"][0]["detail"] == ""
+    c = record["confidence"]
+    assert c["count_ok"] is True
+    assert c["sanity_ran"] is True
+    assert c["sanity_ok"] is True
+    assert c["sanity_checked"] == 12
+    assert c["sanity_failures"] == []
+    assert c["new_folders"] == ["Artists/Dave/Singles"]
+    assert c["error_count"] == 0
+    assert c["errors"] == []
+    assert c["total_count"] == 12
+    assert c["moved_count"] == 12
+    assert c["skipped_count"] == 0
 
 
-def test_parse_confidence_report_counts_are_none_when_count_line_missing():
-    lines = ["CONFIDENCE REPORT", "[ERRORS: 1]", "- Song.mp3: could not read tags"]
-    v = routing.parse_confidence_report(lines)
-    assert v["total_count"] is None
-    assert v["moved_count"] is None
-    assert v["skipped_count"] is None
+def test_parse_execution_record_detail_field_present(tmp_path):
+    path = tmp_path / "execution.json"
+    _write_json(path, _execution_doc(
+        files=[{"filename": "Bad.mp3", "status": "error", "detail": "Access denied"}],
+        confidence=None,
+    ))
+    record = routing.parse_execution_record(path)
+    assert record["files"][0]["detail"] == "Access denied"
 
 
-def test_parse_confidence_report_count_mismatch():
-    lines = [
-        "CONFIDENCE REPORT",
-        "  Files in NewMusic: 12  |  Moved: 10  |  Skipped: 0",
-        "  [ERROR] Count mismatch! Expected 12 moved, got 10.",
-    ]
-    v = routing.parse_confidence_report(lines)
-    assert v["count_ok"] is False
+def test_parse_execution_record_missing_schema_version_raises(tmp_path):
+    path = tmp_path / "execution.json"
+    d = _execution_doc()
+    del d["schemaVersion"]
+    _write_json(path, d)
+    try:
+        routing.parse_execution_record(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError as e:
+        assert e.found is None
 
 
-def test_parse_confidence_report_sanity_check_failed():
-    lines = [
-        "CONFIDENCE REPORT",
-        "  Files in NewMusic: 2  |  Moved: 2  |  Skipped: 0",
-        "",
-        "  [ERROR] Destination sanity check FAILED:",
-        "  [MISSING] Artists/Artist/Song.mp3",
-    ]
-    v = routing.parse_confidence_report(lines)
-    assert v["count_ok"] is True
-    assert v["sanity_ok"] is False
+def test_parse_execution_record_wrong_schema_version_raises(tmp_path):
+    path = tmp_path / "execution.json"
+    d = _execution_doc()
+    d["schemaVersion"] = 2
+    _write_json(path, d)
+    try:
+        routing.parse_execution_record(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError as e:
+        assert e.found == 2
 
 
-def test_parse_confidence_report_error_summary_count():
-    lines = [
-        "CONFIDENCE REPORT",
-        "  Files in NewMusic: 1  |  Moved: 0  |  Skipped: 0",
-        "[ERRORS: 1]",
-        "- Song.mp3: could not read tags",
-    ]
-    v = routing.parse_confidence_report(lines)
-    assert v["error_count"] == 1
+def test_parse_execution_record_bare_array_raises(tmp_path):
+    path = tmp_path / "execution.json"
+    _write_json(path, [{"filename": "Old.mp3"}])
+    try:
+        routing.parse_execution_record(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError:
+        pass
+
+
+def test_parse_execution_record_routing_record_type_raises(tmp_path):
+    """A dry-run document must never be interpretable as a real outcome, even
+    if someone points execution_record_path at logs/routing-*.json by
+    mistake - recordType/dryRun are checked independently of the filename."""
+    path = tmp_path / "routing.json"
+    _write_json(path, _execution_doc(record_type="routing", dry_run=True, confidence=None))
+    try:
+        routing.parse_execution_record(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError:
+        pass
+
+
+def test_parse_execution_record_dry_run_true_raises_even_with_execution_type(tmp_path):
+    """Belt-and-braces: recordType and dryRun are both checked, not just
+    whichever one a hand-edited or malformed file happens to get right."""
+    path = tmp_path / "execution.json"
+    _write_json(path, _execution_doc(record_type="execution", dry_run=True, confidence=None))
+    try:
+        routing.parse_execution_record(path)
+        assert False, "expected SchemaVersionError"
+    except SchemaVersionError:
+        pass
+
+
+def test_parse_execution_record_malformed_confidence_yields_full_defaulted_key_set(tmp_path):
+    """A string where an int is expected, or a null array, must default
+    rather than raise - the same defensive discipline as _parse_summary."""
+    path = tmp_path / "execution.json"
+    _write_json(path, _execution_doc(
+        files=[],
+        confidence={
+            "countCheck": {"totalFiles": "many", "moved": None, "skipped": 0,
+                           "expectedMoved": 0, "ok": "yes"},
+            "sanityCheck": {"ran": True, "ok": True, "checked": "lots", "failures": None},
+            "newFolders": None,
+            "errorCount": "bad",
+            "errors": None,
+        },
+    ))
+    record = routing.parse_execution_record(path)
+    c = record["confidence"]
+    assert c["total_count"] is None
+    assert c["moved_count"] is None
+    assert c["skipped_count"] == 0
+    assert c["sanity_checked"] == 0
+    assert c["sanity_failures"] == []
+    assert c["new_folders"] == []
+    assert c["error_count"] == 0
+    assert c["errors"] == []
+
+
+def test_parse_execution_record_reads_the_checked_in_fixture():
+    """A real-shaped fixture on disk (gui/tests/fixtures/execution-sample.json),
+    not just an inline dict built by this test file - the same discipline
+    other fixture-backed parsers in this repo already follow."""
+    path = Path(__file__).resolve().parent / "fixtures" / "execution-sample.json"
+    record = routing.parse_execution_record(path)
+    assert [f["filename"] for f in record["files"]] == ["Dave - Titanium.mp3", "Dave - Runaway.mp3"]
+    assert record["confidence"]["moved_count"] == 2
+    assert record["confidence"]["new_folders"] == ["Artists\\Dave\\Singles"]
+
+
+def test_parse_execution_record_null_confidence_on_dry_run_shape_is_none(tmp_path):
+    path = tmp_path / "execution.json"
+    _write_json(path, _execution_doc(files=[], confidence=None))
+    record = routing.parse_execution_record(path)
+    assert record["confidence"] is None
+
+
+# ----------------------------------------------------- execution_record_path
+
+
+def test_execution_record_path_extracts_path_when_file_exists(tmp_path):
+    json_path = tmp_path / "execution-20260906-140311.json"
+    json_path.write_text("{}", encoding="utf-8")
+    lines = ["Some other output", f"  EXECUTION JSON: {json_path}", "Done"]
+    assert routing.execution_record_path(lines, 0.0) == json_path
+
+
+def test_execution_record_path_falls_back_to_newest_qualifying_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
+    older = tmp_path / "execution-20260901-000000.json"
+    newer = tmp_path / "execution-20260902-000000.json"
+    older.write_text("{}", encoding="utf-8")
+    newer.write_text("{}", encoding="utf-8")
+    import os
+    os.utime(older, (time.time() - 100, time.time() - 100))
+    assert routing.execution_record_path([], 0.0) == newer
+
+
+def test_execution_record_path_returns_none_when_only_candidate_predates_since(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
+    stale = tmp_path / "execution-20260901-000000.json"
+    stale.write_text("{}", encoding="utf-8")
+    since = time.time() + 1000
+    assert routing.execution_record_path([], since) is None
 
 
 # ------------------------------------------------------------- newmusic_path
