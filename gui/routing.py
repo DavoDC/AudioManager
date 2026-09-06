@@ -9,10 +9,6 @@ Contract (MusicIntegrator.BuildJson):
  tagChanges[]} ]}. Defensive: malformed entries are dropped, missing fields
 default to safe values.
 
-A bare top-level array is the pre-summary shape and is still read as the file
-list, so a routing JSON written by an older exe build still opens; it simply
-carries no batch summary.
-
 The summary is batch-level scan-ahead context that no single row can express:
 which destination categories the batch spreads across, which artists cross the
 3-song threshold and therefore have existing Misc songs auto-migrated (files
@@ -35,6 +31,22 @@ import re
 from pathlib import Path
 
 from gui import config
+from gui.data_loader import SchemaVersionError
+
+#: schemaVersion this GUI was built for (routing/execution records share one
+#: contract - see docs/References/Execution-Record-Contract-Design.md).
+ROUTING_SCHEMA_VERSION = 1
+
+
+def _check_version(raw, path: Path) -> None:
+    """Same discipline as data_loader._check_schema: a missing or mismatched
+    schemaVersion is a hard failure, never a silent mis-read. raw must be a
+    dict - the pre-versioned bare-array shape is no longer accepted (see
+    routing_path_from_output's "since" note and section 4.2 of the contract
+    design doc)."""
+    found = raw.get("schemaVersion") if isinstance(raw, dict) else None
+    if found != ROUTING_SCHEMA_VERSION:
+        raise SchemaVersionError(path.name, found, ROUTING_SCHEMA_VERSION)
 
 
 def empty_summary() -> dict:
@@ -55,10 +67,9 @@ EMPTY_SUMMARY = empty_summary()
 
 
 def _file_rows(raw) -> list:
-    """The per-file rows, from either contract shape. A bare list is the
-    pre-summary shape; the current shape nests them under "files"."""
-    if isinstance(raw, list):
-        return raw
+    """The per-file rows. The contract nests them under "files" - the older
+    bare-top-level-array shape is no longer accepted (schemaVersion is now
+    mandatory, so an unversioned file already fails _check_version first)."""
     if isinstance(raw, dict):
         files = raw.get("files")
         return files if isinstance(files, list) else []
@@ -69,6 +80,7 @@ def parse_routing_document(path: Path) -> tuple[list[dict], dict]:
     """Both halves of the routing JSON in one read: (file entries, batch summary)."""
     with open(path, encoding="utf-8-sig") as f:
         raw = json.load(f)
+    _check_version(raw, path)
     return _parse_entries(_file_rows(raw)), _parse_summary(raw)
 
 
@@ -76,7 +88,9 @@ def parse_batch_summary(path: Path) -> dict:
     """Batch-level scan-ahead context. Always the full key set - callers never
     branch on key presence, only on emptiness."""
     with open(path, encoding="utf-8-sig") as f:
-        return _parse_summary(json.load(f))
+        raw = json.load(f)
+    _check_version(raw, path)
+    return _parse_summary(raw)
 
 
 def _parse_summary(raw) -> dict:
@@ -118,6 +132,7 @@ def _parse_summary(raw) -> dict:
 def parse_routing_file(path: Path) -> list[dict]:
     with open(path, encoding="utf-8-sig") as f:
         raw = json.load(f)
+    _check_version(raw, path)
     return _parse_entries(_file_rows(raw))
 
 
@@ -135,6 +150,7 @@ def _parse_entries(rows: list) -> list[dict]:
             "reason": e.get("reason") or "",
             "isNewFolder": bool(e.get("isNewFolder")),
             "status": e.get("status") or "",
+            "detail": e.get("detail") or "",
             "inBatchDuplicate": bool(e.get("inBatchDuplicate")),
             "compilationAlbum": bool(e.get("compilationAlbum")),
             "libraryDuplicate": bool(e.get("libraryDuplicate")),
@@ -150,17 +166,38 @@ def _parse_entries(rows: list) -> list[dict]:
     return entries
 
 
-def routing_path_from_output(lines: list[str]) -> Path | None:
+def routing_path_from_output(lines: list[str], since: float) -> Path | None:
     """The exe prints '  JSON: <path>' after writing the file - the exact
-    artifact of THIS run. Falls back to the newest routing-*.json in logs/."""
+    artifact of THIS run. Falls back to the newest routing-*.json in logs/,
+    but only among files written at or after `since` (a time.time() captured
+    by the caller before the exe was launched) - a stale routing JSON from an
+    earlier run must never be misread as this run's output."""
     for ln in reversed(lines):
         m = re.search(r"JSON:\s*(.+routing-[\d-]+\.json)", ln)
         if m:
             p = Path(m.group(1).strip())
             if p.exists():
                 return p
-    candidates = sorted(config.LOGS_DIR.glob("routing-*.json"),
-                        key=lambda p: p.stat().st_mtime, reverse=True)
+    candidates = sorted(
+        (p for p in config.LOGS_DIR.glob("routing-*.json") if p.stat().st_mtime >= since),
+        key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0] if candidates else None
+
+
+def execution_record_path(lines: list[str], since: float) -> Path | None:
+    """Mirrors routing_path_from_output for the real-run execution record:
+    the exe prints '  EXECUTION JSON: <path>' after writing it - the exact
+    artifact of THIS run. Falls back to the newest execution-*.json in
+    logs/ written at or after `since`, else None."""
+    for ln in reversed(lines):
+        m = re.search(r"EXECUTION JSON:\s*(.+execution-[\d-]+\.json)", ln)
+        if m:
+            p = Path(m.group(1).strip())
+            if p.exists():
+                return p
+    candidates = sorted(
+        (p for p in config.LOGS_DIR.glob("execution-*.json") if p.stat().st_mtime >= since),
+        key=lambda p: p.stat().st_mtime, reverse=True)
     return candidates[0] if candidates else None
 
 
@@ -196,47 +233,81 @@ def parse_projected_libchecker(lines: list[str]) -> dict | None:
     return {"summary": summary, "clean": clean, "skipped": skipped, "total_hits": total_hits}
 
 
-def parse_confidence_report(lines: list[str]) -> dict | None:
-    """The exe's strongest post-run guarantee that a claimed-successful real
-    run actually succeeded (`PrintConfidenceReport` in `MusicIntegrator.cs`
-    ~900-990): a "Files in NewMusic: N | Moved: M | Skipped: S" count line
-    (flagged with "[ERROR] Count mismatch!" if the counts don't reconcile),
-    then a destination sanity check that re-reads every moved file with
-    TagLib and reports "[ERROR] Destination sanity check FAILED" plus a
-    [MISSING]/[UNREADABLE] line per bad file, or a single "all N moved
-    file(s) exist and are readable" line when clean. Returns None if the
-    section never printed (dry runs never reach the sanity-check step)."""
-    start = next((i for i, ln in enumerate(lines) if "CONFIDENCE REPORT" in ln), None)
-    if start is None:
-        return None
-    count_line = ""
-    count_ok = True
-    sanity_ok = True
-    sanity_summary = ""
-    error_count = 0
-    total_count = moved_count = skipped_count = None
-    for ln in lines[start:]:
-        s = ln.strip()
-        if s.startswith("Files in NewMusic:"):
-            count_line = s
-            m = re.search(r"Files in NewMusic:\s*(\d+)\s*\|\s*Moved:\s*(\d+)\s*\|\s*Skipped:\s*(\d+)", s)
-            if m:
-                total_count, moved_count, skipped_count = (int(g) for g in m.groups())
-        elif "[ERROR] Count mismatch!" in ln:
-            count_ok = False
-        elif "[ERROR] Destination sanity check FAILED" in ln:
-            sanity_ok = False
-        elif s.startswith("Sanity check:"):
-            sanity_summary = s
-        elif s.startswith("[ERRORS:"):
-            m = re.search(r"\[ERRORS:\s*(\d+)\]", s)
-            if m:
-                error_count = int(m.group(1))
+def parse_execution_record(path: Path) -> dict:
+    """The real run's structured post-run outcome (docs/References/
+    Execution-Record-Contract-Design.md), replacing console-prose parsing:
+    schemaVersion/recordType/dryRun checked so a stale or dry-run document
+    can never be misread as a real outcome, then the same summary/entries
+    parsing routing documents already use plus the new confidence block."""
+    with open(path, encoding="utf-8-sig") as f:
+        raw = json.load(f)
+    _check_version(raw, path)
+    record_type = raw.get("recordType")
+    dry_run = raw.get("dryRun")
+    if record_type != "execution" or dry_run is not False:
+        # A dry-run document must never be interpretable as a real outcome -
+        # reuse SchemaVersionError so this failure mode fails exactly as
+        # loudly as a genuine version mismatch, with found = the wrong value.
+        found = record_type if record_type != "execution" else dry_run
+        raise SchemaVersionError(path.name, found, ROUTING_SCHEMA_VERSION)
     return {
-        "count_line": count_line, "count_ok": count_ok,
-        "sanity_ok": sanity_ok, "sanity_summary": sanity_summary,
+        "generatedAt": raw.get("generatedAt") or "",
+        "summary": _parse_summary(raw),
+        "confidence": _parse_confidence(raw.get("confidence")),
+        "files": _parse_entries(_file_rows(raw)),
+    }
+
+
+def _parse_confidence(raw) -> dict | None:
+    """Defensive parse of the "confidence" block (null on a dry run, absent
+    on any file predating this contract) - always the full key set when
+    present, same discipline as _parse_summary, so callers never have to
+    branch on key presence."""
+    if not isinstance(raw, dict):
+        return None
+
+    count_check = raw.get("countCheck") if isinstance(raw.get("countCheck"), dict) else {}
+    sanity_check = raw.get("sanityCheck") if isinstance(raw.get("sanityCheck"), dict) else {}
+
+    def _int(d: dict, key: str) -> int | None:
+        v = d.get(key)
+        return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+    failures = []
+    for f in sanity_check.get("failures") or []:
+        if not isinstance(f, dict):
+            continue
+        dest, reason = f.get("destination"), f.get("reason")
+        if isinstance(dest, str) and dest and reason in ("missing", "unreadable"):
+            failures.append({"destination": dest, "reason": reason})
+
+    new_folders = [f for f in raw.get("newFolders") or [] if isinstance(f, str) and f]
+
+    errors = []
+    for e in raw.get("errors") or []:
+        if not isinstance(e, dict):
+            continue
+        filename, detail = e.get("filename"), e.get("detail")
+        if isinstance(filename, str) and filename:
+            errors.append({"filename": filename, "detail": detail if isinstance(detail, str) else ""})
+
+    error_count = _int(raw, "errorCount")
+    if error_count is None or error_count < 0:
+        # Never trust a malformed count over the rows it is supposed to summarise.
+        error_count = len(errors)
+
+    return {
+        "count_ok": bool(count_check.get("ok")),
+        "sanity_ran": bool(sanity_check.get("ran")),
+        "sanity_ok": bool(sanity_check.get("ok")),
+        "sanity_checked": _int(sanity_check, "checked") or 0,
+        "sanity_failures": failures,
+        "new_folders": new_folders,
         "error_count": error_count,
-        "total_count": total_count, "moved_count": moved_count, "skipped_count": skipped_count,
+        "errors": errors,
+        "total_count": _int(count_check, "totalFiles"),
+        "moved_count": _int(count_check, "moved"),
+        "skipped_count": _int(count_check, "skipped"),
     }
 
 
