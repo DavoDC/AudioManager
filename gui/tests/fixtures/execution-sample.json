@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "recordType": "execution",
+  "dryRun": false,
+  "generatedAt": "2026-09-06T14:03:11",
+  "summary": {
+    "routes": {"Artists": 1},
+    "miscAutoMigrations": [],
+    "miscAutoMigrationTotal": 0,
+    "compilationAlbums": []
+  },
+  "confidence": {
+    "countCheck": {"totalFiles": 2, "moved": 2, "skipped": 0, "expectedMoved": 2, "ok": true},
+    "sanityCheck": {"ran": true, "ok": true, "checked": 2, "failures": []},
+    "newFolders": ["Artists\\Dave\\Singles"],
+    "errorCount": 0,
+    "errors": []
+  },
+  "files": [
+    {"filename": "Dave - Titanium.mp3", "artist": "Dave", "title": "Titanium", "album": "Singles",
+     "destination": "Artists\\Dave\\Singles", "status": "moved", "detail": ""},
+    {"filename": "Dave - Runaway.mp3", "artist": "Dave", "title": "Runaway", "album": "Singles",
+     "destination": "Artists\\Dave\\Singles", "status": "moved", "detail": ""}
+  ]
+}
