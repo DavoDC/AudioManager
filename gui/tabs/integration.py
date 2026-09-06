@@ -1021,9 +1021,10 @@ def _run_analysis_now() -> None:
     asyncio.create_task(run_scan())
 
 
-# The only record file-status values this GUI trusts to overwrite a display
-# status. Anything else (e.g. "would-move" - a dry-run status that should
-# never appear in a real-run record) makes the whole record untrustworthy.
+# The only record file-status values this GUI recognises and maps directly.
+# Anything else (e.g. "would-move" - a dry-run status that should never
+# appear in a real-run record) flags only that ONE row as "unverified"
+# (partial trust - see _finish_execute) rather than discarding the record.
 _RECORD_STATUS_MAP = {"moved": "done", "skipped": "skipped", "error": "failed"}
 
 
@@ -1036,17 +1037,21 @@ def _finish_execute(result: RunResult, record: dict | None = None) -> None:
     None when no record could be found/parsed for this run - see
     docs/References/Execution-Record-Contract-Design.md section 4.5.
 
-    When a record is present and every file status inside it is one this GUI
-    recognises, it is treated as authoritative: every exec_status entry is
-    OVERWRITTEN from the record (matched on filename; a target absent from
-    the record becomes "notrun"), rather than left as whatever the live
-    console-output sweep in _update_exec_status guessed. A record containing
-    an unrecognised status is discarded entirely (set to None) rather than
-    trusted partially - see _RECORD_STATUS_MAP."""
+    When a record is present, it is treated as authoritative: every
+    exec_status entry is OVERWRITTEN from the record (matched on filename; a
+    target absent from the record becomes "notrun"), rather than left as
+    whatever the live console-output sweep in _update_exec_status guessed.
+    Partial trust: a row whose status this GUI doesn't recognise (see
+    _RECORD_STATUS_MAP) does NOT discard the record - only that one row is
+    flagged "unverified", every other (recognised) row keeps mapping
+    normally, and the run summary names the unverified file(s) so the
+    confidence report/summary still reflects that not everything in this
+    record could be trusted."""
     S.exec_done = True
     S.exec_ok = result.ok
 
     record_statuses: dict[str, str] = {}
+    unverified_files: list[str] = []
     if record is not None:
         for f in record["files"]:
             filename = f.get("filename")
@@ -1054,10 +1059,10 @@ def _finish_execute(result: RunResult, record: dict | None = None) -> None:
             if not filename:
                 continue
             if status not in _RECORD_STATUS_MAP:
-                record = None
-                record_statuses = {}
-                break
-            record_statuses[filename] = _RECORD_STATUS_MAP[status]
+                record_statuses[filename] = "unverified"
+                unverified_files.append(filename)
+            else:
+                record_statuses[filename] = _RECORD_STATUS_MAP[status]
 
     S.confidence_report = record["confidence"] if record else None
     S.exec_record_missing = record is None
@@ -1112,6 +1117,10 @@ def _finish_execute(result: RunResult, record: dict | None = None) -> None:
     if S.exec_record_missing:
         S.exec_summary += (" No execution record was found - these outcomes are from console "
                            "output and are unverified.")
+    if unverified_files:
+        names = ", ".join(unverified_files)
+        S.exec_summary += (f" {len(unverified_files)} file(s) had an unrecognized status in "
+                           f"the execution record and could not be verified: {names}.")
 
     # Refresh BEFORE opening either modal: S.refresh() rebuilds the
     # @ui.refreshable slot this function is called from, which would destroy
@@ -1202,6 +1211,7 @@ def _failed_filename_from_output(lines: list[str]) -> str | None:
 EXEC_STATUS_LABELS = {
     "queued": "queued", "moving": "moving", "done": "done",
     "skipped": "skipped", "failed": "failed", "notrun": "not run",
+    "unverified": "unverified",
 }
 
 
@@ -1261,7 +1271,7 @@ def _update_exec_status(line: str) -> None:
 
 def stage_execute() -> None:
     total = max(1, len(S.exec_targets))
-    done = sum(1 for v in S.exec_status.values() if v in ("done", "skipped", "failed"))
+    done = sum(1 for v in S.exec_status.values() if v in ("done", "skipped", "failed", "unverified"))
     moving = sum(1 for v in S.exec_status.values() if v == "moving")
     pct = 100 if S.exec_done else int(100 * (done + 0.5 * moving) / total)
 

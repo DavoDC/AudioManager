@@ -225,6 +225,8 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 - **Parser parallel reads: order of `audioTags` list is non-deterministic** (2026-06-27). `Parallel.ForEach` into `ConcurrentBag` gives no ordering guarantee. All consumers (LibChecker, Analyser, ParseCache) iterate the full list without order dependency - this is fine. Do NOT add any code that relies on `audioTags` order matching mirror folder traversal order.
 
+- **Prefer atomic/per-item handling over all-or-nothing invalidation when partial data can be safely trusted** (2026-09-06, David's call). A parse failure or unrecognized value in one item of a collection (a JSON array element, a per-file record row) should flag or skip only that item, not discard everything else that parsed/validated fine - see `_finish_execute`'s per-row "unverified" status in `gui/tabs/integration.py` for the pattern. Only fall back to whole-document distrust when there's a specific safety reason the entire document must be treated as untrustworthy (e.g. a version mismatch that could mean the whole shape changed).
+
 ---
 
 ## Repo Patterns

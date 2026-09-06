@@ -470,10 +470,11 @@ def test_finish_execute_none_record_sets_exec_record_missing_and_appends_unverif
     assert state.exec_status["a.mp3"] == "done"
 
 
-def test_finish_execute_unrecognized_status_discards_whole_record(monkeypatch):
+def test_finish_execute_unrecognized_status_flags_only_that_row(monkeypatch):
     """A status this GUI doesn't recognise (e.g. a dry-run-only 'would-move'
-    leaking into a real record) makes the WHOLE record untrustworthy - never
-    trusted partially. The run falls back to the same behaviour as record=None."""
+    leaking into a real record) flags ONLY that row as 'unverified' - partial
+    trust, not whole-record discard. The recognised row keeps mapping
+    normally and the confidence report from the record is still used."""
     import gui.tabs.integration as integration_module
     state = IntegrationState()
     state.exec_targets = [_entry("a.mp3"), _entry("b.mp3")]
@@ -493,10 +494,13 @@ def test_finish_execute_unrecognized_status_discards_whole_record(monkeypatch):
     _with_state(state, lambda: integration_module._finish_execute(
         RunResult(command=["integrate"], returncode=0, lines=[]), record))
 
-    assert state.exec_record_missing is True
-    assert state.confidence_report is None
-    assert "No execution record was found" in state.exec_summary
-    assert state.exec_status["b.mp3"] == "done"  # local sweep fallback, not the discarded record
+    assert state.exec_record_missing is False
+    assert state.confidence_report == confidence
+    assert state.exec_status["a.mp3"] == "done"  # recognised row still maps normally
+    assert state.exec_status["b.mp3"] == "unverified"  # only this row flagged
+    assert "No execution record was found" not in state.exec_summary
+    assert "b.mp3" in state.exec_summary
+    assert "could not be verified" in state.exec_summary
 
 
 def test_run_execute_simulated_populates_confidence_report_without_console_reparsing():
