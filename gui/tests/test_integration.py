@@ -172,12 +172,14 @@ def test_write_manifest_passes_manifest_flag_with_zero_declines(tmp_path, monkey
     """A zero-declines run (accept-everything, the common case) must still
     write and pass --manifest - otherwise the exe re-scans NEWMUSIC_DIR from
     scratch and integrates anything that arrived after the dry run unreviewed."""
-    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
     targets = [_entry("a.mp3"), _entry("b.mp3")]
     args = _write_manifest(targets)
     assert "--manifest" in args
     manifest_path = Path(args[args.index("--manifest") + 1])
     assert manifest_path.exists()
+    assert manifest_path.parent == tmp_path / "manifests"
+    assert manifest_path.name.startswith("accepted-manifest-") and manifest_path.suffix == ".json"
     written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert [e["filename"] for e in written] == ["a.mp3", "b.mp3"]
 
@@ -188,27 +190,44 @@ def test_write_manifest_includes_dup_resolution_for_library_duplicates_only(tmp_
     IntegrationState.dup_resolution - same code path as the unresolved
     fallback), and must NOT add a dupResolution key for a non-duplicate entry -
     the schema for ordinary entries stays exactly as before."""
-    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
     s = IntegrationState()
     dup_entry = _entry("dupe.mp3", libraryDuplicate=True, dupRecommendationKey="L")
     plain_entry = _entry("plain.mp3")
     _with_state(s, lambda: _write_manifest([dup_entry, plain_entry]))
 
-    written = json.loads((tmp_path / "accepted-manifest.json").read_text(encoding="utf-8"))
+    [manifest_path] = list((tmp_path / "manifests").glob("accepted-manifest-*.json"))
+    written = json.loads(manifest_path.read_text(encoding="utf-8"))
     by_name = {e["filename"]: e for e in written}
     assert by_name["dupe.mp3"]["dupResolution"] == "L"
     assert "dupResolution" not in by_name["plain.mp3"]
 
 
 def test_write_manifest_uses_explicit_dup_resolution_override(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
     s = IntegrationState()
     s.dup_resolutions["dupe.mp3"] = "D"
     dup_entry = _entry("dupe.mp3", libraryDuplicate=True, dupRecommendationKey="L")
     _with_state(s, lambda: _write_manifest([dup_entry]))
 
-    written = json.loads((tmp_path / "accepted-manifest.json").read_text(encoding="utf-8"))
+    [manifest_path] = list((tmp_path / "manifests").glob("accepted-manifest-*.json"))
+    written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert written[0]["dupResolution"] == "D"
+
+
+def test_write_manifest_prunes_to_most_recent_ten(tmp_path, monkeypatch):
+    """Cleanup must keep only the 10 most recent manifest files - a fixed
+    path is gone, but an unbounded folder of one-shot manifests would grow
+    forever without this."""
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
+    (tmp_path / "manifests").mkdir(parents=True, exist_ok=True)
+    for i in range(15):
+        (tmp_path / "manifests" / f"accepted-manifest-2026010100{i:04d}.json").write_text("[]", encoding="utf-8")
+
+    _write_manifest([_entry("new.mp3")])
+
+    remaining = sorted((tmp_path / "manifests").glob("accepted-manifest-*.json"))
+    assert len(remaining) == 10
 
 
 def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeypatch):
@@ -217,6 +236,7 @@ def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeyp
     the user explicitly told the GUI to leave in NewMusic."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
 
@@ -236,7 +256,7 @@ def test_run_execute_writes_manifest_excluding_declined_tracks(tmp_path, monkeyp
     finally:
         integration_module.S = original
 
-    manifest_path = tmp_path / "accepted-manifest.json"
+    [manifest_path] = list((tmp_path / "manifests").glob("accepted-manifest-*.json"))
     written = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert [e["filename"] for e in written] == ["keep.mp3"]
 
@@ -260,6 +280,7 @@ def test_run_execute_on_exe_failure_marks_named_file_failed_others_notrun(tmp_pa
     failed, and must be labelled accordingly rather than lumped in as failed."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
 
@@ -296,6 +317,7 @@ def test_run_execute_on_failure_refreshes_before_opening_error_modal(tmp_path, m
     the instant the rebuild happens. The modal must open AFTER refresh."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
 
@@ -399,6 +421,7 @@ def test_finish_execute_falls_back_to_local_counts_when_confidence_report_absent
 def test_run_execute_on_cancel_marks_everything_notrun_not_failed(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
     monkeypatch.setattr(integration_module, "show_cancelled_modal", lambda *a, **k: None)
@@ -427,6 +450,7 @@ def test_run_execute_on_cancel_triggers_cancelled_modal_not_error_modal(tmp_path
     subprocess failure."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
 
@@ -459,6 +483,7 @@ def test_run_execute_on_non_cancelled_failure_still_uses_error_modal(tmp_path, m
     using show_error_modal, unchanged from before this feature."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
 
@@ -491,6 +516,7 @@ def test_run_execute_on_success_shows_no_modal_at_all(tmp_path, monkeypatch):
     """Regression: a clean real-execute success must not open either modal."""
     monkeypatch.setattr(config, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "RUN_LOGS_DIR", tmp_path / "run-logs")
+    monkeypatch.setattr(config, "MANIFESTS_DIR", tmp_path / "manifests")
 
     import gui.tabs.integration as integration_module
 
