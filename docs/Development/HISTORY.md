@@ -4,6 +4,25 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-06 - Fixed: accepted-integration manifest overwrote one fixed path with no cleanup
+
+Closed the "The accepted manifest is written to one fixed path with no per-run naming or cleanup" item
+from the 2026-09-05 "Library Intake design/usability review" section of IDEAS.md. `_write_manifest()` in
+`gui/tabs/integration.py` always wrote `config.CACHE_DIR / "accepted-manifest.json"`, silently overwriting
+whatever the previous run had left behind - a stale manifest with no link back to the batch it authorised.
+
+Added `config.MANIFESTS_DIR` (`gui/config.py`), a new `gui/.cache/manifests/` subfolder alongside the
+existing `run-logs/` folder, and gave each run its own timestamped file -
+`accepted-manifest-{datetime.now():%Y%m%d-%H%M%S}.json` - following the exact naming precedent
+`_open_run_log()` already used for run logs. A new `_prune_old_manifests()` helper keeps only the 10 most
+recent manifest files after each write (glob + string-sort on the timestamped name, same simple style as
+the folder's existing cleanup patterns elsewhere in the codebase); cleanup failures are swallowed
+(`except OSError: pass`) since a locked file is not worth failing an integration run over. The manifest's
+entry shape, the `dupResolution` logic, and the `["integrate", "--manifest", <path>]` CLI contract are
+all unchanged - only the path value and the new retention step are new. `gui/tests/test_integration.py`
+updated to assert against the new folder/timestamp pattern instead of the old fixed filename, plus a new
+retention test seeding 15 manifest files and asserting only 10 remain after a write.
+
 ## 2026-09-05 - Added: dedicated cancelled-mid-batch modal for real Integration cancels
 
 Closed the "Add a dedicated cancelled-mid-batch modal to Integration" item from the 2026-09-05 "Library
