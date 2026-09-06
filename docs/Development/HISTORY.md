@@ -4,6 +4,67 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-05 - Acquire tab: table redesign, Load Liked Songs, state persistence, and related polish
+
+Moved out of IDEAS.md's "Acquire tab history (2026-08-31 to 2026-09-05)" block, which had itself already
+noted it was fully resolved background rather than an open item - it had not been migrated to HISTORY.md
+until this pass.
+
+- **Table redesign (2026-09-01):** track table rebuilt as a full-width, larger-font checklist - one row per
+  track with Artist/Title/Album/Year/Deemix-link/Downloaded columns (`_build_sync_liked_card`/`track_table`
+  in `gui/tabs/acquire.py`).
+- **Manual tickbox column removed (2026-09-01):** the per-row Manual checkbox added no value over the
+  read-only Downloaded column and was removed from the table, `_state`, and `fetch()`'s reset.
+- **Sync Liked Songs card hidden (2026-09-01):** Spotify returns 403 (Development Mode app not allowlisted
+  for David's account under Users Management on the Spotify dashboard). Card's build code moved into
+  `_build_sync_liked_card()` in `acquire.py` but not called from `build()` - logic intact, one line to
+  re-enable once the account is allowlisted.
+- **"Open All in Deemix" removed (2026-09-01):** opened too many tabs at once, David didn't want the
+  feature - deleted outright (not hidden). Per-row "Open in Deemix" link in the new table covers the
+  one-at-a-time use case instead.
+- **Investigated and fixed: per-row Deemix links reported broken (raised 2026-09-01, fixed 2026-09-05)** -
+  fixed in SpotifyTools (commit `b6237dc`), no AudioManager code change was needed. Repro was possible
+  after all: Deemix runs here as a Docker container (`ghcr.io/bambanah/deemix` on `127.0.0.1:6595`), so the
+  links were tested end to end in a browser. The suspected failure modes were all wrong - the
+  `http://localhost:6595/search` scheme, the `?term=` parameter name and the encoding were already correct,
+  confirmed both by reading the served SPA bundle (real `/search` route, `createWebHistory`, `SearchView`
+  reads `route.query.term` and searches on setup) and by navigating a generated URL in Chrome. The real bug
+  was the query text: `_FEAT_RE` in `open_playlist.py` had no word boundary, so `feat`/`ft` matched inside
+  ordinary words and truncated the title there - "Left Behind" became "Le", "Lift Me Up" became "Li",
+  "Defeat Me" became "De". Those rows searched Deemix for nonsense, which is the symptom David saw. Fixed
+  with `\b`, 11 regression tests, verified against the live Deemix. `gui/tabs/acquire.py` needs nothing; it
+  picks the fix up through its existing `_build_deemix_url` import. Still open, low priority: `MANAGER_URL`
+  is hardcoded to `localhost:6595`, and the links resolve in the *viewer's* browser, so opening the GUI from
+  another device on the LAN would point them at that device. Details in `SpotifyTools/docs/IDEAS.md`.
+- **Load Liked Songs button (raised 2026-09-01, backend added 2026-09-05, GUI wiring done 2026-09-05)** -
+  "Load Liked Songs" button next to Fetch Tracks, wired to `RealSpotifyClient.get_liked_tracks_detailed()`
+  via `_do_fetch_liked_tracks()`, reusing the identical downstream flow as a playlist fetch. Persists under
+  a sentinel playlist id (`_LIKED_SONGS_ID = "__liked_songs__"`) through the existing id-keyed
+  history/cache/restore machinery; `playlist_loaded` is set True the same as a real playlist fetch.
+- **Verify Downloads integrated into the table (done 2026-09-01)** - the standalone "Verify Downloads" card
+  was folded into the Open Playlist Tracks table as a read-only "Downloaded" tickbox column; "Check Against
+  Downloads" button scans `NEWMUSIC_DIR` (reusing `match_downloads`) and fills it per row. The old
+  standalone card's missing-tracks text listing (names of tracks not found) was dropped in the merge - only
+  the found/total count survives in `verify_label`. Maybe restore the missing-tracks listing later (e.g. as
+  a tooltip or expandable row detail on unticked rows) - or maybe not, low priority.
+- **State persistence across page reload (done 2026-09-05)** - fetched tracks and the downloaded-match
+  state now persist to `config.ACQUIRE_STATE_JSON` keyed by playlist ID and reload on tab build. Closed the
+  "cache fetched tracks to disk" gap in the same mechanism.
+- **NewMusic-only surfacing, playlist history, Clear button (2026-09-02)** - `find_extra_newmusic_files()`
+  (reverse of `match_downloads`) surfaces files already sitting in `NEWMUSIC_DIR` that match no track in the
+  loaded playlist (or every file, with no playlist loaded) as a yellow-highlighted "IN NEWMUSIC, NOT IN THIS
+  PLAYLIST" section under the table, refreshed on the same 2s poll. `ACQUIRE_STATE_JSON` now stores a
+  deduped last-5 playlist history (`{"history": [{"id","name"}, ...]}`) via a new
+  `RealSpotifyClient.get_playlist_name()`; a history icon-button next to the input opens a menu of
+  "name - id" entries that re-fetch on click. Playlist input shrunk from full-width to 360px. A Clear button
+  resets the table/input while leaving the NewMusic-only section intact.
+
+## 2026-06-01 - Added: LibChecker exceptions mechanism test coverage
+
+Moved out of IDEAS.md's "Automated tests" expansion-candidates list, marked done there but never migrated.
+`LibCheckerExceptionTests.cs` covers wildcard, specific-match, and non-match cases (3 tests, all passing as
+of 2026-06-01).
+
 ## 2026-09-06 - Fixed: accepted-integration manifest overwrote one fixed path with no cleanup
 
 Closed the "The accepted manifest is written to one fixed path with no per-run naming or cleanup" item
