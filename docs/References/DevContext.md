@@ -161,6 +161,8 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 ## Code Invariants
 
+- **`audioTags` list order is non-deterministic** (Parser uses `Parallel.ForEach` + `ConcurrentBag` since 2026-06-27). LibChecker, Analyser, and ParseCache all consume it without order dependency - safe. If any new consumer needs ordered output, sort explicitly after `parser.audioTags` is returned. (Moved from CLAUDE.md 2026-09-06.)
+
 - **Routing-LibChecker threshold parity.** When a new routing destination is added to `GetDestDir()` (e.g. Compilations/ with "3+ distinct artists" threshold), the LibChecker rule that validates that destination MUST use the same detection threshold. Mismatch = routing<->LibChecker divergence: tracks correctly routed get falsely flagged. Discovered 2026-06-03: `CheckCompilationsFolder` was flagging genuine compilations because it lacked the 3+ distinct artist check that `RunScanAhead` uses.
 
 - **ParseCache is tightly coupled to TrackTag field count.** The 12-param cache constructor in `TrackTag` and the ParseCache serialize/deserialize format must stay in sync. Any Track.cs schema change (add/remove fields, e.g. Phase 2.5 cover art redesign) requires updating the cache constructor and `ParseCache.cs` field count. The cache auto-invalidates on any new/modified XML, so stale data is never silently served - but a field count mismatch will cause `TryDeserialize` to return false on every read (always cache miss) until fixed.
@@ -198,6 +200,8 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 - **RunScanAhead detects compilation albums (added 2026-06-02):** In the same TagLib# loop that builds `batchCounts`, it maps `album → HashSet<primaryArtist>`. Albums with 3+ distinct primary artists are stored in `_compilationAlbums`. GetDestDir receives `compilationAlbums` as an explicit parameter (like `newArtistFolders`) and routes qualifying tracks to `Compilations/{album}/` when the primary artist has no Artists/ folder. Tests pass `compilationAlbums` directly via the updated `GetDestDir` signature.
 
 - **ExtractAndFixArtists: `" & "` in title parentheticals is always a collaborator separator, never part of an artist name.** The code splits on `" & "` before the duplicate-artist check and adds each component individually. This invariant must be preserved if featured-artist extraction is ever refactored - never add the compound "A & B" form when A and B will both be present separately. (Fix 2026-05-26: Perry Como track was producing 4 artist entries instead of 3.)
+
+- **What the test suite can and cannot prove** (moved from CLAUDE.md 2026-09-06). `scripts\dev\verify.bat --no-pause` is the single pass/fail judge - it runs the C# build and unit tests, the routing manifest check, and the GUI pytest suite. A green run proves the logic is right. It can never prove the batch is safe: nothing in the suite observes the exe actually moving files. On any change touching the integration path, treat green as "the logic is right", never as "the run is safe to fire". See "GUI Code-Change Escalation Boundary" in CLAUDE.md for which GUI code changes need David before shipping.
 
 - **ManifestRunner test pattern:** `new MusicIntegrator(Constants.AudioFolderPath)` (the test constructor with real library path) lets you call `GetDestDir()` against the real folder structure without triggering the integration pipeline. Use for any future routing regression test that needs the real library but no NewMusic files.
 
