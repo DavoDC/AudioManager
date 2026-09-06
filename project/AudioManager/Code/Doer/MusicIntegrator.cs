@@ -2,6 +2,7 @@ using AudioManager.Code.Modules;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,8 @@ namespace AudioManager
     /// </summary>
     internal class MusicIntegrator : Doer
     {
+        // Bump on any breaking change to BuildJson's contract shape (docs/References/).
+        private const int SchemaVersion = 1;
         private bool dryRun;
         private bool noInput;
         private bool jsonOutput;
@@ -75,6 +78,27 @@ namespace AudioManager
             public string DupRecommendationKey; // "D", "L", or "K"
             public string DupRecommendation;    // "Delete library copy" / "Delete new file" / "Keep both"
             public string DupReason;
+        }
+
+        /// <summary>
+        /// Structured post-run integrity data for a real run's execution record (section 2.2 of
+        /// docs/References/Execution-Record-Contract-Design.md). Populated by PrintConfidenceReport
+        /// from the exact same locals it already prints from, so the JSON and the console text can
+        /// never disagree. Null on a dry run - the sanity check never runs there. Data only, no
+        /// behaviour.
+        /// </summary>
+        internal class ConfidenceRecord
+        {
+            public int TotalFiles;
+            public int Moved;
+            public int Skipped;
+            public int ExpectedMoved;
+            public bool CountOk;
+            public bool SanityRan;
+            public int SanityChecked;
+            public List<(string Destination, string Reason)> SanityFailures = new List<(string Destination, string Reason)>();
+            public List<string> NewFolders = new List<string>();
+            public List<(string Filename, string Detail)> Errors = new List<(string Filename, string Detail)>();
         }
 
         /// <summary>
@@ -751,7 +775,15 @@ namespace AudioManager
             Console.WriteLine($"Routing - time taken: {Doer.ConvertTimeSpanToString(routingStopwatch.Elapsed)}");
 
             if (!dryRun)
-                PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
+            {
+                // Unconditional on a real run - not gated on jsonOutput. This keeps the GUI's
+                // `args` untouched (docs/References/Execution-Record-Contract-Design.md section 1):
+                // the exe emits the execution record on its own, no new CLI flag needed.
+                // Known scope limit (accepted, not "fixed" here): RunMiscMigration/CleanupNewMusicFolder
+                // below move library files that are not in logEntries, so the record does not cover them.
+                var confidenceRecord = PrintConfidenceReport(logEntries, totalFiles, movedCount, skippedCount);
+                WriteExecutionRecord(logEntries, confidenceRecord);
+            }
 
             RunMiscMigration();
             CleanupNewMusicFolder();
@@ -882,22 +914,33 @@ namespace AudioManager
         }
 
         /// <summary>
-        /// Writes dry-run routing decisions as structured JSON to logs/routing-{timestamp}.json.
-        /// Schema: {"summary": {routes, miscAutoMigrations, miscAutoMigrationTotal,
-        /// compilationAlbums}, "files": [ {filename, artist, title, album, destination, reason,
-        /// isNewFolder, status, inBatchDuplicate, compilationAlbum, libraryDuplicate + dup*
-        /// fields, tagChanges[]} ]}.
+        /// Writes routing/execution decisions as structured JSON. Dry runs write
+        /// logs/routing-{timestamp}.json; real runs additionally write
+        /// logs/execution-{timestamp}.json (WriteExecutionRecord) with recordType "execution",
+        /// dryRun false, and a populated "confidence" block. Schema: {schemaVersion, recordType,
+        /// dryRun, generatedAt, "summary": {routes, miscAutoMigrations, miscAutoMigrationTotal,
+        /// compilationAlbums}, "confidence": null | {countCheck, sanityCheck, newFolders,
+        /// errorCount, errors}, "files": [ {filename, artist, title, album, destination, reason,
+        /// isNewFolder, status, detail, inBatchDuplicate, compilationAlbum, libraryDuplicate + dup*
+        /// fields, tagChanges[]} ]}. See docs/References/Execution-Record-Contract-Design.md.
         /// </summary>
         /// <summary>
-        /// Builds the routing JSON contract text (pure, no I/O) - see gui/routing.py's docstring for
-        /// the consumer-side contract. Internal + static so tests can assert on its output directly,
-        /// same pattern as TracksJson.Build.
+        /// Builds the routing/execution JSON contract text (pure, no I/O) - see gui/routing.py's
+        /// docstring for the consumer-side contract. Internal + static so tests can assert on its
+        /// output directly, same pattern as TracksJson.Build. `dryRun` defaults to true and
+        /// `confidence` to null so every pre-existing dry-run test call site keeps compiling
+        /// unchanged; a real run passes dryRun: false and a populated ConfidenceRecord.
         /// </summary>
-        internal static string BuildJson(List<LogEntry> entries, BatchSummary summary = null)
+        internal static string BuildJson(List<LogEntry> entries, BatchSummary summary = null, bool dryRun = true, ConfidenceRecord confidence = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine("{");
+            sb.AppendLine($"  \"schemaVersion\": {SchemaVersion},");
+            sb.AppendLine($"  \"recordType\": {JStr(dryRun ? "routing" : "execution")},");
+            sb.AppendLine($"  \"dryRun\": {(dryRun ? "true" : "false")},");
+            sb.AppendLine($"  \"generatedAt\": {JStr(DateTime.Now.ToString("s", CultureInfo.InvariantCulture))},");
             AppendSummaryBlock(sb, entries, summary);
+            AppendConfidenceBlock(sb, confidence);
             sb.AppendLine("  \"files\": [");
             for (int i = 0; i < entries.Count; i++)
             {
@@ -911,6 +954,7 @@ namespace AudioManager
                 sb.AppendLine($"    \"reason\": {JStr(e.Reason)},");
                 sb.AppendLine($"    \"isNewFolder\": {(e.IsNewFolder ? "true" : "false")},");
                 sb.AppendLine($"    \"status\": {JStr(e.Status)},");
+                sb.AppendLine($"    \"detail\": {JStr(e.Detail ?? "")},");
                 sb.AppendLine($"    \"inBatchDuplicate\": {(e.InBatchDuplicate ? "true" : "false")},");
                 sb.AppendLine($"    \"compilationAlbum\": {(e.CompilationAlbum ? "true" : "false")},");
                 // Library-duplicate block - distinct from inBatchDuplicate above, whose field name
@@ -971,6 +1015,66 @@ namespace AudioManager
             sb.AppendLine("  },");
         }
 
+        /// <summary>
+        /// Appends the "confidence" block: the literal null on a dry run (the sanity check never
+        /// runs there), otherwise the object built from a populated ConfidenceRecord. See section
+        /// 2.2 of docs/References/Execution-Record-Contract-Design.md for the exact shape.
+        /// </summary>
+        private static void AppendConfidenceBlock(StringBuilder sb, ConfidenceRecord confidence)
+        {
+            if (confidence == null)
+            {
+                sb.AppendLine("  \"confidence\": null,");
+                return;
+            }
+
+            var failures = confidence.SanityFailures ?? new List<(string Destination, string Reason)>();
+            var newFolders = (confidence.NewFolders ?? new List<string>())
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
+            var errors = confidence.Errors ?? new List<(string Filename, string Detail)>();
+            bool sanityOk = failures.Count == 0;
+
+            sb.AppendLine("  \"confidence\": {");
+            sb.AppendLine("    \"countCheck\": {");
+            sb.AppendLine($"      \"totalFiles\": {confidence.TotalFiles},");
+            sb.AppendLine($"      \"moved\": {confidence.Moved},");
+            sb.AppendLine($"      \"skipped\": {confidence.Skipped},");
+            sb.AppendLine($"      \"expectedMoved\": {confidence.ExpectedMoved},");
+            sb.AppendLine($"      \"ok\": {(confidence.CountOk ? "true" : "false")}");
+            sb.AppendLine("    },");
+            sb.AppendLine("    \"sanityCheck\": {");
+            sb.AppendLine($"      \"ran\": {(confidence.SanityRan ? "true" : "false")},");
+            sb.AppendLine($"      \"ok\": {(sanityOk ? "true" : "false")},");
+            sb.AppendLine($"      \"checked\": {confidence.SanityChecked},");
+            sb.Append("      \"failures\": [");
+            sb.Append(string.Join(", ", failures.Select(f =>
+                $"{{\"destination\": {JStr(f.Destination)}, \"reason\": {JStr(f.Reason)}}}")));
+            sb.AppendLine("]");
+            sb.AppendLine("    },");
+            sb.Append("    \"newFolders\": [");
+            sb.Append(string.Join(", ", newFolders.Select(f => JStr(f))));
+            sb.AppendLine("],");
+            sb.AppendLine($"    \"errorCount\": {errors.Count},");
+            sb.Append("    \"errors\": [");
+            sb.Append(string.Join(", ", errors.Select(e =>
+                $"{{\"filename\": {JStr(e.Filename)}, \"detail\": {JStr(e.Detail)}}}")));
+            sb.AppendLine("]");
+            sb.AppendLine("  },");
+        }
+
+        /// <summary>Builds the BatchSummary from the integrator's current batch-level state
+        /// (Misc auto-migration candidates, detected compilation albums). Shared by WriteJsonOutput
+        /// and WriteExecutionRecord so both emit an identical summary block for the same run.</summary>
+        private BatchSummary BuildCurrentSummary()
+        {
+            var summary = new BatchSummary();
+            foreach (var kvp in _miscMigrationCandidates)
+                summary.MiscAutoMigrations[kvp.Key] = kvp.Value?.Count ?? 0;
+            if (_compilationAlbums != null)
+                summary.CompilationAlbums.AddRange(_compilationAlbums);
+            return summary;
+        }
+
         private void WriteJsonOutput(List<LogEntry> entries)
         {
             try
@@ -980,13 +1084,7 @@ namespace AudioManager
                     Directory.CreateDirectory(Constants.LogsPath);
                 string jsonPath = Path.Combine(Constants.LogsPath, $"routing-{timestamp}.json");
 
-                var summary = new BatchSummary();
-                foreach (var kvp in _miscMigrationCandidates)
-                    summary.MiscAutoMigrations[kvp.Key] = kvp.Value?.Count ?? 0;
-                if (_compilationAlbums != null)
-                    summary.CompilationAlbums.AddRange(_compilationAlbums);
-
-                File.WriteAllText(jsonPath, BuildJson(entries, summary), System.Text.Encoding.UTF8);
+                File.WriteAllText(jsonPath, BuildJson(entries, BuildCurrentSummary()), System.Text.Encoding.UTF8);
                 Console.WriteLine($"\n  JSON: {jsonPath}");
             }
             catch (Exception ex)
@@ -995,19 +1093,78 @@ namespace AudioManager
             }
         }
 
-        /// <summary>JSON-escapes a string value, returning a quoted JSON string or null.</summary>
+        /// <summary>
+        /// Writes a real run's execution record to logs/execution-{timestamp}.json - the durable,
+        /// structured account of what actually moved, distinct from the dry run's routing-*.json
+        /// (see docs/References/Execution-Record-Contract-Design.md section 2). Unconditional on a
+        /// real run, not gated on jsonOutput. A failed write must never fail an integration run that
+        /// already moved files, so failures are caught and warned, never thrown.
+        /// </summary>
+        private void WriteExecutionRecord(List<LogEntry> entries, ConfidenceRecord confidence)
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                if (!Directory.Exists(Constants.LogsPath))
+                    Directory.CreateDirectory(Constants.LogsPath);
+                string jsonPath = Path.Combine(Constants.LogsPath, $"execution-{timestamp}.json");
+
+                File.WriteAllText(jsonPath, BuildJson(entries, BuildCurrentSummary(), dryRun: false, confidence: confidence), System.Text.Encoding.UTF8);
+                Console.WriteLine($"\n  EXECUTION JSON: {jsonPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n  [WARN] Execution record failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>JSON-escapes a string value, returning a quoted JSON string or null. Escapes the
+        /// full C0 control range: the standard short escapes (\b \f \n \r \t) plus a \u-prefixed
+        /// four-hex-digit escape for any other character below U+0020. \r is emitted as \\r rather
+        /// than silently stripped - a
+        /// malformed record from an unescaped control character (e.g. in a raw exception message
+        /// landing in "detail") must never be produced. See
+        /// docs/References/Execution-Record-Contract-Design.md section 6.</summary>
         private static string JStr(string s)
         {
             if (s == null) return "null";
-            return "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n") + "\"";
+            var sb = new StringBuilder(s.Length + 2);
+            sb.Append('"');
+            foreach (char c in s)
+            {
+                switch (c)
+                {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '"': sb.Append("\\\""); break;
+                    case '\b': sb.Append("\\b"); break;
+                    case '\f': sb.Append("\\f"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < ' ')
+                            sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else
+                            sb.Append(c);
+                        break;
+                }
+            }
+            sb.Append('"');
+            return sb.ToString();
         }
 
         /// <summary>
-        /// Prints a confidence report to the console after integration.
+        /// Prints a confidence report to the console after integration, then returns the same data
+        /// as a ConfidenceRecord for WriteExecutionRecord - compute-then-print-then-return, so the
+        /// JSON and the console text are always in agreement (docs/References/
+        /// Execution-Record-Contract-Design.md section 3.3). Console output text is unchanged from
+        /// before this record existed.
         /// Covers: count check, per-file table, new folders, destination sanity check, errors.
         /// </summary>
-        private void PrintConfidenceReport(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
+        private ConfidenceRecord PrintConfidenceReport(List<LogEntry> entries, int totalFiles, int movedCount, int skippedCount)
         {
+            var record = new ConfidenceRecord();
+
             Console.WriteLine("\n===========================================================================");
             Console.WriteLine(dryRun ? "  CONFIDENCE REPORT (Dry Run)" : "  CONFIDENCE REPORT");
             Console.WriteLine("===========================================================================\n");
@@ -1015,6 +1172,11 @@ namespace AudioManager
             // 1. Count check
             int expectedMoved = totalFiles - skippedCount;
             bool countOk = dryRun || (movedCount == expectedMoved);
+            record.TotalFiles = totalFiles;
+            record.Moved = movedCount;
+            record.Skipped = skippedCount;
+            record.ExpectedMoved = expectedMoved;
+            record.CountOk = countOk;
             string countLine = $"  Files in NewMusic: {totalFiles}  |  Moved: {movedCount}  |  Skipped: {skippedCount}";
             Console.WriteLine(countLine);
             if (!countOk)
@@ -1030,6 +1192,7 @@ namespace AudioManager
             }
 
             // 3. New folders created
+            record.SanityRan = !dryRun;
             if (!dryRun)
             {
                 var movedEntries = entries.Where(e => e.Status == "moved" && !string.IsNullOrEmpty(e.Destination)).ToList();
@@ -1049,19 +1212,23 @@ namespace AudioManager
                     Console.WriteLine("\n  --- New folders created ---");
                     foreach (var f in newFolders) Console.WriteLine($"  + {f}");
                 }
+                record.NewFolders = newFolders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
             }
 
             // 4. Destination sanity check (re-read each moved file)
             if (!dryRun)
             {
                 var failedSanity = new List<string>();
+                int sanityChecked = 0;
                 foreach (var e in entries.Where(en => en.Status == "moved"))
                 {
                     if (string.IsNullOrEmpty(e.Destination)) continue;
+                    sanityChecked++;
                     string fullPath = Path.Combine(Constants.AudioFolderPath, e.Destination);
                     if (!File.Exists(fullPath))
                     {
                         failedSanity.Add($"  [MISSING] {e.Destination}");
+                        record.SanityFailures.Add((e.Destination, "missing"));
                         continue;
                     }
                     try
@@ -1074,8 +1241,10 @@ namespace AudioManager
                     catch
                     {
                         failedSanity.Add($"  [UNREADABLE] {e.Destination}");
+                        record.SanityFailures.Add((e.Destination, "unreadable"));
                     }
                 }
+                record.SanityChecked = sanityChecked;
                 if (failedSanity.Count > 0)
                 {
                     Console.WriteLine("\n  [ERROR] Destination sanity check FAILED:");
@@ -1089,6 +1258,7 @@ namespace AudioManager
 
             // 5. Error summary
             var errors = entries.Where(e => e.Status == "error").ToList();
+            record.Errors = errors.Select(e => (e.Filename, e.Detail ?? "")).ToList();
             if (errors.Count > 0)
             {
                 Console.WriteLine($"[ERRORS: {errors.Count}]");
@@ -1100,6 +1270,8 @@ namespace AudioManager
             }
 
             Console.WriteLine("\n===========================================================================");
+
+            return record;
         }
 
         /// <summary>

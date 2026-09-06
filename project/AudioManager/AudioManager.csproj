@@ -76,6 +76,7 @@
     <Compile Include="Code\Tests\MusicIntegratorRouteAllFilesTests.cs" />
     <Compile Include="Code\Tests\MusicIntegratorBatchSummaryTests.cs" />
     <Compile Include="Code\Tests\MusicIntegratorDuplicateJsonTests.cs" />
+    <Compile Include="Code\Tests\MusicIntegratorExecutionRecordTests.cs" />
     <Compile Include="Code\Tests\ManifestRunner.cs" />
     <Compile Include="Code\Tests\ParseCacheTests.cs" />
     <Compile Include="Code\Tests\LibCheckerTests.cs" />
