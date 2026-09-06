@@ -6,7 +6,9 @@ Stage 2  Review     one card per proposed track: art, destination, reason,
                     toggle (plus an explicit keyboard Triage mode)
 Stage 3  Confirm    summary bar + single primary action
 Stage 4  Execute    real integrate --no-input with structured per-track
-                    progress parsed from the exe's live output
+                    progress parsed from the exe's live output, finalized
+                    against logs/execution-{timestamp}.json - the exe's
+                    post-run execution record - once the run exits
 
 Per-track selective execution is real: when tracks are declined, the GUI
 writes the accepted set to gui/.cache/accepted-manifest.json and runs
@@ -36,6 +38,7 @@ from __future__ import annotations
 import asyncio
 import html
 import json
+import time
 from datetime import datetime
 
 from nicegui import ui
@@ -43,6 +46,7 @@ from nicegui import ui
 from gui import config, routing
 from gui.art import get_thumbnail, initials, placeholder_style
 from gui.components.error_modal import show_cancelled_modal, show_error_modal
+from gui.data_loader import SchemaVersionError
 from gui.runner import RunResult, runner
 
 SIMULATE_STEP_DELAY = 0.15
@@ -68,6 +72,7 @@ class IntegrationState:
         self.summary: dict = routing.empty_summary()  # batch scan-ahead context (routes, Misc migrations, compilations)
         self.projected_libchecker: dict | None = None  # dry run's own safety verdict
         self.confidence_report: dict | None = None  # real run's post-run integrity check
+        self.exec_record_missing = False    # True: no execution record found - statuses are unverified console-derived
         self.refresh = lambda: None
 
     @property
@@ -317,6 +322,7 @@ async def run_scan() -> None:
     S.scan_lines = []
     S.simulated = False
     S.refresh()
+    started = time.time()
     result = await runner.run(
         ["integrate", "--dry-run", "--json-output"],
         action="Scan (dry run)",
@@ -328,13 +334,13 @@ async def run_scan() -> None:
         if not result.cancelled:
             show_error_modal("Scan (dry run)", result, retry=run_scan)
         return
-    path = routing.routing_path_from_output(result.lines)
+    path = routing.routing_path_from_output(result.lines, started)
     entries = []
     summary = routing.empty_summary()
     if path:
         try:
             entries, summary = routing.parse_routing_document(path)
-        except (OSError, ValueError) as e:
+        except (OSError, ValueError, SchemaVersionError) as e:
             ui.notify(f"Could not parse routing JSON: {e}", type="negative")
     S.entries = entries
     S.summary = summary
@@ -459,10 +465,13 @@ def projected_libchecker_strip() -> None:
 
 
 def confidence_report_strip() -> None:
-    """The exe's post-run CONFIDENCE REPORT (count check + destination sanity
-    check re-reading every moved file with TagLib) is the single strongest
-    guarantee a claimed-successful run actually succeeded - it used to be
-    reachable only via "Advanced / raw output (debug)", which undersold it."""
+    """The execution record's "confidence" block (count check + destination
+    sanity check re-reading every moved file with TagLib, both computed by
+    the exe - see docs/References/Execution-Record-Contract-Design.md) is the
+    single strongest guarantee a claimed-successful run actually succeeded -
+    it used to be reachable only via "Advanced / raw output (debug)", parsed
+    back out of console prose, which undersold it and could silently
+    misread a differently-worded line as agreement."""
     v = S.confidence_report
     if v is None:
         return
@@ -476,12 +485,14 @@ def confidence_report_strip() -> None:
             parts.append(f'{v["error_count"]} error(s)')
         ui.html(f'<div class="libchecker-strip dirty">&#9888; Confidence check failed - '
                 f'{_esc(", ".join(parts))}. See Advanced / raw output for detail.</div>')
-    elif v["sanity_summary"]:
+    elif v["sanity_ran"]:
+        summary = f'all {v["sanity_checked"]} moved file(s) exist and are readable'
         ui.html(f'<div class="libchecker-strip clean">&#10003; Confidence check - '
-                f'{_esc(v["sanity_summary"])}</div>')
-    elif v["count_line"]:
+                f'{_esc(summary)}</div>')
+    elif v["total_count"] is not None:
+        summary = f'Files in NewMusic: {v["total_count"]} | Moved: {v["moved_count"]} | Skipped: {v["skipped_count"]}'
         ui.html(f'<div class="libchecker-strip clean">&#10003; Confidence check - '
-                f'{_esc(v["count_line"])}</div>')
+                f'{_esc(summary)}</div>')
 
 
 def _set_filter(k: str) -> None:
@@ -976,6 +987,7 @@ async def run_execute() -> None:
                 S.refresh()
             ui.timer(0.5, flush, once=True)
 
+    started = time.time()
     try:
         result = await runner.run(
             args,
@@ -986,7 +998,15 @@ async def run_execute() -> None:
     finally:
         if log_file:
             log_file.close()
-    _finish_execute(result)
+
+    record = None
+    path = routing.execution_record_path(result.lines, started)
+    if path:
+        try:
+            record = routing.parse_execution_record(path)
+        except (OSError, ValueError, json.JSONDecodeError, SchemaVersionError):
+            record = None
+    _finish_execute(result, record)
 
 
 def _run_analysis_now() -> None:
@@ -1001,33 +1021,61 @@ def _run_analysis_now() -> None:
     asyncio.create_task(run_scan())
 
 
-def _finish_execute(result: RunResult) -> None:
+# The only record file-status values this GUI trusts to overwrite a display
+# status. Anything else (e.g. "would-move" - a dry-run status that should
+# never appear in a real-run record) makes the whole record untrustworthy.
+_RECORD_STATUS_MAP = {"moved": "done", "skipped": "skipped", "error": "failed"}
+
+
+def _finish_execute(result: RunResult, record: dict | None = None) -> None:
     """Shared post-run finalization for both a real run_execute() and the
-    synthetic run_execute_simulated() - both produce a RunResult and must be
-    interpreted identically so a simulated run exercises the real UI logic."""
+    synthetic run_execute_simulated() - both produce a RunResult (and, since
+    the execution-record contract, an optional parsed execution record) and
+    must be interpreted identically so a simulated run exercises the real UI
+    logic. `record` is `routing.parse_execution_record`'s return value, or
+    None when no record could be found/parsed for this run - see
+    docs/References/Execution-Record-Contract-Design.md section 4.5.
+
+    When a record is present and every file status inside it is one this GUI
+    recognises, it is treated as authoritative: every exec_status entry is
+    OVERWRITTEN from the record (matched on filename; a target absent from
+    the record becomes "notrun"), rather than left as whatever the live
+    console-output sweep in _update_exec_status guessed. A record containing
+    an unrecognised status is discarded entirely (set to None) rather than
+    trusted partially - see _RECORD_STATUS_MAP."""
     S.exec_done = True
     S.exec_ok = result.ok
-    S.confidence_report = routing.parse_confidence_report(result.lines)
+
+    record_statuses: dict[str, str] = {}
+    if record is not None:
+        for f in record["files"]:
+            filename = f.get("filename")
+            status = f.get("status")
+            if not filename:
+                continue
+            if status not in _RECORD_STATUS_MAP:
+                record = None
+                record_statuses = {}
+                break
+            record_statuses[filename] = _RECORD_STATUS_MAP[status]
+
+    S.confidence_report = record["confidence"] if record else None
+    S.exec_record_missing = record is None
+
+    if record is not None:
+        for e in S.exec_targets:
+            S.exec_status[e["filename"]] = record_statuses.get(e["filename"], "notrun")
+
     show_modal = False
     show_cancelled = False
     if result.ok:
+        if record is None:
+            for k, v in S.exec_status.items():
+                if v in ("queued", "moving"):
+                    S.exec_status[k] = "done"
         failed = sum(1 for v in S.exec_status.values() if v == "failed")
-        for k, v in S.exec_status.items():
-            if v in ("queued", "moving"):
-                S.exec_status[k] = "done"
-        # The confidence report's own Moved/Skipped counts are authoritative
-        # (they come from the exe re-reading NewMusic after the run) - prefer
-        # them over a locally-derived count whenever the report parsed, so
-        # this summary can never contradict confidence_report_strip() right
-        # below it. A [SKIP] file was never moved and stays in NewMusic; a
-        # local sweep that lumps it in with 'done' rows overcounts 'moved'.
-        report = S.confidence_report
-        if report and report.get("moved_count") is not None and report.get("skipped_count") is not None:
-            moved = report["moved_count"]
-            skipped = report["skipped_count"]
-        else:
-            moved = sum(1 for v in S.exec_status.values() if v == "done")
-            skipped = sum(1 for v in S.exec_status.values() if v == "skipped")
+        moved = sum(1 for v in S.exec_status.values() if v == "done")
+        skipped = sum(1 for v in S.exec_status.values() if v == "skipped")
         skipped_note = f", {len(S.declined)} declined left in NewMusic" if S.declined else ""
         S.exec_summary = (f"Integration complete - {moved} moved"
                           + (f", {skipped} already in library" if skipped else "")
@@ -1036,16 +1084,22 @@ def _finish_execute(result: RunResult) -> None:
                           + ". Statistics will reflect the new batch after the next analysis run.")
     else:
         S.exec_summary = result.interpreted("Integration")
-        failed_name = _failed_filename_from_output(result.lines) if not result.cancelled else None
-        n_notrun = 0
-        for k, v in S.exec_status.items():
-            if v not in ("queued", "moving"):
-                continue
-            if failed_name and k == failed_name:
-                S.exec_status[k] = "failed"
-            else:
-                S.exec_status[k] = "notrun"
-                n_notrun += 1
+        if record is None:
+            failed_name = _failed_filename_from_output(result.lines) if not result.cancelled else None
+            n_notrun = 0
+            for k, v in S.exec_status.items():
+                if v not in ("queued", "moving"):
+                    continue
+                if failed_name and k == failed_name:
+                    S.exec_status[k] = "failed"
+                else:
+                    S.exec_status[k] = "notrun"
+                    n_notrun += 1
+        else:
+            # Statuses already came from the record above - no console
+            # re-parsing needed, a run can fail after moving some files and
+            # the record is the best account of exactly which.
+            n_notrun = sum(1 for v in S.exec_status.values() if v == "notrun")
         # failed_name is already named in result.interpreted()'s cause line above -
         # repeating it here would duplicate the filename with no separator.
         if n_notrun:
@@ -1054,6 +1108,11 @@ def _finish_execute(result: RunResult) -> None:
             show_cancelled = True
         else:
             show_modal = True
+
+    if S.exec_record_missing:
+        S.exec_summary += (" No execution record was found - these outcomes are from console "
+                           "output and are unverified.")
+
     # Refresh BEFORE opening either modal: S.refresh() rebuilds the
     # @ui.refreshable slot this function is called from, which would destroy
     # a dialog created inside it a moment earlier - opening the modal after
@@ -1071,9 +1130,12 @@ async def run_execute_simulated() -> None:
     through the same on_line/_update_exec_status path a real run uses (so
     known bugs like _update_exec_status not matching '[AUTO]' lines are
     faithfully reproduced), then finishes through the same _finish_execute()
-    a real run uses. Error-status entries are never in S.accepted (see
-    IntegrationState.accepted), so this never sees one - there is nothing
-    left in Simulate mode that can fail mid-batch."""
+    a real run uses, passing a synthetic execution record built in the same
+    shape routing.parse_execution_record returns - no execution-*.json file
+    is read, but _finish_execute's record-driven status/confidence logic is
+    still exercised end to end. Error-status entries are never in
+    S.accepted (see IntegrationState.accepted), so this never sees one -
+    there is nothing left in Simulate mode that can fail mid-batch."""
     if runner.busy:
         ui.notify("Another operation is already running", type="warning")
         return
@@ -1103,7 +1165,21 @@ async def run_execute_simulated() -> None:
         f"  Sanity check: all {moved} moved file(s) exist and are readable.",
     ]
     result = RunResult(command=["integrate", "--simulate"], returncode=0, lines=lines)
-    _finish_execute(result)
+    # Synthetic execution record, same shape routing.parse_execution_record
+    # returns - so _finish_execute exercises the real record-driven path
+    # without ever invoking the exe or reading a JSON file from disk.
+    record = {
+        "generatedAt": datetime.now().isoformat(timespec="seconds"),
+        "summary": S.summary,
+        "confidence": {
+            "count_ok": True, "sanity_ran": True, "sanity_ok": True,
+            "sanity_checked": moved, "sanity_failures": [],
+            "new_folders": [], "error_count": 0, "errors": [],
+            "total_count": len(targets), "moved_count": moved, "skipped_count": 0,
+        },
+        "files": [{"filename": e["filename"], "status": "moved"} for e in targets],
+    }
+    _finish_execute(result, record)
 
 
 def _failed_filename_from_output(lines: list[str]) -> str | None:
@@ -1130,7 +1206,15 @@ EXEC_STATUS_LABELS = {
 
 
 def _update_exec_status(line: str) -> None:
-    """Structured progress from the exe's REAL per-track output.
+    """Live in-flight progress ONLY, parsed from the exe's REAL per-track
+    console output as it streams in. This is no longer the final word on any
+    track's outcome: once the run finishes, _finish_execute() OVERWRITES
+    every exec_status entry from the parsed execution record whenever one is
+    available (docs/References/Execution-Record-Contract-Design.md section
+    4.5), because the record is written after the exe re-reads the moved
+    files and is authoritative in a way a console-output guess can't be. This
+    function's statuses only matter for what the progress bar shows WHILE the
+    run is still going - they still drive that, unchanged.
 
     The exe never prints filenames for a success/skip - only tag text via
     `[AUTO] {Artists} - {Title}` (moved) and `[SKIP] {Artists} - {Title}`
@@ -1203,6 +1287,9 @@ def stage_execute() -> None:
 
         if S.exec_done:
             ui.html(f'<div class="note" style="margin-top:12px;">{_esc(S.exec_summary)}</div>')
+            if S.exec_record_missing:
+                ui.html('<div class="libchecker-strip dirty">&#9888; No execution record was found - '
+                        "the statuses above are from console output only and are unverified.</div>")
             confidence_report_strip()
 
             def reset():
