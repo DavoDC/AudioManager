@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace AudioManager
@@ -151,6 +153,60 @@ namespace AudioManager
             string expectedEscape = "\\u0001";
             Assert.True(json.Contains("\"detail\": \"a" + expectedEscape + "b\""),
                 "bare U+0001 control character escaped as \\u0001, not emitted raw");
+        }
+
+        // ---------------------------------------------------------------- 6. WriteExecutionRecord retry
+        // (docs/References/Execution-Record-Fallback-Removal-Design.md section 4.9 / 5.3)
+
+        public static void WriteExecutionRecordWithRetry_RetryPathUsedAndMarkerPrintedWhenPrimaryWriteFails()
+        {
+            // Force the primary write to fail (read-only file already occupying the primary path)
+            // while leaving the distinct "-retry" filename free, so the retry branch specifically
+            // is exercised and can succeed.
+            string logsPath = Path.Combine(Path.GetTempPath(), "am-exec-record-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(logsPath);
+            string timestamp = "20260906-000000";
+            string primaryPath = Path.Combine(logsPath, $"execution-{timestamp}.json");
+            File.WriteAllText(primaryPath, "");
+            var attrs = File.GetAttributes(primaryPath);
+            File.SetAttributes(primaryPath, attrs | FileAttributes.ReadOnly);
+            var lines = new List<string>();
+            try
+            {
+                bool ok = MusicIntegrator.WriteExecutionRecordWithRetry(logsPath, timestamp, "{\"x\":1}", lines.Add);
+                Assert.True(ok, "retry write must succeed and report success");
+                string retryPath = Path.Combine(logsPath, $"execution-{timestamp}-retry.json");
+                Assert.True(File.Exists(retryPath), "retry file must exist on disk");
+                Assert.True(File.ReadAllText(retryPath) == "{\"x\":1}", "retry file must contain the JSON payload");
+                Assert.True(lines.Any(l => l.Contains("EXECUTION JSON:") && l.Contains(retryPath)),
+                    "the standard EXECUTION JSON: marker must be printed for the retry path, same as a normal success");
+            }
+            finally
+            {
+                File.SetAttributes(primaryPath, attrs);
+                Directory.Delete(logsPath, recursive: true);
+            }
+        }
+
+        public static void WriteExecutionRecordWithRetry_TotalFailurePrintsPromotedErrorLineAndDoesNotThrow()
+        {
+            // Both the primary and the retry write fail: point logsPath at a path that cannot be
+            // created as a directory because a FILE already sits at that exact path.
+            string logsPath = Path.Combine(Path.GetTempPath(), "am-exec-record-tests-file-" + Guid.NewGuid().ToString("N"));
+            File.WriteAllText(logsPath, "");
+            var lines = new List<string>();
+            try
+            {
+                bool ok = MusicIntegrator.WriteExecutionRecordWithRetry(logsPath, "20260906-000000", "{\"x\":1}", lines.Add);
+                Assert.True(!ok, "total failure must report false");
+                Assert.True(lines.Any(l => l.Contains("[ERROR] EXECUTION RECORD FAILED")),
+                    "a total failure must print the promoted [ERROR] EXECUTION RECORD FAILED line");
+                // Reaching this line at all is the "does not throw" assertion.
+            }
+            finally
+            {
+                File.Delete(logsPath);
+            }
         }
     }
 }
