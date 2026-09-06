@@ -4,6 +4,66 @@ Completed features, settled design decisions, resolved tasks, and decisions expl
 
 ---
 
+## 2026-09-06 - Real-integration execution-record contract, replacing console-text parsing
+
+Moved out of IDEAS.md once all three of David's follow-up review items were resolved.
+
+- **[OPUS] Real-integration outcomes are reconstructed from console prose, not a data contract** - after a
+  real (non-dry-run) integration, `gui/tabs/integration.py`'s `_update_exec_status` decided each track's
+  fate (`done`/`skipped`/`failed`) by substring-matching `[AUTO]`/`[SKIP]` lines against
+  `f"{artist} - {title}"`, and `gui/routing.py` reconstructed the confidence report and projected-LibChecker
+  verdict by regexing literal header strings out of `MusicIntegrator.cs`'s plain `Console.WriteLine` calls.
+  A wording change on the C# side would have silently produced a wrong-but-plausible account of what
+  happened to the user's files, with no compile-time or test-time signal.
+  - **Design settled 2026-09-06:** `docs/References/Execution-Record-Contract-Design.md` (contract shape,
+    `schemaVersion` decision, escalation-boundary ruling, C#/Python/test steps). Also closed the "Contract
+    versioning is inverted relative to risk" item and the `JStr` half of the hand-rolled-JSON item.
+  - **Implemented 2026-09-06** (C# `850d2bea`, Python `efe1eacd`/`018dc388`, verify.bat green 292 C#/338
+    Python). Two spots flagged sensitive for David's review before shipping: `_finish_execute` in
+    `gui/tabs/integration.py`, and `parse_execution_record`/version check in `gui/routing.py`.
+  - **David's review answers 2026-09-06, raw verbatim:**
+    1. On the "unrecognized status discards the whole record" question - "rather it trust the recognized
+       rows and only flag the unrecognized ones? Yes . Encode into repo that things should be atomic where
+       it makes sense ."
+    2. On old `logs/routing-*.json` files becoming unreadable - "Deep dive analyses via subagent 2. Old
+       logs/routing-*.json files fro and save anything useful into repo , then maybe delete after thinking
+       thru whether it's safe or a good idea. Maybe commit to repo then delete . Run opus subagent on think
+       skill for ."
+    3. On the missing/unreadable execution record fallback - "my imstibct is stop fully coz something gone
+       wrong and old way is unreliable . Maybe we should fully remove old bad way? No fallback ?"
+  - **Item 1, [SONNET] Partial-trust remap for unrecognized statuses - implemented (commit `a7d5ba8f`).**
+    `_finish_execute` no longer discards the whole execution record when one per-file status is
+    unrecognized; only that row maps to a new `unverified` status. Also encoded a general principle into
+    `docs/References/DevContext.md`'s Code Invariants: prefer atomic/per-item outcomes over all-or-nothing
+    invalidation where partial data can be safely trusted.
+  - **Item 2, [OPUS, think skill] Old unreadable `logs/routing-*.json` files - checked 2026-09-06, moot on
+    this machine.** Before dispatching the planned deep-dive subagent, a direct check of this (HOME)
+    machine's `logs/` directory and a broader search of `C:\Users\David` found zero files matching
+    `routing-*.json` - only `analysis-stats.json`/`tracks.json` remain there, plus unrelated pytest fixture
+    copies in `%TEMP%`. Nothing to deep-dive or decide about here; if WORK PC's local (gitignored) `logs/`
+    still has old copies, this check needs re-running there before it can be called closed everywhere.
+  - **Item 3, [OPUS design decision needed] Remove the console-parsing fallback entirely for
+    missing/unreadable execution records on a real run - implemented (commit `4eda741b`).** David's
+    instinct: if the execution record is missing/unreadable after a REAL run, something has gone wrong and
+    the old console-text-derived account is unreliable - stop fully rather than silently falling back to
+    unverified console parsing.
+    - **Design:** `docs/References/Execution-Record-Fallback-Removal-Design.md`. Core ruling - the
+      console-derived *final* account is deleted outright (the queued->done sweep, the count sentence, and
+      `_failed_filename_from_output` all go) and a record-less real run becomes a terminal "VERIFICATION
+      FAILED" state with every track marked a new `unknown` status and "New scan" gated behind an explicit
+      acknowledgement. One deliberate narrowing the design flagged for David to confirm: `_update_exec_status`
+      is kept, but only for live in-flight progress, since deleting it loses the progress bar and buys no
+      safety once nothing it writes survives the run - David confirmed this reading 2026-09-06.
+    - **Implemented 2026-09-06** (C# unit tests 294/294, GUI/routing manifest verify 9/9, Python 344/344,
+      `verify.bat`/`test.bat` green, independently re-run and confirmed). `_finish_execute`'s record-absent
+      path now forces every status to `unknown` and reports "VERIFICATION FAILED"/"Run cancelled" with no
+      counts, ever; `_failed_filename_from_output` is deleted; the acknowledgement gate (checkbox + disabled
+      "New scan") also covers the cancelled-modal's "Run Analysis Now" bypass; `MusicIntegrator.WriteExecutionRecord`
+      gets a one-shot retry to `execution-{timestamp}-retry.json` before its failure line is promoted from
+      `[WARN]` to `[ERROR]`, never changing the exit code.
+
+---
+
 ## 2026-09-05 - Acquire tab: table redesign, Load Liked Songs, state persistence, and related polish
 
 Moved out of IDEAS.md's "Acquire tab history (2026-08-31 to 2026-09-05)" block, which had itself already
