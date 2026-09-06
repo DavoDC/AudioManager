@@ -39,6 +39,7 @@ THUMBS_DIR = CACHE_DIR / "thumbs"
 STATS_HISTORY_JSON = CACHE_DIR / "stats-history.json"
 ACQUIRE_STATE_JSON = CACHE_DIR / "acquire-state.json"
 RUN_LOGS_DIR = CACHE_DIR / "run-logs"
+MANIFESTS_DIR = CACHE_DIR / "manifests"
 
 # Schema versions this GUI was built against (see docs/References/AnalysisJson-Format.md)
 STATS_SCHEMA_VERSION = 1

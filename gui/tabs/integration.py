@@ -892,9 +892,14 @@ def _write_manifest(targets: list[dict]) -> list[str]:
     `targets`, i.e. the accepted set the caller passed in) or removes/adds an
     entry - it only ever adds one extra key to a duplicate's own object.
 
+    Each run gets its own timestamped file under config.MANIFESTS_DIR (never
+    overwriting a fixed path - David's decision 2026-09-06), with only the
+    most recent 10 retained; a fixed path would let a later run's manifest
+    silently clobber an earlier one still worth keeping for reference.
+
     Raises OSError on write failure - the caller decides how to surface it."""
-    manifest_path = config.CACHE_DIR / "accepted-manifest.json"
-    config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    config.MANIFESTS_DIR.mkdir(parents=True, exist_ok=True)
+    manifest_path = config.MANIFESTS_DIR / f"accepted-manifest-{datetime.now():%Y%m%d-%H%M%S}.json"
     entries = []
     for e in targets:
         entry = {"filename": e["filename"], "artist": e["artist"], "title": e["title"]}
@@ -903,7 +908,20 @@ def _write_manifest(targets: list[dict]) -> list[str]:
         entries.append(entry)
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2)
+    _prune_old_manifests()
     return ["integrate", "--manifest", str(manifest_path)]
+
+
+def _prune_old_manifests(keep: int = 10) -> None:
+    """Keep only the most recent `keep` manifest files - the timestamped
+    filename sorts correctly as a string, so no mtime lookup is needed.
+    Cleanup failure (e.g. a locked file) must never fail an integration run."""
+    try:
+        manifests = sorted(config.MANIFESTS_DIR.glob("accepted-manifest-*.json"))
+        for stale in manifests[:-keep]:
+            stale.unlink()
+    except OSError:
+        pass
 
 
 def _open_run_log() -> "object | None":
