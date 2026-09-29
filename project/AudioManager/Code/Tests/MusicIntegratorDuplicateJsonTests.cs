@@ -4,7 +4,7 @@ using AudioManager.Code.Modules;
 namespace AudioManager
 {
     /// <summary>
-    /// Coverage for the "Duplicate-resolution UI" JSON/manifest plumbing (docs/Development/IDEAS.md):
+    /// Coverage for the "Duplicate-resolution UI" JSON/manifest plumbing (the private project backlog):
     /// the libraryDuplicate block MusicIntegrator.BuildJson emits, and PresentDuplicateAndDecide's
     /// manifest-override path that lets a GUI review-stage decision beat the exe's own recommendation
     /// on a real (noInput) run. Uses the test-only MusicIntegrator(testLibraryPath, ...) constructors -

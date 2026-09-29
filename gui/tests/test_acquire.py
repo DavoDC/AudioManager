@@ -159,7 +159,7 @@ def test_read_mp3_tags_corrupt_file_returns_blanks(tmp_path):
 
 
 def test_read_mp3_tags_caches_by_path_and_mtime(tmp_path, monkeypatch):
-    """Regression for IDEAS.md "Every table refresh re-opens every extra MP3
+    """Regression for the private project backlog "Every table refresh re-opens every extra MP3
     with mutagen": a second call for the same path with an unchanged mtime
     must not re-invoke the underlying mutagen read at all."""
     acquire_module._mp3_tags_cache.clear()
@@ -323,7 +323,7 @@ def test_matches_when_fetched_track_has_extra_collab_artists(tmp_path):
 def test_extra_segment_label_uses_browse_wording_with_no_playlist_loaded():
     """Regression: with no playlist ever fetched, find_extra_newmusic_files()
     correctly returns every NewMusic file, but labelling that "extra" reads
-    as an anomaly - see IDEAS.md "Acquire tab incident, 2026-09-04" P1."""
+    as an anomaly - see the private project backlog "Acquire tab incident, 2026-09-04" P1."""
     assert _extra_segment_label(25, playlist_loaded=False) == "25 files in NewMusic"
 
 
@@ -341,7 +341,7 @@ def test_extra_batch_header_uses_diff_wording_once_playlist_loaded():
 
 # --------------------------------------------------------- _spotify_client()
 #
-# Regression coverage for the Acquire tab incident, 2026-09-04 (see IDEAS.md):
+# Regression coverage for the Acquire tab incident, 2026-09-04 (see the private project backlog):
 # SpotifyTools' CONFIG_PATH silently pointed at a nonexistent path after a
 # refactor, and _spotify_client() - the function that actually loads that
 # config and constructs the real Spotify client - was never exercised by any
@@ -424,7 +424,7 @@ def test_poll_should_skip_true_while_simulated():
     """Regression: _poll_downloads()'s 2s timer used to recompute
     _state["downloaded"]/["extra"] from the real NEWMUSIC_DIR unconditionally,
     clobbering simulate()'s sample data within a couple of poll cycles - see
-    IDEAS.md "Acquire tab Simulate-mode exploration, 2026-09-04". Confirms the
+    the private project backlog "Acquire tab Simulate-mode exploration, 2026-09-04". Confirms the
     guard the poll checks before touching _state at all."""
     simulate()
     assert _poll_should_skip() is True
@@ -629,7 +629,7 @@ def test_sorted_tracks_by_length_reversed():
 
 def test_sorted_tracks_year_blanks_stay_last_when_reversed():
     """Blanks-last is a deliberate asymmetry: reversing the sort must not
-    float empty Year cells to the top of the table. Regression for IDEAS.md
+    float empty Year cells to the top of the table. Regression for the private project backlog
     "Year sort puts blank years last ascending but first descending" -
     non-blank years still sort newest-first (descending), blanks stay
     pinned to the end either way."""
@@ -986,7 +986,7 @@ def test_fetch_state_is_persisted_by_the_downloads_check(tmp_path, monkeypatch):
 
 
 def test_check_against_downloads_does_not_save_when_nothing_changed(tmp_path, monkeypatch):
-    """Regression for IDEAS.md "the 2s poll rewrites the state JSON forever":
+    """Regression for the private project backlog "the 2s poll rewrites the state JSON forever":
     a re-invocation that recomputes the exact same downloaded/extra state
     must not call _save_tracks_cache() again - the shape of every
     ui.timer(2.0, _poll_downloads) tick when nothing has actually changed on
@@ -1103,7 +1103,7 @@ def test_toggle_manual_override_flips_value_and_marks_the_row(tmp_path, monkeypa
 
 
 def test_toggle_manual_override_second_click_un_overrides(tmp_path, monkeypatch):
-    """Regression for IDEAS.md "Manual override is one-way": a second click on
+    """Regression for the private project backlog "Manual override is one-way": a second click on
     an already-overridden row must be a true toggle - the row_key is removed
     from _state["manual_override"] entirely (genuinely absent, not
     present-and-False), not left permanently stuck. Clear used to be the only
@@ -1224,7 +1224,7 @@ def test_clear_tab_state_forgets_manual_overrides(tmp_path, monkeypatch):
 
 
 def test_clear_tab_state_run_check_false_skips_the_scan(tmp_path, monkeypatch):
-    """Regression for IDEAS.md "The NewMusic scan runs synchronously on the
+    """Regression for the private project backlog "The NewMusic scan runs synchronously on the
     event loop during tab build and Clear": build()'s async Clear handler
     passes run_check=False and runs _run_check_against_downloads() itself
     off the event loop instead, so clear_tab_state() must not call it inline
@@ -1287,11 +1287,11 @@ def test_restore_cached_tracks_restores_manual_overrides(tmp_path, monkeypatch):
     assert _state["manual_override"] == {"eminem:lose yourself": True}
 
 
-# ------------------------------------------- row keys are content-based, not index-based (IDEAS.md, 2026-09-05)
+# ------------------------------------------- row keys are content-based, not index-based (the private project backlog, 2026-09-05)
 
 
 def test_row_keys_are_independent_of_fetch_order():
-    """Regression for IDEAS.md "Acquire's persisted row keys are index-based":
+    """Regression for the private project backlog "Acquire's persisted row keys are index-based":
     the same set of tracks must produce the same set of row_keys whether or
     not the fetch reordered them - each key must depend only on that track's
     own artist/title content."""
@@ -1458,7 +1458,7 @@ EXTRA = [
 
 
 def test_build_extra_rows_ignores_hide_downloaded(tmp_path, monkeypatch):
-    """IDEAS.md "Extra-rows section prints a count in its header, then hides
+    """The private project backlog "Extra-rows section prints a count in its header, then hides
     every row under it" (2026-09-05): these files matched no track in the
     loaded playlist at all, so "Downloaded" is not a concept that applies to
     them - hide_downloaded must never touch this section, unlike the main
@@ -1580,7 +1580,7 @@ def test_run_sync_liked_reports_success_message(tmp_path, monkeypatch):
     assert _state["sync_busy"] is False
 
 
-# --------------------------------------------- Fetch input validation (IDEAS.md, 2026-09-05)
+# --------------------------------------------- Fetch input validation (the private project backlog, 2026-09-05)
 # "Acquire's Fetch accepts an empty or junk playlist id without validating it"
 
 

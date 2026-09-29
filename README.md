@@ -99,7 +99,7 @@ Auto-runs after step 2, or manually: `AudioManager.exe analysis`
 ```
 AudioManager/
 ├── config/        # LibChecker exceptions config (libchecker-exceptions.xml)
-├── docs/          # IDEAS.md, HISTORY.md, design and planning docs
+├── docs/          # design and planning docs
 ├── logs/          # Integration run logs - gitignored
 ├── project/       # C# solution and source code
 ├── reports/       # Auto-generated timestamped analysis reports - gitignored

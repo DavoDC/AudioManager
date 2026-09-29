@@ -278,7 +278,7 @@ namespace AudioManager
         }
 
         // DEFERRED: LibChecker semicolon check is commented out until the ~436 legacy library files
-        // are remediated via Mp3tag (IDEAS.md TIER 1 "Rename malformed multi-artist library files").
+        // are remediated via Mp3tag (the private project backlog TIER 1 "Rename malformed multi-artist library files").
         // Re-enable by: (1) restoring the check in LibChecker.cs CheckFilename(), (2) making this public.
         private static void LibChecker_MultiArtistFilenameMissingSemicolon_IsDirty_DEFERRED()
         {
@@ -404,7 +404,7 @@ namespace AudioManager
 
         // ---- CheckAlbumCoverDimensions ---- (check temporarily disabled 2026-06-24, re-enable with check)
 
-        // TODO: temporarily disabled - uncomment when CheckAlbumCoverDimensions is re-enabled (see IDEAS.md TIER 2)
+        // TODO: temporarily disabled - uncomment when CheckAlbumCoverDimensions is re-enabled (see the private project backlog TIER 2)
         //public static void LibChecker_LowResCover_IsDirty()
         //{
         //    var tag = new TrackTag("\\Artists\\Known Artist\\Singles\\Known Artist - Song A.xml",
@@ -423,7 +423,7 @@ namespace AudioManager
             Assert.True(checker.IsClean, "800x800 cover art (exactly at threshold) should be clean");
         }
 
-        // TODO: temporarily disabled - uncomment when CheckAlbumCoverDimensions is re-enabled (see IDEAS.md TIER 2)
+        // TODO: temporarily disabled - uncomment when CheckAlbumCoverDimensions is re-enabled (see the private project backlog TIER 2)
         //public static void LibChecker_NonSquareLowRes_IsDirty()
         //{
         //    // min(600, 1200) = 600 < 800 - dirty even if one dimension is large

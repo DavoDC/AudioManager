@@ -124,7 +124,7 @@ def test_filtered_libdupes_is_distinct_from_inbatch_duplicate():
 def test_dup_resolution_defaults_to_exe_recommendation_when_untouched():
     """Leaving a library-duplicate entry untouched must resolve to the exe's
     own recommendation - the same value a real (unsupervised) run would take,
-    per IDEAS.md's 'unresolved default = auto-take-recommendation' rule."""
+    per the private project backlog's 'unresolved default = auto-take-recommendation' rule."""
     s = IntegrationState()
     e = _entry("a.mp3", libraryDuplicate=True, dupRecommendationKey="L")
     assert s.dup_resolution(e) == "L"
@@ -956,7 +956,7 @@ def test_update_exec_status_overlapping_tag_text_does_not_cross_contaminate():
 
 
 def test_update_exec_status_own_short_line_still_updates_despite_longer_superstring():
-    """Regression for the IDEAS.md 'Artist - Run' / 'Artist - Runaway' scenario
+    """Regression for the private project backlog 'Artist - Run' / 'Artist - Runaway' scenario
     (2026-09-05 review): a shorter candidate's OWN line - the line's full text
     IS that candidate's tag text, not merely a substring occurring inside a
     longer candidate's line - must always update that candidate's status, even

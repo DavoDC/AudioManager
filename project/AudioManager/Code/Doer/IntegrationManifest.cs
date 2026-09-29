@@ -29,7 +29,7 @@ namespace AudioManager
             // GUI review-stage duplicate resolution ("D"/"L"/"K"), if the user changed it away
             // from the exe's own recommendation. Null/absent means "unresolved" - the exe falls
             // back to its recommendation exactly as it always has. See "Duplicate-resolution UI"
-            // in docs/Development/IDEAS.md.
+            // in the private project backlog.
             public string DupResolution;
         }
 

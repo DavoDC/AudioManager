@@ -252,7 +252,7 @@ def _sample_entries() -> list[dict]:
     and filter.
 
     In-batch duplicate and library duplicate are deliberately kept on two
-    separate entries here (docs/Development/IDEAS.md "Duplicate-resolution
+    separate entries here (the private project backlog "Duplicate-resolution
     UI") - they are unrelated concepts (same artist+title twice in this scan
     batch vs. already present somewhere in the library) and mixing them onto
     one sample would make the two badges/filters look coupled when they
@@ -415,7 +415,7 @@ def stage_review() -> None:
     entries_view = S.filtered()
     if entries_view:
         S.cursor = max(0, min(S.cursor, len(entries_view) - 1))
-    # INVESTIGATED 2026-09-05 (docs/Development/IDEAS.md): a fresh ui.keyboard()
+    # INVESTIGATED 2026-09-05 (the private project backlog): a fresh ui.keyboard()
     # is constructed here on every refresh of the @ui.refreshable content()
     # (build(), above) that wraps this function - refresh fires on every
     # accept/decline/filter click while stage_review() is on screen. Confirmed
@@ -527,7 +527,7 @@ def _on_review_key(e) -> None:
     When it is made keyboard-driven it must become a SECOND AXIS on this same
     cursor (e.g. 1/2/3 or Left/Right setting D/L/K on the card under the
     cursor), never a nested focus cursor that J/K have to step through - one
-    cursor, one Triage mode. See docs/Development/IDEAS.md."""
+    cursor, one Triage mode. See the private project backlog."""
     if not e.action.keydown or e.action.repeat:
         return
     if S.stage != 2 or not S.entries:
@@ -677,7 +677,7 @@ def review_card(e: dict, idx: int = 0) -> None:
             if st and st not in ("ok", "clean", "route", "moved"):
                 badges.append(f'<span class="rc-badge err">{_esc(e["status"])}</span>')
             # Deliberately no "Clean route" badge for the no-exceptions case -
-            # an absent badge row IS the clean signal (IDEAS.md: a badge on
+            # an absent badge row IS the clean signal (the private project backlog: a badge on
             # every uneventful card trains the eye to skip the row where the
             # real exceptions - duplicates, new folders, errors - live).
             if badges:
@@ -774,7 +774,7 @@ def batch_summary_html(summary: dict) -> str:
     when empty" rule are testable without a NiceGUI client.
 
     Three things the exe already computes and the GUI used to drop on the floor
-    (docs/Development/IDEAS.md "Scan-ahead batch context is invisible"):
+    (the private project backlog "Scan-ahead batch context is invisible"):
 
     - Route distribution, a different axis from the confirm bar's
       artists/new-folders/duplicates counts - it says where the batch LANDS.
@@ -856,7 +856,7 @@ def _confirm_note_class(simulated: bool) -> str:
     the loud warning treatment - the real-run note is the single highest-stakes
     confirmation in the GUI (it moves real files) and must never fall back to
     plain dim `.note` text just because the simulated branch got the loud
-    styling first. See docs/Development/HISTORY.md for the styling-parity fix."""
+    styling first. See the private project history for the styling-parity fix."""
     return "note simulated" if simulated else "note real"
 
 
@@ -1267,8 +1267,7 @@ def _update_exec_status(line: str) -> None:
     no separate "started processing" line, so there's no observable "moving"
     state - a file goes straight from queued to done/skipped/failed). `[SKIP]`
     gets its own 'skipped' status, distinct from 'done', so a not-moved row
-    never renders or counts as a moved one (2026-09-05 fix - see IDEAS.md/
-    HISTORY.md). The one line that DOES carry a filename is the halt-on-error
+    never renders or counts as a moved one (2026-09-05 fix - see the private project backlog and history). The one line that DOES carry a filename is the halt-on-error
     line, `Error processing file: {filename}`, handled separately below.
 
     A match only counts if no OTHER target's "artist - title" text

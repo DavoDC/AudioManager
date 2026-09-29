@@ -57,7 +57,7 @@ Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
 
 ### Development priority: Library Intake over Library Insight (confirmed 2026-09-05)
 
-**Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight (Statistics, Library, Mirror, Services) for now.** No-signal work picks: Intake first. See `docs/Development/IDEAS.md` TIER 2 priority note.
+**Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight (Statistics, Library, Mirror, Services) for now.** No-signal work picks: Intake first. See the private project backlog TIER 2 priority note.
 
 ### Claude: GUI visual design - read docs/DESIGN.md first
 

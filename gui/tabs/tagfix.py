@@ -53,7 +53,7 @@ _CUSTOM_RULE_WARNING_MARKER = "[WARN] Custom tag rule"
 # Regex metacharacters (.NET Regex syntax, same set the C# loader's Regex.Replace
 # would interpret) - used only to warn when an empty Pattern falls back to Value
 # as-is (TagFixCustomRules.cs's Pattern = IsNullOrEmpty(Pattern) ? Value : Pattern,
-# left untouched by this fix per the recorded OPUS decision, docs/Development/IDEAS.md).
+# left untouched by this fix per the recorded OPUS decision, the private project backlog).
 _REGEX_METACHARS = ".^$*+?()[]{}|\\"
 
 

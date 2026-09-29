@@ -4,7 +4,7 @@ namespace AudioManager
 {
     /// <summary>
     /// Coverage for the batch-level "summary" block MusicIntegrator.BuildJson emits alongside the
-    /// per-file rows (docs/Development/IDEAS.md "Scan-ahead batch context is invisible"): the route
+    /// per-file rows (the private project backlog "Scan-ahead batch context is invisible"): the route
     /// distribution, the Misc auto-migration counts, the detected compilation albums, and the
     /// per-entry compilationAlbum flag. Pure string assertions against BuildJson - no filesystem,
     /// no console interaction.

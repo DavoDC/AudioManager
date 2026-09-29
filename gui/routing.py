@@ -14,11 +14,11 @@ which destination categories the batch spreads across, which artists cross the
 3-song threshold and therefore have existing Misc songs auto-migrated (files
 ALREADY in the library that the run will move, not just incoming ones), and
 which albums were detected as batch compilations (3+ distinct primary artists
-on one album). See docs/Development/IDEAS.md "Scan-ahead batch context is
+on one album). See the private project backlog "Scan-ahead batch context is
 invisible".
 
 inBatchDuplicate and libraryDuplicate are two distinct concepts (see
-docs/Development/IDEAS.md "Duplicate-resolution UI"): inBatchDuplicate means
+the private project backlog "Duplicate-resolution UI"): inBatchDuplicate means
 "same artist+title appears twice within this NewMusic batch" (unchanged,
 MarkInBatchDuplicates); libraryDuplicate means "this file already exists
 somewhere in the library" and carries the dup* fields describing the

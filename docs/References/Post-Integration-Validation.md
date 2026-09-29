@@ -6,7 +6,7 @@ Why post-integration LibChecker warnings are often false, and how to make
 Case study: real integration run on 2026-06-28 (`logs/REAL_INTEGRATION_Sun_28.txt`).
 
 **This is reference only - mechanism, proof, and design rationale.** Every
-actionable item (fixes, investigations) is tracked in `docs/Development/IDEAS.md`
+actionable item (fixes, investigations) is tracked in the private project backlog
 TIER 1, not here. Read this to understand *why*; act from IDEAS so nothing is
 missed.
 

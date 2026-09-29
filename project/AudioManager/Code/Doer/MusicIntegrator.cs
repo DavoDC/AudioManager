@@ -958,7 +958,7 @@ namespace AudioManager
                 sb.AppendLine($"    \"inBatchDuplicate\": {(e.InBatchDuplicate ? "true" : "false")},");
                 sb.AppendLine($"    \"compilationAlbum\": {(e.CompilationAlbum ? "true" : "false")},");
                 // Library-duplicate block - distinct from inBatchDuplicate above, whose field name
-                // and meaning are unchanged. See docs/Development/IDEAS.md "Duplicate-resolution UI".
+                // and meaning are unchanged. See the private project backlog "Duplicate-resolution UI".
                 sb.AppendLine($"    \"libraryDuplicate\": {(e.LibraryDuplicate ? "true" : "false")},");
                 sb.AppendLine($"    \"dupLibraryPath\": {JStr(e.DupLibraryPath)},");
                 sb.AppendLine($"    \"dupLibraryTrack\": {JStr(e.DupLibraryTrack)},");
@@ -1810,7 +1810,7 @@ namespace AudioManager
         }
 
         /// <summary>Maps a recommendation key to the exact phrase the GUI/CLI display (see
-        /// docs/Development/IDEAS.md "Duplicate-resolution UI" terminology decision).</summary>
+        /// the private project backlog "Duplicate-resolution UI" terminology decision).</summary>
         private static string DupRecommendationText(char key)
         {
             switch (key)
@@ -1863,7 +1863,7 @@ namespace AudioManager
             {
                 // GUI review-stage resolution wins over the exe's own recommendation on a real
                 // run, carried through the same --manifest mechanism as accept/decline (see
-                // docs/Development/IDEAS.md "Duplicate-resolution UI"). A duplicate left
+                // the private project backlog "Duplicate-resolution UI"). A duplicate left
                 // untouched in Review has no manifest entry for it, so this falls through to
                 // the exact same auto-accept-recommendation behavior as before - unresolved
                 // batches stay safe by construction, not by a second code path.

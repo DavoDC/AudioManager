@@ -1,6 +1,6 @@
 # Execution-Record Contract: Design Decision
 
-**Status: design settled, ready for mechanical Sonnet implementation.** Research and evidence: `docs/References/Execution-Record-Contract-Research.md` (read that first; it is not repeated here). Backlog items closed by implementing this: IDEAS.md "[OPUS] Real-integration outcomes are reconstructed from console prose" and "[OPUS] Contract versioning is inverted relative to risk". Partially addresses "[OPUS] Hand-rolled JSON on both sides of the safety-critical manifest boundary" (the `JStr` half only - see section 6).
+**Status: design settled, ready for mechanical Sonnet implementation.** Research and evidence: `docs/References/Execution-Record-Contract-Research.md` (read that first; it is not repeated here). Backlog items closed by implementing this: the private project backlog "[OPUS] Real-integration outcomes are reconstructed from console prose" and "[OPUS] Contract versioning is inverted relative to risk". Partially addresses "[OPUS] Hand-rolled JSON on both sides of the safety-critical manifest boundary" (the `JStr` half only - see section 6).
 
 The implementer follows this document as a checklist and makes no judgment calls. If any instruction here appears to require touching something section 1 marks as forbidden, **stop and escalate rather than improvising**.
 
@@ -232,7 +232,7 @@ Remove the function and its docstring from `gui/routing.py`. Remove its tests fr
 
 ### C# (`project/AudioManager/Code/Tests/`)
 
-New file `MusicIntegratorExecutionRecordTests.cs`. **It must be registered in BOTH `AudioManager.csproj` (`<Compile Include>`) and the hardcoded type array in `Tests/TestRunner.cs`** - IDEAS.md already records that missing either silently shrinks the suite while still reporting `[PASS]`. Verify the new test names actually appear in `--test` output before claiming done.
+New file `MusicIntegratorExecutionRecordTests.cs`. **It must be registered in BOTH `AudioManager.csproj` (`<Compile Include>`) and the hardcoded type array in `Tests/TestRunner.cs`** - the private project backlog already records that missing either silently shrinks the suite while still reporting `[PASS]`. Verify the new test names actually appear in `--test` output before claiming done.
 
 Cover:
 1. `BuildJson` with `dryRun: true, confidence: null` emits `"schemaVersion": 1`, `"recordType": "routing"`, `"dryRun": true`, `"confidence": null`.
@@ -268,4 +268,4 @@ Also add a fixture execution record under `gui/tests/fixtures/`. Finally, run `s
 
 Reasoning. Today the gap is dry-run-only: a malformed routing JSON costs a re-scan, which is annoying and visible. After this change the same escaper produces the *only* durable account of irreversible file moves, and the values most likely to contain a tab or other C0 character are exactly the new ones - `detail`, which carries raw exception text, and `errors[].detail`. The failure would also be maximally quiet: the exe writes the file, prints its path, and exits 0; the GUI's `json.load` raises, the record is treated as missing, and the user gets the unverified-console fallback for the run that most needed a record - the one that errored. Fixing the escaper is a handful of lines in one private static method with a unit test, so the cost is close to zero against that.
 
-Replacing all three hand-rolled emitters and `IntegrationManifest.Parse` with Newtonsoft is a genuinely larger change that touches the manifest parser - which *is* inside the guarded path - and it stays on its own IDEAS.md line. Do not start it here.
+Replacing all three hand-rolled emitters and `IntegrationManifest.Parse` with Newtonsoft is a genuinely larger change that touches the manifest parser - which *is* inside the guarded path - and it stays on its own line in the private project backlog line. Do not start it here.

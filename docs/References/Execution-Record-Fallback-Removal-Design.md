@@ -1,6 +1,6 @@
 # Execution-Record Fallback Removal: Design Decision
 
-**Status: design settled, ready for mechanical Sonnet implementation.** This is IDEAS.md action item 3 of the three that came out of David's 2026-09-06 review of the execution-record contract. Prerequisites, read first and not repeated here: `docs/References/Execution-Record-Contract-Research.md` and `docs/References/Execution-Record-Contract-Design.md` (the shipped contract). Item 1 (partial-trust remap, commit `a7d5ba8f`) is the baseline this builds on. Item 2 (old unreadable `logs/routing-*.json` files) is out of scope and must not be touched here.
+**Status: design settled, ready for mechanical Sonnet implementation.** This is action item 3 in the private project backlog of the three that came out of David's 2026-09-06 review of the execution-record contract. Prerequisites, read first and not repeated here: `docs/References/Execution-Record-Contract-Research.md` and `docs/References/Execution-Record-Contract-Design.md` (the shipped contract). Item 1 (partial-trust remap, commit `a7d5ba8f`) is the baseline this builds on. Item 2 (old unreadable `logs/routing-*.json` files) is out of scope and must not be touched here.
 
 The implementer follows this document as a checklist and makes no judgment calls. If any instruction here appears to require touching something section 1 marks as forbidden, **stop and escalate rather than improvising**.
 

@@ -31,7 +31,7 @@ folder; a "simulate-banner" (mirrors integration.py's) marks the state as
 synthetic until a real Fetch or Clear resets it.
 Cheap/MVP build (2026-08-31, table redesign 2026-09-01, Verify Downloads card
 merged into table 2026-09-01, NewMusic-surfacing/history/clear 2026-09-02,
-hide-downloaded toggle 2026-09-02) - polish items are tracked in IDEAS.md,
+hide-downloaded toggle 2026-09-02) - polish items are tracked in the private project backlog,
 not built here.
 """
 from __future__ import annotations
@@ -64,7 +64,7 @@ _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_r
 # fetch(); reset False by clear() and by a real fetch(), mirroring integration.py's
 # IntegrationState.simulated. Drives the "simulate-banner" in build().
 # manual_override: {row_key: True} for every row whose Downloaded tickbox the user has
-# clicked directly (see toggle_manual_override) - IDEAS.md "Acquire tab polish" OPUS
+# clicked directly (see toggle_manual_override) - the private project backlog "Acquire tab polish" OPUS
 # decision 2026-09-05: no separate tickbox column, the existing Downloaded cell becomes
 # clickable instead. A later _run_check_against_downloads() skips fuzzy-matching any
 # row present here and keeps its value exactly as the user set it. Persisted alongside
@@ -96,11 +96,11 @@ _TABLE_COLUMN_DISPLAY = {name: display for name, display, _field in _TABLE_COLUM
 
 _HISTORY_BUTTON_TOOLTIP = "Playlist history"
 # Icon-only history button next to the playlist input carried no title/tooltip -
-# see IDEAS.md "Playlist-history icon-button has no tooltip".
+# see the private project backlog "Playlist-history icon-button has no tooltip".
 
 _DEEMIX_LINK_LABEL = "Open in Deemix"
 # Per-row link used to read just "Search" on every row, giving no hint what it
-# opens - see IDEAS.md "Per-row 'Search' link label is context-free".
+# opens - see the private project backlog "Per-row 'Search' link label is context-free".
 
 _LIKED_SONGS_ID = "__liked_songs__"
 _LIKED_SONGS_NAME = "Liked Songs"
@@ -140,7 +140,7 @@ def _sorted_tracks() -> list[tuple[str, str, str, str, str, str]]:
     if idx == 3:
         # Year: blanks last in BOTH directions. sorted()'s reverse flips the
         # whole key tuple's comparison, so a plain (is_blank, year) key put
-        # blanks first once reverse=True (IDEAS.md "Year sort puts blank
+        # blanks first once reverse=True (the private project backlog "Year sort puts blank
         # years last ascending but first descending"). The blank marker is
         # negated when reversed so it still ends up smallest under a
         # descending comparison, keeping blanks pinned to the end either way.
@@ -278,7 +278,7 @@ def _spotify_client():
 
 
 def _do_sync_liked() -> str:
-    """Deferred - see IDEAS.md TIER 2 'Sync Liked Songs broken (403)'. Card is
+    """Deferred - see the private project backlog TIER 2 'Sync Liked Songs broken (403)'. Card is
     hidden via _build_sync_liked_card() not being called; logic kept intact."""
     from spotify_tools.acquire import move_liked_to_playlist
     client = _spotify_client()
@@ -296,7 +296,7 @@ def _format_duration(duration_ms: int) -> str:
 
 
 def _validate_playlist_input(value: str) -> str | None:
-    """Local (no-network) validation of the Fetch Tracks playlist box - IDEAS.md
+    """Local (no-network) validation of the Fetch Tracks playlist box - the private project backlog
     "Acquire's Fetch accepts an empty or junk playlist id without validating
     it". extract_playlist_id() itself never raises or signals failure for
     non-URL input: a raw Spotify playlist id has no "playlist/..." pattern to
@@ -324,7 +324,7 @@ def _do_fetch_tracks(
     playlist_id_or_url: str, on_progress=None
 ) -> list[tuple[str, str, str, str, str, str]]:
     """on_progress, if given, is called (current, total) once per track as the
-    fetched rows are shaped into the tuple track_table() expects - IDEAS.md
+    fetched rows are shaped into the tuple track_table() expects - the private project backlog
     "Acquire tab polish" item 2 (progress feedback during Fetch/Sync).
     get_playlist_tracks_detailed() itself has no progress hook of its own
     (it returns the whole page-paginated list in one call), so this is the
@@ -553,7 +553,7 @@ def _row_keys_for_tracks(tracks: list[tuple]) -> list[str]:
     re-fetch even if the playlist has been reordered or had tracks
     added/removed upstream - the old f"{i}:{artist}:{title}" scheme let the
     fetch-order index re-attach a persisted override to whatever track now
-    sits at that old position (IDEAS.md "Acquire's persisted row keys are
+    sits at that old position (the private project backlog "Acquire's persisted row keys are
     index-based"). A genuine duplicate - two tracks in the same fetch that
     normalise to the same content key - is disambiguated with an occurrence
     suffix, but only once a collision actually happens, so the common
@@ -618,12 +618,12 @@ def _run_check_against_downloads() -> None:
     unit-testable and so clear()/restore both reuse the one implementation.
 
     Rows in _state["manual_override"] are excluded from the fuzzy match
-    entirely and keep exactly the Downloaded value the user set - IDEAS.md
+    entirely and keep exactly the Downloaded value the user set - the private project backlog
     "Acquire tab polish" OPUS decision 2026-09-05: a manual override must
     survive every later re-check, not just the one that set it.
 
     Persists only when the freshly computed downloaded/extra state actually
-    differs from what _state already held before this call - IDEAS.md
+    differs from what _state already held before this call - the private project backlog
     "Every table refresh re-opens every extra MP3 with mutagen, and the 2s
     poll rewrites the state JSON forever": _poll_downloads() calls this
     unconditionally every 2 seconds, and without this guard every tick did a
@@ -659,7 +659,7 @@ def _run_check_against_downloads() -> None:
 
 
 def toggle_manual_override(row_key: str) -> None:
-    """Handler behind the clickable Downloaded cell. A true toggle (IDEAS.md
+    """Handler behind the clickable Downloaded cell. A true toggle (the private project backlog
     "Manual override is one-way", 2026-09-05): the first click on a row flips
     its Downloaded value and marks it overridden, exactly as before, so
     _run_check_against_downloads() leaves it alone from now on. The second
@@ -683,7 +683,7 @@ def toggle_manual_override(row_key: str) -> None:
 
 
 def build_track_rows() -> list[dict]:
-    """Row dicts for the paginated ui.table in track_table() - IDEAS.md
+    """Row dicts for the paginated ui.table in track_table() - the private project backlog
     "Acquire tab polish" item 3 (pagination). This is the render layer only:
     it shapes the *entire* filtered/sorted _state["tracks"] into rows (same
     hide_downloaded filtering the old hand-rolled loop did); ui.table's own
@@ -715,7 +715,7 @@ def build_extra_rows() -> list[tuple[str, str, str, Path]]:
     has. Deliberately NOT filtered by _state["hide_downloaded"]: these files
     sit in NEWMUSIC_DIR but matched no track in the loaded playlist at all, so
     "Downloaded" is not a concept that applies to them the way it does to a
-    playlist row - IDEAS.md "Extra-rows section prints a count in its header,
+    playlist row - the private project backlog "Extra-rows section prints a count in its header,
     then hides every row under it" 2026-09-05. The header count
     (_extra_batch_header/len(_state["extra"])) and this function's row count
     must always match, in both hide_downloaded states, unlike
@@ -753,7 +753,7 @@ def clear_tab_state(run_check: bool = True) -> None:
     four refresh-hook calls still fire, against the just-blanked state) so an
     async caller can run the scan itself off the event loop and refresh again
     once it completes - see build()'s Clear button, which does exactly this
-    to avoid blocking on a large NewMusic inbox (IDEAS.md "The NewMusic scan
+    to avoid blocking on a large NewMusic inbox (the private project backlog "The NewMusic scan
     runs synchronously on the event loop during tab build and Clear").
     Defaulting to True keeps every other caller - this module's own tests
     included - on the original synchronous scan-then-refresh-inline
@@ -822,7 +822,7 @@ def _pct_label(pct: int) -> str:
     """Headline percentage text above the bar. Spelled out as "N% of playlist"
     rather than bare "N%" because pct_complete and the bar's own segment
     widths use different denominators (pct excludes extra files by design,
-    widths include them) - see IDEAS.md "Progress bar's headline percentage
+    widths include them) - see the private project backlog "Progress bar's headline percentage
     and its visual segment widths use different denominators". Labelling the
     number explicitly is the cheapest fix; the underlying math is unchanged."""
     return f"{pct}% of playlist"
@@ -832,7 +832,7 @@ def _header_label(col: str, sort_col: str | None, sort_reverse: bool) -> str:
     """Sortable-column header text. The active column shows its direction
     arrow (unchanged); an inactive sortable column now also carries a faint
     up/down glyph so sortability is discoverable before the first click - see
-    IDEAS.md "Sortable table headers give no visual hint that they're
+    the private project backlog "Sortable table headers give no visual hint that they're
     clickable". Only called for columns already in _SORT_COLUMNS."""
     if sort_col == col:
         return col + (" ▼" if sort_reverse else " ▲")
@@ -841,7 +841,7 @@ def _header_label(col: str, sort_col: str | None, sort_reverse: bool) -> str:
 
 def _downloaded_cell_text(is_downloaded: bool) -> str:
     """Read-only Downloaded-column cell text, replacing a disabled checkbox
-    (which read as "broken control", not "status") - see IDEAS.md "Read-only
+    (which read as "broken control", not "status") - see the private project backlog "Read-only
     'Downloaded' status shown as a disabled checkbox". A downloaded row gets
     a checkmark pill (see .dl-badge in theme.py); a missing row gets a plain
     dash - there is nothing to flag, so it earns no badge."""
@@ -869,7 +869,7 @@ def _extra_batch_header(count: int, playlist_loaded: bool) -> str:
 
 async def _run_sync_liked(status_cb=lambda msg: None) -> None:
     """Guarded, testable body of the Sync Liked Songs button handler -
-    IDEAS.md "Acquire tab polish" item 4 (dedupe protection). A second call
+    the private project backlog "Acquire tab polish" item 4 (dedupe protection). A second call
     made while one is already in flight is a no-op, exactly like
     gui/runner.py's `runner.busy` guard: checked at the top, cleared in a
     finally so a raised exception can never leave the flag stuck True.
@@ -899,7 +899,7 @@ async def _run_sync_liked(status_cb=lambda msg: None) -> None:
 
 def _build_sync_liked_card() -> None:
     """Deferred, not called from build() - Spotify 403s in Development Mode
-    (account not allowlisted). See IDEAS.md TIER 2 'Sync Liked Songs broken'.
+    (account not allowlisted). See the private project backlog TIER 2 'Sync Liked Songs broken'.
     Kept intact so re-enabling later is one line (call this from build())."""
     with ui.element("div").classes("panel w-full").style("margin-bottom:16px;"):
         with ui.element("div").classes("panel-title"):
@@ -1054,7 +1054,7 @@ def build() -> None:
         @ui.refreshable
         def track_table():
             """Fetched tracks render through NiceGUI/Quasar's ui.table with
-            pagination={'rowsPerPage': 50} - IDEAS.md "Acquire tab polish"
+            pagination={'rowsPerPage': 50} - the private project backlog "Acquire tab polish"
             OPUS decision 2026-09-05: the render layer is the only thing that
             paginates, _state["tracks"] always holds every fetched track.
             build_track_rows() does the sort/hide_downloaded shaping (same
@@ -1185,7 +1185,7 @@ def build() -> None:
 
         async def clear():
             """Async so the NewMusic rescan clear_tab_state() would otherwise
-            run inline can happen off the event loop instead - IDEAS.md "The
+            run inline can happen off the event loop instead - the private project backlog "The
             NewMusic scan runs synchronously on the event loop during tab
             build and Clear". clear_tab_state(run_check=False) still resets
             _state and refreshes every panel immediately (an instant blank
@@ -1206,7 +1206,7 @@ def build() -> None:
         @ui.refreshable
         def fetch_progress_label():
             """Per-track "Fetching track N/M" readout for the Fetch/Load Liked
-            Songs loop - IDEAS.md "Acquire tab polish" item 2. _state["fetch_progress"]
+            Songs loop - the private project backlog "Acquire tab polish" item 2. _state["fetch_progress"]
             is written from the worker thread inside _do_fetch_tracks/
             _do_fetch_liked_tracks (see on_progress); a ui.timer below polls it
             and calls .refresh() on the event-loop thread, since NiceGUI UI
@@ -1232,7 +1232,7 @@ def build() -> None:
         # restore_cached_tracks) so a browser reload or a tab rebuild comes
         # back to the table you left, then render immediately and kick the
         # NewMusic scan off the event loop rather than running it inline -
-        # IDEAS.md "The NewMusic scan runs synchronously on the event loop
+        # the private project backlog "The NewMusic scan runs synchronously on the event loop
         # during tab build and Clear": on a large inbox the synchronous scan
         # used to stall tab construction, freezing every other connected
         # browser view along with it. asyncio.create_task() from this sync

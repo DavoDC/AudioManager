@@ -59,7 +59,7 @@ namespace AudioManager
                 totalTagHits += CheckAlbumCoverCount(tag);
 
                 // Check album cover dimensions (must be >= 800px)
-                // TODO: temporarily disabled - re-enable after album art remediation (see IDEAS.md TIER 2)
+                // TODO: temporarily disabled - re-enable after album art remediation (see the private project backlog TIER 2)
                 // totalTagHits += CheckAlbumCoverDimensions(tag);
 
                 // Check compilation status
@@ -130,7 +130,7 @@ namespace AudioManager
             // where artists were concatenated without ";": "T.I.Cee Lo Green", "UsherAlicia Keys", etc.).
             // Enabling the check would block all integration until those files are fixed via Mp3tag.
             // Tests for the desired behavior exist (LibChecker_MultiArtistFilename*).
-            // Re-enable after bulk filename remediation: IDEAS.md TIER 1 "Rename malformed multi-artist files".
+            // Re-enable after bulk filename remediation: the private project backlog TIER 1 "Rename malformed multi-artist files".
 
             // Check filename contains separator
             totalHits += CheckFilenameForStr(filenameS, " - ");

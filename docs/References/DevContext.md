@@ -12,7 +12,7 @@ AudioManager/
   README.md
   .gitignore
   config/                      # libchecker-exceptions.xml (edit without recompiling)
-  docs/                        # IDEAS.md, HISTORY.md, design docs
+  docs/                        # planning files, design docs
   logs/                        # integration run logs (gitignored, written by MusicIntegrator)
   scripts/                     # launchers and one-off utility scripts
   project/                     # C# solution
@@ -221,7 +221,7 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 - **Test deactivation pattern (reflection-discovered tests):** TestRunner discovers tests via `GetMethods(BindingFlags.Static | BindingFlags.Public)`. To deactivate a test without deleting it (e.g. when a LibChecker check is deferred until library remediation), change `public static void` to `private static void`. Add `_DEFERRED` suffix to the method name as a signal. Re-enable: revert to public + restore the production code it exercises. The `_IsClean` counterpart tests should remain public - they verify the non-blocking path still passes.
 
-- **Deferred LibChecker check pattern:** When a new LibChecker check would block integration due to pre-existing library violations, keep the code as a commented-out block in `CheckFilename()` with a clear pointer to the remediation task in IDEAS.md. The `_IsDirty` test goes private (`_DEFERRED`); the `_IsClean` tests stay active. Re-enable both together once remediation is complete. Current deferred check: multi-artist semicolon delimiter validation (~436 files pending Mp3tag bulk-rename - IDEAS.md TIER 1).
+- **Deferred LibChecker check pattern:** When a new LibChecker check would block integration due to pre-existing library violations, keep the code as a commented-out block in `CheckFilename()` with a clear pointer to the remediation task in the private project backlog. The `_IsDirty` test goes private (`_DEFERRED`); the `_IsClean` tests stay active. Re-enable both together once remediation is complete. Current deferred check: multi-artist semicolon delimiter validation (~436 files pending Mp3tag bulk-rename - the private project backlog TIER 1).
 
 - **Parser parallel reads: order of `audioTags` list is non-deterministic** (2026-06-27). `Parallel.ForEach` into `ConcurrentBag` gives no ordering guarantee. All consumers (LibChecker, Analyser, ParseCache) iterate the full list without order dependency - this is fine. Do NOT add any code that relies on `audioTags` order matching mirror folder traversal order.
 
@@ -231,7 +231,7 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 ## Repo Patterns
 
-- **TrackXML : Track is known design debt (TIER 2 in IDEAS.md).** Do not model new serialization code on this inheritance. Any new XML field should wait for the XML refactor item. The target design is `internal static class TrackXML` with `Read(path, TrackTag)` and `Write(path, TrackTag)` using `XDocument` (System.Xml.Linq). `XDocument` is strictly cleaner: `r.Element("Title")?.Value ?? ""` vs XPath strings, and the write path is one `new XDocument(new XElement("Track", ...))` expression.
+- **TrackXML : Track is known design debt (TIER 2 in the private project backlog).** Do not model new serialization code on this inheritance. Any new XML field should wait for the XML refactor item. The target design is `internal static class TrackXML` with `Read(path, TrackTag)` and `Write(path, TrackTag)` using `XDocument` (System.Xml.Linq). `XDocument` is strictly cleaner: `r.Element("Title")?.Value ?? ""` vs XPath strings, and the write path is one `new XDocument(new XElement("Track", ...))` expression.
 
 - **ParseCache Extract() pattern (TIER 2 prerequisite).** When the XML refactor ships, replace `private const int FieldCount = 12` with a static `string[] Extract(TrackTag t)` method returning all fields in order. `FieldCount` becomes `Extract(null).Length`. Save uses `string.Join(Sep, Extract(t))`. Deserialize validates `parts.Length == FieldCount`. One edit to add a field, no sync risk.
 
@@ -309,7 +309,7 @@ This is exactly how the dry-run `[DRY RUN] Would route to:` line is computed for
 
 ## Workflow Rules (moved from CLAUDE.md 2026-07-02)
 
-- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to IDEAS.md TIER 1 immediately, address before any other work in the session.
+- **LibChecker-warning priority (TIER 1 threshold):** Any bug, routing gap, or config issue that would cause LibChecker to report a warning is TIER 1. LibChecker warnings mean non-conformant library state that compounds with every integration run. Concrete test: "would `CheckAlbumSubfolderRule()`, `CheckGenreVsFolder()`, or any other LibChecker rule fire on this?" If yes - stop, add to the private project backlog TIER 1 immediately, address before any other work in the session.
 
 - **Post-integration validation always force-regens.** Program.cs calls `AgeChecker.ForceRegen()` before `new Reflector()` in the post-integration block. Any future code that runs Reflector after integration-level file moves/deletes must do the same - force-regen gives a guaranteed clean rebuild after bulk moves, as defense-in-depth.
 

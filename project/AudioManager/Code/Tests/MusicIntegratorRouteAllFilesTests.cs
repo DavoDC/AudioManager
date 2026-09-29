@@ -8,7 +8,7 @@ namespace AudioManager
 {
     /// <summary>
     /// Regression coverage for RouteAllFiles's "one bad file must not abort the whole batch"
-    /// behavior (previously it threw and halted, per docs/Development/IDEAS.md 2026-09-04).
+    /// behavior (previously it threw and halted, per the private project backlog 2026-09-04).
     /// Uses the test-only MusicIntegrator(testLibraryPath) constructor and real temp
     /// files/dirs - never touches the real Constants.AudioFolderPath library.
     /// </summary>

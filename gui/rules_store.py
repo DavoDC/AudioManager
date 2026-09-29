@@ -44,7 +44,7 @@ _DEFAULT_TEMPLATE = (
     "  Rule attributes: id, field (title|album|artists|genre), match\n"
     "  (contains|equals|regex|startsWith|endsWith), value, action\n"
     "  (regex-replace|set-value), pattern, replacement, enabled.\n"
-    "  See docs/Development/IDEAS.md 'TagFix configurable rules' for the full schema.\n"
+    "  See the private project backlog 'TagFix configurable rules' for the full schema.\n"
     "-->\n"
     "<TagFixCustomRules>" + _EMPTY_BODY + "</TagFixCustomRules>\n"
 )

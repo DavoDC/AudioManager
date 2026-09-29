@@ -1,6 +1,6 @@
 # AudioManager GUI Architecture
 
-Reference doc: design vision, stack decisions, and third-party libraries for the GUI layer. Open GUI work items live in `docs/Development/IDEAS.md` (tagged `[GUI]`) - this file has no backlog, no checkboxes, nothing to action. Completed build history: `docs/Development/HISTORY.md`. Fable build brief: `docs/Development/fable-gui/fable-brief.md`.
+Reference doc: design vision, stack decisions, and third-party libraries for the GUI layer. Open GUI work items live in the private project backlog (tagged `[GUI]`) - this file has no backlog, no checkboxes, nothing to action. Completed build history: the private project history. Fable build brief: `docs/Development/fable-gui/fable-brief.md`.
 
 ---
 
@@ -30,7 +30,7 @@ Reference doc: design vision, stack decisions, and third-party libraries for the
 - **"Library Intake"** - Acquire, Integration, Tag Fix (workflow order: acquire new files, integrate them, fix their tags).
 - **"Library Insight"** - Statistics, Library, Mirror, Services (Services fits Insight since its whole design is a cross-source overlay *view*, not a mutation).
 
-**Development priority, confirmed 2026-09-05:** Library Intake (Acquire, Integration, Tag Fix) is the current development focus; Library Insight (Statistics, Library, Mirror, Services) is explicitly lower priority for now - see `docs/Development/IDEAS.md` TIER 2's priority-ordering note.
+**Development priority, confirmed 2026-09-05:** Library Intake (Acquire, Integration, Tag Fix) is the current development focus; Library Insight (Statistics, Library, Mirror, Services) is explicitly lower priority for now - see the private project backlog TIER 2's priority-ordering note.
 
 Verb-only tab naming (Statistics -> "Analyse", Library -> "Browser", etc.) was considered and rejected: half the tabs are already nouns (Statistics, Mirror, Services) by deliberate design, matching the Sonarr/Radarr noun-tab precedent below - forcing verbs onto the rest breaks that precedent for no legibility gain. Tag Fix stays a peer tab inside Intake rather than nested under Integration: both operate on NewMusic only (CLAUDE.md's Tag Fixer Constraint - TagFixer must never gain a folder parameter or a library-wide mode), but they are independent workflow stages over the same files, not a sub-step of one another - a user can dry-run and clean up tags before deciding whether or when to integrate, and re-run Tag Fix as new files land regardless of integration timing. Nesting it under Integration would misrepresent it as integration-only tooling. Grouping (same section, same sidebar) achieves "related, keep adjacent" without that loss. Tab `key` values and `?tab=<key>` deep links are unchanged by grouping - see `gui/main.py`'s `NAV_GROUPS`.
 
@@ -62,10 +62,10 @@ All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui-dev.bat`
 - **Statistics - FULL.** Stat tiles with vs-last-batch deltas, genre donut/pie/treemap swap, decade bar/donut, year top-N/show-all, genre radar, top artists excl/all toggle, batch-grouped recent additions, per-batch bar chart (AudioMirror git history is the canonical batch source), age buckets + callout, cover-resolution histogram, tag-completeness and hi-res-cover rings, global date window, freshness controls (Re-run analysis / Force full regen with confirm; force-regen passes `--no-auto-commit` and routes mirror changes to the Mirror tab).
 - **Integration - FULL (selective execution).** Staged scan -> review queue (real album art, destination, reason, tag-change chips, badges, per-track accept/decline) -> confirm -> structured per-track progress. Declined tracks are excluded via `integrate --manifest <accepted.json> --no-input` (added 2026-07-03): the GUI writes the accepted set to `gui/.cache/accepted-manifest.json`, the exe filters before scan-ahead/duplicate review, and manifests match by raw dry-run filename OR the canonical TagFixer rename so they survive renames between dry and real runs.
 - **Library - MVP.** `tracks.json` rows, search + genre/decade chips, column picker, table/grid with real mutagen-extracted covers (page-lazy, cached), server-side pagination.
-- **Tag Fix - skeleton.** Cards document the exe's real fixed transforms; Run Fixed Rules = `tagfix --dry-run`. Open gap: configurable rules need a C# change (tracked in IDEAS.md).
+- **Tag Fix - skeleton.** Cards document the exe's real fixed transforms; Run Fixed Rules = `tagfix --dry-run`. Open gap: configurable rules need a C# change (tracked in the private project backlog).
 - **Mirror - functional.** Status/dirty listing + one-click Commit AudioMirror (confirm dialog, editable message, local commit only - added 2026-07-03). The GUI's only AudioMirror write; everything else stays read-only.
 - **Services - placeholder.** Two stub cards, deliberately not built - see Services design below.
-- **Acquire - MVP (2026-08-31).** Sync Liked Songs -> Inbox playlist, fetch-and-open Deemix links per track (staggered `window.open`, no more Enter/'q' loop), read-only Verify Downloads scan of `NEWMUSIC_DIR`. Cheap build, no caching layer for fetched tracks beyond the last-used playlist id (`gui/.cache/acquire-state.json`), no manual per-track match override. Polish items: `IDEAS.md` TIER 2/3.
+- **Acquire - MVP (2026-08-31).** Sync Liked Songs -> Inbox playlist, fetch-and-open Deemix links per track (staggered `window.open`, no more Enter/'q' loop), read-only Verify Downloads scan of `NEWMUSIC_DIR`. Cheap build, no caching layer for fetched tracks beyond the last-used playlist id (`gui/.cache/acquire-state.json`), no manual per-track match override. Polish items: the private project backlog TIER 2/3.
 
 **Visual system (2026-07-03):** fluid motion layer (pointer-tracking spotlight via delegated JS + CSS vars, hover lift, staggered entrances, tab transitions, reduced-motion respect) plus a **mood-reactive theme** - the dominant genre in `analysis-stats.json` tints the accent system at startup (`theme.apply_mood`, genre->palette map in `gui/theme.py`) with a "Mood" chip in the nav. Chart colors bind at import time, so `apply_mood` must run before tab modules import (enforced in `gui/main.py`).
 
@@ -149,7 +149,7 @@ split; setting `host` alone covers both.
 - **Last.fm tab** - scrobble history and listening stats: top tracks/artists (weekly, monthly, all-time), play counts overlaid on the Library tab, listening trends over time.
 - **Cross-synthesis view** - overlay all data sources: what's owned offline but not on Spotify, tracks with zero Last.fm scrobbles (never listened), a unified ownership + listening picture.
 
-Backlog entry: `IDEAS.md` `[GUI] Services tab data sources`.
+Backlog entry: the private project backlog `[GUI] Services tab data sources`.
 
 ---
 

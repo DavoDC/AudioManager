@@ -2,7 +2,7 @@
 
 **Status: Research only. No design decision made here - the design step (contract shape, versioning, how it interacts with the escalation boundary) is Opus-level per CLAUDE.md's "Opus Orchestrates, Sonnet Implements" rule and has not happened yet.** This doc exists so that design pass starts from evidence instead of re-discovering these facts from zero.
 
-Backlog item this feeds: `docs/Development/IDEAS.md` - "[OPUS] Real-integration outcomes are reconstructed from console prose, not a data contract."
+Backlog item this feeds: the private project backlog - "[OPUS] Real-integration outcomes are reconstructed from console prose, not a data contract."
 
 ## The key finding: the fix is smaller than it looks
 
@@ -23,7 +23,7 @@ if (dryRun && jsonOutput)
 ```
 `WriteJsonOutput` only runs `if (dryRun && jsonOutput)`. For a REAL run, the exact same `logEntries` list - same per-file `Status`/`Destination`/`Reason`/error `Detail` - is built and handed to `PrintConfidenceReport`, which only prints it as text, then the list falls out of scope and is discarded. Nothing structured survives a real run today.
 
-**`PrintConfidenceReport`** (~line 1009-1103) - the count check ("Files in NewMusic: N | Moved: M | Skipped: S"), the per-file `[STATUS] filename` table, new-folders-created list, destination sanity re-check (re-reads every moved file with TagLib, flags `[MISSING]`/`[UNREADABLE]`), and the final error summary (`[ERRORS: N]` + one line per error) are ALL console-only - none of this is in `BuildJson`'s current shape. If the real-run execution record is meant to also carry the confidence-report data (recommended - see "Why this matters" in IDEAS.md, `gui/routing.py`'s `parse_confidence_report` currently regexes this from console text), the JSON shape needs new fields for at least: count-check pass/fail, sanity-check pass/fail + which destinations failed, and error count/list. This part is NOT already solved - it needs actual design.
+**`PrintConfidenceReport`** (~line 1009-1103) - the count check ("Files in NewMusic: N | Moved: M | Skipped: S"), the per-file `[STATUS] filename` table, new-folders-created list, destination sanity re-check (re-reads every moved file with TagLib, flags `[MISSING]`/`[UNREADABLE]`), and the final error summary (`[ERRORS: N]` + one line per error) are ALL console-only - none of this is in `BuildJson`'s current shape. If the real-run execution record is meant to also carry the confidence-report data (recommended - see "Why this matters" in the private project backlog, `gui/routing.py`'s `parse_confidence_report` currently regexes this from console text), the JSON shape needs new fields for at least: count-check pass/fail, sanity-check pass/fail + which destinations failed, and error count/list. This part is NOT already solved - it needs actual design.
 
 ## What already exists (Python side)
 
@@ -41,4 +41,4 @@ Because the emitter already exists and already works for dry runs, the design de
 
 ## Known pre-existing risk to keep in mind while designing
 
-`BuildJson`'s `JStr` escaper (~line 999-1003) only escapes `\`, `"`, `\r`, `\n` - a tag value containing a literal tab or other C0 control character would produce invalid JSON. This is already flagged as its own IDEAS.md backlog item ("[OPUS] Hand-rolled JSON on both sides of the safety-critical manifest boundary") - worth deciding during this design pass whether extending `BuildJson`'s real-run use makes that pre-existing risk more urgent to fix first, since a real (not dry-run) execution record failing to serialize would be a more consequential silent failure than today's dry-run-only usage.
+`BuildJson`'s `JStr` escaper (~line 999-1003) only escapes `\`, `"`, `\r`, `\n` - a tag value containing a literal tab or other C0 control character would produce invalid JSON. This is already flagged as its own private project backlog item ("[OPUS] Hand-rolled JSON on both sides of the safety-critical manifest boundary") - worth deciding during this design pass whether extending `BuildJson`'s real-run use makes that pre-existing risk more urgent to fix first, since a real (not dry-run) execution record failing to serialize would be a more consequential silent failure than today's dry-run-only usage.

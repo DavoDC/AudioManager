@@ -4,7 +4,7 @@
 
 *(First-time workflow run - feedback gathering)*
 
-This is the first complete run through the workflow. Feedback from this execution should be recorded and processed into IDEAS.md for process improvements.
+This is the first complete run through the workflow. Feedback from this execution should be recorded and processed into the private project backlog for process improvements.
 
 ---
 
@@ -18,13 +18,13 @@ This is the first complete run through the workflow. Feedback from this executio
 
 ---
 
-## SUBSTEP B: Process Feedback to IDEAS.md
+## SUBSTEP B: Process Feedback to the private project backlog
 
 Use `/process-feedback` skill to convert feedback into actionable improvement tasks:
 
 - [ ] Run `/process-feedback` on feedback doc (`WorkflowExecution-2026-04-26-Feedback.md`)
 - [ ] Skill generates product tasks and Claude learnings
-- [ ] Create entries in `docs/IDEAS.md` for enhancements
+- [ ] Create entries in the private project backlog for enhancements
 - [ ] Categorize by priority (TIER 0 BLOCKING, TIER 1 MVP, TIER 2 QUALITY, etc.)
 - [ ] Link feedback source back to this workflow execution
 
@@ -38,7 +38,7 @@ Use `/process-feedback` skill to convert feedback into actionable improvement ta
 - [ ] Identify tedious or repetitive manual steps that could be automated
 - [ ] Look for process improvements to make workflow easier/faster
 - [ ] Update `docs/Music-Discovery-Workflow.md` with any discovered gaps
-- [ ] Create TIER 0/1 ideas in `docs/IDEAS.md` for workflow automation opportunities
+- [ ] Create TIER 0/1 ideas in the private project backlog for workflow automation opportunities
 
 **Goal:** Each workflow run should make the next run easier. This doc is a living record of what works and what can be improved.
 
@@ -58,6 +58,6 @@ This stage cannot begin until:
 Workflow is complete when:
 - All 126 tracks are in library and synced to device
 - Feedback is recorded and categorized
-- IDEAS.md is updated with improvements from this run
+- The private project backlog is updated with improvements from this run
 - Next run will be faster/easier based on lessons learned
 

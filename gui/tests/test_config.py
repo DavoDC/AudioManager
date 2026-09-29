@@ -1,6 +1,6 @@
 """Tests for gui.config path resolution.
 
-Regression coverage for SpotifyTools docs/IDEAS.md Task 2 (closed 2026-09-04):
+Regression coverage for SpotifyTools' private backlog Task 2 (closed 2026-09-04):
 SPOTIFYGEN_ROOT was a bare hardcoded sibling-folder path with no override, the
 AudioManager-side half of the same fragility that caused SpotifyTools's own
 CONFIG_PATH/CACHE_PATH regression (see spotify_tools/paths.py). It now checks

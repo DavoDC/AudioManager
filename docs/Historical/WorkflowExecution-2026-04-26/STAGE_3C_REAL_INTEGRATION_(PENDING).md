@@ -175,7 +175,7 @@ After integration completes successfully:
 - [ ] **Extract routing patterns** (TIER 1 analysis)
   - Review `logs/decisions-2026-05-05-HHMMSS.xml` (most recent run)
   - Identify patterns: "Akira The Don → 100% Musivation", "New artist with 3+ tracks → new Artists folder", etc.
-  - Document at least 3 patterns in HISTORY.md for future optimization
+  - Document at least 3 patterns in the private project history for future optimization
 
 ---
 
@@ -207,7 +207,7 @@ After integration completes successfully:
 
 ## References
 
-- `IDEAS.md` - TIER 0 (safety) and TIER 1 (decision logging prerequisite)
+- The private project backlog - TIER 0 (safety) and TIER 1 (decision logging prerequisite)
 - `docs/Development/Music-Library-Rules.md` - routing rules and library structure
 - `STAGE_3B_REVIEW_MUSIC_(COMPLETE).md` - inventory of 51 approved tracks
 - `AudioMirror/` repo - library snapshot and validation state

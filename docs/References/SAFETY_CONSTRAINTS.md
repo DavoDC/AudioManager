@@ -205,7 +205,7 @@ The program **is compliant with the stated safety rules.**
 
 ### The "What If" Issue
 
-Your comment references "what if issue" - if you're concerned about a specific failure mode or edge case in duplicate detection, add it to AudioManager IDEAS.md and I can implement a safeguard or improve the detection logic.
+Your comment references "what if issue" - if you're concerned about a specific failure mode or edge case in duplicate detection, add it to the AudioManager private project backlog and I can implement a safeguard or improve the detection logic.
 
 ---
 

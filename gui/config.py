@@ -25,7 +25,7 @@ TAGFIX_CUSTOM_RULES_XML = REPO_ROOT / "config" / "tagfix-custom-rules.xml"
 # SPOTIFY_TOOLS_ROOT env var wins over the sibling-folder assumption - same
 # env var name SpotifyTools's own src/spotify_tools/paths.py checks, so one
 # variable controls both sides of the sys.path.insert boundary (see Task 2,
-# SpotifyTools docs/IDEAS.md, closed 2026-09-04). Without it, this assumes
+# SpotifyTools' private backlog, closed 2026-09-04). Without it, this assumes
 # SpotifyTools checked out as a sibling of this repo under GitHubRepos/.
 SPOTIFYGEN_ROOT = Path(os.environ.get("SPOTIFY_TOOLS_ROOT", str(REPO_ROOT.parent / "SpotifyTools")))
 
