@@ -18,6 +18,17 @@ namespace AudioManager
     /// </summary>
     internal class MusicIntegrator : Doer
     {
+        // Console line formats the GUI parses (gui/tabs/integration.py, gui/routing.py).
+        // Kept as functions so Tests/MusicIntegratorConsoleFormatTests.cs pins the exact text.
+        internal static string FormatAutoLine(string artists, string title, string albumSuffix) =>
+            $"[AUTO] {artists} - {title}{albumSuffix}";
+
+        internal static string FormatSkipLine(string artists, string title) =>
+            $"[SKIP] {artists} - {title}: already exists at destination";
+
+        internal static string FormatExecutionJsonLine(string path) =>
+            $"\n  EXECUTION JSON: {path}";
+
         // Bump on any breaking change to BuildJson's contract shape (docs/References/).
         private const int SchemaVersion = 1;
         private bool dryRun;
@@ -501,7 +512,7 @@ namespace AudioManager
 
                     if (!dryRun && File.Exists(destPath))
                     {
-                        Console.WriteLine($"[SKIP] {track.Artists} - {track.Title}: already exists at destination");
+                        Console.WriteLine(FormatSkipLine(track.Artists, track.Title));
                         Console.WriteLine();
                         entry.Status = "skipped"; entry.Detail = "already exists at destination";
                         logEntries.Add(entry); skippedCount++;
@@ -511,7 +522,7 @@ namespace AudioManager
                         var sb = new StringBuilder();
                         if (sf.InBatchDuplicate)
                             sb.AppendLine($"[WARN: IN-BATCH DUPLICATE] {Path.GetFileName(sf.SourcePath)}");
-                        sb.AppendLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
+                        sb.AppendLine(FormatAutoLine(track.Artists, track.Title, albumSuffix));
                         foreach (var change in entry.TagChanges)
                             sb.AppendLine($" > {change}");
                         sb.AppendLine($" Route: {routeSummary}{routeNewNote}");
@@ -529,7 +540,7 @@ namespace AudioManager
                         Directory.CreateDirectory(destDir);
                         File.Move(sf.SourcePath, destPath);
                         movedCount++;
-                        Console.WriteLine($"[AUTO] {track.Artists} - {track.Title}{albumSuffix}");
+                        Console.WriteLine(FormatAutoLine(track.Artists, track.Title, albumSuffix));
                         foreach (var change in entry.TagChanges)
                             Console.WriteLine($" > {change}");
                         Console.WriteLine($" Route: {routeSummary}{routeNewNote}");
@@ -1137,7 +1148,7 @@ namespace AudioManager
                 string jsonPath = Path.Combine(logsPath, $"execution-{timestamp}.json");
 
                 File.WriteAllText(jsonPath, json, System.Text.Encoding.UTF8);
-                log($"\n  EXECUTION JSON: {jsonPath}");
+                log(FormatExecutionJsonLine(jsonPath));
                 return true;
             }
             catch (Exception)
@@ -1146,7 +1157,7 @@ namespace AudioManager
                 {
                     string retryPath = Path.Combine(logsPath, $"execution-{timestamp}-retry.json");
                     File.WriteAllText(retryPath, json, System.Text.Encoding.UTF8);
-                    log($"\n  EXECUTION JSON: {retryPath}");
+                    log(FormatExecutionJsonLine(retryPath));
                     return true;
                 }
                 catch (Exception retryEx)
@@ -1677,7 +1688,7 @@ namespace AudioManager
                         string rawTitle = track.Title;
                         var simArtistList = TagFixer.ExtractAndFixArtists(rawTitle, track.Artists);
                         track.Title = TagFixer.RemoveParentheticals(rawTitle);
-                        track.Artists = string.Join(";", simArtistList);
+                        track.Artists = string.Join("; ", simArtistList);
                         if (!track.Album.Equals("Missing"))
                             track.Album = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(track.Album));
                         if (TagFixer.ShouldFixGenre(track.Artists, track.Genres))

@@ -146,7 +146,7 @@ namespace AudioManager
                 string cleanTitle = RemoveParentheticals(title);
                 string cleanAlbum = StripAlbumSuffixes(RemoveParentheticals(album));
                 var artistList = ExtractAndFixArtists(title, artists);
-                string cleanArtists = string.Join(";", artistList);
+                string cleanArtists = string.Join("; ", artistList);
 
                 bool tcmpNeeded = !id3.IsCompilation;
                 bool genreNeeded = ShouldFixGenre(cleanArtists, genres);
@@ -181,7 +181,7 @@ namespace AudioManager
                         .Select(a => a.Trim())
                         .Where(a => !string.IsNullOrEmpty(a))
                         .ToList();
-                    finalArtists = string.Join(";", artistList);
+                    finalArtists = string.Join("; ", artistList);
                 }
 
                 // Check if any changes needed (built-in plus custom)

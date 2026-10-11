@@ -497,6 +497,34 @@ namespace AudioManager
             }
         }
 
+        public static void ProcessFile_TwoPerformerArray_NoArtistRewriteOrArtistRename()
+        {
+            string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AudioManagerTest_" + Guid.NewGuid());
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                string fixturePath = CreateSilentMp3Fixture(tempDir, "Artist One; Artist Two - Clean Title.mp3",
+                    "Clean Title", "Clean Album", "Artist One");
+                var seed = TagLib.File.Create(fixturePath);
+                seed.Tag.Performers = new[] { "Artist One", "Artist Two" };
+                seed.Save();
+                Assert.Equal("Artist One; Artist Two", TagLib.File.Create(fixturePath).Tag.JoinedPerformers, "fixture precondition: TagLib# joins with '; '");
+
+                var fixer = TagFixer.ForTesting(dryRun: false);
+                var log = fixer.ProcessFile(fixturePath);
+
+                Assert.True(!log.Changes.Any(c => c.StartsWith("Artists:")), "separator spacing alone must not log an Artists change");
+                Assert.Equal("Artist One; Artist Two - Clean Title.mp3", log.Filename, "file must not be renamed over separator spacing");
+                Assert.True(System.IO.File.Exists(fixturePath), "original path must still exist");
+                var after = TagLib.File.Create(fixturePath);
+                Assert.Equal("2", after.Tag.Performers.Length.ToString(), "Performers array must stay two entries");
+            }
+            finally
+            {
+                System.IO.Directory.Delete(tempDir, true);
+            }
+        }
+
         public static void ProcessFile_SetsCompilationFlagOnSave()
         {
             string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AudioManagerTest_" + Guid.NewGuid());
