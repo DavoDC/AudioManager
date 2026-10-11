@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import html
 
-from gui import buildinfo, demo, security
+from gui import buildinfo, demo, health, security
 
 ERROR_JS = r"""
 (function(){
@@ -56,6 +56,9 @@ CSS = """
   border:1px solid var(--panel-border,#444);padding:6px 10px;border-radius:4px;font-size:12px;}
 #am-status[hidden]{display:none;}
 #am-status[data-kind=error]{border-color:#c0392b;}
+#health-badge[data-verdict=green]{color:#5fb878;}
+#health-badge[data-verdict=amber]{color:#e0a030;}
+#health-badge[data-verdict=red]{color:#e05a4a;}
 #fixture-banner{background:#5a4a00;color:#fff;font-size:12px;padding:4px 14px;text-align:center;}
 #build-footer{position:fixed;bottom:6px;right:14px;z-index:8000;font-size:11px;
   color:var(--text-dim,#888);font-family:'IBM Plex Mono',monospace;pointer-events:none;}
@@ -78,5 +81,9 @@ def body_html() -> str:
     if fixture:
         parts.append(f'<div id="fixture-banner" data-testid="fixture-banner">'
                      f'FIXTURE {html.escape(fixture)}: demo data, the exe is disabled</div>')
-    parts.append(f'<div id="build-footer" data-testid="build-footer">{line}</div>')
+    h = health.compute()
+    parts.append(f'<div id="build-footer" data-testid="build-footer">{line}'
+                 f' <span id="health-badge" data-testid="health-badge" data-verdict="{h["verdict"]}"'
+                 f' title="{html.escape("; ".join(h["reasons"]) or "all checks pass")}">'
+                 f'{html.escape(h["word"])}</span></div>')
     return "".join(parts)

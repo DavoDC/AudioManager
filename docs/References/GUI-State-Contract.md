@@ -7,6 +7,7 @@ What the running GUI tells a program (Claude, a test, a script) about itself. Re
 All on `127.0.0.1:8471` (reach it as `http://localhost:8471`). Every response has `Cache-Control: no-store` and `nosniff`. A request whose Host is not `127.0.0.1:PORT` or `localhost:PORT` gets 403; a cross-origin POST or websocket gets 403.
 
 - `GET /api/build` gives `{line, sha, dirty, date, boot_id, started_at, fixture}`. `boot_id` changes on every process start; pages poll it and reload themselves.
+- `GET /api/health` gives `{verdict, word, reasons}`: green (Healthy), amber (Attention) or red (Broken) with the reasons. One function, `gui/health.py`, feeds this, the footer badge (`health-badge`), and later the tray and favicon.
 - `GET /state.json` gives `{schema, generated_at, build, fixture, busy:{busy, action}, tabs:{<key>: <tab state>}}`.
 - `GET /state/<tab>.json` gives one tab state. Tab keys: `acquire`, `integration`, `tagfix`, `stats`, `library`, `mirror`, `services`. Unknown key gives 404.
 - `GET /api/manifest.json` is the agent manifest: tabs and their URLs, endpoints, every action with its CLI line, the `window.__debug` surface, doc paths and today's log path.

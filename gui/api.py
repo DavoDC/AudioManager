@@ -8,12 +8,13 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from gui import applog, buildinfo, demo, security, uistate
+from gui import applog, buildinfo, demo, health, security, uistate
 
 NO_STORE = {"Cache-Control": "no-store"}
 
 ENDPOINTS = [
     {"path": "/api/build", "method": "GET", "returns": "build line, sha, boot_id, fixture"},
+    {"path": "/api/health", "method": "GET", "returns": "verdict green/amber/red, word, reasons"},
     {"path": "/state.json", "method": "GET", "returns": "every tab's state contract"},
     {"path": "/state/{tab}.json", "method": "GET", "returns": "one tab's state contract"},
     {"path": "/api/manifest.json", "method": "GET", "returns": "this agent manifest"},
@@ -43,6 +44,9 @@ def register(app) -> None:
     async def api_build():
         return j(buildinfo.api_payload(demo.fixture_name()))
 
+    async def api_health():
+        return j(health.compute())
+
     async def state_all():
         return j(uistate.full_state())
 
@@ -64,6 +68,7 @@ def register(app) -> None:
         return j({"ok": True})
 
     app.add_api_route("/api/build", api_build, methods=["GET"])
+    app.add_api_route("/api/health", api_health, methods=["GET"])
     app.add_api_route("/state.json", state_all, methods=["GET"])
     app.add_api_route("/state/{tab}.json", state_tab, methods=["GET"])
     app.add_api_route("/api/manifest.json", api_manifest, methods=["GET"])
