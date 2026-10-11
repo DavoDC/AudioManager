@@ -5,7 +5,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2].parent / "SpotifyTools" / "src"))
+from gui import spotify_bridge
+spotify_bridge.require()  # single sys.path insert lives in the bridge
 
 from gui import config
 import gui.tabs.acquire as acquire_module

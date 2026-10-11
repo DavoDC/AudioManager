@@ -39,23 +39,11 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-import sys
 from pathlib import Path
 
 from nicegui import ui
 
 from gui import config
-
-sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
-
-
-def _require_spotify_api() -> None:
-    """Fail loudly if the SpotifyTools checkout predates API_VERSION 1 (public build_deemix_url)."""
-    import spotify_tools
-    if getattr(spotify_tools, "API_VERSION", 0) < 1:
-        raise ImportError(
-            "SpotifyTools is too old for AudioManager (needs API_VERSION >= 1). "
-            "Update your SpotifyTools checkout, then retry.")
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
           "hide_downloaded": False, "playlist_loaded": False, "simulated": False,
@@ -278,8 +266,7 @@ def _forget_cached_playlist() -> None:
 
 
 def _spotify_client():
-    from spotify_tools.config import load_config, CONFIG_PATH
-    from spotify_tools.spotify_client import RealSpotifyClient
+    from gui.spotify_bridge import load_config, CONFIG_PATH, RealSpotifyClient
     cfg = load_config(CONFIG_PATH)
     if not cfg:
         raise RuntimeError(f"SpotifyTools config not found at {CONFIG_PATH}")
@@ -289,7 +276,7 @@ def _spotify_client():
 def _do_sync_liked() -> str:
     """Deferred - see the private project backlog TIER 2 'Sync Liked Songs broken (403)'. Card is
     hidden via _build_sync_liked_card() not being called; logic kept intact."""
-    from spotify_tools.acquire import move_liked_to_playlist
+    from gui.spotify_bridge import move_liked_to_playlist
     client = _spotify_client()
     result = move_liked_to_playlist(client)
     _save_last_playlist(result.playlist_id, result.playlist_name)
@@ -319,7 +306,7 @@ def _validate_playlist_input(value: str) -> str | None:
 
     Returns the resolved playlist id ready to fetch, or None to tell the
     caller (fetch()) to show an inline error and never touch the network."""
-    from spotify_tools.open_playlist import extract_playlist_id
+    from gui.spotify_bridge import extract_playlist_id
     stripped = (value or "").strip()
     if not stripped:
         return None
@@ -339,8 +326,7 @@ def _do_fetch_tracks(
     (it returns the whole page-paginated list in one call), so this is the
     "simple counter around the loop" option the item names, applied to the
     one loop this function actually owns."""
-    _require_spotify_api()
-    from spotify_tools.open_playlist import extract_playlist_id, build_deemix_url
+    from gui.spotify_bridge import extract_playlist_id, build_deemix_url
     playlist_id = extract_playlist_id(playlist_id_or_url)
     client = _spotify_client()
     tracks = client.get_playlist_tracks_detailed(playlist_id)
@@ -368,8 +354,7 @@ def _do_fetch_liked_tracks(on_progress=None) -> list[tuple[str, str, str, str, s
     get_liked_tracks_detailed() instead of a playlist id. Persists under
     _LIKED_SONGS_ID so history/cache/restore all work unmodified. Same
     on_progress contract as _do_fetch_tracks() - see its docstring."""
-    _require_spotify_api()
-    from spotify_tools.open_playlist import build_deemix_url
+    from gui.spotify_bridge import build_deemix_url
     client = _spotify_client()
     tracks = client.get_liked_tracks_detailed()
     _save_last_playlist(_LIKED_SONGS_ID, _LIKED_SONGS_NAME)
@@ -390,8 +375,7 @@ def _sample_tracks() -> list[tuple[str, str, str, str, str, str]]:
     album, year, length, url) shape _do_fetch_tracks() returns, so simulate()
     can drop this straight into _state["tracks"]. Mirrors integration.py's
     _sample_entries() precedent."""
-    _require_spotify_api()
-    from spotify_tools.open_playlist import build_deemix_url
+    from gui.spotify_bridge import build_deemix_url
     rows = [
         ("Bring Me The Horizon", "Doomed", "Post Human: Survival Horror", "2020", "3:12"),
         ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23"),
@@ -415,8 +399,7 @@ def _sample_extra() -> list[tuple[str, str, str, Path]]:
     shares artist/title with a sample track simulate() marks downloaded, to
     exercise the "downloaded" row landing next to an "extra" row for the same
     song; the rest match no sample track, i.e. genuinely extra."""
-    _require_spotify_api()
-    from spotify_tools.open_playlist import build_deemix_url
+    from gui.spotify_bridge import build_deemix_url
     rows = [
         ("Bring Me The Horizon", "Doomed"),
         ("Tame Impala", "The Less I Know The Better"),
@@ -522,7 +505,7 @@ def _scan_newmusic_filenames(newmusic_dir: Path) -> list[tuple[str, str, str, st
     the reverse direction) so both use identical normalisation. The path is
     carried through so extra rows can read the file's own ID3 tags (see
     _read_mp3_tags) - never used for matching, only display."""
-    from spotify_tools.matcher import clean_artist, clean_title, normalise
+    from gui.spotify_bridge import clean_artist, clean_title, normalise
 
     parts = []
     if newmusic_dir.is_dir():
@@ -554,7 +537,7 @@ def _content_key(artist: str, title: str) -> str:
     normalise from spotify_tools.matcher, plus _primary_artist for a
     multi-artist field) so this file has exactly one normalisation scheme,
     not a second parallel one invented for persistence."""
-    from spotify_tools.matcher import clean_artist, clean_title, normalise
+    from gui.spotify_bridge import clean_artist, clean_title, normalise
     return f"{normalise(_primary_artist(artist, clean_artist))}:{normalise(clean_title(title))}"
 
 
@@ -591,7 +574,7 @@ def match_downloads(tracks: list[tuple[str, str]], newmusic_dir: Path) -> tuple[
     name swamp the ratio and produced false positives across an artist's whole
     catalogue (e.g. every Jack Harlow track ticking "downloaded" once one was).
     See _artist_title_match for the per-pair matching rule."""
-    from spotify_tools.matcher import clean_artist, clean_title, normalise
+    from gui.spotify_bridge import clean_artist, clean_title, normalise
 
     filename_parts = _scan_newmusic_filenames(newmusic_dir)
 
@@ -613,7 +596,7 @@ def find_extra_newmusic_files(tracks: list[tuple[str, str]], newmusic_dir: Path)
     [(artist, title, path), ...] parsed straight from each filename plus the
     file's own Path (read-only, never used for matching - lets callers read
     the file's real ID3 tags for Album/Year/Length, see _read_mp3_tags)."""
-    from spotify_tools.matcher import clean_artist, clean_title, normalise
+    from gui.spotify_bridge import clean_artist, clean_title, normalise
 
     track_norms = [(normalise(_primary_artist(a, clean_artist)), normalise(clean_title(t))) for a, t in tracks]
 
@@ -642,8 +625,7 @@ def _run_check_against_downloads() -> None:
     unconditionally every 2 seconds, and without this guard every tick did a
     full read-modify-write of ACQUIRE_STATE_JSON even when nothing on disk
     had changed."""
-    _require_spotify_api()
-    from spotify_tools.open_playlist import build_deemix_url
+    from gui.spotify_bridge import build_deemix_url
     overrides = _state["manual_override"]
     old_downloaded = dict(_state["downloaded"])
     old_extra = list(_state["extra"])

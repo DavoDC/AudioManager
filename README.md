@@ -26,6 +26,7 @@ album-art wall of the entire library with search, filters and pagination.
   the GUI consumes, so statistics can never drift from the canonical analyser. All
   file operations stay inside the engine's safety-gated modes; subprocess calls are
   serialized, cancellable, and surface failures in a structured error dialog.
+- **Optional Acquire tab:** reads playlists through the SpotifyTools kit, found as a sibling `SpotifyTools` checkout or via the `SPOTIFY_TOOLS_ROOT` environment variable; the rest of the app runs without it
 - Details: [`gui/README.md`](gui/README.md)
 
 ## CLI Usage
