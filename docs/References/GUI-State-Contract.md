@@ -56,4 +56,12 @@ python -m gui.capture --scenarios normal         headless screenshots to data/ca
 python -m gui.verify                             tests + ui_check + capture, one PASS/FAIL line
 ```
 
-Ladder: `/state/<tab>.json`, then `ui_check`, then `capture` and read the PNG, then the log.
+## Verification ladder
+
+Cheapest rung first, climb only when the rung below cannot answer:
+
+1. A unit test (`python -m pytest gui/tests -q`, seconds).
+2. `scripts\deverify.bat --no-pause` or `python -m gui.verify` for the one PASS or FAIL line.
+3. DOM text and ids: `/state/<tab>.json`, then `python -m gui.ui_check`.
+4. A `capture` PNG, read by eye (`python -m gui.capture`, `data/captures/`).
+5. A browser tool, only for real interaction a fixture cannot reproduce; then the log (`python -m gui.cli log`).
