@@ -56,8 +56,7 @@ new row of controls:
 
 ## Color palette
 
-`gui/theme.py`'s `:root` block is the single source of truth - never
-introduce a new hex literal in a tab module, reuse one of these CSS vars.
+`gui/tokens.py` is the single source of truth for every colour (WS-111); `gui/theme.py` builds the `:root` block from it. `gui/tests/test_tokens.py` fails on any hex literal elsewhere under `gui/` and checks this table against `tokens.CSS_VARS`. Reuse a CSS var in a tab module; a genuinely new colour is added to `tokens.py` first.
 
 | Var | Value | Used for |
 |---|---|---|

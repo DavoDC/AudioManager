@@ -342,7 +342,7 @@ def _open_rule_dialog(existing: Rule | None = None) -> None:
                     "These characters in Value will be treated as regex syntax, not "
                     f"matched literally: {' '.join(chars)}. Leave Pattern blank only if "
                     "that's intended."
-                ).style("color:var(--accent3, #d9a441);font-size:12px;")
+                ).style("color:var(--accent3);font-size:12px;")
 
         _update_regex_warning()
 

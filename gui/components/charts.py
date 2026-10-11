@@ -7,7 +7,7 @@ never a raw option dict.
 """
 from __future__ import annotations
 
-from gui import theme
+from gui import theme, tokens
 
 DIM = theme.TEXT_DIM
 TEXT = theme.TEXT
@@ -15,7 +15,7 @@ FONT = "IBM Plex Sans, sans-serif"
 MONO = "IBM Plex Mono, monospace"
 
 TOOLTIP = {
-    "backgroundColor": "#0c0e13",
+    "backgroundColor": tokens.ON_ACCENT,
     "borderColor": theme.PANEL_BORDER,
     "textStyle": {"color": TEXT, "fontFamily": FONT, "fontSize": 12},
 }
@@ -88,7 +88,7 @@ def treemap(data: list[dict]) -> dict:
              "itemStyle": {"color": theme.CHART_PALETTE[i % len(theme.CHART_PALETTE)]}}
             for i, d in enumerate(data)
         ],
-        "label": {"color": "#0c0e13", "fontSize": 11, "fontFamily": FONT, "fontWeight": 600},
+        "label": {"color": tokens.ON_ACCENT, "fontSize": 11, "fontFamily": FONT, "fontWeight": 600},
         "itemStyle": {"borderColor": theme.PANEL, "borderWidth": 2, "gapWidth": 2},
     }]
     return opt
@@ -158,7 +158,7 @@ def ring(percent: float, label: str, color: str = theme.ACCENT) -> dict:
             "pointer": {"show": False},
             "progress": {"show": True, "overlap": False, "roundCap": True,
                          "clip": False, "itemStyle": {"color": color}},
-            "axisLine": {"lineStyle": {"width": 14, "color": [[1, "#12141c"]]}},
+            "axisLine": {"lineStyle": {"width": 14, "color": [[1, tokens.CONTROL_BG]]}},
             "splitLine": {"show": False}, "axisTick": {"show": False},
             "axisLabel": {"show": False},
             "data": [{

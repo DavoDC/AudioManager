@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import html
 
-from gui import buildinfo, demo, health, security
+from gui import buildinfo, demo, health, security, tokens
 
 ERROR_JS = r"""
 (function(){
@@ -49,20 +49,21 @@ ERROR_JS = r"""
 """
 
 CSS = """
-#error-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:#7a1f1f;color:#fff;
+#error-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:@@ERROR_BANNER_BG@@;color:@@WHITE@@;
   padding:8px 14px;font-size:13px;}
 #error-banner[hidden]{display:none;}
-#am-status{position:fixed;bottom:34px;right:14px;z-index:9000;background:var(--panel,#222);
-  border:1px solid var(--panel-border,#444);padding:6px 10px;border-radius:4px;font-size:12px;}
+#am-status{position:fixed;bottom:34px;right:14px;z-index:9000;background:var(--panel);
+  border:1px solid var(--panel-border);padding:6px 10px;border-radius:4px;font-size:12px;}
 #am-status[hidden]{display:none;}
-#am-status[data-kind=error]{border-color:#c0392b;}
-#health-badge[data-verdict=green]{color:#5fb878;}
-#health-badge[data-verdict=amber]{color:#e0a030;}
-#health-badge[data-verdict=red]{color:#e05a4a;}
-#fixture-banner{background:#5a4a00;color:#fff;font-size:12px;padding:4px 14px;text-align:center;}
+#am-status[data-kind=error]{border-color:@@ERROR_BORDER@@;}
+#health-badge[data-verdict=green]{color:@@HEALTH_GREEN@@;}
+#health-badge[data-verdict=amber]{color:@@HEALTH_AMBER@@;}
+#health-badge[data-verdict=red]{color:@@HEALTH_RED@@;}
+#fixture-banner{background:@@FIXTURE_BG@@;color:@@WHITE@@;font-size:12px;padding:4px 14px;text-align:center;}
 #build-footer{position:fixed;bottom:6px;right:14px;z-index:8000;font-size:11px;
-  color:var(--text-dim,#888);font-family:'IBM Plex Mono',monospace;pointer-events:none;}
+  color:var(--text-dim);font-family:'IBM Plex Mono',monospace;pointer-events:none;}
 """
+CSS = tokens.fill(CSS)
 
 
 def head_html() -> str:

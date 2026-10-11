@@ -43,7 +43,7 @@ from pathlib import Path
 
 from nicegui import ui
 
-from gui import config, uistate
+from gui import config, tokens, uistate
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
           "hide_downloaded": False, "playlist_loaded": False, "simulated": False,
@@ -945,9 +945,9 @@ def build() -> None:
         metrics = progress_metrics(downloaded, missing, extra)
         total = metrics["total"]
         segments = [
-            (downloaded, "var(--accent)", "#0c0e13", f"{downloaded} downloaded"),
+            (downloaded, "var(--accent)", tokens.ON_ACCENT, f"{downloaded} downloaded"),
             (missing, "var(--track-missing)", "var(--text-dim)", f"{missing} missing"),
-            (extra, "var(--accent3)", "#0c0e13", _extra_segment_label(extra, _state["playlist_loaded"])),
+            (extra, "var(--accent3)", tokens.ON_ACCENT, _extra_segment_label(extra, _state["playlist_loaded"])),
         ]
         with ui.element("div").style(
             "background:var(--panel);border:1px solid var(--panel-border);"
@@ -960,7 +960,7 @@ def build() -> None:
                 ui.label(_pct_label(metrics["pct_complete"])).classes("note").style("margin:0;color:var(--text-dim);")
             with ui.element("div").style(
                 "height:26px;border-radius:var(--radius-pill);overflow:hidden;"
-                "display:flex;background:#3a3f4d;width:100%;"
+                f"display:flex;background:{tokens.SURFACE_3A3F4D};width:100%;"
             ):
                 for (count, bg, fg, label), pct in zip(segments, metrics["widths"]):
                     if not count:

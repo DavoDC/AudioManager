@@ -14,7 +14,7 @@ import hashlib
 import io
 from pathlib import Path
 
-from gui import config
+from gui import config, tokens
 
 THUMB_SIZE = 300  # px, plenty for 150px grid cards on hi-dpi
 
@@ -89,10 +89,10 @@ def _to_jpeg_thumb(data: bytes) -> bytes | None:
 
 
 PLACEHOLDER_GRADIENTS = [
-    ("#e26d6d", "#7a2d2d"), ("#f2b84b", "#8a5a10"), ("#5c6270", "#23262e"),
-    ("#b98af0", "#5a3a8a"), ("#5b8cff", "#243a7a"), ("#7fd1ae", "#1f5c48"),
-    ("#e2905b", "#7a3f1f"), ("#5bb8ff", "#1f4a7a"), ("#8a7ff0", "#3a2f8a"),
-    ("#e26db8", "#7a2d5a"), ("#d1c37f", "#5c521f"), ("#e2585b", "#7a1f22"),
+    (tokens.ACCENT4, tokens.HUE_7A2D2D), (tokens.ACCENT3, tokens.HUE_8A5A10), (tokens.HUE_5C6270, tokens.SURFACE_23262E),
+    (tokens.ACCENT5, tokens.HUE_5A3A8A), (tokens.ACCENT, tokens.SURFACE_243A7A), (tokens.ACCENT2, tokens.HUE_1F5C48),
+    (tokens.HUE_E2905B, tokens.HUE_7A3F1F), (tokens.HUE_5BB8FF, tokens.HUE_1F4A7A), (tokens.HUE_8A7FF0, tokens.SURFACE_3A2F8A),
+    (tokens.HUE_E26DB8, tokens.HUE_7A2D5A), (tokens.HUE_D1C37F, tokens.HUE_5C521F), (tokens.HUE_E2585B, tokens.SURFACE_7A1F22),
 ]
 
 
