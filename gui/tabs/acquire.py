@@ -43,7 +43,7 @@ from pathlib import Path
 
 from nicegui import ui
 
-from gui import config
+from gui import config, uistate
 
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
           "hide_downloaded": False, "playlist_loaded": False, "simulated": False,
@@ -696,6 +696,7 @@ def build_track_rows() -> list[dict]:
             continue
         rows.append({
             "row_key": row_key,
+            "testid": uistate.testid("row-acq", row_key),
             "artist": artist, "title": title, "album": album, "year": year, "length": length,
             "url": url,
             "downloaded_text": _downloaded_cell_text(is_downloaded),
@@ -1081,7 +1082,8 @@ def build() -> None:
                     </q-tr>
                 ''')
                 table.add_slot("body", r'''
-                    <q-tr :props="props" :class="props.row.is_downloaded ? 'row-downloaded' : ''">
+                    <q-tr :props="props" :class="props.row.is_downloaded ? 'row-downloaded' : ''"
+                          :data-testid="props.row.testid">
                         <q-td key="artist" :props="props">{{ props.row.artist }}</q-td>
                         <q-td key="title" :props="props">{{ props.row.title }}</q-td>
                         <q-td key="album" :props="props">{{ props.row.album }}</q-td>
@@ -1113,7 +1115,8 @@ def build() -> None:
                                 ui.label(_extra_batch_header(len(_state["extra"]), _state["playlist_loaded"]))
                     for artist, title, url, path in build_extra_rows():
                         album, year, length = _read_mp3_tags(path)
-                        with ui.element("tr").classes("row-extra"):
+                        with ui.element("tr").classes("row-extra") \
+                                .props(f'data-testid={uistate.testid("row-acq-extra", str(path))}'):
                             with ui.element("td"):
                                 ui.label(artist)
                             with ui.element("td"):

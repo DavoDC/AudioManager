@@ -57,7 +57,7 @@ The reuse worry behind extracting a shared core library (Python re-implementing 
 
 ## Build status (as of the 2026-07-03 Fable session)
 
-All six tabs exist in `gui/` (NiceGUI, launched via `scripts/launch-gui-dev.bat`). See `gui/README.md`.
+All six tabs exist in `gui/` (NiceGUI, launched via `scripts/Gui.bat`). See `gui/README.md`.
 
 - **Statistics - FULL.** Stat tiles with vs-last-batch deltas, genre donut/pie/treemap swap, decade bar/donut, year top-N/show-all, genre radar, top artists excl/all toggle, batch-grouped recent additions, per-batch bar chart (AudioMirror git history is the canonical batch source), age buckets + callout, cover-resolution histogram, tag-completeness and hi-res-cover rings, global date window, freshness controls (Re-run analysis / Force full regen with confirm; force-regen passes `--no-auto-commit` and routes mirror changes to the Mirror tab).
 - **Integration - FULL (selective execution).** Staged scan -> review queue (real album art, destination, reason, tag-change chips, badges, per-track accept/decline) -> confirm -> structured per-track progress. Declined tracks are excluded via `integrate --manifest <accepted.json> --no-input` (added 2026-07-03): the GUI writes the accepted set to `gui/.cache/accepted-manifest.json`, the exe filters before scan-ahead/duplicate review, and manifests match by raw dry-run filename OR the canonical TagFixer rename so they survive renames between dry and real runs.
@@ -101,7 +101,7 @@ Both call `_artist_title_match()` for the actual comparison (primary-artist subs
 
 ## Dev mode: hot-reload (2026-09-01)
 
-**Always on via `scripts\launch-gui-dev.bat`** (`AM_GUI_WATCH=1`, windowless -
+**Always on via `scripts\Gui.bat`** (hot reload on by default; `AM_GUI_WATCH=0` or `--no-watch` turns it off; windowless -
 pythonw, no console). There is a single launcher; every launch runs the
 watcher. Ported from
 StreamPilot's `src/hot_reload.py` (same contract, same tests): `gui/hot_reload.py`

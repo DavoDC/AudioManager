@@ -19,7 +19,7 @@ restarting into a guaranteed crash. This does NOT catch a semantic/runtime
 bug - a green pytest run does not prove the live GUI survived the edit;
 verify liveness in the browser after a risky change, not just at the end.
 
-Enabled via AM_GUI_WATCH=1, set by the sole launcher scripts/launch-gui-dev.bat
+On by default (AM_GUI_WATCH=0 or --no-watch disables); sole launcher scripts/Gui.bat
 (runs windowless via pythonw) - stdlib only, no watchdog dependency.
 """
 
@@ -93,13 +93,27 @@ def _restart():
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
-def _check_trigger(watch_dir: str, trigger_path: str) -> bool:
+BUSY_CHECK = None  # set by main.py: callable returning True while a job runs
+
+
+def _is_busy(busy=None) -> bool:
+    fn = busy or BUSY_CHECK
+    try:
+        return bool(fn()) if fn else False
+    except Exception:
+        return False
+
+
+def _check_trigger(watch_dir: str, trigger_path: str, busy=None) -> bool:
     """If trigger_path exists, consume it (delete) and restart immediately -
     after a syntax check - regardless of debounce state. Returns True if it
     handled a trigger (whether or not that led to an actual restart), so the
     caller can skip the normal debounce logic for this poll."""
     if not os.path.exists(trigger_path):
         return False
+    if _is_busy(busy):
+        log.info("Reload trigger deferred: a job is running")
+        return True  # leave the trigger file in place; fires after the job ends
     try:
         os.remove(trigger_path)
     except OSError:
@@ -150,6 +164,8 @@ def watch_loop(
         if stable_since is None or (time.time() - stable_since) < debounce_seconds:
             continue
 
+        if _is_busy():
+            continue
         ok, error = check_syntax(watch_dir)
         if not ok:
             log.warning("Change detected but not restarting - syntax error: %s", error)

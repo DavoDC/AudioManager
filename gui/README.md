@@ -7,11 +7,11 @@ whole library - all without opening a terminal.
 
 ## Launch
 
-Double-click **`scripts\launch-gui-dev.bat`** - starts windowless (pythonw, no
+Double-click **`scripts\Gui.bat`** - starts windowless (pythonw, no
 console) with hot-reload always on, and opens the app in your browser at
 `http://localhost:8471`.
 
-**Desktop / Start-Menu shortcut:** right-click `scripts\launch-gui-dev.bat` >
+**Desktop / Start-Menu shortcut:** right-click `scripts\Gui.bat` >
 *Send to* > *Desktop (create shortcut)* (or copy a shortcut into
 `shell:Start Menu Programs`). Optionally set the icon via shortcut Properties.
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from nicegui import ui
 
-from gui import config
+from gui import config, uistate
 from gui.art import get_thumbnail, initials, placeholder_style
 from gui.data_loader import fmt_int
 from gui.state import state
@@ -188,7 +188,7 @@ def _table(rows: list[dict]) -> None:
             tds.append(f"<td>{_esc(str(t.get('addedDate') or '-'))}</td>")
         if L.show_comp:
             tds.append(f"<td>{'Yes' if t.get('compilation') else 'No'}</td>")
-        body.append(f"<tr>{''.join(tds)}</tr>")
+        body.append(f'<tr data-testid="{uistate.testid("row-lib", t.get("id", ""))}">{"".join(tds)}</tr>')
 
     ui.html(
         '<table class="am-table"><thead><tr>' + "".join(head) + "</tr></thead>"
@@ -221,7 +221,7 @@ def _grid(rows: list[dict]) -> None:
                      f'{initials(str(t.get("title", "")), str(t.get("album", "")))}{badge}</div>')
 
         cards.append(
-            f'<div class="track-card">{cover}'
+            f'<div class="track-card" data-testid="{uistate.testid("row-lib", t.get("id", ""))}">{cover}'
             f'<div class="status-bar" style="background:{_genre_color(genre)};"></div>'
             f'<div class="info"><div class="t-title" title="{title}">{title}</div>'
             f'<div class="t-artist">{artist}</div>'

@@ -361,3 +361,6 @@ reports/with-issues/
 
 # Python test cache
 .pytest_cache/
+
+# Headless capture output (gui/capture.py)
+data/captures/

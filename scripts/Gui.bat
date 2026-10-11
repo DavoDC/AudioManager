@@ -1,5 +1,5 @@
 @echo off
-rem AudioManager GUI launcher - always DEV mode (hot-reload), windowless.
+rem AudioManager GUI launcher - hot reload on by default, windowless.
 rem Uses pythonw so no console window appears; gui/main.py already redirects
 rem stdout/stderr to a log file when pythonw gives it None stdio (see its
 rem "Under pythonw" comment). Claude touches gui/.cache/reload.trigger once
@@ -18,5 +18,5 @@ set AM_GUI_NO_BROWSER=
 for /f %%c in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0kill-gui.ps1"') do set KILLED=%%c
 if not "%KILLED%"=="0" set AM_GUI_NO_BROWSER=1
 
-set AM_GUI_WATCH=1
+rem hot reload is on by default (gui.main --no-watch turns it off)
 start "" pythonw -m gui.main

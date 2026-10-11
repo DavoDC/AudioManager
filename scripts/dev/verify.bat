@@ -16,9 +16,9 @@ echo [step] C# verify
 "%EXE%" --verify "%MANIFEST%"
 set VERIFY_EXIT=%ERRORLEVEL%
 
-echo [step] GUI tests
+echo [step] GUI tests + ui_check + capture (python -m gui.verify)
 pushd "%REPO_ROOT%"
-python -m pytest gui\tests\ -q
+python -m gui.verify
 set PYTEST_EXIT=%ERRORLEVEL%
 popd
 

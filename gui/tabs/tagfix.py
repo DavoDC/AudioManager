@@ -17,7 +17,7 @@ import html
 
 from nicegui import ui
 
-from gui import config, rules_store
+from gui import config, rules_store, uistate
 from gui.components.error_modal import show_error_modal
 from gui.rules_store import ACTIONS, FIELDS, MATCHES, Rule
 from gui.runner import runner
@@ -85,7 +85,7 @@ def build() -> None:
                     .tooltip("Runs the exe's existing tagfix --dry-run on NewMusic - no files changed")
 
         for name, desc, status, scope, kind in FIXED_RULES:
-            with ui.element("div").classes("rule-card"):
+            with ui.element("div").classes("rule-card").props(f'data-testid={uistate.testid("row-rule", name)}'):
                 ui.html(
                     '<div style="display:flex;justify-content:space-between;align-items:center;">'
                     f'<div class="rule-name">{name}</div>'

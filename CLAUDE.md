@@ -51,9 +51,14 @@ Legacy csproj format, csproj file registration, the `Any CPU`-only platform cons
 
 ### Claude: GUI dev hot-reload - use the trigger, don't kill the process
 
-If `scripts\launch-gui-dev.bat` is running while editing `gui/`, touch/create
+If `scripts\Gui.bat` is running while editing `gui/`, touch/create
 `gui/.cache/reload.trigger` once ready instead of `taskkill`/closing the window.
+Hot reload is on by default and defers while a job runs.
 Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
+
+### Claude: driving and checking the GUI
+
+Drive and check the GUI (state endpoints, `window.__debug`, fixtures, `ui_check`, `capture`, `gui.verify`, CLI parity): `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI.
 
 ### Development priority: Library Intake over Library Insight (confirmed 2026-09-05)
 

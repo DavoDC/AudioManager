@@ -15,7 +15,7 @@ import datetime
 
 from nicegui import ui
 
-from gui import config, theme
+from gui import config, theme, uistate
 from gui.components import charts
 from gui.components.error_modal import show_error_modal
 from gui.data_loader import fmt_bytes, fmt_int, fmt_mmss, relative_time
@@ -463,10 +463,12 @@ def tiles(s) -> None:
         ("Median Song Length", fmt_mmss(s.summary_num("medianSongLengthSeconds")), ""),
         ("Avg File Size", fmt_bytes(s.summary_num("avgFileBytes")), ""),
     ]
+    tile_keys = ["trackCount", "artistCount", "totalLibraryBytes", "genreCount",
+                 "totalPlaybackHours", "avgSongLengthSeconds", "medianSongLengthSeconds", "avgFileBytes"]
     tile_html = "".join(
-        f'<div class="stat-tile"><div class="label">{label}</div>'
+        f'<div class="stat-tile" data-testid="{uistate.testid("stat", key)}"><div class="label">{label}</div>'
         f'<div class="value">{value}</div>{delta}</div>'
-        for label, value, delta in tiles_def
+        for key, (label, value, delta) in zip(tile_keys, tiles_def)
     )
     ui.html(f'<div class="totals">{tile_html}</div>').classes("w-full")
 

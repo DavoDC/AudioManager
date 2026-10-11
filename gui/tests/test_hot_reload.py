@@ -247,3 +247,20 @@ def test_start_watcher_passes_extra_files_through():
     mock_thread_cls.assert_called_once_with(
         target=hot_reload.watch_loop, args=("some_dir", hot_reload.POLL_SECONDS, ["config.json"]), daemon=True
     )
+
+
+def test_busy_guard_defers_trigger_and_keeps_file(tmp_path):
+    """A running job must not be killed by a restart: the trigger stays on
+    disk and fires on the first poll after the job ends."""
+    trigger = tmp_path / "reload.trigger"
+    trigger.write_text("")
+    busy = {"v": True}
+    with patch("gui.hot_reload.check_syntax", return_value=(True, None)), \
+         patch("gui.hot_reload._restart") as mock_restart:
+        assert hot_reload._check_trigger(str(tmp_path), str(trigger), busy=lambda: busy["v"]) is True
+        mock_restart.assert_not_called()
+        assert trigger.exists()
+        busy["v"] = False
+        hot_reload._check_trigger(str(tmp_path), str(trigger), busy=lambda: busy["v"])
+        mock_restart.assert_called_once()
+    assert not trigger.exists()

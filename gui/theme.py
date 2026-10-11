@@ -71,10 +71,16 @@ def apply_mood(dominant_genre: str | None) -> None:
     MOOD_NAME = dominant_genre
 
 HEAD_HTML = """
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Fonts are bundled in gui/static/fonts (OFL) and served at /am-static/fonts; nothing loads from the network. */
+  @font-face{font-family:'IBM Plex Sans';font-weight:400;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-sans-latin-400-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Sans';font-weight:500;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-sans-latin-500-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Sans';font-weight:600;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-sans-latin-600-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Sans';font-weight:700;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-sans-latin-700-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Mono';font-weight:400;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Mono';font-weight:500;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Mono';font-weight:600;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Mono';font-weight:700;font-style:normal;font-display:swap;src:url('/am-static/fonts/ibm-plex-mono-latin-700-normal.woff2') format('woff2');}
   :root{
     --bg:#14161c; --panel:#1c1f28; --panel-border:#2a2e3a;
     --text:#e6e8ee; --text-dim:#9aa0ac; --accent:#5b8cff;

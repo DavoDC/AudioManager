@@ -49,7 +49,7 @@ from datetime import datetime
 
 from nicegui import ui
 
-from gui import config, routing
+from gui import config, routing, uistate
 from gui.art import get_thumbnail, initials, placeholder_style
 from gui.components.error_modal import show_cancelled_modal, show_error_modal
 from gui.data_loader import SchemaVersionError
@@ -635,7 +635,8 @@ def review_card(e: dict, idx: int = 0) -> None:
         card_cls += " declined"
     if S.triage and idx == S.cursor:
         card_cls += " current"
-    with ui.element("div").classes(card_cls).style("margin-bottom:10px;"):
+    with ui.element("div").classes(card_cls).style("margin-bottom:10px;").props(
+            f'data-testid={uistate.testid("row-int", e["filename"])}'):
         # album art from the NewMusic file itself (read-only extraction) -
         # Simulate mode's sample filenames don't exist in NewMusic, and the
         # banner promises no NewMusic file is read, so skip the lookup

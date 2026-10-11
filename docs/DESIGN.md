@@ -102,6 +102,7 @@ A bare letter key that changes state must not be live just because a screen is o
   Sans, everything by default) and `--font-mono` (IBM Plex Mono, for numeric/
   identifier values - stat-tile values, table `.num` cells, console output,
   route strings). Never set a third font family in a tab.
+- Fonts are bundled, never fetched: the eight IBM Plex woff2 files (Sans and Mono, weights 400/500/600/700) live in `gui/static/fonts/` (licence `OFL.txt` beside them), declared with `@font-face` at the top of `HEAD_HTML` and served from `/am-static/fonts/`. No external font host, no CDN: `gui/tests/test_no_external_urls.py` fails on any `http(s)` src, href, url() or @import in the GUI code.
 - Buttons and nav links (`.tab-link`) set `font-family:inherit` explicitly in
   their own rules rather than relying on a global `button{}` reset, because
   NiceGUI's Quasar components carry their own font defaults that a bare
@@ -197,3 +198,20 @@ environment, so the container was constrained directly instead):
 5. Does it need to react to live state (poll timer, fetch result)? Call the
    owning `@ui.refreshable` function's `.refresh()` after the state changes,
    the way `_poll_downloads()` and `clear()` do in `gui/tabs/acquire.py`.
+6. Does it show data a person or Claude will want to check? Give each row and tile a `data-testid` built with `gui.uistate.testid(kind, key)` (never hand-made), and add the same row to that tab's state in `gui/uistate.py` so `python -m gui.ui_check` can compare what is painted with what the state says.
+
+## Test ids and ARIA
+
+- The nav is `role=tablist`; each nav button is `role=tab` with `id=nav-<key>`, `data-testid=nav-<key>`, `aria-controls=tab-<key>` and an `aria-selected` that follows the active tab. Each tab container is `role=tabpanel`, `id=tab-<key>`, `data-testid=tab-<key>`.
+- Row and tile ids come from `uistate.testid(kind, key)`: `<kind>-<slug>-<4 hex>`, deterministic, unique per key. Kinds in use: `row-acq`, `row-acq-extra` (Acquire), `row-int` (Integration review cards), `row-rule` (Tag Fix fixed rules), `row-lib` (Library table rows and grid cards), `stat` (Statistics tiles).
+- Never rename an id without updating `uistate.py` and the contract doc `docs/References/GUI-State-Contract.md` in the same commit.
+
+## Page chrome
+
+- Error banner: `#error-banner`, `role=alert`, hidden until a script error or unhandled rejection; the global handler also logs `[app-error]` to the console and relays it to the Claude-visible log. Status line: `#am-status`, `role=status`, driven by `window.__debug.forceStatus(text, kind)`.
+- Build footer: `[data-testid=build-footer]`, fixed bottom right, mono 11px, `AudioManager <sha>[*] <date>` (`*` = uncommitted GUI changes), plus `FIXTURE <name>` in a fixture run. Fixture runs also show the amber `#fixture-banner` strip.
+- `window.__debug` offers `state()`, `tabState(tab)`, `setTab(key)`, `forceStatus(text, kind)` and `help()`. The page reloads itself when `/api/build` reports a new `boot_id` (a hot-reload restart).
+
+## Fixture mode
+
+`python -m gui.main --fixture NAME` serves canned data with every path redirected to a temp folder and the exe disabled. Scenarios: `normal`, `empty`, `error`, `long-names`, `huge`, `review`, `running` (`--list-fixtures` prints them). `python -m gui.capture` screenshots every tab x scenario x width (1280, 390) into the gitignored `data/captures/`; `python -m gui.verify` runs tests, `ui_check` and a quick capture and prints one PASS/FAIL line.
