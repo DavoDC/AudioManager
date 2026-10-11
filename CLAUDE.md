@@ -22,12 +22,7 @@ See "Project Structure" in `docs/References/DevContext.md` for the full tree.
 
 ### User Workflow (launch.bat)
 
-**Primary:** Always run via interactive menu:
-```powershell
-.\scripts\launch.bat
-```
-
-Menu (arrow-key navigable, shown in the exe after build): Analysis, Analysis (Force Regen), Integrate (dry run first, then prompts "Proceed with real integration? [y/N]"). launch.bat handles build internally; the exe shows the menu.
+**Primary:** run `.\scripts\launch.bat` (builds internally; menu: Analysis, Analysis (Force Regen), Integrate with a dry run first, then "Proceed with real integration? [y/N]").
 
 ### Claude: Building the Program
 
@@ -51,18 +46,15 @@ Legacy csproj format, csproj file registration, the `Any CPU`-only platform cons
 
 ### Claude: GUI dev hot-reload - use the trigger, don't kill the process
 
-If `scripts\Gui.bat` is running while editing `gui/`, touch/create
-`gui/.cache/reload.trigger` once ready instead of `taskkill`/closing the window.
-Hot reload is on by default and defers while a job runs.
-Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
+While `scripts\Gui.bat` runs, touch `gui/.cache/reload.trigger` instead of killing the window (reload defers while a job runs). Detail: `docs/References/GUI-Architecture.md` "Dev mode: hot-reload".
 
 ### Claude: driving and checking the GUI
 
-Drive and check the GUI (state endpoints, `window.__debug`, fixtures, `ui_check`, `capture`, `gui.verify`, CLI parity): `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI.
+Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check`, `python -m gui.verify` (one PASS or FAIL line), `python -m gui.capture`, `python -m gui.main --fixture NAME`. Verification ladder (cheapest first: unit test, verify, DOM text, capture, browser tool only for real interaction), state endpoints, `window.__debug`, `ui_check`, CLI parity: `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI.
 
-### Development priority: Library Intake over Library Insight (confirmed 2026-09-05)
+### Development priority
 
-**Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight (Statistics, Library, Mirror, Services) for now.** No-signal work picks: Intake first. See the private project backlog TIER 2 priority note.
+Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight for now; no-signal work picks Intake. Detail: "Development Priority" in `docs/References/DevContext.md`.
 
 ### Claude: GUI visual design - read docs/DESIGN.md first
 
@@ -91,10 +83,7 @@ patterns it defines rather than inventing new styling per tab.
 
 ## Display Conventions
 
-- **"In AudioMirror"** = the XML entry in AudioMirror repo (`C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\...xml`)
-- **"In library"** = the MP3 file in the Audio folder (`C:\Users\David\Audio\...mp3`)
-- Never say "In library" with an XML path, or "In AudioMirror" with an MP3 path. Match label to file type.
-- Duplicate detection surfaces AudioMirror XML paths - display as "In AudioMirror" so the user knows where the detection came from.
+Label "In AudioMirror" for XML paths and "In library" for MP3 paths, never mixed: "Display Conventions" in `docs/References/DevContext.md`.
 
 ## Library Routing Rules
 
@@ -102,7 +91,7 @@ patterns it defines rather than inventing new styling per tab.
 
 ## Workflow Note
 
-**David's actual integration cadence: one big batch every 2-4 weeks, not daily.** Any UI/report design (GUI dashboards, stats, "recent activity" views) that assumes daily/steady-drip additions will look wrong or empty most days and spike hard on integration day - design for batch-shaped data (group by integration-run/week, not by day). Noted 2026-07-02 during GUI mockup review.
+Integration is one big batch every 2-4 weeks: design UI and reports for batch-shaped data, not daily drips ("Integration Cadence" in `docs/References/DevContext.md`).
 
 For LibChecker-warning triage, post-integration validation mechanics, AudioMirror commit/regen policy, and audit-metadata rationale, see `docs/References/DevContext.md`.
 
@@ -123,11 +112,7 @@ After the run: check `git -C AudioMirror diff HEAD`, confirm the diff looks corr
 **Claude CANNOT run:**
 - `integrate` (real) - moves files, irreversible
 
-**User workflow for real integration:**
-```
-.\scripts\launch.bat
--> Select option 3 (Integration) - runs dry run first, prompts "Proceed with real integration? [y/N]"
-```
+**User workflow for real integration:** `.\scripts\launch.bat`, option 3 (Integration); it dry-runs first and prompts "Proceed with real integration? [y/N]".
 
 **Claude dev workflow for verifying fixes:** build, then run `integrate --dry-run --no-input` (skips interactive prompts) to see real output without blocking - see "Claude dev verify workflow" in `docs/References/DevContext.md` for the exact commands.
 

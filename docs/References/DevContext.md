@@ -363,3 +363,17 @@ Treat it like you treat the XML files: version-control it, don't relegate it to 
 ## Mirror Generation Architecture: Stub-to-Replacement Pattern
 
 **Reflector creates text-file stubs with MP3 paths; Parser reads MP3s via TagLib#; TrackXML overwrites stubs with actual XML.** This is the current design, not a bug - it works. However, the stubs are never read as input, only as intermediate placeholders. The pattern is vestigial: Reflector writes stub (path file) → Parser reads MP3 and caches → TrackXML overwrites stub with XML. The stubs exist but are never actually parsed - they're just temporary. Not a performance issue now, but worth refactoring if parsing becomes a bottleneck (Reflector could skip stub creation and TrackXML could read MP3 directly, bypassing the temp file stage entirely). Current design trades immediate clarity (the stubs are there) for simplicity (Reflector doesn't need to import TagLib# or know about XML generation).
+
+## Display Conventions (moved from CLAUDE.md 2026-10-12)
+
+- **"In AudioMirror"** = the XML entry in the AudioMirror repo (`C:\Users\David\GitHubRepos\AudioMirror\AUDIO_MIRROR\...xml`). **"In library"** = the MP3 file in the Audio folder (`C:\Users\David\Audio\...mp3`).
+- Never say "In library" with an XML path, or "In AudioMirror" with an MP3 path. Match label to file type.
+- Duplicate detection surfaces AudioMirror XML paths, so display them as "In AudioMirror" so the user knows where the detection came from.
+
+## Integration Cadence (moved from CLAUDE.md 2026-10-12)
+
+David's actual integration cadence is one big batch every 2-4 weeks, not daily. Any UI or report design (GUI dashboards, stats, "recent activity" views) that assumes daily additions looks empty most days and spikes on integration day, so design for batch-shaped data (group by integration run or week, not by day). Noted 2026-07-02 during GUI mockup review.
+
+## Development Priority (moved from CLAUDE.md 2026-10-12)
+
+Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight (Statistics, Library, Mirror, Services) for now (confirmed 2026-09-05). No-signal work picks Intake first. See the private project backlog priority note.
