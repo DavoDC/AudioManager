@@ -48,6 +48,15 @@ from gui import config
 
 sys.path.insert(0, str(config.SPOTIFYGEN_ROOT / "src"))
 
+
+def _require_spotify_api() -> None:
+    """Fail loudly if the SpotifyTools checkout predates API_VERSION 1 (public build_deemix_url)."""
+    import spotify_tools
+    if getattr(spotify_tools, "API_VERSION", 0) < 1:
+        raise ImportError(
+            "SpotifyTools is too old for AudioManager (needs API_VERSION >= 1). "
+            "Update your SpotifyTools checkout, then retry.")
+
 _state = {"tracks": [], "downloaded": {}, "extra": [], "sort_col": None, "sort_reverse": False,
           "hide_downloaded": False, "playlist_loaded": False, "simulated": False,
           "manual_override": {}, "fetch_progress": None, "sync_busy": False}
@@ -330,7 +339,8 @@ def _do_fetch_tracks(
     (it returns the whole page-paginated list in one call), so this is the
     "simple counter around the loop" option the item names, applied to the
     one loop this function actually owns."""
-    from spotify_tools.open_playlist import extract_playlist_id, _build_deemix_url
+    _require_spotify_api()
+    from spotify_tools.open_playlist import extract_playlist_id, build_deemix_url
     playlist_id = extract_playlist_id(playlist_id_or_url)
     client = _spotify_client()
     tracks = client.get_playlist_tracks_detailed(playlist_id)
@@ -344,7 +354,7 @@ def _do_fetch_tracks(
     for i, t in enumerate(tracks, start=1):
         rows.append((
             t["artist"], t["title"], t["album"], t["year"],
-            _format_duration(t.get("duration_ms", 0)), _build_deemix_url(t["artist"], t["title"]),
+            _format_duration(t.get("duration_ms", 0)), build_deemix_url(t["artist"], t["title"]),
         ))
         if on_progress:
             on_progress(i, total)
@@ -358,7 +368,8 @@ def _do_fetch_liked_tracks(on_progress=None) -> list[tuple[str, str, str, str, s
     get_liked_tracks_detailed() instead of a playlist id. Persists under
     _LIKED_SONGS_ID so history/cache/restore all work unmodified. Same
     on_progress contract as _do_fetch_tracks() - see its docstring."""
-    from spotify_tools.open_playlist import _build_deemix_url
+    _require_spotify_api()
+    from spotify_tools.open_playlist import build_deemix_url
     client = _spotify_client()
     tracks = client.get_liked_tracks_detailed()
     _save_last_playlist(_LIKED_SONGS_ID, _LIKED_SONGS_NAME)
@@ -367,7 +378,7 @@ def _do_fetch_liked_tracks(on_progress=None) -> list[tuple[str, str, str, str, s
     for i, t in enumerate(tracks, start=1):
         rows.append((
             t["artist"], t["title"], t["album"], t["year"],
-            _format_duration(t.get("duration_ms", 0)), _build_deemix_url(t["artist"], t["title"]),
+            _format_duration(t.get("duration_ms", 0)), build_deemix_url(t["artist"], t["title"]),
         ))
         if on_progress:
             on_progress(i, total)
@@ -379,7 +390,8 @@ def _sample_tracks() -> list[tuple[str, str, str, str, str, str]]:
     album, year, length, url) shape _do_fetch_tracks() returns, so simulate()
     can drop this straight into _state["tracks"]. Mirrors integration.py's
     _sample_entries() precedent."""
-    from spotify_tools.open_playlist import _build_deemix_url
+    _require_spotify_api()
+    from spotify_tools.open_playlist import build_deemix_url
     rows = [
         ("Bring Me The Horizon", "Doomed", "Post Human: Survival Horror", "2020", "3:12"),
         ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23"),
@@ -389,7 +401,7 @@ def _sample_tracks() -> list[tuple[str, str, str, str, str, str]]:
         ("Jack Harlow", "Lonesome", "Jackman.", "2023", "2:15"),
     ]
     return [
-        (artist, title, album, year, length, _build_deemix_url(artist, title))
+        (artist, title, album, year, length, build_deemix_url(artist, title))
         for artist, title, album, year, length in rows
     ]
 
@@ -403,14 +415,15 @@ def _sample_extra() -> list[tuple[str, str, str, Path]]:
     shares artist/title with a sample track simulate() marks downloaded, to
     exercise the "downloaded" row landing next to an "extra" row for the same
     song; the rest match no sample track, i.e. genuinely extra."""
-    from spotify_tools.open_playlist import _build_deemix_url
+    _require_spotify_api()
+    from spotify_tools.open_playlist import build_deemix_url
     rows = [
         ("Bring Me The Horizon", "Doomed"),
         ("Tame Impala", "The Less I Know The Better"),
         ("Metro Boomin", "Space Cadet"),
     ]
     return [
-        (artist, title, _build_deemix_url(artist, title), Path(f"NewMusic/{artist} - {title}.mp3"))
+        (artist, title, build_deemix_url(artist, title), Path(f"NewMusic/{artist} - {title}.mp3"))
         for artist, title in rows
     ]
 
@@ -629,7 +642,8 @@ def _run_check_against_downloads() -> None:
     unconditionally every 2 seconds, and without this guard every tick did a
     full read-modify-write of ACQUIRE_STATE_JSON even when nothing on disk
     had changed."""
-    from spotify_tools.open_playlist import _build_deemix_url
+    _require_spotify_api()
+    from spotify_tools.open_playlist import build_deemix_url
     overrides = _state["manual_override"]
     old_downloaded = dict(_state["downloaded"])
     old_extra = list(_state["extra"])
@@ -650,7 +664,7 @@ def _run_check_against_downloads() -> None:
             new_downloaded[row_key] = f"{artist} - {title}" in found_set
     _state["downloaded"] = new_downloaded
     _state["extra"] = [
-        (artist, title, _build_deemix_url(artist, title), path)
+        (artist, title, build_deemix_url(artist, title), path)
         for artist, title, path in find_extra_newmusic_files(current_tracks, config.NEWMUSIC_DIR)
     ]
     changed = new_downloaded != old_downloaded or _state["extra"] != old_extra

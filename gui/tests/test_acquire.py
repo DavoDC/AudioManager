@@ -555,13 +555,13 @@ def test_do_fetch_liked_tracks_returns_same_row_shape_as_playlist_fetch(tmp_path
 
     monkeypatch.setattr(acquire_module, "_spotify_client", lambda: FakeClient())
 
-    from spotify_tools.open_playlist import _build_deemix_url
+    from spotify_tools.open_playlist import build_deemix_url
 
     rows = _do_fetch_liked_tracks()
 
     assert rows == [
-        ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", _build_deemix_url("Eminem", "Lose Yourself")),
-        ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23", _build_deemix_url("Dua Lipa", "Levitating")),
+        ("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20", build_deemix_url("Eminem", "Lose Yourself")),
+        ("Dua Lipa", "Levitating", "Future Nostalgia", "2020", "3:23", build_deemix_url("Dua Lipa", "Levitating")),
     ]
 
 
@@ -1663,9 +1663,9 @@ def test_fetch_with_valid_playlist_input_proceeds_to_the_network_call(tmp_path, 
 
     rows = _do_fetch_tracks(playlist_id)
 
-    from spotify_tools.open_playlist import _build_deemix_url
+    from spotify_tools.open_playlist import build_deemix_url
 
     assert calls == [1]  # the network layer was genuinely reached
     assert rows == [("Eminem", "Lose Yourself", "8 Mile", "2002", "5:20",
-                      _build_deemix_url("Eminem", "Lose Yourself"))]
+                      build_deemix_url("Eminem", "Lose Yourself"))]
 
