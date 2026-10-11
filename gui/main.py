@@ -21,12 +21,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+from gui import security  # noqa: E402  (light import; the port constant lives there)
+
+
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="python -m gui.main", description=__doc__.split("\n\n")[0])
     p.add_argument("--fixture", "--demo", dest="fixture", default=os.environ.get("AM_GUI_FIXTURE"),
                    help="serve canned demo data (see --list-fixtures); the exe is disabled")
     p.add_argument("--list-fixtures", action="store_true")
-    p.add_argument("--port", type=int, default=int(os.environ.get("AM_GUI_PORT", "8471")))
+    p.add_argument("--port", type=int, default=int(os.environ.get("AM_GUI_PORT", security.DEFAULT_PORT)))
     p.add_argument("--no-watch", action="store_true", help="disable hot reload (default: on)")
     p.add_argument("--no-browser", action="store_true")
     p.add_argument("--check", action="store_true", help="print the running instance's build line and exit")
@@ -230,6 +233,15 @@ if __name__ in {"__main__", "__mp_main__"}:
 
     if _open:
         app.on_startup(_open_browser)
+
+    # LCH-4: after an execv restart the old socket can linger; wait briefly, fail clearly.
+    from gui import bindwait
+    try:
+        bindwait.wait_for_port(security.BIND_HOST, ARGS.port)
+    except bindwait.PortInUse as _e:
+        applog.write("start", f"FAILED: {_e}")
+        print(f"AudioManager GUI: {_e}")
+        sys.exit(1)
 
     ui.run(
         title="AudioManager",

@@ -18,6 +18,10 @@ set AM_GUI_NO_BROWSER=
 for /f %%c in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0kill-gui.ps1"') do set KILLED=%%c
 if not "%KILLED%"=="0" set AM_GUI_NO_BROWSER=1
 
+rem launch breadcrumb (WS-013): proves the bat ran even if Python never starts
+if not exist "gui\.cache" mkdir "gui\.cache"
+>> "gui\.cache\launch-breadcrumb.log" echo %date% %time% Gui.bat launch killed=%KILLED%
+
 rem visible preflight (WS-003): a pythonw failure is silent, so check first; the window stays open only on failure
 python -m gui.main --preflight
 if errorlevel 1 goto failed

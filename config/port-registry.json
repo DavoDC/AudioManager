@@ -1,0 +1,5 @@
+{
+  "_note": "Repo copy of this app's entry in the workspace port registry (webapp standard WS-009). Change the port in gui/security.py and here together; gui/tests/test_port_registry.py fails on drift.",
+  "app": "AudioManager",
+  "port": 8471
+}
