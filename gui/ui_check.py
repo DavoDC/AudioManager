@@ -48,6 +48,11 @@ def _get(url: str, headers: dict | None = None) -> tuple[int, dict, str]:
         return e.code, dict(e.headers), e.read().decode("utf-8", "replace")
 
 
+def favicon_problems(page: str) -> list[str]:
+    """The page must link the state favicon (WS-124)."""
+    return [] if 'data-testid="favicon"' in page and "/api/favicon.png" in page else ["page lacks the state favicon link"]
+
+
 def check(base: str, only_tab: str | None = None) -> list[str]:
     from gui.uistate import TAB_LABELS
     fails: list[str] = []
@@ -73,6 +78,7 @@ def check(base: str, only_tab: str | None = None) -> list[str]:
         if code != 200:
             fails.append(f"{tab}: page returned {code}")
             continue
+        fails.extend(f"{tab}: {m}" for m in favicon_problems(page))
         for needle in ("build-footer", f"nav-{tab}", f"tab-{tab}"):
             if needle not in page:
                 fails.append(f"{tab}: page lacks data-testid {needle}")

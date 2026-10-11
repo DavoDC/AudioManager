@@ -68,7 +68,12 @@ CSS = tokens.fill(CSS)
 
 def head_html() -> str:
     js = ERROR_JS.replace("__TOKEN__", '"' + security.TOKEN + '"')
-    return f"<style>{CSS}</style><script>{js}</script>"
+    v = health.compute()["verdict"]
+    link = (f'<link rel="icon" type="image/png" href="/api/favicon.png?v={v}" data-testid="favicon">')
+    # NiceGUI adds its own icon link; keep only ours so the tab shows the verdict colour
+    fix = ("<script>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll(" +
+           "'link[rel~=icon]:not([data-testid=favicon])').forEach(function(l){l.remove();});});</script>")
+    return f"<style>{CSS}</style><script>{js}</script>{link}{fix}"
 
 
 def body_html() -> str:

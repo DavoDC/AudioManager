@@ -7,7 +7,11 @@ What the running GUI tells a program (Claude, a test, a script) about itself. Re
 All on `127.0.0.1:8471` (reach it as `http://localhost:8471`). Every response has `Cache-Control: no-store` and `nosniff`. A request whose Host is not `127.0.0.1:PORT` or `localhost:PORT` gets 403; a cross-origin POST or websocket gets 403.
 
 - `GET /api/build` gives `{line, sha, dirty, date, boot_id, started_at, fixture}`. `boot_id` changes on every process start; pages poll it and reload themselves.
-- `GET /api/health` gives `{verdict, word, reasons}`: green (Healthy), amber (Attention) or red (Broken) with the reasons. One function, `gui/health.py`, feeds this, the footer badge (`health-badge`), and later the tray and favicon.
+- `GET /api/health` gives `{verdict, word, reasons}`: green (Healthy), amber (Attention) or red (Broken) with the reasons. One function, `gui/health.py`, feeds this, the footer badge (`health-badge`), the favicon and the tray.
+
+- `GET /api/favicon.png` is the tab icon: a disc in the verdict colour, rendered by `gui/icon.py` (the tray uses the same renderer). The page head links it as `[data-testid=favicon]` with `?v=<verdict>`; `ui_check` fails a page without that link.
+
+- Tray: `gui/tray.py` runs in the GUI process (menu Open, Reload, Stop GUI), one icon per login session through the named mutex `Local\AudioManagerGuiTray`; a hot reload retries the mutex for a few seconds. Disable with `AM_GUI_TRAY=0`; fixture runs never start a tray.
 - `GET /state.json` gives `{schema, generated_at, build, fixture, busy:{busy, action}, tabs:{<key>: <tab state>}}`.
 - `GET /state/<tab>.json` gives one tab state. Tab keys: `acquire`, `integration`, `tagfix`, `stats`, `library`, `mirror`, `services`. Unknown key gives 404.
 - `GET /api/manifest.json` is the agent manifest: tabs and their URLs, endpoints, every action with its CLI line, the `window.__debug` surface, doc paths and today's log path.
