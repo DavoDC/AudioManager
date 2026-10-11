@@ -316,7 +316,7 @@ class DemoServer:
 
     @property
     def base(self):
-        return "http://localhost:%d" % self.port
+        return "http://127.0.0.1:%d" % self.port  # not localhost: IPv6 attempt costs 2s per request
 
     def stop(self):
         self.proc.terminate()

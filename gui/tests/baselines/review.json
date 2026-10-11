@@ -1,0 +1,271 @@
+{
+ "busy": {
+  "action": "",
+  "busy": false
+ },
+ "fixture": "review",
+ "schema": 1,
+ "tabs": {
+  "acquire": {
+   "extra_count": 3,
+   "fetching": null,
+   "hide_downloaded": false,
+   "label": "Acquire",
+   "playlist_loaded": true,
+   "poll_interval": null,
+   "row_count": 9,
+   "rows": [
+    {
+     "artist": "Bring Me The Horizon",
+     "downloaded": true,
+     "key": "bring me horizon:doomed",
+     "overridden": false,
+     "testid": "row-acq-bring-me-horizon-doomed-a869",
+     "title": "Doomed"
+    },
+    {
+     "artist": "Dua Lipa",
+     "downloaded": false,
+     "key": "dua lipa:levitating",
+     "overridden": false,
+     "testid": "row-acq-dua-lipa-levitating-4a93",
+     "title": "Levitating"
+    },
+    {
+     "artist": "Kendrick Lamar",
+     "downloaded": true,
+     "key": "kendrick lamar:humble",
+     "overridden": false,
+     "testid": "row-acq-kendrick-lamar-humble-e54c",
+     "title": "HUMBLE."
+    },
+    {
+     "artist": "Polo G",
+     "downloaded": false,
+     "key": "polo g:gang with me",
+     "overridden": false,
+     "testid": "row-acq-polo-g-gang-with-me-d873",
+     "title": "Gang With Me"
+    },
+    {
+     "artist": "Fred again..",
+     "downloaded": true,
+     "key": "fred again:delilah pull me out of this",
+     "overridden": false,
+     "testid": "row-acq-fred-again-delilah-pull-me-out-of-this-355c",
+     "title": "Delilah (pull me out of this)"
+    }
+   ],
+   "schema": 1,
+   "simulated": true,
+   "stale": false,
+   "sync_busy": false,
+   "tab": "acquire",
+   "track_count": 6
+  },
+  "integration": {
+   "accepted_count": 7,
+   "declined_count": 0,
+   "exec_done": false,
+   "exec_ok": null,
+   "exec_record_missing": false,
+   "exec_summary": "",
+   "filter": "all",
+   "label": "Integration",
+   "poll_interval": null,
+   "row_count": 8,
+   "rows": [
+    {
+     "accepted": true,
+     "artist": "Bring Me The Horizon",
+     "destination": "Artists/Bring Me The Horizon/Post Human- Survival Horror",
+     "filename": "Bring Me The Horizon - Doomed.mp3",
+     "new_folder": false,
+     "status": "ok",
+     "testid": "row-int-bring-me-the-horizon-doomed-mp3-f28a",
+     "title": "Doomed"
+    },
+    {
+     "accepted": true,
+     "artist": "Polo G;Lil Wayne",
+     "destination": "Artists/Polo G/Singles",
+     "filename": "Polo G;Lil Wayne - Gang With Me.mp3",
+     "new_folder": true,
+     "status": "ok",
+     "testid": "row-int-polo-g-lil-wayne-gang-with-me-mp3-9d4d",
+     "title": "Gang With Me"
+    },
+    {
+     "accepted": true,
+     "artist": "Ariana Grande",
+     "destination": "Artists/Ariana Grande/Positions",
+     "filename": "Ariana Grande - Positions (Remix).mp3",
+     "new_folder": false,
+     "status": "ok",
+     "testid": "row-int-ariana-grande-positions-remix-mp3-e0fe",
+     "title": "Positions (Remix)"
+    },
+    {
+     "accepted": true,
+     "artist": "Kendrick Lamar",
+     "destination": "Artists/Kendrick Lamar/DAMN.",
+     "filename": "Kendrick Lamar - HUMBLE.mp3",
+     "new_folder": false,
+     "status": "ok",
+     "testid": "row-int-kendrick-lamar-humble-mp3-c97d",
+     "title": "HUMBLE."
+    },
+    {
+     "accepted": true,
+     "artist": "Dua Lipa",
+     "destination": "Artists/Dua Lipa/Future Nostalgia",
+     "filename": "Dua Lipa - Levitating.mp3",
+     "new_folder": false,
+     "status": "ok",
+     "testid": "row-int-dua-lipa-levitating-mp3-7d22",
+     "title": "Levitating"
+    }
+   ],
+   "schema": 1,
+   "simulated": true,
+   "stage": 2,
+   "stale": false,
+   "tab": "integration",
+   "triage": false
+  },
+  "library": {
+   "decade": null,
+   "genre": null,
+   "label": "Library",
+   "loaded": true,
+   "page": 1,
+   "page_size": 50,
+   "poll_interval": null,
+   "row_count": 4,
+   "rows": [
+    {
+     "artists": "Eminem",
+     "id": "\\Artists\\Eminem\\Recovery\\Not Afraid.xml",
+     "testid": "row-lib-artists-eminem-recovery-not-afraid-xml-bb53",
+     "title": "Not Afraid"
+    },
+    {
+     "artists": "Eminem",
+     "id": "\\Artists\\Eminem\\Singles\\Mockingbird.xml",
+     "testid": "row-lib-artists-eminem-singles-mockingbird-xml-012f",
+     "title": "Mockingbird"
+    },
+    {
+     "artists": "Metallica",
+     "id": "\\Artists\\Metallica\\Master of Puppets\\Battery.xml",
+     "testid": "row-lib-artists-metallica-master-of-puppets-battery-xml-94de",
+     "title": "Battery"
+    },
+    {
+     "artists": "PlentaKill",
+     "id": "\\Sources\\YouTube\\PlentaKill\\PlentaKill - Don't You Worry Bot.xml",
+     "testid": "row-lib-sources-youtube-plentakill-plentakill-don-t-you--23a7",
+     "title": "Don't You Worry Bot"
+    }
+   ],
+   "schema": 1,
+   "search": "",
+   "stale": false,
+   "tab": "library",
+   "total_matching": 4,
+   "view": "table"
+  },
+  "mirror": {
+   "label": "Mirror",
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "stale": false,
+   "tab": "mirror"
+  },
+  "services": {
+   "label": "Services",
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "stale": false,
+   "tab": "services"
+  },
+  "stats": {
+   "label": "Statistics",
+   "load_error": null,
+   "loaded": true,
+   "poll_interval": null,
+   "row_count": 8,
+   "rows": [
+    {
+     "key": "trackCount",
+     "testid": "stat-trackcount-3378",
+     "value": 4
+    },
+    {
+     "key": "artistCount",
+     "testid": "stat-artistcount-9de2",
+     "value": 3
+    },
+    {
+     "key": "totalLibraryBytes",
+     "testid": "stat-totallibrarybytes-8ba2",
+     "value": 20971520
+    },
+    {
+     "key": "genreCount",
+     "testid": "stat-genrecount-c28d",
+     "value": 3
+    },
+    {
+     "key": "totalPlaybackHours",
+     "testid": "stat-totalplaybackhours-a369",
+     "value": 0.3
+    }
+   ],
+   "schema": 1,
+   "stale": false,
+   "stats_generated_at": "2026-07-03T01:00:56",
+   "tab": "stats"
+  },
+  "tagfix": {
+   "dry_run_lines": 0,
+   "label": "Tag Fix",
+   "poll_interval": null,
+   "row_count": 5,
+   "rows": [
+    {
+     "name": "Compilation flag (TCMP)",
+     "status": "Active",
+     "testid": "row-rule-compilation-flag-tcmp-de16"
+    },
+    {
+     "name": "Genre normalisation",
+     "status": "Active",
+     "testid": "row-rule-genre-normalisation-0868"
+    },
+    {
+     "name": "Strip parentheticals",
+     "status": "Active",
+     "testid": "row-rule-strip-parentheticals-9cda"
+    },
+    {
+     "name": "Extract featured artists",
+     "status": "Active",
+     "testid": "row-rule-extract-featured-artists-f692"
+    },
+    {
+     "name": "File renames",
+     "status": "Active",
+     "testid": "row-rule-file-renames-df37"
+    }
+   ],
+   "schema": 1,
+   "stale": false,
+   "tab": "tagfix"
+  }
+ }
+}

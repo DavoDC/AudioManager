@@ -59,7 +59,9 @@ python -m gui.main --preflight                  python, imports, config, cache, 
 python -m gui.main --stop                       stop the instance on --port (exit 0 even if none)
 python -m gui.main --autostart on|off|status    start at login (HKCU Run, windowless, no tab); David turns it on
 python -m gui.main --fixture review --no-watch   demo data, exe disabled (--list-fixtures)
-python -m gui.ui_check --url http://localhost:8471   painted test ids vs /state.json
+python -m gui.ui_check --url http://127.0.0.1:8471   painted test ids vs /state.json
+python -m gui.ui_check --fast [--region row-int]  state vs painted ids only, under a second on a fixture
+python -m gui.baseline check|update              fixture state baselines (gui/tests/baselines), tolerance diff names tab > row > field
 python -m gui.capture --scenarios normal         headless screenshots to data/captures/
 python -m gui.verify                             tests + ui_check + capture, one PASS/FAIL line
 ```

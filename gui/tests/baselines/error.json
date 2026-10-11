@@ -1,0 +1,128 @@
+{
+ "busy": {
+  "action": "",
+  "busy": false
+ },
+ "fixture": "error",
+ "schema": 1,
+ "tabs": {
+  "acquire": {
+   "extra_count": 0,
+   "fetching": null,
+   "hide_downloaded": false,
+   "label": "Acquire",
+   "playlist_loaded": false,
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "simulated": false,
+   "stale": false,
+   "sync_busy": false,
+   "tab": "acquire",
+   "track_count": 0
+  },
+  "integration": {
+   "accepted_count": 0,
+   "declined_count": 0,
+   "exec_done": false,
+   "exec_ok": null,
+   "exec_record_missing": false,
+   "exec_summary": "",
+   "filter": "all",
+   "label": "Integration",
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "simulated": false,
+   "stage": 1,
+   "stale": false,
+   "tab": "integration",
+   "triage": false
+  },
+  "library": {
+   "decade": null,
+   "genre": null,
+   "label": "Library",
+   "loaded": false,
+   "page": 1,
+   "page_size": 50,
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "search": "",
+   "stale": false,
+   "tab": "library",
+   "total_matching": 0,
+   "view": "table"
+  },
+  "mirror": {
+   "label": "Mirror",
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "stale": false,
+   "tab": "mirror"
+  },
+  "services": {
+   "label": "Services",
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "stale": false,
+   "tab": "services"
+  },
+  "stats": {
+   "label": "Statistics",
+   "load_error": "Expecting property name enclosed in double quotes: line 1 column 3 (char 2)",
+   "loaded": false,
+   "poll_interval": null,
+   "row_count": 0,
+   "rows": [],
+   "schema": 1,
+   "stale": false,
+   "stats_generated_at": null,
+   "tab": "stats"
+  },
+  "tagfix": {
+   "dry_run_lines": 0,
+   "label": "Tag Fix",
+   "poll_interval": null,
+   "row_count": 5,
+   "rows": [
+    {
+     "name": "Compilation flag (TCMP)",
+     "status": "Active",
+     "testid": "row-rule-compilation-flag-tcmp-de16"
+    },
+    {
+     "name": "Genre normalisation",
+     "status": "Active",
+     "testid": "row-rule-genre-normalisation-0868"
+    },
+    {
+     "name": "Strip parentheticals",
+     "status": "Active",
+     "testid": "row-rule-strip-parentheticals-9cda"
+    },
+    {
+     "name": "Extract featured artists",
+     "status": "Active",
+     "testid": "row-rule-extract-featured-artists-f692"
+    },
+    {
+     "name": "File renames",
+     "status": "Active",
+     "testid": "row-rule-file-renames-df37"
+    }
+   ],
+   "schema": 1,
+   "stale": false,
+   "tab": "tagfix"
+  }
+ }
+}

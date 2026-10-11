@@ -30,3 +30,39 @@ def test_compare_subset_allows_unpainted_state_rows():
 def test_exit_code_mapping():
     assert ui_check.exit_code([]) == 0
     assert ui_check.exit_code(["boom"]) == 1
+
+
+def test_fast_mode_skips_probes_and_region_filters_tabs():
+    calls = []
+
+    def fake_get(url, headers=None):
+        calls.append(url)
+        if url.endswith("/api/build"):
+            return 200, {}, "{}"
+        if "/state/" in url:
+            return 200, {}, '{"rows": [{"testid": "row-int-1"}]}'
+        return 200, {}, '<div data-testid="row-int-1"></div>'
+
+    orig = ui_check._get
+    ui_check._get = fake_get
+    try:
+        fails = ui_check.check("http://x", fast=True, region="row-int")
+    finally:
+        ui_check._get = orig
+    assert fails == []
+    assert not any("evil" in c for c in calls)
+    assert [c for c in calls if "/state/" in c] == ["http://x/state/integration.json"]
+
+
+def test_fast_mode_on_the_normal_fixture_is_quick_and_clean():
+    import time
+    from gui import capture
+    server = capture.DemoServer("normal")
+    try:
+        t0 = time.monotonic()
+        code = ui_check.main(["--url", server.base, "--fast"])
+        elapsed = time.monotonic() - t0
+    finally:
+        server.stop()
+    assert code == 0
+    assert elapsed < 10, f"--fast took {elapsed:.1f}s"

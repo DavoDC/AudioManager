@@ -1,12 +1,15 @@
 """ui_check: HTTP-level harness against a running GUI (no browser needed).
 
-  python -m gui.ui_check [--url http://localhost:8471] [--tab TAB]
+  python -m gui.ui_check [--url http://localhost:8471] [--tab TAB] [--fast] [--region PREFIX]
 
 For every tab it fetches /?tab=X and /state/X.json, then checks that the
 data-testid values painted in the page match the state rows (exact for
 server-rendered rows; painted subset of state for paginated Acquire).
 It also checks the build footer, nav ids, security headers, and that a bad
-Host header is refused. Exit 0 = all good, 1 = failures, 2 = cannot reach.
+Host header is refused. --fast (WS-074) does only the per-tab state-vs-painted
+test id comparison: no header or Host probes, no favicon or nav checks, DOM text
+only (this tool never takes a PNG). --region PREFIX limits that comparison to
+tabs whose row ids start with PREFIX (for example row-int). Exit 0 = all good, 1 = failures, 2 = cannot reach.
 """
 from __future__ import annotations
 
@@ -53,19 +56,23 @@ def favicon_problems(page: str) -> list[str]:
     return [] if 'data-testid="favicon"' in page and "/api/favicon.png" in page else ["page lacks the state favicon link"]
 
 
-def check(base: str, only_tab: str | None = None) -> list[str]:
+def check(base: str, only_tab: str | None = None, fast: bool = False,
+          region: str | None = None) -> list[str]:
     from gui.uistate import TAB_LABELS
     fails: list[str] = []
     code, headers, body = _get(f"{base}/api/build")
     if code != 200:
         return [f"/api/build returned {code}"]
-    if "nosniff" not in {k.lower(): v for k, v in headers.items()}.get("x-content-type-options", "").lower():
-        fails.append("missing X-Content-Type-Options: nosniff")
-    code, _h, _b = _get(f"{base}/", {"Host": "evil.example"})
-    if code != 403:
-        fails.append(f"bad Host header not refused (got {code})")
+    if not fast:
+        if "nosniff" not in {k.lower(): v for k, v in headers.items()}.get("x-content-type-options", "").lower():
+            fails.append("missing X-Content-Type-Options: nosniff")
+        code, _h, _b = _get(f"{base}/", {"Host": "evil.example"})
+        if code != 403:
+            fails.append(f"bad Host header not refused (got {code})")
     for tab, _label in TAB_LABELS:
         if only_tab and tab != only_tab:
+            continue
+        if region and not ROW_PREFIX[tab].startswith(region):
             continue
         code, _h, state_body = _get(f"{base}/state/{tab}.json")
         if code != 200:
@@ -78,10 +85,11 @@ def check(base: str, only_tab: str | None = None) -> list[str]:
         if code != 200:
             fails.append(f"{tab}: page returned {code}")
             continue
-        fails.extend(f"{tab}: {m}" for m in favicon_problems(page))
-        for needle in ("build-footer", f"nav-{tab}", f"tab-{tab}"):
-            if needle not in page:
-                fails.append(f"{tab}: page lacks data-testid {needle}")
+        if not fast:
+            fails.extend(f"{tab}: {m}" for m in favicon_problems(page))
+            for needle in ("build-footer", f"nav-{tab}", f"tab-{tab}"):
+                if needle not in page:
+                    fails.append(f"{tab}: page lacks data-testid {needle}")
         state_ids = {r["testid"] for r in state["rows"]}
         if not state_ids:
             continue
@@ -98,9 +106,13 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--url", default="http://localhost:8471")
     p.add_argument("--tab")
+    p.add_argument("--fast", action="store_true", help="state vs painted ids only; skip probes and chrome checks")
+    p.add_argument("--region", help="only tabs whose row ids start with this prefix, e.g. row-int")
     ns = p.parse_args(argv)
+    # The server binds IPv4 only; "localhost" tries IPv6 first and costs 2s per request on Windows.
+    url = ns.url.rstrip("/").replace("//localhost", "//127.0.0.1", 1)
     try:
-        fails = check(ns.url.rstrip("/"), ns.tab)
+        fails = check(url, ns.tab, ns.fast, ns.region)
     except (urllib.error.URLError, ConnectionError, OSError) as e:
         print(f"ui_check: cannot reach {ns.url}: {e}", file=sys.stderr)
         return 2

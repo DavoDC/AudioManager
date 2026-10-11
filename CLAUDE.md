@@ -52,6 +52,10 @@ While `scripts\Gui.bat` runs, touch `gui/.cache/reload.trigger` instead of killi
 
 Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check|--preflight|--stop`, `python -m gui.verify` (one PASS or FAIL line), `python -m gui.capture`, `python -m gui.main --fixture NAME`. Verification ladder (cheapest first: unit test, verify, DOM text, capture, browser tool only for real interaction), state endpoints, `window.__debug`, `ui_check`, CLI parity: `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI.
 
+### GUI test suite speed
+
+Measured 2026-10-12: `python -m pytest gui -q` runs 482 tests in about 14 s (465 in about 7.5 s before the fixture-server tests were added); no xdist or sleep removal needed, nothing real sleeps for more than 2.4 s (test_preflight). The ui_check step of `python -m gui.verify` fell from 34 s to 2 s because fixture servers are now addressed as 127.0.0.1 (the name localhost cost 2 s per request on Windows); the Chrome capture step still takes about 98 s and is the bulk of verify. Re-measure with `--durations=15` if the suite passes 2 minutes.
+
 ### Development priority
 
 Library Intake (Acquire, Integration, Tag Fix) outranks Library Insight for now; no-signal work picks Intake. Detail: "Development Priority" in `docs/References/DevContext.md`.
