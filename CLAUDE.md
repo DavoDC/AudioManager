@@ -50,7 +50,7 @@ While `scripts\Gui.bat` runs, touch `gui/.cache/reload.trigger` instead of killi
 
 ### Claude: driving and checking the GUI
 
-Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check`, `python -m gui.verify` (one PASS or FAIL line), `python -m gui.capture`, `python -m gui.main --fixture NAME`. Verification ladder (cheapest first: unit test, verify, DOM text, capture, browser tool only for real interaction), state endpoints, `window.__debug`, `ui_check`, CLI parity: `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI.
+Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check|--preflight|--stop`, `python -m gui.verify` (one PASS or FAIL line), `python -m gui.capture`, `python -m gui.main --fixture NAME`. Verification ladder (cheapest first: unit test, verify, DOM text, capture, browser tool only for real interaction), state endpoints, `window.__debug`, `ui_check`, CLI parity: `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI.
 
 ### Development priority
 

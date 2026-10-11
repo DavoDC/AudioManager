@@ -18,5 +18,15 @@ set AM_GUI_NO_BROWSER=
 for /f %%c in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0kill-gui.ps1"') do set KILLED=%%c
 if not "%KILLED%"=="0" set AM_GUI_NO_BROWSER=1
 
+rem visible preflight (WS-003): a pythonw failure is silent, so check first; the window stays open only on failure
+python -m gui.main --preflight
+if errorlevel 1 goto failed
+
 rem hot reload is on by default (gui.main --no-watch turns it off)
 start "" pythonw -m gui.main
+exit /b 0
+
+:failed
+echo.
+echo AudioManager GUI preflight failed - fix the line marked FAIL above, then run Gui.bat again.
+cmd /k

@@ -51,6 +51,8 @@ Every GUI action has a command: `python -m gui.cli actions` lists them, `python 
 ```
 scripts\Gui.bat                                  launch (windowless, hot reload on)
 python -m gui.main --check                       is it up? prints the build line
+python -m gui.main --preflight                  python, imports, config, cache, port; exit 0 when healthy
+python -m gui.main --stop                       stop the instance on --port (exit 0 even if none)
 python -m gui.main --fixture review --no-watch   demo data, exe disabled (--list-fixtures)
 python -m gui.ui_check --url http://localhost:8471   painted test ids vs /state.json
 python -m gui.capture --scenarios normal         headless screenshots to data/captures/
