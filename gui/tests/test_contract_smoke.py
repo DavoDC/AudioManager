@@ -1,12 +1,12 @@
 """Contract smoke test: assert every field the GUI reads is present in the
 real C#-produced JSON files in logs/. Catches C#/Python schema drift the
-moment it happens. Skips (rather than fails) if analysis has never run on
-this machine - run `AudioManager.exe analysis --json-output --no-input` first.
+moment it happens. Never skips: when analysis has not run on this machine it
+falls back to the committed fixtures in gui/tests/fixtures/ (INT-2), so a fresh
+checkout still compares the consumed fields. Run
+`AudioManager.exe analysis --json-output --no-input` to check the real exe output.
 """
 import sys
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -26,9 +26,19 @@ TRACK_FIELDS = [
 ]
 
 
-@pytest.mark.skipif(not config.STATS_JSON.exists(), reason="analysis has not been run")
-def test_real_stats_json_has_every_consumed_field():
-    s = load_stats()
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def _stats_path():
+    return config.STATS_JSON if config.STATS_JSON.exists() else FIXTURES / "analysis-stats.json"
+
+
+def _tracks_path():
+    return config.TRACKS_JSON if config.TRACKS_JSON.exists() else FIXTURES / "tracks.json"
+
+
+def test_stats_json_has_every_consumed_field():
+    s = load_stats(_stats_path())
     for f in STATS_FIELDS:
         assert f in s.summary, f"summary.{f} missing from real analysis-stats.json"
     for key in ("genreDistribution", "decadeDistribution", "yearDistribution",
@@ -42,9 +52,8 @@ def test_real_stats_json_has_every_consumed_field():
     assert s.age_stats.get("averageYears") is not None
 
 
-@pytest.mark.skipif(not config.TRACKS_JSON.exists(), reason="analysis has not been run")
-def test_real_tracks_json_has_every_consumed_field():
-    idx = load_tracks()
+def test_tracks_json_has_every_consumed_field():
+    idx = load_tracks(_tracks_path())
     assert idx.count > 0
     first = idx.tracks[0]
     for f in TRACK_FIELDS:

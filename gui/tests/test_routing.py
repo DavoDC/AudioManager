@@ -515,6 +515,20 @@ def test_execution_record_path_extracts_path_when_file_exists(tmp_path):
     assert routing.execution_record_path(lines, 0.0) == json_path
 
 
+def test_execution_record_path_extracts_the_retry_file_the_exe_prints(tmp_path, monkeypatch):
+    # The exe prints the "-retry" name when the primary write fails
+    # (MusicIntegrator.WriteExecutionRecordWithRetry); a newer decoy must not win.
+    monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
+    retry = tmp_path / "execution-20260906-140311-retry.json"
+    retry.write_text("{}", encoding="utf-8")
+    decoy = tmp_path / "execution-20260907-000000.json"
+    decoy.write_text("{}", encoding="utf-8")
+    import os
+    os.utime(retry, (time.time() - 100, time.time() - 100))
+    lines = [f"\n  EXECUTION JSON: {retry}"]
+    assert routing.execution_record_path(lines, 0.0) == retry
+
+
 def test_execution_record_path_falls_back_to_newest_qualifying_file(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "LOGS_DIR", tmp_path)
     older = tmp_path / "execution-20260901-000000.json"

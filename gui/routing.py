@@ -190,7 +190,7 @@ def execution_record_path(lines: list[str], since: float) -> Path | None:
     artifact of THIS run. Falls back to the newest execution-*.json in
     logs/ written at or after `since`, else None."""
     for ln in reversed(lines):
-        m = re.search(r"EXECUTION JSON:\s*(.+execution-[\d-]+\.json)", ln)
+        m = re.search(r"EXECUTION JSON:\s*(.+execution-[\w-]+\.json)", ln)
         if m:
             p = Path(m.group(1).strip())
             if p.exists():
