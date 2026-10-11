@@ -220,7 +220,8 @@ if __name__ in {"__main__", "__mp_main__"}:
     print(_line)
     applog.write("start", _line)
 
-    from gui import tray
+    from gui import history as _history, tray
+    _history.start_sampler()
     tray.start(ARGS.port, stop_cb=lambda: app.shutdown(), fixture=demo.fixture_name())
 
     def _open_browser() -> None:

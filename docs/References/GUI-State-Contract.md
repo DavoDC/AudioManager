@@ -73,3 +73,7 @@ Cheapest rung first, climb only when the rung below cannot answer:
 3. DOM text and ids: `/state/<tab>.json`, then `python -m gui.ui_check`.
 4. A `capture` PNG, read by eye (`python -m gui.capture`, `data/captures/`).
 5. A browser tool, only for real interaction a fixture cannot reproduce; then the log (`python -m gui.cli log`).
+
+## State history
+
+`GET /state/history.json?since=<seq>` returns the last 50 compact snapshots (seq, at, verdict, busy, action, per-tab row_count and digest), recorded every 15 seconds and on each request, only when something changed. Poll with the returned `cursor` to see what changed since you last looked. In memory only: a restart begins a fresh history.

@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
-from gui import applog, buildinfo, demo, health, icon, security, uistate
+from gui import applog, buildinfo, demo, health, history, icon, security, uistate
 
 NO_STORE = {"Cache-Control": "no-store"}
 
@@ -17,6 +17,7 @@ ENDPOINTS = [
     {"path": "/api/health", "method": "GET", "returns": "verdict green/amber/red, word, reasons"},
     {"path": "/api/favicon.png", "method": "GET", "returns": "state-tinted favicon (colour = health verdict)"},
     {"path": "/state.json", "method": "GET", "returns": "every tab's state contract"},
+    {"path": "/state/history.json", "method": "GET", "returns": "last N state snapshots; ?since=<seq> for newer only"},
     {"path": "/state/{tab}.json", "method": "GET", "returns": "one tab's state contract"},
     {"path": "/api/manifest.json", "method": "GET", "returns": "this agent manifest"},
     {"path": "/__log", "method": "POST", "returns": "relay a browser error line (X-AM-Token)"},
@@ -51,6 +52,10 @@ def register(app) -> None:
     async def api_favicon():
         return Response(icon.png_bytes(health.compute()["verdict"], 64), media_type="image/png", headers=NO_STORE)
 
+    async def state_history(since: int = 0):
+        history.sample()
+        return j(history.history.payload(since))
+
     async def state_all():
         return j(uistate.full_state())
 
@@ -75,6 +80,7 @@ def register(app) -> None:
     app.add_api_route("/api/health", api_health, methods=["GET"])
     app.add_api_route("/api/favicon.png", api_favicon, methods=["GET"])
     app.add_api_route("/state.json", state_all, methods=["GET"])
+    app.add_api_route("/state/history.json", state_history, methods=["GET"])
     app.add_api_route("/state/{tab}.json", state_tab, methods=["GET"])
     app.add_api_route("/api/manifest.json", api_manifest, methods=["GET"])
     app.add_api_route("/__log", log_relay, methods=["POST"])
