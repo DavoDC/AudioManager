@@ -1,6 +1,6 @@
 # AudioManager Safety Review
 
-**Date:** 2026-05-05  
+**Date:** 2026-10-12  
 **Review Scope:** Program against stated safety rules for library operations.
 
 ---
@@ -96,10 +96,11 @@ File.Move(sf.SourcePath, destPath);      // ✅ Move files
 The safety of the L (replace library) decision depends on **duplicate detection being correct.**
 
 **Detection logic** (FindDuplicateInMirror):
-- Compares **primary artist + title** of incoming file against all AudioMirror XMLs
-- Case-insensitive, whitespace-trimmed matching
+- Compares **primary artist + title** of the incoming file against an in-memory index of all AudioMirror XMLs (tags only, no audio bytes are read)
+- Case-insensitive; the title has any "(feat. X)", "(ft. X)" or "(featuring X)" removed first (NormaliseTitleForDedup), so a track with and without a feat tag still matches
+- A missing or "Missing" artist or title never matches (returns no duplicate)
 - Returns matching XML file path if found
-- No hash-based comparison
+- No hash-based comparison: the code never hashes file content
 
 **Why this is safer than hashes:**
 - Metadata-based (artist/title) is more reliable than file content
@@ -170,7 +171,7 @@ TagFixer modifies tags in NewMusic with no library rollback plan:
 
 ## Required Constraints (from CLAUDE.md)
 
-**From CLAUDE.md ("Critical Safety Rule", current wording as of 2026-09-02):**
+**From CLAUDE.md ("Critical Safety Rule", current wording as of 2026-10-12):**
 > Only the user (David) runs real integration. Real integration moves files from NewMusic into the library - user must manually trigger via `launch.bat` for data safety and auditability.
 
 **Status: ✅ ENFORCED IN CODE**
