@@ -1,12 +1,43 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace AudioManager
 {
     internal static class TestRunner
     {
+        private static bool IsStaticClass(Type t) => t.IsClass && t.IsAbstract && t.IsSealed && !t.IsNested;
+
+        private static bool HasParameterlessPublicStaticMethod(Type t) =>
+            t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .Any(m => m.GetParameters().Length == 0 && m.ReturnType == typeof(void));
+
+        /// <summary>
+        /// Every static class in this assembly whose name ends in "Tests". Discovery is automatic (ARCH-2):
+        /// no hand-maintained list, so a new test class cannot be silently skipped.
+        /// </summary>
+        internal static List<Type> DiscoverTestClasses()
+        {
+            return Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => IsStaticClass(t) && t.Name.EndsWith("Tests", StringComparison.Ordinal))
+                .OrderBy(t => t.Name, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Static classes that look like tests (public static void methods with no parameters) but are not
+        /// named *Tests, so discovery would skip them. Must be empty; TestRunnerTests enforces it.
+        /// </summary>
+        internal static List<Type> FindMisnamedTestClasses()
+        {
+            return Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => IsStaticClass(t) && !t.Name.EndsWith("Tests", StringComparison.Ordinal) && HasParameterlessPublicStaticMethod(t))
+                .ToList();
+        }
+
         internal static bool Run(out int passed, out int failed)
         {
             string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
@@ -20,7 +51,7 @@ namespace AudioManager
 
             Out("\n###### AudioManager Tests ######\n");
 
-            var testTypes = new[] { typeof(TagFixerTests), typeof(TagFixCustomRulesTests),typeof(RoutingTests), typeof(ParseCacheTests), typeof(LibCheckerTests), typeof(TrackTests), typeof(StatListTests), typeof(StatsJsonTests), typeof(TracksJsonTests), typeof(TrackXMLTests), typeof(ParserTests), typeof(ReflectorTests), typeof(AgeCheckerTests), typeof(TeeWriterTests), typeof(AudioMirrorCommitterTests), typeof(LibCheckerExceptionTests), typeof(ManifestRunnerTests), typeof(IntegrationTests), typeof(DuplicateDetectionTests), typeof(ProjectedLibCheckerTests), typeof(IntegrationManifestTests), typeof(MusicIntegratorRouteAllFilesTests), typeof(MusicIntegratorDuplicateJsonTests), typeof(MusicIntegratorBatchSummaryTests), typeof(MusicIntegratorExecutionRecordTests), typeof(MusicIntegratorConsoleFormatTests), typeof(RulesCharacterisationTests), typeof(RulesEngineTests) };
+            var testTypes = DiscoverTestClasses();
             passed = 0; failed = 0;
 
             foreach (var type in testTypes)

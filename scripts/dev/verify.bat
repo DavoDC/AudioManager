@@ -1,6 +1,6 @@
 @echo off
 :: Build + unit tests + routing manifest + GUI tests. Human mode: no args (window stays open). Claude mode: --no-pause (clean exit).
-set EXE=%~dp0..\..\project\AudioManager\bin\Release\AudioManager.exe
+set TESTEXE=%~dp0..\..\project\AudioManager.Tests\bin\Release\AudioManager.Tests.exe
 set MANIFEST=%~dp0..\..\csharp-test-fixtures\routing-manifest.json
 set REPO_ROOT=%~dp0..\..
 set START_TIME=%TIME%
@@ -13,7 +13,7 @@ if errorlevel 1 (
 )
 
 echo [step] C# verify
-"%EXE%" --verify "%MANIFEST%"
+"%TESTEXE%" --verify "%MANIFEST%"
 set VERIFY_EXIT=%ERRORLEVEL%
 
 echo [step] GUI tests + ui_check + capture (python -m gui.verify)

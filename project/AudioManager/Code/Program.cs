@@ -23,41 +23,7 @@ namespace AudioManager
                 // Set mirror path relative to the executable
                 string mirrorPath = Path.GetFullPath(Path.Combine(progExecPath, Constants.MirrorFolderPath));
 
-                // --test: run inline test suite and exit before any file/logging setup
-                if (args.Length > 0 && args[0].Equals("--test", StringComparison.OrdinalIgnoreCase))
-                {
-                    bool allPassed = TestRunner.Run(out _, out _);
-                    Environment.Exit(allPassed ? 0 : 1);
-                    return;
-                }
-
-                // --routing-manifest <path>: validate routing against a JSON manifest and exit
-                if (args.Length >= 2 && args[0].Equals("--routing-manifest", StringComparison.OrdinalIgnoreCase))
-                {
-                    bool allPassed = ManifestRunner.Run(args[1]);
-                    Environment.Exit(allPassed ? 0 : 1);
-                    return;
-                }
-
-                // --verify <manifestPath>: run unit tests + routing manifest tests, print combined summary
-                if (args.Length >= 2 && args[0].Equals("--verify", StringComparison.OrdinalIgnoreCase))
-                {
-                    bool unitPassed = TestRunner.Run(out int unitPass, out int unitFail);
-                    if (!unitPassed)
-                    {
-                        Console.WriteLine("\n[VERIFY] FAILED (unit tests failed - manifest skipped)");
-                        Environment.Exit(1);
-                        return;
-                    }
-                    bool manifestPassed = ManifestRunner.Run(args[1], out int manPass, out int manFail);
-                    int totalPass = unitPass + manPass;
-                    int totalFail = unitFail + manFail;
-                    Console.WriteLine($"\n============================================================");
-                    Console.WriteLine($"[VERIFY] {(totalFail == 0 ? "OK" : "FAILED")}  Total: {totalPass} passed, {totalFail} failed");
-                    Console.WriteLine($"============================================================\n");
-                    Environment.Exit(totalFail == 0 ? 0 : 1);
-                    return;
-                }
+                // Test entry points (--test, --verify) live in the separate AudioManager.Tests project, not in this exe.
 
                 // Detect CLI args: "analysis [--force-regen]" or "integrate [--dry-run] [--no-input]"
                 int mode;

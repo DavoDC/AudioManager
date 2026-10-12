@@ -1,5 +1,5 @@
 @echo off
-set EXE=%~dp0..\..\project\AudioManager\bin\Release\AudioManager.exe
+set TESTEXE=%~dp0..\..\project\AudioManager.Tests\bin\Release\AudioManager.Tests.exe
 set START_TIME=%TIME%
 
 echo ============================================================
@@ -15,7 +15,7 @@ if errorlevel 1 (
 )
 
 echo.
-"%EXE%" --test
+"%TESTEXE%" --test
 set TEST_EXIT=%ERRORLEVEL%
 
 echo.

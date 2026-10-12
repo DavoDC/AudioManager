@@ -19,6 +19,7 @@ AudioManager/
     AudioManager.sln
     AudioManager/
       Code/                    # all C# source
+        (Code/Tests/ is compiled only into project/AudioManager.Tests, never the shipped exe)
         Program.cs             # entry point, mode selection, CLI args handler
         Constants.cs           # all paths and settings (single source of truth)
         TeeWriter.cs           # dual output: screen + log file simultaneously
@@ -85,6 +86,8 @@ Success output:
 **If you forget:** Build fails with `CS0103: The name '...' does not exist in the current context`
 
 **Platform constraint:** Solution only defines `Any CPU`. Never pass `-p:Platform=x86` to MSBuild - it will fail with `MSB4126: The specified solution configuration "Release|x86" is invalid`. Always use `-p:Platform="Any CPU"` (the default in build.bat).
+
+**Tests are a separate project (ARCH-2).** Test code lives in `project\AudioManager.Tests\` (the host, `TestHost.cs`) plus every file under `project\AudioManager\Code\Tests\`, which that project compiles by wildcard. A new test file needs NO csproj entry and NO list entry: put it in `Code\Tests\`, name the static class `*Tests`, and `TestRunner` finds it by reflection. `TestRunnerTests` fails if a static class with test-shaped methods is not named `*Tests`. The shipped `AudioManager.exe` contains no test code and has no `--test` or `--verify` flags; run `scripts\dev\test.bat` or `scripts\dev\verify.bat` (which call `AudioManager.Tests.exe`). Only non-test source (`Code\Doer\`, `Code\Track\`) still needs a `<Compile Include>` in `AudioManager.csproj`.
 
 **If build fails generally:** check `logs\build.log` for full MSBuild output and error details.
 
@@ -267,7 +270,7 @@ ParseCache inherits the second limitation - a deleted MP3's cached data persists
 
 - **Stub `.mp3` files work for count-only paths.** `RoutingFixtures` creates `new byte[0]` placeholder .mp3 files. Safe only where the code calls `Directory.GetFiles(*.mp3).Length` without opening them (library-side counts). The ATD `Singles/` TagLib# scan is bypassed in tests because the fixture creates no `Singles/` folder - `Directory.Exists` returns false before any read.
 
-- **`--verify` flag pattern for combining test modes.** When two test runners need to be called and their results combined, add a `--verify <manifestPath>` handler in Program.cs that calls each runner with out-params `(out int passed, out int failed)`, short-circuits on first failure, then prints a combined banner. The bat calls `--verify` and exits. The runners keep their original `Run()` signatures for backward compat via overloads. Applied 2026-06-02 to combine `--test` (TestRunner) + `--routing-manifest` (ManifestRunner). Use this pattern for any future multi-mode verification step.
+- **`--verify` flag pattern for combining test modes.** When two test runners need to be called and their results combined, add a `--verify <manifestPath>` handler in `project/AudioManager.Tests/TestHost.cs` (it lived in Program.cs until ARCH-2) that calls each runner with out-params `(out int passed, out int failed)`, short-circuits on first failure, then prints a combined banner. The bat calls `--verify` and exits. The runners keep their original `Run()` signatures for backward compat via overloads. Applied 2026-06-02 to combine `--test` (TestRunner) + `--routing-manifest` (ManifestRunner). Use this pattern for any future multi-mode verification step.
 
 ## XML Generation and Declaration
 
