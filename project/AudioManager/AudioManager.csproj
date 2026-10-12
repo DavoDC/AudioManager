@@ -97,6 +97,9 @@
     <Compile Include="Code\Tests\DuplicateDetectionTests.cs" />
     <Compile Include="Code\Tests\ProjectedLibCheckerTests.cs" />
     <Compile Include="Code\Tests\IntegrationManifestTests.cs" />
+    <Compile Include="Code\Tests\RulesCharacterisationTests.cs" />
+    <Compile Include="Code\Tests\RulesEngineTests.cs" />
+    <Compile Include="Code\Doer\RulesEngine.cs" />
     <Compile Include="Code\Doer\AudioMirrorCommitter.cs" />
     <Compile Include="Code\Doer\LibChecker.cs" />
     <Compile Include="Code\Doer\AgeChecker.cs" />

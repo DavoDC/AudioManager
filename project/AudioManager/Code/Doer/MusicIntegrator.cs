@@ -609,7 +609,7 @@ namespace AudioManager
                             // Normalize album to match how PreScanFiles cleans tags before routing.
                             // Without this, "The Blueprint (Explicit Version)" and "The Blueprint" are
                             // counted under different keys, causing CountAlbumSongs to return 0 for the batch.
-                            album = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(album));
+                            album = RulesEngine.NormalizeAlbum(album);
                             if (!string.IsNullOrEmpty(album))
                             {
                                 if (!albumArtists.ContainsKey(album))
@@ -694,7 +694,7 @@ namespace AudioManager
                 string artistFolder = Path.Combine(Constants.AudioFolderPath, Constants.ArtistsDir, SanitiseFolderName(artist));
                 string musivArtistFolder = Path.Combine(Constants.AudioFolderPath, Constants.MusivDir, SanitiseFolderName(artist));
                 bool hasExistingFolder = Directory.Exists(artistFolder) || Directory.Exists(musivArtistFolder);
-                if (total >= 3 && !hasExistingFolder)
+                if (RulesEngine.EarnsArtistFolder(total) && !hasExistingFolder)
                 {
                     result.Add(artist);
                     string note;
@@ -723,7 +723,7 @@ namespace AudioManager
             var compilationAlbums = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var kvp in albumArtists)
             {
-                if (kvp.Value.Count >= 3)
+                if (RulesEngine.IsCompilation(kvp.Value.Count))
                     compilationAlbums.Add(kvp.Key);
             }
             _compilationAlbums = compilationAlbums;
@@ -1536,6 +1536,10 @@ namespace AudioManager
             catch { /* fall through to null */ }
         }
 
+        /// <summary>Forwards to <see cref="RulesEngine.IsDeluxeVersionOf"/> (the single definition, INT-3).</summary>
+        internal static bool IsDeluxeVersionOf(string candidate, string baseAlbum) =>
+            RulesEngine.IsDeluxeVersionOf(candidate, baseAlbum);
+
         /// <summary>
         /// Detects whether the album containing the given XML mirror file is a compilation,
         /// by reading all XML files in the same folder and collecting every distinct artist
@@ -1543,40 +1547,6 @@ namespace AudioManager
         /// are found, which catches both traditional compilations (many primary artists) and
         /// ATD-style albums (one primary artist featuring many different people).
         /// </summary>
-        // Keywords that mark an album as a deluxe/expanded/remastered edition.
-        // Used by IsDeluxeVersionOf to detect album version hierarchy.
-        private static readonly string[] _deluxeKeywords = new[] {
-            "DELUXE", "DELUXE EDITION", "DELUXE VERSION", "EXPANDED", "EXPANDED EDITION",
-            "SUPER DELUXE", "REMASTER", "REMASTERED", "ANNIVERSARY EDITION", "SPECIAL EDITION"
-        };
-
-        /// <summary>
-        /// Returns true if <paramref name="candidate"/> is a deluxe/expanded version of <paramref name="baseAlbum"/>.
-        /// Detection: candidate starts with baseAlbum (as a prefix before " -", " (", or similar separator)
-        /// AND candidate contains a deluxe keyword that baseAlbum does not.
-        /// Case-insensitive throughout.
-        /// </summary>
-        internal static bool IsDeluxeVersionOf(string candidate, string baseAlbum)
-        {
-            if (string.IsNullOrEmpty(candidate) || string.IsNullOrEmpty(baseAlbum)) return false;
-
-            // Candidate must contain a deluxe keyword that the base album does not
-            bool candidateHasDeluxe = false;
-            foreach (var kw in _deluxeKeywords)
-                if (candidate.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0) { candidateHasDeluxe = true; break; }
-            if (!candidateHasDeluxe) return false;
-
-            bool baseHasDeluxe = false;
-            foreach (var kw in _deluxeKeywords)
-                if (baseAlbum.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0) { baseHasDeluxe = true; break; }
-            if (baseHasDeluxe) return false; // both are deluxe editions - not a clear hierarchy
-
-            // Candidate must start with the base album name (i.e., base is a prefix of candidate)
-            // Use the base album trimmed of any trailing whitespace/punctuation
-            string baseTrimmed = baseAlbum.TrimEnd(' ', '-', '(', '[');
-            return candidate.StartsWith(baseTrimmed, StringComparison.OrdinalIgnoreCase);
-        }
-
         private bool IsAlbumFolderCompilation(string xmlPath)
         {
             try
@@ -1608,7 +1578,7 @@ namespace AudioManager
                     catch { /* skip malformed XML */ }
                 }
 
-                return distinctArtists.Count >= 3;
+                return RulesEngine.IsCompilation(distinctArtists.Count);
             }
             catch
             {
@@ -1690,7 +1660,7 @@ namespace AudioManager
                         track.Title = TagFixer.RemoveParentheticals(rawTitle);
                         track.Artists = string.Join("; ", simArtistList);
                         if (!track.Album.Equals("Missing"))
-                            track.Album = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(track.Album));
+                            track.Album = RulesEngine.NormalizeAlbum(track.Album);
                         if (TagFixer.ShouldFixGenre(track.Artists, track.Genres))
                             track.Genres = TagFixer.DetermineGenre(track.Artists);
                     }
@@ -1956,7 +1926,7 @@ namespace AudioManager
 
                     // Count songs for this sampled person (3+ gets own People/ folder, <3 goes to ATD Singles)
                     int personSongCount = CountAkiraTheDonPersonSongs(sampledPerson, _libraryPath);
-                    if (personSongCount >= 3)
+                    if (RulesEngine.EarnsPeopleFolder(personSongCount))
                     {
                         string peopleFolder = Path.Combine(peopleParent, SanitiseFolderName(sampledPerson));
 
@@ -1964,7 +1934,7 @@ namespace AudioManager
                         if (!track.Album.Equals("Missing") && !track.Album.Equals(primaryArtist, StringComparison.OrdinalIgnoreCase))
                         {
                             int albumCount = CountAkiraTheDonPersonAlbumSongs(sampledPerson, track.Album, _libraryPath);
-                            if (albumCount >= 2)
+                            if (RulesEngine.UsesAlbumSubfolder(albumCount))
                             {
                                 reason = $"{albumCount} songs from album '{track.Album}'";
                                 isNewFolder = false;
@@ -2034,7 +2004,7 @@ namespace AudioManager
                     // Self-titled albums (album == artist name) are treated as real albums; the
                     // count determines routing just like any other album.
                     int albumCount = CountAlbumSongs(primaryArtist2, track.Album);
-                    if (albumCount >= 2)
+                    if (RulesEngine.UsesAlbumSubfolder(albumCount))
                     {
                         reason = $"Artist folder{scanNote}; {albumCount} songs from album -> album subfolder";
                         isNewFolder = scanAheadNewFolder;
@@ -2098,7 +2068,7 @@ namespace AudioManager
                 foreach (var dir in Directory.GetDirectories(artistFolder))
                 {
                     string folderName = Path.GetFileName(dir);
-                    string stripped = TagFixer.StripAlbumSuffixes(TagFixer.RemoveParentheticals(folderName));
+                    string stripped = RulesEngine.NormalizeAlbum(folderName);
                     if (string.Equals(stripped, cleanAlbum, StringComparison.OrdinalIgnoreCase))
                         return dir;
                 }

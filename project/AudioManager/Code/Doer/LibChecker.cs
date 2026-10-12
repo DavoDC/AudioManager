@@ -493,7 +493,7 @@ namespace AudioManager
                 int curMiscArtistCount = miscArtistPair.Value;
 
                 // If trio (or more) of songs detected
-                if (curMiscArtistCount >= 3)
+                if (RulesEngine.EarnsArtistFolder(curMiscArtistCount))
                 {
                     string trioMsg = $"  - There are {curMiscArtistCount} songs by '{curMiscArtist}'";
                     Console.WriteLine(trioMsg + $" in the {Constants.MiscDir} folder!");
@@ -530,7 +530,7 @@ namespace AudioManager
                 .GroupBy(t => GetRelPathPart(t, 2))
                 .Where(g => g.Select(t => t.PrimaryArtist)
                              .Distinct(StringComparer.OrdinalIgnoreCase)
-                             .Count() >= 3)
+                             .Count() >= RulesEngine.CompilationMinArtists)
                 .Select(g => g.Key)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -602,7 +602,7 @@ namespace AudioManager
             {
                 int count = group.Count();
 
-                if (count >= 2)
+                if (RulesEngine.UsesAlbumSubfolder(count))
                 {
                     // 2+ songs from same album: should be in an album subfolder, not Singles/
                     foreach (TrackTag tag in group)

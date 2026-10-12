@@ -31,6 +31,7 @@ AudioManager/
           MusicIntegrator.cs   # staging folder scan, calls TagFixer, routes files, logs decisions
           Parser.cs            # parses XML mirror into tag list
           Reflector.cs         # XML mirror creation
+          RulesEngine.cs       # shared routing rules (thresholds, album normalizer) used by MusicIntegrator and LibChecker
           ReportWriter.cs      # timestamped report output
           TagFixer.cs          # comprehensive tag cleanup (TCMP, genres, parentheticals, featured artists, file renames)
         Track/                 # data models: Track, TrackTag, TrackXML
@@ -46,6 +47,7 @@ AudioManager/
 These are invariants from Music-Library-Rules.md. Violating them causes files to land in wrong locations.
 
 - **Subfolder before song - at every level.** No song file ever sits directly in an artist folder. Always `Artist/Singles/song.mp3` or `Artist/AlbumName/song.mp3`. This applies at ALL nesting levels - including `Musivation/Akira The Don/People/{Person}/`. `People/Scott Adams/song.mp3` is wrong; `People/Scott Adams/Singles/song.mp3` is correct.
+- **Routing thresholds and the album normalizer live in `RulesEngine.cs`.** MusicIntegrator.GetDestDir and LibChecker both call it; never inline a 2 or 3 threshold or `StripAlbumSuffixes(RemoveParentheticals(..))` again. Known divergence: LibChecker groups albums by the raw tag, GetDestDir by the normalized one (pinned in RulesCharacterisationTests).
 - **Scan-ahead applies everywhere subfolder routing applies.** If you add a new routing path that picks Singles/ vs Album/, apply the same scan-ahead + album-threshold logic used in the Artists/ path. Factor it out - do not duplicate it.
 
 ---
