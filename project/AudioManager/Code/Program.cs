@@ -129,7 +129,7 @@ namespace AudioManager
                         bool libCheckerClean = lc.IsClean;
 
                         // Save report (reports with issues go to gitignored folder to avoid cluttering diffs)
-                        ReportWriter.Save(captureWriter.ToString(), libCheckerClean);
+                        ReportWriter.Save(captureWriter.ToString() + lc.LowResCoverReport, libCheckerClean);
 
                         // Emit structured stats JSON for the GUI (opt-in via --json-output).
                         // Reuses the same StatList primitives the report uses, so JSON can't drift from the report.

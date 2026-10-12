@@ -21,6 +21,15 @@ namespace AudioManager
         /// <summary>True if LibChecker found zero issues across all checks.</summary>
         public bool IsClean { get; private set; }
 
+        private readonly List<string> lowResCovers = new List<string>();
+
+        /// <summary>One line per track with album art below 800px ("path: WxH"). Full list for the report only.</summary>
+        public IReadOnlyList<string> LowResCovers => lowResCovers;
+
+        /// <summary>The full low-res cover list as report text, or empty when there is none. Console shows only a summary line.</summary>
+        public string LowResCoverReport => lowResCovers.Count == 0 ? ""
+            : "\nLow-res album art (below 800px):\n" + string.Join("\n", lowResCovers.Select(l => "  - " + l)) + "\n";
+
         // Accumulates hits from all checks to determine IsClean
         private int grandTotalHits = 0;
 
@@ -58,9 +67,8 @@ namespace AudioManager
                 // Check album cover counts
                 totalTagHits += CheckAlbumCoverCount(tag);
 
-                // Check album cover dimensions (must be >= 800px)
-                // TODO: temporarily disabled - re-enable after album art remediation (see the private project backlog TIER 2)
-                // totalTagHits += CheckAlbumCoverDimensions(tag);
+                // Check album cover dimensions (must be >= 800px); summarised after the loop (LIB-3)
+                totalTagHits += CheckAlbumCoverDimensions(tag);
 
                 // Check compilation status
                 if(!bool.Parse(tag.Compilation))
@@ -69,6 +77,7 @@ namespace AudioManager
                     totalTagHits++;
                 }
             }
+            PrintLowResCoverSummary();
             PrintTotalHits(totalTagHits);
 
             // Check for duplicate tracks
@@ -250,6 +259,13 @@ namespace AudioManager
             return 0;
         }
 
+        /// <summary>Prints ONE console line for all low-res covers; the full list goes only in the report.</summary>
+        private void PrintLowResCoverSummary()
+        {
+            if (lowResCovers.Count == 0) return;
+            Console.WriteLine($"  - {lowResCovers.Count} track(s) have album art below 800px (full list in the report)");
+        }
+
         /// <summary>
         /// Warns if album cover dimensions are below the library standard (800px minimum).
         /// Skips tracks with no cover (caught by count check) or unrecognised-format covers.
@@ -263,7 +279,7 @@ namespace AudioManager
             {
                 if (w > 0 && h > 0 && Math.Min(w, h) < 800)
                 {
-                    Console.WriteLine($"  - '{tag.RelPath}' has low-res album art: {w}x{h} (below 800px library standard)");
+                    lowResCovers.Add($"{tag.RelPath}: {w}x{h}");
                     return 1;
                 }
             }
