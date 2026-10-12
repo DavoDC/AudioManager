@@ -24,7 +24,7 @@ All on `127.0.0.1:8471` (reach it as `http://localhost:8471`). Every response ha
 Tab specific fields:
 
 - `stats`: `loaded`, `load_error`, `stats_generated_at`. Rows are the eight summary tiles (`key`, `value`).
-- `library`: `loaded`, `total_matching`, `view`, `page`, `page_size`, `search`, `genre`, `decade`. Rows are the current page only (`id`, `title`, `artists`).
+- `library`: `loaded`, `total_matching`, `view`, `page`, `page_size`, `search`, `genre`, `decade`, `selected` (the track id whose detail panel is open, else null), `detail_testid` (`lib-detail`, the panel's `data-testid`). Rows are the current page only (`id`, `title`, `artists`).
 - `integration`: `stage` (1 scan, 2 review, 3 and 4 execute), `filter`, `simulated`, `triage`, `accepted_count`, `declined_count`, `exec_done`, `exec_ok`, `exec_summary`, `exec_record_missing`. Rows are scanned entries (`filename`, `title`, `artist`, `destination`, `status`, `accepted`, `new_folder`).
 - `acquire`: `track_count`, `extra_count`, `playlist_loaded`, `simulated`, `hide_downloaded`, `fetching` ([current, total] or null), `sync_busy`. Rows are fetched tracks (`key`, `artist`, `title`, `downloaded`, `overridden`) followed by NewMusic-only extras. The painted table is paginated at 50, so painted ids are a subset of state ids.
 - `tagfix`: `dry_run_lines`. Rows are the fixed built-in rules (`name`, `status`).

@@ -202,6 +202,7 @@ environment, so the container was constrained directly instead):
 ## Test ids and ARIA
 
 - The nav is `role=tablist`; each nav button is `role=tab` with `id=nav-<key>`, `data-testid=nav-<key>`, `aria-controls=tab-<key>` and an `aria-selected` that follows the active tab. Each tab container is `role=tabpanel`, `id=tab-<key>`, `data-testid=tab-<key>`.
+- Fixed ids (not from `testid`): `lib-detail` is the Library track detail panel (GUI-2), present only while a row or card is selected; each field value inside carries `data-field="<label>"`.
 - Row and tile ids come from `uistate.testid(kind, key)`: `<kind>-<slug>-<4 hex>`, deterministic, unique per key. Kinds in use: `row-acq`, `row-acq-extra` (Acquire), `row-int` (Integration review cards), `row-rule` (Tag Fix fixed rules), `row-lib` (Library table rows and grid cards), `stat` (Statistics tiles).
 - Never rename an id without updating `uistate.py` and the contract doc `docs/References/GUI-State-Contract.md` in the same commit.
 

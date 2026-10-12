@@ -135,6 +135,7 @@
   },
   "library": {
    "decade": null,
+   "detail_testid": "lib-detail",
    "genre": null,
    "label": "Library",
    "loaded": true,
@@ -170,6 +171,7 @@
    ],
    "schema": 1,
    "search": "",
+   "selected": null,
    "stale": false,
    "tab": "library",
    "total_matching": 4,

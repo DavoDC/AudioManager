@@ -25,6 +25,7 @@ class LibState:
         self.show_added = False
         self.show_comp = False
         self.show_cover = False
+        self.selected: str | None = None
         self.refresh = lambda: None
 
     @property
@@ -33,6 +34,55 @@ class LibState:
 
 
 L = LibState()
+
+
+def detail_fields(t: dict) -> list[tuple[str, str]]:
+    """Label/value pairs for the track detail panel: every tag in tracks.json plus the file path."""
+    def val(key: str) -> str:
+        v = t.get(key)
+        return "-" if v in (None, "") else str(v)
+
+    if not t.get("hasArt"):
+        cover = "No cover"
+    else:
+        w, h = t.get("coverWidth"), t.get("coverHeight")
+        size = f"{w}x{h}" if w and h else "unknown size"
+        cover = size if t.get("hiResArt") else f"{size} (below 800px)"
+    return [
+        ("Title", val("title")), ("Artists", val("artists")), ("Album", val("album")),
+        ("Year", val("year")), ("Genres", val("genres")), ("Track number", val("trackNumber")),
+        ("Length", val("length")), ("Compilation", "Yes" if t.get("compilation") else "No"),
+        ("Cover", cover), ("Added", val("addedDate")), ("File path", val("filePath")),
+    ]
+
+
+def _select(track_id) -> None:
+    """Click on a row/card: toggle the detail panel for that track."""
+    if not isinstance(track_id, str) or not track_id:
+        return
+    L.selected = None if L.selected == track_id else track_id
+    L.refresh()
+    if L.selected:
+        ui.run_javascript("document.querySelector('.am-main')?.scrollTo({top:0,behavior:'smooth'})")
+
+
+_CLICK_JS = "(e) => { const r = e.target.closest('[data-track-id]'); if (r) emit(r.dataset.trackId); }"
+
+
+def _detail_panel() -> None:
+    t = state.tracks.by_id(L.selected) if L.selected else None
+    if t is None:
+        return
+    rows = "".join(
+        f'<div class="k">{_esc(label)}</div>'
+        f'<div class="v{" path" if label == "File path" else ""}" data-field="{_esc(label)}">{_esc(value)}</div>'
+        for label, value in detail_fields(t)
+    )
+    with ui.column().classes("panel track-detail w-full").props('data-testid="lib-detail"'):
+        with ui.row().classes("w-full items-center justify-between"):
+            ui.label("Track details").style("font-weight:600;color:var(--text);")
+            ui.button("Close", icon="close", on_click=lambda: _select(L.selected))                 .props("dense outline size=sm color=grey")
+        ui.html(f'<div class="kv">{rows}</div>').classes("w-full")
 
 
 def _genre_color(genre: str) -> str:
@@ -103,6 +153,8 @@ def _render() -> None:
                                         on_change=lambda e: _set_col("show_comp", e.value)).props("dense dark")
                             ui.checkbox("Cover Thumbnail", value=L.show_cover,
                                         on_change=lambda e: _set_col("show_cover", e.value)).props("dense dark")
+
+    _detail_panel()
 
     rows, total = idx.query(search=L.search, genre=L.genre, decade=L.decade,
                             page=L.page, page_size=L.page_size)
@@ -188,12 +240,15 @@ def _table(rows: list[dict]) -> None:
             tds.append(f"<td>{_esc(str(t.get('addedDate') or '-'))}</td>")
         if L.show_comp:
             tds.append(f"<td>{'Yes' if t.get('compilation') else 'No'}</td>")
-        body.append(f'<tr data-testid="{uistate.testid("row-lib", t.get("id", ""))}">{"".join(tds)}</tr>')
+        tid = str(t.get("id", ""))
+        cls = "clickable selected" if tid == L.selected else "clickable"
+        body.append(f'<tr class="{cls}" data-track-id="{_esc(tid)}" '
+                    f'data-testid="{uistate.testid("row-lib", tid)}">{"".join(tds)}</tr>')
 
     ui.html(
         '<table class="am-table"><thead><tr>' + "".join(head) + "</tr></thead>"
         "<tbody>" + "".join(body) + "</tbody></table>"
-    ).classes("w-full")
+    ).classes("w-full").on("click", lambda e: _select(e.args), js_handler=_CLICK_JS)
 
 
 # ------------------------------------------------------------------- grid
@@ -221,13 +276,14 @@ def _grid(rows: list[dict]) -> None:
                      f'{initials(str(t.get("title", "")), str(t.get("album", "")))}{badge}</div>')
 
         cards.append(
-            f'<div class="track-card" data-testid="{uistate.testid("row-lib", t.get("id", ""))}">{cover}'
+            f'<div class="track-card clickable{" selected" if tid == L.selected else ""}" '
+            f'data-track-id="{_esc(tid)}" data-testid="{uistate.testid("row-lib", t.get("id", ""))}">{cover}'
             f'<div class="status-bar" style="background:{_genre_color(genre)};"></div>'
             f'<div class="info"><div class="t-title" title="{title}">{title}</div>'
             f'<div class="t-artist">{artist}</div>'
             f'<div class="t-meta">{added_html}</div></div></div>'
         )
-    ui.html(f'<div class="card-grid">{"".join(cards)}</div>').classes("w-full")
+    ui.html(f'<div class="card-grid">{"".join(cards)}</div>').classes("w-full")         .on("click", lambda e: _select(e.args), js_handler=_CLICK_JS)
 
 
 # -------------------------------------------------------------- pagination

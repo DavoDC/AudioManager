@@ -76,7 +76,7 @@ def _library_state() -> dict:
                          "title": t.get("title"), "artists": t.get("artists")})
     return _common("library", "Library", rows, loaded=state.tracks is not None, total_matching=total,
                    view=L.view, page=L.page, page_size=L.page_size, search=L.search,
-                   genre=L.genre, decade=L.decade)
+                   genre=L.genre, decade=L.decade, selected=L.selected, detail_testid="lib-detail")
 
 
 def _integration_state() -> dict:
