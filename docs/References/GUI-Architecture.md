@@ -53,6 +53,8 @@ The reuse worry behind extracting a shared core library (Python re-implementing 
 
 **GUI does not auto-run analysis at startup** - deviation from the original brief. It loads the existing JSON instantly and shows "last run X ago" with a Re-run button. Rationale: instant startup, no surprise subprocess/mirror writes on every launch, staleness fully visible to the user. Easy to flip if this turns out to be the wrong call.
 
+
+**Single-user state note (GUI-1).** The GUI is a single-user, single-process tool bound to localhost, and two pieces of state are module-level globals shared by every browser tab that connects: `_state` in `gui/tabs/acquire.py` (the Acquire track list, downloaded flags and sort) and `S = IntegrationState()` in `gui/tabs/integration.py` (the Integration run state). Two tabs open at once would see and mutate the same data. That is intentional for one user on one machine; if the GUI ever serves more than one user, both must become per-client state first.
 ---
 
 ## Build status (as of the 2026-07-03 Fable session)
@@ -192,7 +194,7 @@ Backlog entry: the private project backlog `[GUI] Services tab data sources`.
 
 | Library | Purpose | How to get |
 |---------|---------|------------|
-| TagLibSharp | Read/write ID3, Vorbis, APE, FLAC tags - already in use | NuGet `taglib-sharp` |
+| TagLibSharp | Read/write ID3v2 tags on MP3 only (the library is MP3 only) - already in use | NuGet `taglib-sharp` |
 | NAudio | Audio playback, waveform analysis, format conversion (C#) | NuGet `NAudio` |
 | FFprobe (subprocess) | Extract metadata from any audio format via CLI | `FFprobe.exe` - no C# lib needed |
 | AcoustID + MusicBrainz | Acoustic fingerprinting - identify tracks by sound | `acoustid.net` |
