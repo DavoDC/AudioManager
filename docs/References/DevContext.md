@@ -61,6 +61,10 @@ These are invariants from Music-Library-Rules.md. Violating them causes files to
 ```
 `--no-input` skips all interactive prompts. Run after any routing or tag fix to see real output without blocking.
 
+**verify.bat prerequisites (ARCH-3).** `scripts\dev\verify.bat` checks MSBuild (vswhere), python on PATH, pytest importable, and the built `AudioManager.Tests.exe` before running anything. A missing tool prints a `[PREREQ] ...` line and exits 3; a real test failure exits 1, so the two are never confused.
+
+**No CI workflow (ARCH-3).** There is no `.github/workflows`. Claude never pushes, so a workflow could not be run to prove it green before David pushed it, and an unproven CI file is worse than none. The build also needs .NET Framework 4.8 and the NuGet-restored `project\packages` (untracked), and the GUI capture step needs a browser. Revisit when David wants CI: a windows-latest job running nuget restore, msbuild, `AudioManager.Tests.exe --verify`, and `python -m gui.verify --fast`.
+
 ---
 
 ## Build success/failure
