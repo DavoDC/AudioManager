@@ -144,4 +144,4 @@ See "What the test suite can and cannot prove" in `docs/References/DevContext.md
 
 ## Webapp standard
 
-This GUI is scored against the shared webapp standard kept in the workspace reference notes (topic folder `webapp-standard`, checklist of WS ids, per-repo scores); backlog items cite WS ids.
+This GUI follows a shared webapp standard (checklist of WS ids); backlog items cite WS ids.
