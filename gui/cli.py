@@ -76,6 +76,8 @@ def main(argv: list[str] | None = None) -> int:
     lg = sub.add_parser("log")
     lg.add_argument("-n", type=int, default=50)
     ns = p.parse_args(argv)
+    # Provenance goes to stderr so stdout (JSON, pipes) is unchanged.
+    print(buildinfo.format_line(buildinfo.describe()), file=sys.stderr)
 
     if ns.cmd == "actions":
         print(json.dumps(actions.describe(), indent=2))
