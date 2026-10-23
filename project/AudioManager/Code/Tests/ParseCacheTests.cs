@@ -119,6 +119,33 @@ namespace AudioManager
             finally { Directory.Delete(dir, true); }
         }
 
+        public static void TryLoad_XmlDeletedAfterSave_ReturnsFalse()
+        {
+            // A deletion leaves no newer mtime behind, so only the row count can catch it.
+            string dir = Path.Combine(Path.GetTempPath(), $"am_mirror_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(dir);
+            string cache = TempCachePath();
+            try
+            {
+                foreach (var name in new[] { "a.xml", "b.xml" })
+                {
+                    string xml = Path.Combine(dir, name);
+                    File.WriteAllText(xml, "<x/>");
+                    File.SetLastWriteTime(xml, DateTime.Now.AddHours(-1));
+                }
+                ParseCache.Save(cache, new List<TrackTag> { MakeSample("A"), MakeSample("B") });
+                Assert.True(ParseCache.TryLoad(cache, dir, out _), "unchanged mirror should hit");
+
+                File.Delete(Path.Combine(dir, "b.xml"));
+                Assert.True(!ParseCache.TryLoad(cache, dir, out _), "deleted XML should miss");
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+                if (File.Exists(cache)) File.Delete(cache);
+            }
+        }
+
         public static void IsMirrorStale_XmlNewerThanCache_ReturnsTrue()
         {
             string dir = Path.Combine(Path.GetTempPath(), $"am_mirror_{Guid.NewGuid():N}");

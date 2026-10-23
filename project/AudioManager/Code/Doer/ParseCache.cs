@@ -40,7 +40,16 @@ namespace AudioManager
                 if (IsMirrorStale(mirrorPath, cacheTime)) return false;
             }
             catch { return false; } // mirror path error -> degrade to miss
-            return TryDeserialize(cachePath, out tags);
+            if (!TryDeserialize(cachePath, out tags)) return false;
+            // A deleted XML leaves no newer mtime behind; one cached row per XML, so a count change is a miss
+            try
+            {
+                int xmlCount = Directory.GetFiles(mirrorPath, "*.xml", SearchOption.AllDirectories).Length;
+                if (xmlCount == tags.Count) return true;
+            }
+            catch { }
+            tags = null;
+            return false;
         }
 
         /// <summary>
