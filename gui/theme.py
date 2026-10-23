@@ -217,6 +217,7 @@ HEAD_HTML = """
   .step.active .n{background:var(--accent);color:@@ON_ACCENT@@;}
   .step.done .n{background:var(--accent2);color:@@ON_ACCENT@@;}
   .review-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-panel);padding:12px 14px;width:100%;max-width:820px;border-left:3px solid transparent;}
+  .panel.confirm-bar{position:sticky;bottom:12px;z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.35);}
   .review-card.current{outline:2px solid var(--accent);outline-offset:-1px;scroll-margin:80px;}
   .review-card.declined{border-left-color:var(--accent4);}
   .review-card.declined .rc-route{text-decoration:line-through;color:var(--text-dim);}

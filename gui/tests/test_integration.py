@@ -1440,3 +1440,27 @@ def _update_exec_status_on(state, line):
         _update_exec_status(line)
     finally:
         integration_module.S = original
+
+
+# ------------------------------------------------- review usability (2026-10-23)
+
+def test_header_meta_names_the_same_three_steps_as_the_stepper():
+    from gui.tabs.integration import HEADER_META
+    # Confirm is a modal, not a step; the header used to promise four stages.
+    assert "confirm" not in HEADER_META.lower()
+    for step in ("Scan", "review", "integrate"):
+        assert step.lower() in HEADER_META.lower()
+
+
+def test_empty_filter_message_names_the_filter_and_offers_way_back():
+    from gui.tabs.integration import empty_filter_html
+    html = empty_filter_html("libdupes")
+    assert "library duplicates" in html.lower()
+    assert empty_filter_html("all") == ""
+
+
+def test_confirm_bar_is_sticky_so_integrate_is_reachable_without_scrolling():
+    from gui import theme
+    # .panel.confirm-bar: the later `.panel{position:relative}` rule beats a
+    # bare .confirm-bar on source order, which is how the first attempt failed live.
+    assert re.search(r"\.panel\.confirm-bar\{[^}]*position:sticky", theme.HEAD_HTML)

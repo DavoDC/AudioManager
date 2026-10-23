@@ -166,10 +166,26 @@ TRIAGE_ONLY_ACTIONS = ("accept", "decline")
 S = IntegrationState()
 
 
+#: Names the stepper's three steps; Confirm is a modal, so it is not listed.
+HEADER_META = "Scan NewMusic, review where each track will go, then integrate"
+
+FILTER_LABELS = {"newfolders": "new folders", "conflicts": "duplicates / conflicts",
+                 "libdupes": "library duplicates", "compilations": "compilation albums"}
+
+
+def empty_filter_html(filter_key: str) -> str:
+    """Message for a filter chip that matches nothing, or "" for All - a
+    blank list under an active chip read as a broken screen."""
+    if filter_key == "all":
+        return ""
+    label = FILTER_LABELS.get(filter_key, filter_key)
+    return f'<div class="note" style="margin:0;">No {_esc(label)} in this batch.</div>'
+
+
 def build() -> None:
     with ui.element("header").classes("page"):
         ui.html("<h1>Integration</h1>")
-        ui.html('<div class="meta">Staged review of NewMusic - scan, review routing, confirm, integrate</div>')
+        ui.html(f'<div class="meta">{HEADER_META}</div>')
 
     @ui.refreshable
     def content():
@@ -446,6 +462,12 @@ def stage_review() -> None:
     triage_bar(len(entries_view))
     for idx, e in enumerate(entries_view):
         review_card(e, idx)
+    if not entries_view:
+        with ui.element("div").classes("panel w-full").style(
+                "padding:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;"):
+            ui.html(empty_filter_html(S.filter))
+            ui.button("Show all tracks", on_click=lambda: _set_filter("all")) \
+                .props("outline dense color=primary size=sm")
     if S.triage:
         _scroll_cursor_into_view()
 
@@ -828,7 +850,7 @@ def confirm_bar() -> None:
     n_dupe = sum(1 for e in accepted if e["inBatchDuplicate"])
     artists = len({e["artist"] for e in accepted if e["artist"]})
 
-    with ui.element("div").classes("panel w-full").style(
+    with ui.element("div").classes("panel confirm-bar w-full").style(
             "margin-top:16px;display:flex;justify-content:space-between;align-items:center;"
             "flex-wrap:wrap;gap:12px;"):
         summary = (f'<b style="color:var(--text)">{len(S.entries)} tracks scanned</b> &middot; '
