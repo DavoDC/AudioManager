@@ -97,15 +97,7 @@ Auto-runs after step 2, or manually: `AudioManager.exe analysis`
 
 ## Project Structure
 
-```
-AudioManager/
-├── config/        # LibChecker exceptions config (libchecker-exceptions.xml)
-├── docs/          # design and planning docs
-├── logs/          # Integration run logs - gitignored
-├── project/       # C# solution and source code
-├── reports/       # Auto-generated timestamped analysis reports - gitignored
-└── scripts/       # Launchers (launch.bat) and utility scripts
-```
+The C# console app lives in `project/`, the web GUI in `gui/`, launchers in `scripts/`. The full annotated tree is in [DevContext.md, Project Structure](docs/References/DevContext.md#project-structure).
 
 ## Performance
 
