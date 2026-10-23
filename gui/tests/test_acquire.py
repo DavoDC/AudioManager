@@ -20,6 +20,7 @@ from gui.tabs.acquire import (
     _downloaded_cell_text,
     _extra_batch_header,
     _extra_segment_label,
+    _extra_segment_tooltip,
     _format_duration,
     _header_label,
     _length_to_seconds,
@@ -330,6 +331,19 @@ def test_extra_segment_label_uses_browse_wording_with_no_playlist_loaded():
 
 def test_extra_segment_label_uses_diff_wording_once_playlist_loaded():
     assert _extra_segment_label(3, playlist_loaded=True) == "3 extra in NewMusic"
+
+
+def test_extra_segment_tooltip_explains_diff_once_playlist_loaded():
+    """GUI-5: the yellow segment explains itself on hover, starting with the inline count wording."""
+    tip = _extra_segment_tooltip(3, playlist_loaded=True)
+    assert tip.startswith("3 extra in NewMusic")
+    assert "not in this playlist" in tip
+
+
+def test_extra_segment_tooltip_uses_browse_wording_with_no_playlist_loaded():
+    tip = _extra_segment_tooltip(25, playlist_loaded=False)
+    assert tip.startswith("25 files in NewMusic")
+    assert "extra" not in tip
 
 
 def test_extra_batch_header_uses_browse_wording_with_no_playlist_loaded():

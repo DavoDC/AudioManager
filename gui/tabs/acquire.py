@@ -856,6 +856,15 @@ def _extra_segment_label(count: int, playlist_loaded: bool) -> str:
     return f"{count} files in NewMusic"
 
 
+def _extra_segment_tooltip(count: int, playlist_loaded: bool) -> str:
+    """Hover text for the yellow segment: the inline label plus what it
+    means, so the colour explains itself without an extra banner."""
+    label = _extra_segment_label(count, playlist_loaded)
+    if playlist_loaded:
+        return f"{label}: tracks waiting in NewMusic that are not in this playlist"
+    return f"{label}: fetch a playlist to compare against it"
+
+
 def _extra_batch_header(count: int, playlist_loaded: bool) -> str:
     """Batch-header row above the extra-rows table section. Same diff-vs-browse
     distinction as _extra_segment_label - see its docstring."""
@@ -977,7 +986,10 @@ def build() -> None:
                     if _segment_shows_label(pct):
                         with seg:
                             ui.label(label)
-                    else:
+                    if bg == "var(--accent3)":
+                        # The yellow segment always explains itself on hover.
+                        seg.props(f'title="{_extra_segment_tooltip(extra, _state["playlist_loaded"])}"')
+                    elif not _segment_shows_label(pct):
                         seg.props(f'title="{label}"')
 
     progress_bar()
