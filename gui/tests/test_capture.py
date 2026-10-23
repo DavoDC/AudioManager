@@ -15,6 +15,11 @@ GOOD = (
 )
 
 
+def test_default_widths_are_desktop_only():
+    # The GUI is desktop-only (David, 2026-10-23): no phone width in the default matrix.
+    assert capture.WIDTHS == (1280,)
+
+
 def test_good_page_passes():
     assert capture.verify_dom("stats", GOOD, "", 390) == []
 

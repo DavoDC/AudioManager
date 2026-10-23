@@ -1,7 +1,7 @@
 """Headless Chrome capture matrix for the GUI.
 
-    python -m gui.capture                                  every tab x every fixture x desktop and phone width
-    python -m gui.capture --scenarios normal --tabs stats,library --widths 390
+    python -m gui.capture                                  every tab x every fixture at desktop width
+    python -m gui.capture --scenarios normal --tabs stats,library --widths 1280,1600
     python -m gui.capture --url http://localhost:8471      an already running server (label "live")
 
 For each fixture it starts `python -m gui.main --fixture NAME` on a spare port, drives ONE headless Chrome with
@@ -36,7 +36,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 TABS = ("acquire", "integration", "tagfix", "stats", "library", "mirror", "services")
 SCENARIOS = ("normal", "empty", "error", "long-names", "huge", "review", "running")
-WIDTHS = (1280, 390)
+WIDTHS = (1280,)  # desktop-only GUI; pass --widths 390 to opt into a phone-width check
 PHONE_MAX = 500
 
 CHROME_CANDIDATES = (r"C:\Program Files\Google\Chrome\Application\chrome.exe",

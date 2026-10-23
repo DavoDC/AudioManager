@@ -214,4 +214,4 @@ environment, so the container was constrained directly instead):
 
 ## Fixture mode
 
-`python -m gui.main --fixture NAME` serves canned data with every path redirected to a temp folder and the exe disabled. Scenarios: `normal`, `empty`, `error`, `long-names`, `huge`, `review`, `running` (`--list-fixtures` prints them). `python -m gui.capture` screenshots every tab x scenario x width (1280, 390) into the gitignored `data/captures/`; `python -m gui.verify` runs tests, `ui_check` and a quick capture and prints one PASS/FAIL line.
+`python -m gui.main --fixture NAME` serves canned data with every path redirected to a temp folder and the exe disabled. Scenarios: `normal`, `empty`, `error`, `long-names`, `huge`, `review`, `running` (`--list-fixtures` prints them). `python -m gui.capture` screenshots every tab x scenario at desktop width (1280; the GUI is desktop-only, no phone support, so 390 is opt-in via `--widths`) into the gitignored `data/captures/`; `python -m gui.verify` runs tests, `ui_check` and a quick capture and prints one PASS/FAIL line.
