@@ -1,36 +1,22 @@
 @echo off
-rem AudioManager GUI launcher - hot reload on by default, windowless.
-rem Uses pythonw so no console window appears; gui/main.py already redirects
-rem stdout/stderr to a log file when pythonw gives it None stdio (see its
-rem "Under pythonw" comment). Claude touches gui/.cache/reload.trigger once
-rem an edit is fully wired up; the app restarts in place within ~1s and the
-rem open browser tab reconnects on its own (NiceGUI's built-in socket.io
-rem reconnect) - no manual close/reopen needed. See CLAUDE.md "Dev mode: hot-reload".
-rem Kills any already-running instance first (double-click while it's still
-rem open, or a crashed/orphaned process) - avoids stacking up duplicates that
-rem would fight over port 8471. A browser tab only opens on a genuinely fresh
-rem start (nothing was running); if an instance was already up, that means a
-rem tab is presumably already open, so this relaunch skips opening a new one -
-rem reload the existing tab to see the fresh instance.
+rem AudioManager GUI launcher - hot reload on by default, windowless, closes at once.
+rem The work is done by `pythonw -m gui.main --launch`: it replaces any instance already on the port, runs the preflight
+rem (python, imports, config, cache dir, port) and starts the server detached with no inherited handles, then returns once the
+rem server answers. pythonw has no console, so a failure shows as a message box and a line in gui\.cache\log\; this window
+rem never stays open. A browser tab opens only on a fresh start; if an instance was replaced, reload the existing tab.
+rem Usage: double-click, or Gui.bat [--port N] [--no-watch] [--no-browser] [--no-dialog]
+rem        python -m gui.main --stop | --status | --check | --preflight   (console verbs, not through this bat)
+rem Claude touches gui\.cache\reload.trigger instead of restarting; see CLAUDE.md "Dev mode: hot-reload".
 cd /d "%~dp0.."
-
-set AM_GUI_NO_BROWSER=
-for /f %%c in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0kill-gui.ps1"') do set KILLED=%%c
-if not "%KILLED%"=="0" set AM_GUI_NO_BROWSER=1
-
-rem launch breadcrumb (WS-013): proves the bat ran even if Python never starts
+rem launch breadcrumb: proves the bat ran even if Python never starts
 if not exist "gui\.cache" mkdir "gui\.cache"
->> "gui\.cache\launch-breadcrumb.log" echo %date% %time% Gui.bat launch killed=%KILLED%
+>> "gui\.cache\launch-breadcrumb.log" echo %date% %time% Gui.bat launch args=[%*]
 
-rem visible preflight (WS-003): a pythonw failure is silent, so check first; the window stays open only on failure
-python -m gui.main --preflight
-if errorlevel 1 goto failed
+where pythonw >nul 2>nul || goto nopython
+start "" /wait pythonw -m gui.main --launch %*
+exit /b %ERRORLEVEL%
 
-rem hot reload is on by default (gui.main --no-watch turns it off)
-start "" pythonw -m gui.main
-exit /b 0
-
-:failed
-echo.
-echo AudioManager GUI preflight failed - fix the line marked FAIL above, then run Gui.bat again.
-cmd /k
+:nopython
+>> "gui\.cache\launch-breadcrumb.log" echo %date% %time% Gui.bat FAILED pythonw not on PATH
+mshta "vbscript:Execute("MsgBox ""pythonw is not on PATH. Install Python 3 and tick Add to PATH, then run Gui.bat again."",16,""AudioManager GUI did not start"":close")"
+exit /b 2

@@ -7,7 +7,7 @@ and then shown/hidden, so startup stays instant. See GUI-Architecture.md's
 "Design Vision" section for the grouping rationale.
 
 Run:  python -m gui.main   (or scripts/Gui.bat for the windowless way)
-Flags: --fixture NAME (demo data, exe disabled), --port N, --no-watch, --preflight, --stop, --autostart on|off|status,
+Flags: --fixture NAME (demo data, exe disabled), --port N, --no-watch, --preflight, --stop, --launch, --status, --autostart on|off|status,
 --no-browser, --check (query the running instance), --list-fixtures.
 Binds 127.0.0.1 only; the browser URL is http://localhost:PORT.
 """
@@ -36,6 +36,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--preflight", action="store_true", help="check python, imports, config and port; exit 0 when healthy")
     p.add_argument("--autostart", choices=["on", "off", "status"], help="start the GUI at login (HKCU Run entry)")
     p.add_argument("--stop", action="store_true", help="stop the instance listening on --port")
+    p.add_argument("--launch", action="store_true", help="start the GUI windowless and detached, replacing any instance on --port")
+    p.add_argument("--status", action="store_true", help="say whether an instance listens on --port (exit 0 yes, 1 no)")
+    p.add_argument("--no-dialog", action="store_true", help="with --launch: no message box on failure (automation)")
     return p.parse_known_args(argv)[0]
 
 
@@ -47,6 +50,12 @@ def _early_exit() -> None:
     if ARGS.autostart:
         from gui import autostart
         sys.exit(autostart.run(ARGS.autostart))
+    if ARGS.launch:
+        from gui import launcher
+        sys.exit(launcher.launch(ARGS.port, sys.argv[1:], dialog=not ARGS.no_dialog))
+    if ARGS.status:
+        from gui import launcher
+        sys.exit(launcher.status(ARGS.port))
     if ARGS.preflight or ARGS.stop:
         from gui import launcher
         sys.exit(launcher.run_preflight(ARGS.port) if ARGS.preflight else launcher.stop(ARGS.port))

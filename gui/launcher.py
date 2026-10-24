@@ -13,6 +13,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from pathlib import Path
 
 from gui import applog, config, security
 
@@ -126,4 +127,112 @@ def stop(port: int) -> int:
                        creationflags=_NO_WINDOW)
     applog.write("stop", f"stopped pid {pid} on port {port}")
     print(f"stopped pid {pid} on port {port}")
+    return 0
+
+
+# --- --launch / --status (windowless lifecycle, copied from MediaServer's dashboard launcher) ---
+
+DETACHED_PROCESS = 0x00000008
+DROPPED_FLAGS = ("--launch", "--preflight", "--stop", "--status", "--check", "--no-dialog")
+LAUNCH_TIMEOUT = 40.0
+
+
+def pythonw_for(python_exe: str) -> str:
+    """pythonw.exe beside python_exe, else python_exe itself (non-Windows run or unusual install)."""
+    import os
+    folder, name = os.path.split(python_exe)
+    candidate = os.path.join(folder, "pythonw.exe")
+    return candidate if name.lower().startswith("python") and os.path.exists(candidate) else python_exe
+
+
+def child_argv(pythonw: str, port: int, passthrough: list[str]) -> list[str]:
+    """The server command: the caller's own flags minus the launcher-only ones, plus an explicit --port."""
+    rest, skip = [], False
+    for i, a in enumerate(passthrough):
+        if skip:
+            skip = False
+        elif a == "--port":
+            skip = True
+        elif a not in DROPPED_FLAGS and not a.startswith("--port="):
+            rest.append(a)
+    return [pythonw, "-m", "gui.main", *rest, "--port", str(port)]
+
+
+def spawn(argv: list[str], cwd: str | None = None, env: dict | None = None, popen=subprocess.Popen):
+    """Detached child holding none of the caller's handles (a bare `start` child keeps the caller's pipes open)."""
+    import os
+    flags = 0 if os.name != "nt" else subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS
+    return popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                 stderr=subprocess.DEVNULL, close_fds=True, creationflags=flags)
+
+
+def answers(port: int) -> bool:
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"http://{security.BIND_HOST}:{port}/api/build", timeout=2) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def wait_ready(proc, port: int, timeout: float, ready=answers, sleep=time.sleep, clock=time.monotonic) -> tuple[bool, str]:
+    start = clock()
+    while True:
+        if proc.poll() is not None:
+            return False, "the GUI process exited before it answered; see gui/.cache/gui.log and gui/.cache/log/"
+        if ready(port):
+            return True, ""
+        if clock() - start >= timeout:
+            return False, f"the GUI did not answer on port {port} within {timeout:.0f} s; see gui/.cache/log/"
+        sleep(0.25)
+
+
+def _say(text: str) -> None:
+    import sys
+    if sys.stdout is not None:
+        print(text)
+
+
+def _fail(text: str, dialog: bool) -> int:
+    """Windowless failure path: log line plus a message box, because pythonw has no console to show it."""
+    applog.write("launch", f"FAILED: {text}")
+    _say(f"AudioManager GUI not started: {text}")
+    if dialog:
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(0, text, "AudioManager GUI did not start", 0x10)
+        except Exception:
+            pass
+    return 1
+
+
+def status(port: int) -> int:
+    pid = find_listener(port)
+    if pid is None:
+        _say(f"not running on port {port}")
+        return 1
+    _say(f"running pid {pid} on port {port}")
+    return 0
+
+
+def launch(port: int, passthrough: list[str], dialog: bool = True, popen=subprocess.Popen) -> int:
+    """Replace any instance on the port, run preflight, start the server detached, return once it answers."""
+    import os
+    import sys
+    env = dict(os.environ)
+    if find_listener(port) is not None:
+        stop(port)
+        env["AM_GUI_NO_BROWSER"] = "1"  # a tab is presumably open already; reload it for the fresh instance
+    results = preflight(port)
+    bad = [r for r in results if not r.ok]
+    if bad:
+        return _fail("preflight failed: " + "; ".join(f"{r.name}: {r.detail}" for r in bad), dialog)
+    root = str(Path(__file__).resolve().parents[1])
+    argv = child_argv(pythonw_for(sys.executable), port, passthrough)
+    applog.write("launch", f"spawning {' '.join(argv)}")
+    proc = spawn(argv, cwd=root, env=env, popen=popen)
+    ok, why = wait_ready(proc, port, LAUNCH_TIMEOUT)
+    if not ok:
+        return _fail(why, dialog)
+    _say(f"AudioManager GUI running on {security.open_url(port)}")
     return 0

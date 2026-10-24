@@ -50,7 +50,7 @@ While `scripts\Gui.bat` runs, touch `gui/.cache/reload.trigger` instead of killi
 
 ### Claude: driving and checking the GUI
 
-Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check|--preflight|--stop`, `python -m gui.verify` (one PASS or FAIL line), `python -m gui.capture`, `python -m gui.main --fixture NAME`. State endpoints, `window.__debug`, `ui_check`, CLI parity: `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI. The GUI is desktop-only: no phone-width support or checks (David, 2026-10-23).
+Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check|--status|--preflight|--stop|--launch` (every non-GET request needs the per-launch X-AM-Token header), `python -m gui.verify` (one PASS or FAIL line), `python -m gui.capture`, `python -m gui.main --fixture NAME`. State endpoints, `window.__debug`, `ui_check`, CLI parity: `docs/References/GUI-State-Contract.md`. Fonts are bundled; no external URL may enter the GUI. The GUI is desktop-only: no phone-width support or checks (David, 2026-10-23).
 
 **Verification ladder, cheapest first:** (1) unit test `python -m pytest gui/tests -q`; (2) `python -m gui.verify --fast` (pytest + ui_check, about 20s); (3) `python -m gui.cli state` for the DOM-state read (`/state.json`); (4) `python -m gui.capture` for screenshots; (5) Chrome browser tool only for real interaction.
 

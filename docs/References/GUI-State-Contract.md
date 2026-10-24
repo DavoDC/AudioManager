@@ -56,6 +56,8 @@ Every GUI action has a command: `python -m gui.cli actions` lists them, `python 
 scripts\Gui.bat                                  launch (windowless, hot reload on)
 python -m gui.main --check                       is it up? prints the build line
 python -m gui.main --preflight                  python, imports, config, cache, port; exit 0 when healthy
+python -m gui.main --launch [--port N]           windowless detached start (what Gui.bat runs); preflight failure = message box + log line (--no-dialog for automation)
+python -m gui.main --status                      running pid on --port? exit 0 yes, 1 no
 python -m gui.main --stop                       stop the instance on --port (exit 0 even if none)
 python -m gui.main --autostart on|off|status    start at login (HKCU Run, windowless, no tab); David turns it on
 python -m gui.main --fixture review --no-watch   demo data, exe disabled (--list-fixtures)

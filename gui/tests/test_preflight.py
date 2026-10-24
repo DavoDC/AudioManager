@@ -116,7 +116,49 @@ def test_cli_stop_flag_when_nothing_runs():
     assert r.returncode == 0 and "not running" in r.stdout
 
 
-def test_gui_bat_runs_preflight_before_the_windowless_start():
+def test_gui_bat_is_a_windowless_thin_wrapper_around_launch():
     bat = (ROOT / "scripts" / "Gui.bat").read_text(encoding="utf-8")
-    assert bat.index("gui.main --preflight") < bat.index("pythonw -m gui.main")
-    assert "exit /b 0" in bat
+    assert "pythonw -m gui.main --launch" in bat
+    assert "cmd /k" not in bat and "gui.main --preflight" not in bat
+    assert "setlocal" not in bat.lower() and "powershell" not in bat.lower()
+
+
+def test_child_argv_drops_launcher_flags_and_pins_the_port():
+    from gui import launcher
+    argv = launcher.child_argv("pythonw", 9001, ["--launch", "--no-dialog", "--port", "8471", "--no-watch", "--fixture", "x"])
+    assert argv == ["pythonw", "-m", "gui.main", "--no-watch", "--fixture", "x", "--port", "9001"]
+
+
+def test_wait_ready_reports_exit_timeout_and_success():
+    from gui import launcher
+
+    class P:
+        def __init__(self, rc):
+            self.rc = rc
+
+        def poll(self):
+            return self.rc
+
+    assert launcher.wait_ready(P(1), 1, 5, ready=lambda p: False)[0] is False
+    assert launcher.wait_ready(P(None), 1, 5, ready=lambda p: True) == (True, "")
+    t = iter(range(100))
+    ok, why = launcher.wait_ready(P(None), 1, 3, ready=lambda p: False, sleep=lambda s: None, clock=lambda: next(t))
+    assert not ok and "did not answer" in why
+
+
+def test_launch_preflight_failure_logs_and_returns_1_without_spawning(monkeypatch):
+    from gui import launcher
+    monkeypatch.setattr(launcher, "find_listener", lambda p: None)
+    monkeypatch.setattr(launcher, "preflight", lambda p: [launcher.Check("port", False, "in use")])
+    logged = []
+    monkeypatch.setattr(launcher.applog, "write", lambda k, m: logged.append((k, m)))
+
+    def boom(*a, **k):
+        raise AssertionError("must not spawn")
+    assert launcher.launch(8471, [], dialog=False, popen=boom) == 1
+    assert any(k == "launch" and "FAILED" in m and "in use" in m for k, m in logged)
+
+
+def test_status_verb_exit_codes():
+    r = _main("--status", "--port", str(_free_port()))
+    assert r.returncode == 1 and "not running" in r.stdout
