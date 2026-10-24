@@ -6,7 +6,8 @@
   Host must be localhost or 127.0.0.1 with this server's port (stops DNS rebinding);
   a non-GET request or a websocket upgrade that carries an Origin must name the same
   loopback origin (stops cross-site posts). curl sends no Origin, so scripts still work.
-- TOKEN is per launch, embedded in the served page; POST /__log requires it.
+- TOKEN is per launch, embedded in the served page; every non-GET HTTP request requires it in
+  X-AM-Token (NiceGUI's own transport under /_nicegui is exempt: it carries its own client id).
 - Responses get nosniff, a frame-ancestors lock, and no-store on JSON and debug paths.
 """
 from __future__ import annotations
@@ -19,6 +20,7 @@ DEFAULT_PORT = 8471
 TOKEN = secrets.token_urlsafe(24)
 
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+_TOKEN_EXEMPT_PREFIXES = ("/_nicegui",)
 _NO_STORE_PREFIXES = ("/state", "/api/", "/__")
 _SECURITY_HEADERS = [
     (b"x-content-type-options", b"nosniff"),
@@ -68,6 +70,10 @@ class LoopbackGuard:
         elif origin is not None and (kind == "websocket" or scope.get("method", "GET") not in _SAFE_METHODS):
             if origin.lower() not in allowed_origins(port):
                 refuse = "bad Origin"
+        if refuse is None and kind == "http" and scope.get("method", "GET") not in _SAFE_METHODS \
+                and not scope.get("path", "").startswith(_TOKEN_EXEMPT_PREFIXES) \
+                and not check_token(_header(scope, b"x-am-token") or ""):
+            refuse = "missing or wrong token"
         if refuse:
             if kind == "websocket":
                 return await send({"type": "websocket.close", "code": 1008})

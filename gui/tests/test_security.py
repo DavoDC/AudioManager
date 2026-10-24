@@ -69,7 +69,8 @@ def test_missing_host_is_refused():
 
 def test_cross_origin_post_is_refused_same_origin_passes():
     assert _call({"method": "POST", "headers": hdr("localhost:8471", "http://evil.example")})[0] == 403
-    assert _call({"method": "POST", "headers": hdr("localhost:8471", "http://localhost:8471")})[0] == 200
+    same = hdr("localhost:8471", "http://localhost:8471") + [(b"x-am-token", security.TOKEN.encode())]
+    assert _call({"method": "POST", "headers": same})[0] == 200
 
 
 def test_json_paths_are_no_store():
@@ -98,3 +99,23 @@ def test_websocket_with_foreign_origin_is_closed():
 def test_token_check():
     assert security.check_token(security.TOKEN)
     assert not security.check_token("nope") and not security.check_token(None)
+
+
+def test_non_get_without_token_is_refused_on_every_path():
+    h = hdr("localhost:8471")
+    assert _call({"method": "POST", "path": "/anything", "headers": h})[0] == 403
+    assert _call({"method": "DELETE", "path": "/api/x", "headers": h})[0] == 403
+    bad = h + [(b"x-am-token", b"wrong")]
+    assert _call({"method": "POST", "path": "/anything", "headers": bad})[0] == 403
+
+
+def test_non_get_with_token_passes_and_get_needs_none():
+    good = hdr("localhost:8471") + [(b"x-am-token", security.TOKEN.encode())]
+    assert _call({"method": "POST", "path": "/anything", "headers": good})[0] == 200
+    assert _call({"method": "GET", "path": "/", "headers": hdr("localhost:8471")})[0] == 200
+
+
+def test_nicegui_internal_transport_is_exempt_from_the_token():
+    h = hdr("localhost:8471")
+    assert _call({"method": "POST", "path": "/_nicegui_ws/socket.io/", "headers": h})[0] == 200
+    assert _call({"method": "POST", "path": "/_nicegui/auto/upload/x", "headers": h})[0] == 200
