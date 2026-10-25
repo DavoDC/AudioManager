@@ -73,5 +73,5 @@ def test_run_verb_prints_and_returns_codes(capsys):
 
 def test_cli_status_is_read_only_and_exits_zero():
     r = subprocess.run([sys.executable, "-m", "gui.main", "--autostart", "status"], cwd=ROOT,
-                       capture_output=True, text=True, timeout=60)
+                       capture_output=True, text=True, timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     assert r.returncode == 0 and "autostart:" in r.stdout, r.stdout + r.stderr

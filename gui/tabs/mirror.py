@@ -22,6 +22,7 @@ def _git(*args: str, check: bool = True) -> str | None:
             ["git", "-C", str(config.AUDIOMIRROR_REPO), *args],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=60,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if check and out.returncode != 0:
             return None
@@ -37,6 +38,7 @@ def _git_result(*args: str) -> tuple[int, str]:
             ["git", "-C", str(config.AUDIOMIRROR_REPO), *args],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=120,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         return out.returncode, ((out.stdout or "") + (out.stderr or "")).strip()
     except (OSError, subprocess.TimeoutExpired) as e:

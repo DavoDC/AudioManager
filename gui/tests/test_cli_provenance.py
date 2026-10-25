@@ -15,7 +15,7 @@ from gui import buildinfo  # noqa: E402
 def test_build_verb_prints_build_line_to_stderr_first():
     expected = buildinfo.format_line(buildinfo.describe())
     proc = subprocess.run([sys.executable, "-m", "gui.cli", "build"], cwd=str(REPO_ROOT),
-                          capture_output=True, text=True, timeout=60)
+                          capture_output=True, text=True, timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     assert proc.returncode == 0, proc.stderr
     first_err = proc.stderr.splitlines()[0]
     assert first_err == expected
@@ -29,7 +29,7 @@ def test_state_verb_keeps_stdout_pure_json_and_provenance_on_stderr():
     import json
     expected = buildinfo.format_line(buildinfo.describe())
     proc = subprocess.run([sys.executable, "-m", "gui.cli", "state"], cwd=str(REPO_ROOT),
-                          capture_output=True, text=True, timeout=60)
+                          capture_output=True, text=True, timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     assert proc.returncode == 0, proc.stderr
     assert proc.stderr.splitlines()[0] == expected
     json.loads(proc.stdout)  # raises if the build line leaked into stdout

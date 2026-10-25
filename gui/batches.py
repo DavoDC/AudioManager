@@ -51,6 +51,7 @@ def get_batches(repo: Path | None = None, limit: int = 400) -> list[dict]:
             encoding="utf-8",
             errors="replace",
             timeout=30,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except (OSError, subprocess.TimeoutExpired):
         return []

@@ -165,6 +165,7 @@ class ExeRunner:
                 ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
                 capture_output=True,
                 timeout=15,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except (OSError, subprocess.TimeoutExpired):
             try:

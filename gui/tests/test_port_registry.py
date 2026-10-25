@@ -42,6 +42,7 @@ def test_gui_bat_writes_a_launch_breadcrumb_line(tmp_path):
     bat = tmp_path / "crumb.bat"
     bat.write_text("@echo off\r\nset KILLED=0\r\n" + "\r\n".join(snippet) + "\r\n", encoding="utf-8")
     for _ in range(2):
-        subprocess.run(["cmd", "/c", str(bat)], cwd=tmp_path, check=True, timeout=30)
+        subprocess.run(["cmd", "/c", str(bat)], cwd=tmp_path, check=True, timeout=30,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     crumbs = (tmp_path / "gui" / ".cache" / "launch-breadcrumb.log").read_text(encoding="utf-8").splitlines()
     assert len(crumbs) == 2 and all("Gui.bat launch" in c for c in crumbs)

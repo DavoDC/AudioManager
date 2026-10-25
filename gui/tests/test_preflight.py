@@ -77,7 +77,8 @@ def test_stop_ends_a_real_listener_and_logs(capsys):
     port = _free_port()
     code = ("import socket,time\ns=socket.socket();s.bind(('127.0.0.1',%d));s.listen(1)\n"
             "print('up',flush=True);time.sleep(60)" % port)
-    p = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE, text=True)
+    p = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE, text=True,
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     try:
         assert p.stdout.readline().strip() == "up"
         assert launcher.stop(port) == 0
@@ -95,7 +96,8 @@ def test_stop_ends_a_real_listener_and_logs(capsys):
 
 def _main(*args):
     return subprocess.run([sys.executable, "-m", "gui.main", *args], cwd=ROOT, capture_output=True,
-                          text=True, timeout=60)
+                          text=True, timeout=60,
+                          creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
 def test_cli_preflight_flag_exit_codes():
