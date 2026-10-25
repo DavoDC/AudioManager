@@ -56,7 +56,7 @@ Run block: `scripts\Gui.bat` (launch), `python -m gui.main --check|--status|--pr
 
 ### GUI test suite speed
 
-Measured 2026-10-12: `python -m pytest gui -q` runs 482 tests in about 14 s (465 in about 7.5 s before the fixture-server tests were added); no xdist or sleep removal needed, nothing real sleeps for more than 2.4 s (test_preflight). The ui_check step of `python -m gui.verify` fell from 34 s to 2 s because fixture servers are now addressed as 127.0.0.1 (the name localhost cost 2 s per request on Windows); the Chrome capture step still takes about 98 s and is the bulk of verify. Re-measure with `--durations=15` if the suite passes 2 minutes.
+Measured timings and the re-measure rule: "GUI test suite speed" in `docs/References/DevContext.md`.
 
 ### Development priority
 
